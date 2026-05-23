@@ -61,6 +61,10 @@ function optionalDate(value: FormDataEntryValue | null) {
   return text;
 }
 
+function toNumber(value: number | string | null | undefined) {
+  return Number(value ?? 0);
+}
+
 export async function createRoom(formData: FormData) {
   await requireAdmin();
 
@@ -472,6 +476,177 @@ export async function publishMeeting(formData: FormData) {
 
   if (meetingError) {
     throw meetingError;
+  }
+
+  revalidatePath("/admin");
+}
+
+export async function generateResultSnapshot(formData: FormData) {
+  const generator = await requireAdmin();
+
+  const meetingId = requiredText(formData.get("id"), "Meeting ID");
+  const supabase = await createClient();
+
+  const [meetingResult, questionsResult, eligibleResult, ballotsResult] =
+    await Promise.all([
+      supabase
+        .from("meetings")
+        .select("id, title, starts_at, ends_at, status")
+        .eq("id", meetingId)
+        .single(),
+      supabase
+        .from("meeting_questions")
+        .select(
+          "id, question_text, question_type, display_order, meeting_choices(id, choice_text, display_order)",
+        )
+        .eq("meeting_id", meetingId)
+        .order("display_order", { ascending: true }),
+      supabase
+        .from("eligible_voters_snapshot")
+        .select("room_id, ownership_percent")
+        .eq("meeting_id", meetingId),
+      supabase
+        .from("ballots")
+        .select("id, room_id, status, ballot_answers(question_id, choice_id)")
+        .eq("meeting_id", meetingId)
+        .eq("status", "submitted"),
+    ]);
+
+  if (meetingResult.error) {
+    throw meetingResult.error;
+  }
+
+  if (questionsResult.error) {
+    throw questionsResult.error;
+  }
+
+  if (eligibleResult.error) {
+    throw eligibleResult.error;
+  }
+
+  if (ballotsResult.error) {
+    throw ballotsResult.error;
+  }
+
+  const ownershipByRoom = new Map(
+    eligibleResult.data.map((eligible) => [
+      eligible.room_id,
+      toNumber(eligible.ownership_percent),
+    ]),
+  );
+  const submittedRoomIds = new Set(ballotsResult.data.map((ballot) => ballot.room_id));
+  const totalEligibleOwnership = [...ownershipByRoom.values()].reduce(
+    (sum, ownership) => sum + ownership,
+    0,
+  );
+  const submittedOwnership = [...submittedRoomIds].reduce(
+    (sum, roomId) => sum + (ownershipByRoom.get(roomId) ?? 0),
+    0,
+  );
+  const countsByChoice = new Map<
+    string,
+    {
+      voteCount: number;
+      ownership: number;
+    }
+  >();
+
+  for (const ballot of ballotsResult.data) {
+    const ownership = ownershipByRoom.get(ballot.room_id) ?? 0;
+
+    for (const answer of ballot.ballot_answers) {
+      const current = countsByChoice.get(answer.choice_id) ?? {
+        voteCount: 0,
+        ownership: 0,
+      };
+
+      countsByChoice.set(answer.choice_id, {
+        voteCount: current.voteCount + 1,
+        ownership: current.ownership + ownership,
+      });
+    }
+  }
+
+  const payload = {
+    meeting: meetingResult.data,
+    generated_at: new Date().toISOString(),
+    totals: {
+      eligible_voters: eligibleResult.data.length,
+      submitted_ballots: ballotsResult.data.length,
+      total_eligible_ownership: totalEligibleOwnership,
+      submitted_ownership: submittedOwnership,
+    },
+    questions: questionsResult.data.map((question) => ({
+      id: question.id,
+      text: question.question_text,
+      type: question.question_type,
+      choices: question.meeting_choices
+        .sort((left, right) => left.display_order - right.display_order)
+        .map((choice) => {
+          const count = countsByChoice.get(choice.id) ?? {
+            voteCount: 0,
+            ownership: 0,
+          };
+
+          return {
+            id: choice.id,
+            text: choice.choice_text,
+            vote_count: count.voteCount,
+            ownership: count.ownership,
+            percent_of_total_ownership:
+              totalEligibleOwnership > 0
+                ? (count.ownership / totalEligibleOwnership) * 100
+                : 0,
+            percent_of_submitted_ownership:
+              submittedOwnership > 0
+                ? (count.ownership / submittedOwnership) * 100
+                : 0,
+          };
+        }),
+    })),
+  };
+
+  const { error: insertError } = await supabase.from("result_snapshots").insert({
+    meeting_id: meetingId,
+    generated_by: generator.id,
+    payload_json: payload,
+  });
+
+  if (insertError) {
+    throw insertError;
+  }
+
+  const { error: meetingError } = await supabase
+    .from("meetings")
+    .update({ status: "closed" })
+    .eq("id", meetingId)
+    .neq("status", "archived");
+
+  if (meetingError) {
+    throw meetingError;
+  }
+
+  revalidatePath("/admin");
+}
+
+export async function approveResultSnapshot(formData: FormData) {
+  const approver = await requireAdmin();
+
+  const meetingId = requiredText(formData.get("meeting_id"), "Meeting ID");
+  const resultSnapshotId = requiredText(
+    formData.get("result_snapshot_id"),
+    "Result snapshot ID",
+  );
+  const supabase = await createClient();
+  const { error } = await supabase.from("committee_approvals").insert({
+    meeting_id: meetingId,
+    result_snapshot_id: resultSnapshotId,
+    approved_by: approver.id,
+    notes: optionalText(formData.get("notes")),
+  });
+
+  if (error) {
+    throw error;
   }
 
   revalidatePath("/admin");

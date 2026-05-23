@@ -7,6 +7,7 @@ import {
   UserRound,
 } from "lucide-react";
 import {
+  approveResultSnapshot,
   archiveMeeting,
   createMeetingChoice,
   createMeeting,
@@ -19,6 +20,7 @@ import {
   deleteMeetingChoice,
   deleteMeetingQuestion,
   endRoomOwnerLink,
+  generateResultSnapshot,
   linkRoomOwner,
   publishMeeting,
   reviewProxyAuthorization,
@@ -33,6 +35,29 @@ function formatDateTime(value: string) {
   }).format(new Date(value));
 }
 
+function getResultTotals(payload: unknown) {
+  if (!payload || typeof payload !== "object" || !("totals" in payload)) {
+    return null;
+  }
+
+  const totals = payload.totals;
+
+  if (!totals || typeof totals !== "object") {
+    return null;
+  }
+
+  return totals as {
+    eligible_voters?: number;
+    submitted_ballots?: number;
+    total_eligible_ownership?: number;
+    submitted_ownership?: number;
+  };
+}
+
+function formatPercent(value: number | undefined) {
+  return `${Number(value ?? 0).toFixed(2)}%`;
+}
+
 export default async function AdminPage() {
   const {
     rooms,
@@ -42,6 +67,8 @@ export default async function AdminPage() {
     questions,
     proxyAuthorizations,
     eligibleVoters,
+    resultSnapshots,
+    committeeApprovals,
     profiles,
   } =
     await getAdminDashboardData();
@@ -56,6 +83,9 @@ export default async function AdminPage() {
   ).length;
   const questionCount = questions.length;
   const eligibleVoterCount = eligibleVoters.length;
+  const approvedResultSnapshotIds = new Set(
+    committeeApprovals.map((approval) => approval.result_snapshot_id),
+  );
 
   return (
     <main className="min-h-screen px-6 py-8">
@@ -98,6 +128,14 @@ export default async function AdminPage() {
             <div className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2">
               <div className="font-semibold">{pendingProxyAuthorizations}</div>
               <div className="text-[var(--muted)]">Proxy requests</div>
+            </div>
+            <div className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2">
+              <div className="font-semibold">{resultSnapshots.length}</div>
+              <div className="text-[var(--muted)]">Results</div>
+            </div>
+            <div className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2">
+              <div className="font-semibold">{committeeApprovals.length}</div>
+              <div className="text-[var(--muted)]">Approvals</div>
             </div>
             <div className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2">
               <div className="font-semibold">{profiles.length}</div>
@@ -195,7 +233,19 @@ export default async function AdminPage() {
                               className="text-sm font-medium text-red-700"
                               type="submit"
                             >
-                              Archive
+                            Archive
+                          </button>
+                        </form>
+                      ) : null}
+                        {meeting.status === "published" ||
+                        meeting.status === "closed" ? (
+                          <form action={generateResultSnapshot}>
+                            <input name="id" type="hidden" value={meeting.id} />
+                            <button
+                              className="text-sm font-medium text-[var(--primary)]"
+                              type="submit"
+                            >
+                              Generate result
                             </button>
                           </form>
                         ) : null}
@@ -335,6 +385,93 @@ export default async function AdminPage() {
               </div>
             ))}
           </div>
+        </section>
+
+        <section className="mb-5 rounded-lg border border-[var(--border)] bg-[var(--surface)] p-5">
+          <div className="mb-4 flex items-center gap-2">
+            <ListChecks className="text-[var(--primary)]" size={20} />
+            <h2 className="text-lg font-semibold">Results</h2>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse text-left text-sm">
+              <thead className="border-b border-[var(--border)] text-[var(--muted)]">
+                <tr>
+                  <th className="py-2 pr-3 font-medium">Meeting</th>
+                  <th className="py-2 pr-3 font-medium">Generated</th>
+                  <th className="py-2 pr-3 font-medium">Submitted</th>
+                  <th className="py-2 pr-3 font-medium">Ownership</th>
+                  <th className="py-2 pr-3 font-medium">Approval</th>
+                  <th className="py-2 font-medium">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {resultSnapshots.map((snapshot) => {
+                  const totals = getResultTotals(snapshot.payload_json);
+                  const approved = approvedResultSnapshotIds.has(snapshot.id);
+
+                  return (
+                    <tr
+                      className="border-b border-[var(--border)]"
+                      key={snapshot.id}
+                    >
+                      <td className="py-2 pr-3">
+                        {snapshot.meetings?.title ?? "-"}
+                      </td>
+                      <td className="py-2 pr-3">
+                        {formatDateTime(snapshot.generated_at)}
+                      </td>
+                      <td className="py-2 pr-3">
+                        {totals?.submitted_ballots ?? 0} /{" "}
+                        {totals?.eligible_voters ?? 0}
+                      </td>
+                      <td className="py-2 pr-3">
+                        {formatPercent(totals?.submitted_ownership)} /{" "}
+                        {formatPercent(totals?.total_eligible_ownership)}
+                      </td>
+                      <td className="py-2 pr-3">
+                        {approved ? "approved" : "pending"}
+                      </td>
+                      <td className="py-2">
+                        {!approved ? (
+                          <form
+                            action={approveResultSnapshot}
+                            className="flex flex-wrap gap-2"
+                          >
+                            <input
+                              name="meeting_id"
+                              type="hidden"
+                              value={snapshot.meeting_id}
+                            />
+                            <input
+                              name="result_snapshot_id"
+                              type="hidden"
+                              value={snapshot.id}
+                            />
+                            <input
+                              className="w-48 rounded-md border border-[var(--border)] px-2 py-1 text-sm"
+                              name="notes"
+                              placeholder="Approval notes"
+                            />
+                            <button
+                              className="rounded-md border border-[var(--border)] px-3 py-1 text-sm font-medium"
+                              type="submit"
+                            >
+                              Approve result
+                            </button>
+                          </form>
+                        ) : null}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          {resultSnapshots.length === 0 ? (
+            <p className="mt-3 text-sm text-[var(--muted)]">
+              No result snapshots have been generated yet.
+            </p>
+          ) : null}
         </section>
 
         <div className="grid gap-5 lg:grid-cols-2">

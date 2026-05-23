@@ -13,6 +13,8 @@ export async function getAdminDashboardData() {
     questionsResult,
     proxyAuthorizationsResult,
     eligibleVotersResult,
+    resultSnapshotsResult,
+    committeeApprovalsResult,
     profilesResult,
   ] =
     await Promise.all([
@@ -52,6 +54,16 @@ export async function getAdminDashboardData() {
         .from("eligible_voters_snapshot")
         .select("id, meeting_id, room_id, profile_id, voter_type, source"),
       supabase
+        .from("result_snapshots")
+        .select("id, meeting_id, generated_at, payload_json, meetings(id, title)")
+        .order("generated_at", { ascending: false }),
+      supabase
+        .from("committee_approvals")
+        .select(
+          "id, meeting_id, result_snapshot_id, approved_at, notes, profiles!committee_approvals_approved_by_fkey(id, full_name, email)",
+        )
+        .order("approved_at", { ascending: false }),
+      supabase
         .from("profiles")
         .select(
           "id, full_name, email, default_status, approval_status, created_at",
@@ -87,6 +99,14 @@ export async function getAdminDashboardData() {
     throw eligibleVotersResult.error;
   }
 
+  if (resultSnapshotsResult.error) {
+    throw resultSnapshotsResult.error;
+  }
+
+  if (committeeApprovalsResult.error) {
+    throw committeeApprovalsResult.error;
+  }
+
   if (profilesResult.error) {
     throw profilesResult.error;
   }
@@ -99,6 +119,8 @@ export async function getAdminDashboardData() {
     questions: questionsResult.data,
     proxyAuthorizations: proxyAuthorizationsResult.data,
     eligibleVoters: eligibleVotersResult.data,
+    resultSnapshots: resultSnapshotsResult.data,
+    committeeApprovals: committeeApprovalsResult.data,
     profiles: profilesResult.data,
   };
 }

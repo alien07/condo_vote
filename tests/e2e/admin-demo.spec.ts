@@ -213,6 +213,19 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
     await expect(
       meetingRow.getByRole("cell", { name: "published", exact: true }),
     ).toBeVisible();
+
+    await meetingRow.getByRole("button", { name: "Generate result" }).click();
+    await expect(
+      meetingRow.getByRole("cell", { name: "closed", exact: true }),
+    ).toBeVisible();
+    const resultRow = page.getByRole("row").filter({ hasText: meetingTitle });
+    await expect(
+      resultRow.getByRole("cell", { name: "pending", exact: true }),
+    ).toBeVisible();
+    await resultRow.getByRole("button", { name: "Approve result" }).click();
+    await expect(
+      resultRow.getByRole("cell", { name: "approved", exact: true }),
+    ).toBeVisible();
   });
 });
 
