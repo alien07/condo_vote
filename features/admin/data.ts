@@ -10,6 +10,7 @@ export async function getAdminDashboardData() {
     ownersResult,
     roomOwnersResult,
     meetingsResult,
+    proxyAuthorizationsResult,
     profilesResult,
   ] =
     await Promise.all([
@@ -34,6 +35,12 @@ export async function getAdminDashboardData() {
         .select("id, title, description, starts_at, ends_at, status")
         .order("starts_at", { ascending: false }),
       supabase
+        .from("proxy_authorizations")
+        .select(
+          "id, status, valid_from, valid_until, meetings(id, title), rooms(id, room_number), owners(id, full_name), profiles!proxy_authorizations_proxy_profile_id_fkey(id, full_name, email)",
+        )
+        .order("created_at", { ascending: false }),
+      supabase
         .from("profiles")
         .select(
           "id, full_name, email, default_status, approval_status, created_at",
@@ -57,6 +64,10 @@ export async function getAdminDashboardData() {
     throw meetingsResult.error;
   }
 
+  if (proxyAuthorizationsResult.error) {
+    throw proxyAuthorizationsResult.error;
+  }
+
   if (profilesResult.error) {
     throw profilesResult.error;
   }
@@ -66,6 +77,7 @@ export async function getAdminDashboardData() {
     owners: ownersResult.data,
     roomOwners: roomOwnersResult.data,
     meetings: meetingsResult.data,
+    proxyAuthorizations: proxyAuthorizationsResult.data,
     profiles: profilesResult.data,
   };
 }

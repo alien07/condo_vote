@@ -1,13 +1,21 @@
-import { Building2, CalendarDays, ShieldCheck, UserRound } from "lucide-react";
+import {
+  Building2,
+  CalendarDays,
+  ShieldCheck,
+  UserCheck,
+  UserRound,
+} from "lucide-react";
 import {
   archiveMeeting,
   createMeeting,
   createOwner,
+  createProxyAuthorization,
   createRoom,
   deactivateOwner,
   deactivateRoom,
   endRoomOwnerLink,
   linkRoomOwner,
+  reviewProxyAuthorization,
   updateProfileApproval,
 } from "@/features/admin/actions";
 import { getAdminDashboardData } from "@/features/admin/data";
@@ -20,13 +28,16 @@ function formatDateTime(value: string) {
 }
 
 export default async function AdminPage() {
-  const { rooms, owners, roomOwners, meetings, profiles } =
+  const { rooms, owners, roomOwners, meetings, proxyAuthorizations, profiles } =
     await getAdminDashboardData();
   const activeRooms = rooms.filter((room) => room.active).length;
   const activeOwners = owners.filter((owner) => owner.active).length;
   const activeRoomOwnerLinks = roomOwners.filter((link) => !link.ends_at).length;
   const activeMeetings = meetings.filter(
     (meeting) => meeting.status !== "archived",
+  ).length;
+  const pendingProxyAuthorizations = proxyAuthorizations.filter(
+    (authorization) => authorization.status === "pending",
   ).length;
 
   return (
@@ -42,7 +53,7 @@ export default async function AdminPage() {
               </p>
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-2 text-center text-sm md:grid-cols-4">
+          <div className="grid grid-cols-2 gap-2 text-center text-sm md:grid-cols-5">
             <div className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2">
               <div className="font-semibold">{activeRooms}</div>
               <div className="text-[var(--muted)]">Active rooms</div>
@@ -58,6 +69,10 @@ export default async function AdminPage() {
             <div className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2">
               <div className="font-semibold">{activeMeetings}</div>
               <div className="text-[var(--muted)]">Meetings</div>
+            </div>
+            <div className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2">
+              <div className="font-semibold">{pendingProxyAuthorizations}</div>
+              <div className="text-[var(--muted)]">Proxy requests</div>
             </div>
             <div className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2">
               <div className="font-semibold">{profiles.length}</div>
@@ -417,6 +432,154 @@ export default async function AdminPage() {
                           </button>
                         </form>
                       ) : null}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section className="mt-5 rounded-lg border border-[var(--border)] bg-[var(--surface)] p-5">
+          <div className="mb-4 flex items-center gap-2">
+            <UserCheck className="text-[var(--primary)]" size={20} />
+            <h2 className="text-lg font-semibold">Proxy Authorizations</h2>
+          </div>
+          <form
+            action={createProxyAuthorization}
+            className="grid gap-3 md:grid-cols-3"
+          >
+            <select
+              className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+              name="meeting_id"
+              required
+            >
+              <option value="">Meeting</option>
+              {meetings
+                .filter((meeting) => meeting.status !== "archived")
+                .map((meeting) => (
+                  <option key={meeting.id} value={meeting.id}>
+                    {meeting.title}
+                  </option>
+                ))}
+            </select>
+            <select
+              className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+              name="room_id"
+              required
+            >
+              <option value="">Room</option>
+              {rooms
+                .filter((room) => room.active)
+                .map((room) => (
+                  <option key={room.id} value={room.id}>
+                    {room.room_number}
+                  </option>
+                ))}
+            </select>
+            <select
+              className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+              name="owner_id"
+            >
+              <option value="">Owner optional</option>
+              {owners
+                .filter((owner) => owner.active)
+                .map((owner) => (
+                  <option key={owner.id} value={owner.id}>
+                    {owner.full_name}
+                  </option>
+                ))}
+            </select>
+            <select
+              className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+              name="proxy_profile_id"
+              required
+            >
+              <option value="">Proxy profile</option>
+              {profiles.map((profile) => (
+                <option key={profile.id} value={profile.id}>
+                  {profile.full_name} ({profile.email})
+                </option>
+              ))}
+            </select>
+            <label className="text-sm font-medium">
+              Valid from
+              <input
+                className="mt-1 w-full rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+                name="valid_from"
+                type="date"
+              />
+            </label>
+            <label className="text-sm font-medium">
+              Valid until
+              <input
+                className="mt-1 w-full rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+                name="valid_until"
+                type="date"
+              />
+            </label>
+            <button
+              className="rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)] md:col-span-3"
+              type="submit"
+            >
+              Add proxy authorization
+            </button>
+          </form>
+
+          <div className="mt-5 overflow-x-auto">
+            <table className="w-full border-collapse text-left text-sm">
+              <thead className="border-b border-[var(--border)] text-[var(--muted)]">
+                <tr>
+                  <th className="py-2 pr-3 font-medium">Meeting</th>
+                  <th className="py-2 pr-3 font-medium">Room</th>
+                  <th className="py-2 pr-3 font-medium">Owner</th>
+                  <th className="py-2 pr-3 font-medium">Proxy</th>
+                  <th className="py-2 pr-3 font-medium">Status</th>
+                  <th className="py-2 font-medium">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {proxyAuthorizations.map((authorization) => (
+                  <tr
+                    className="border-b border-[var(--border)]"
+                    key={authorization.id}
+                  >
+                    <td className="py-2 pr-3">
+                      {authorization.meetings?.title ?? "-"}
+                    </td>
+                    <td className="py-2 pr-3">
+                      {authorization.rooms?.room_number ?? "-"}
+                    </td>
+                    <td className="py-2 pr-3">
+                      {authorization.owners?.full_name ?? "-"}
+                    </td>
+                    <td className="py-2 pr-3">
+                      {authorization.profiles?.full_name ?? "-"}
+                    </td>
+                    <td className="py-2 pr-3">{authorization.status}</td>
+                    <td className="py-2">
+                      <form
+                        action={reviewProxyAuthorization}
+                        className="flex flex-wrap gap-2"
+                      >
+                        <input name="id" type="hidden" value={authorization.id} />
+                        <select
+                          className="rounded-md border border-[var(--border)] px-2 py-1 text-sm"
+                          defaultValue={authorization.status}
+                          name="status"
+                        >
+                          <option value="pending">Pending</option>
+                          <option value="approved">Approved</option>
+                          <option value="rejected">Rejected</option>
+                          <option value="revoked">Revoked</option>
+                        </select>
+                        <button
+                          className="rounded-md border border-[var(--border)] px-3 py-1 text-sm font-medium"
+                          type="submit"
+                        >
+                          Review
+                        </button>
+                      </form>
                     </td>
                   </tr>
                 ))}

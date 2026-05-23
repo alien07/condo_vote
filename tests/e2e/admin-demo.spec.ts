@@ -145,7 +145,7 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
     await page.locator('input[name="starts_at"]').first().fill("2026-06-01T09:00");
     await page.locator('input[name="ends_at"]').first().fill("2026-06-01T10:00");
     await page.getByRole("button", { name: "Add meeting" }).click();
-    await expect(page.getByText(meetingTitle)).toBeVisible();
+    await expect(page.getByRole("cell", { name: meetingTitle })).toBeVisible();
 
     await page.getByPlaceholder("Room number").fill(roomNumber);
     await page.getByPlaceholder("Ownership %").fill("1.25");
@@ -157,12 +157,42 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
     await page.getByRole("button", { name: "Add owner" }).click();
     await expect(page.getByRole("cell", { name: ownerName })).toBeVisible();
 
-    await page.locator('select[name="room_id"]').selectOption({ label: roomNumber });
-    await page.locator('select[name="owner_id"]').selectOption({ label: ownerName });
+    await page
+      .locator('select[name="room_id"]')
+      .first()
+      .selectOption({ label: roomNumber });
+    await page
+      .locator('select[name="owner_id"]')
+      .first()
+      .selectOption({ label: ownerName });
     await page.locator('input[name="starts_at"]').last().fill("2026-06-01");
     await page.getByRole("button", { name: "Link owner to room" }).click();
     await expect(page.getByRole("cell", { name: roomNumber })).toBeVisible();
     await expect(page.getByRole("cell", { name: ownerName })).toBeVisible();
+
+    await page
+      .locator('select[name="meeting_id"]')
+      .selectOption({ label: meetingTitle });
+    await page.locator('select[name="room_id"]').last().selectOption({
+      label: roomNumber,
+    });
+    await page
+      .locator('select[name="owner_id"]')
+      .last()
+      .selectOption({ label: ownerName });
+    await page
+      .locator('select[name="proxy_profile_id"]')
+      .selectOption({ label: `${demoAdminName} (${demoAdminEmail})` });
+    await page.getByRole("button", { name: "Add proxy authorization" }).click();
+    const proxyRow = page.getByRole("row").filter({ hasText: meetingTitle });
+    await expect(
+      proxyRow.getByRole("cell", { name: "pending", exact: true }),
+    ).toBeVisible();
+    await proxyRow.locator('select[name="status"]').selectOption("approved");
+    await proxyRow.getByRole("button", { name: "Review" }).click();
+    await expect(
+      proxyRow.getByRole("cell", { name: "approved", exact: true }),
+    ).toBeVisible();
   });
 });
 

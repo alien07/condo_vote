@@ -239,3 +239,45 @@ export async function updateProfileApproval(formData: FormData) {
 
   revalidatePath("/admin");
 }
+
+export async function createProxyAuthorization(formData: FormData) {
+  await requireAdmin();
+
+  const supabase = await createClient();
+  const { error } = await supabase.from("proxy_authorizations").insert({
+    meeting_id: requiredText(formData.get("meeting_id"), "Meeting"),
+    room_id: requiredText(formData.get("room_id"), "Room"),
+    owner_id: optionalText(formData.get("owner_id")),
+    proxy_profile_id: requiredText(formData.get("proxy_profile_id"), "Proxy profile"),
+    valid_from: optionalDate(formData.get("valid_from")),
+    valid_until: optionalDate(formData.get("valid_until")),
+  });
+
+  if (error) {
+    throw error;
+  }
+
+  revalidatePath("/admin");
+}
+
+export async function reviewProxyAuthorization(formData: FormData) {
+  const reviewer = await requireAdmin();
+
+  const id = requiredText(formData.get("id"), "Proxy authorization ID");
+  const status = requiredText(formData.get("status"), "Status");
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("proxy_authorizations")
+    .update({
+      status,
+      reviewed_by: reviewer.id,
+      reviewed_at: new Date().toISOString(),
+    })
+    .eq("id", id);
+
+  if (error) {
+    throw error;
+  }
+
+  revalidatePath("/admin");
+}

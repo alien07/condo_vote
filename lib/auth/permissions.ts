@@ -82,4 +82,6 @@ export async function requireAdmin() {
   if (!allowed) {
     redirect("/login");
   }
+
+  return requireProfile();
 }
