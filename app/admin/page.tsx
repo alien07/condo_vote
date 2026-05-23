@@ -69,6 +69,7 @@ export default async function AdminPage() {
     eligibleVoters,
     resultSnapshots,
     committeeApprovals,
+    emailLogs,
     profiles,
   } =
     await getAdminDashboardData();
@@ -86,6 +87,7 @@ export default async function AdminPage() {
   const approvedResultSnapshotIds = new Set(
     committeeApprovals.map((approval) => approval.result_snapshot_id),
   );
+  const queuedEmailCount = emailLogs.filter((log) => log.status === "queued").length;
 
   return (
     <main className="min-h-screen px-6 py-8">
@@ -136,6 +138,10 @@ export default async function AdminPage() {
             <div className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2">
               <div className="font-semibold">{committeeApprovals.length}</div>
               <div className="text-[var(--muted)]">Approvals</div>
+            </div>
+            <div className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2">
+              <div className="font-semibold">{queuedEmailCount}</div>
+              <div className="text-[var(--muted)]">Queued mail</div>
             </div>
             <div className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2">
               <div className="font-semibold">{profiles.length}</div>
@@ -470,6 +476,42 @@ export default async function AdminPage() {
           {resultSnapshots.length === 0 ? (
             <p className="mt-3 text-sm text-[var(--muted)]">
               No result snapshots have been generated yet.
+            </p>
+          ) : null}
+        </section>
+
+        <section className="mb-5 rounded-lg border border-[var(--border)] bg-[var(--surface)] p-5">
+          <div className="mb-4 flex items-center gap-2">
+            <ListChecks className="text-[var(--primary)]" size={20} />
+            <h2 className="text-lg font-semibold">Email Queue</h2>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse text-left text-sm">
+              <thead className="border-b border-[var(--border)] text-[var(--muted)]">
+                <tr>
+                  <th className="py-2 pr-3 font-medium">Recipient</th>
+                  <th className="py-2 pr-3 font-medium">Template</th>
+                  <th className="py-2 pr-3 font-medium">Status</th>
+                  <th className="py-2 pr-3 font-medium">Created</th>
+                  <th className="py-2 font-medium">Error</th>
+                </tr>
+              </thead>
+              <tbody>
+                {emailLogs.map((log) => (
+                  <tr className="border-b border-[var(--border)]" key={log.id}>
+                    <td className="py-2 pr-3">{log.recipient_email}</td>
+                    <td className="py-2 pr-3">{log.template_key}</td>
+                    <td className="py-2 pr-3">{log.status}</td>
+                    <td className="py-2 pr-3">{formatDateTime(log.created_at)}</td>
+                    <td className="py-2">{log.error_message ?? "-"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {emailLogs.length === 0 ? (
+            <p className="mt-3 text-sm text-[var(--muted)]">
+              No email events have been queued yet.
             </p>
           ) : null}
         </section>

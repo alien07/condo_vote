@@ -226,6 +226,7 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
     await expect(
       resultRow.getByRole("cell", { name: "approved", exact: true }),
     ).toBeVisible();
+    await expect(page.getByText(/result_approved:/).first()).toBeVisible();
   });
 });
 

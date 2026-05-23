@@ -15,6 +15,7 @@ export async function getAdminDashboardData() {
     eligibleVotersResult,
     resultSnapshotsResult,
     committeeApprovalsResult,
+    emailLogsResult,
     profilesResult,
   ] =
     await Promise.all([
@@ -64,6 +65,13 @@ export async function getAdminDashboardData() {
         )
         .order("approved_at", { ascending: false }),
       supabase
+        .from("email_logs")
+        .select(
+          "id, recipient_email, template_key, status, sent_at, error_message, created_at",
+        )
+        .order("created_at", { ascending: false })
+        .limit(25),
+      supabase
         .from("profiles")
         .select(
           "id, full_name, email, default_status, approval_status, created_at",
@@ -107,6 +115,10 @@ export async function getAdminDashboardData() {
     throw committeeApprovalsResult.error;
   }
 
+  if (emailLogsResult.error) {
+    throw emailLogsResult.error;
+  }
+
   if (profilesResult.error) {
     throw profilesResult.error;
   }
@@ -121,6 +133,7 @@ export async function getAdminDashboardData() {
     eligibleVoters: eligibleVotersResult.data,
     resultSnapshots: resultSnapshotsResult.data,
     committeeApprovals: committeeApprovalsResult.data,
+    emailLogs: emailLogsResult.data,
     profiles: profilesResult.data,
   };
 }

@@ -65,6 +65,91 @@ function toNumber(value: number | string | null | undefined) {
   return Number(value ?? 0);
 }
 
+async function queueResultApprovedEmails(meetingId: string) {
+  const supabase = await createClient();
+  const [ownersResult, residentsResult, existingLogsResult] = await Promise.all([
+    supabase
+      .from("owners")
+      .select("email, created_at")
+      .eq("active", true)
+      .not("email", "is", null),
+    supabase
+      .from("profiles")
+      .select("email, created_at")
+      .eq("approval_status", "approved")
+      .eq("default_status", "resident"),
+    supabase
+      .from("email_logs")
+      .select("recipient_email")
+      .eq("template_key", `result_approved:${meetingId}`),
+  ]);
+
+  if (ownersResult.error) {
+    throw ownersResult.error;
+  }
+
+  if (residentsResult.error) {
+    throw residentsResult.error;
+  }
+
+  if (existingLogsResult.error) {
+    throw existingLogsResult.error;
+  }
+
+  const existingRecipients = new Set(
+    existingLogsResult.data.map((log) => log.recipient_email.toLowerCase()),
+  );
+  const recipientsByEmail = new Map<
+    string,
+    {
+      email: string;
+      activeAt: string;
+    }
+  >();
+
+  for (const owner of ownersResult.data) {
+    const email = owner.email?.trim().toLowerCase();
+
+    if (email) {
+      recipientsByEmail.set(email, {
+        email,
+        activeAt: owner.created_at,
+      });
+    }
+  }
+
+  for (const resident of residentsResult.data) {
+    const email = resident.email.trim().toLowerCase();
+    const current = recipientsByEmail.get(email);
+
+    if (!current || current.activeAt < resident.created_at) {
+      recipientsByEmail.set(email, {
+        email,
+        activeAt: resident.created_at,
+      });
+    }
+  }
+
+  const rows = [...recipientsByEmail.values()]
+    .filter((recipient) => !existingRecipients.has(recipient.email))
+    .sort((left, right) => right.activeAt.localeCompare(left.activeAt))
+    .map((recipient) => ({
+      recipient_email: recipient.email,
+      template_key: `result_approved:${meetingId}`,
+      status: "queued",
+    }));
+
+  if (rows.length === 0) {
+    return;
+  }
+
+  const { error } = await supabase.from("email_logs").insert(rows);
+
+  if (error) {
+    throw error;
+  }
+}
+
 export async function createRoom(formData: FormData) {
   await requireAdmin();
 
@@ -648,6 +733,8 @@ export async function approveResultSnapshot(formData: FormData) {
   if (error) {
     throw error;
   }
+
+  await queueResultApprovedEmails(meetingId);
 
   revalidatePath("/admin");
 }
