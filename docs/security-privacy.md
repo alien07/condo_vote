@@ -26,6 +26,7 @@ The system may store:
 - Admins can manage master data, meetings, approvals, and results.
 - Committee/admin approval is required before results become public.
 - RLS policies must be enabled before production use.
+- Baseline auth RLS policies are documented in [rls-policies.md](rls-policies.md).
 
 ## Audit Needs
 Track:
