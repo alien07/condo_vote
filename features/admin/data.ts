@@ -7,6 +7,7 @@ export async function getAdminDashboardData() {
   const supabase = await createClient();
   const [
     roomsResult,
+    appRolesResult,
     ownersResult,
     roomOwnersResult,
     meetingsResult,
@@ -25,6 +26,10 @@ export async function getAdminDashboardData() {
           "id, room_number, floor, building, area_size, ownership_percent, active",
         )
         .order("room_number", { ascending: true }),
+      supabase
+        .from("app_roles")
+        .select("id, profile_id, role")
+        .order("role", { ascending: true }),
       supabase
         .from("owners")
         .select("id, full_name, email, phone, line_id, active")
@@ -87,6 +92,10 @@ export async function getAdminDashboardData() {
     throw ownersResult.error;
   }
 
+  if (appRolesResult.error) {
+    throw appRolesResult.error;
+  }
+
   if (roomOwnersResult.error) {
     throw roomOwnersResult.error;
   }
@@ -125,6 +134,7 @@ export async function getAdminDashboardData() {
 
   return {
     rooms: roomsResult.data,
+    appRoles: appRolesResult.data,
     owners: ownersResult.data,
     roomOwners: roomOwnersResult.data,
     meetings: meetingsResult.data,

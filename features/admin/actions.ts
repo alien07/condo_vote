@@ -329,6 +329,53 @@ export async function updateProfileApproval(formData: FormData) {
   revalidatePath("/admin");
 }
 
+export async function grantAppRole(formData: FormData) {
+  await requireAdmin();
+
+  const supabase = await createClient();
+  const { error } = await supabase.from("app_roles").upsert(
+    {
+      profile_id: requiredText(formData.get("profile_id"), "Profile"),
+      role: requiredText(formData.get("role"), "Role"),
+    },
+    { onConflict: "profile_id,role" },
+  );
+
+  if (error) {
+    throw error;
+  }
+
+  revalidatePath("/admin");
+}
+
+export async function revokeAppRole(formData: FormData) {
+  const admin = await requireAdmin();
+
+  const id = requiredText(formData.get("id"), "Role ID");
+  const supabase = await createClient();
+  const { data: role, error: roleError } = await supabase
+    .from("app_roles")
+    .select("profile_id, role")
+    .eq("id", id)
+    .single();
+
+  if (roleError) {
+    throw roleError;
+  }
+
+  if (role.profile_id === admin.id && role.role === "admin") {
+    throw new Error("Cannot revoke your own admin role.");
+  }
+
+  const { error } = await supabase.from("app_roles").delete().eq("id", id);
+
+  if (error) {
+    throw error;
+  }
+
+  revalidatePath("/admin");
+}
+
 export async function createProxyAuthorization(formData: FormData) {
   await requireAdmin();
 

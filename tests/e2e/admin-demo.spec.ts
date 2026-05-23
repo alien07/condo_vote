@@ -142,6 +142,11 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
     await expect(
       demoAdminRow.getByRole("cell", { name: "approved", exact: true }),
     ).toBeVisible();
+    await demoAdminRow.locator('select[name="role"]').selectOption("committee");
+    await demoAdminRow.getByRole("button", { name: "Grant role" }).click();
+    await expect(
+      demoAdminRow.locator("td").nth(4).getByText("committee", { exact: true }),
+    ).toBeVisible();
 
     await page.getByPlaceholder("Meeting title").fill(meetingTitle);
     await page.locator('input[name="starts_at"]').first().fill("2026-06-01T09:00");
@@ -156,8 +161,11 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
     await page.getByPlaceholder("Question").fill(questionText);
     await page.getByRole("button", { name: "Add question" }).click();
     await expect(page.getByText(questionText)).toBeVisible();
-    await page.getByPlaceholder("Choice").fill(choiceText);
-    await page.getByRole("button", { name: "Add choice" }).click();
+    const questionCard = page
+      .getByText(questionText, { exact: true })
+      .locator("xpath=ancestor::div[form[.//input[@name='question_id']]][1]");
+    await questionCard.getByPlaceholder("Choice").fill(choiceText);
+    await questionCard.getByRole("button", { name: "Add choice" }).click();
     await expect(page.getByText(choiceText)).toBeVisible();
 
     await page.getByPlaceholder("Room number").fill(roomNumber);

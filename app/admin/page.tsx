@@ -21,9 +21,11 @@ import {
   deleteMeetingQuestion,
   endRoomOwnerLink,
   generateResultSnapshot,
+  grantAppRole,
   linkRoomOwner,
   publishMeeting,
   reviewProxyAuthorization,
+  revokeAppRole,
   updateProfileApproval,
 } from "@/features/admin/actions";
 import { getAdminDashboardData } from "@/features/admin/data";
@@ -61,6 +63,7 @@ function formatPercent(value: number | undefined) {
 export default async function AdminPage() {
   const {
     rooms,
+    appRoles,
     owners,
     roomOwners,
     meetings,
@@ -88,6 +91,12 @@ export default async function AdminPage() {
     committeeApprovals.map((approval) => approval.result_snapshot_id),
   );
   const queuedEmailCount = emailLogs.filter((log) => log.status === "queued").length;
+  const appRolesByProfile = new Map(
+    profiles.map((profile) => [
+      profile.id,
+      appRoles.filter((role) => role.profile_id === profile.id),
+    ]),
+  );
 
   return (
     <main className="min-h-screen px-6 py-8">
@@ -944,50 +953,101 @@ export default async function AdminPage() {
                   <th className="py-2 pr-3 font-medium">Email</th>
                   <th className="py-2 pr-3 font-medium">Default status</th>
                   <th className="py-2 pr-3 font-medium">Approval</th>
+                  <th className="py-2 pr-3 font-medium">Roles</th>
                   <th className="py-2 font-medium">Action</th>
                 </tr>
               </thead>
               <tbody>
-                {profiles.map((profile) => (
-                  <tr className="border-b border-[var(--border)]" key={profile.id}>
-                    <td className="py-2 pr-3">{profile.full_name}</td>
-                    <td className="py-2 pr-3">{profile.email}</td>
-                    <td className="py-2 pr-3">{profile.default_status}</td>
-                    <td className="py-2 pr-3">{profile.approval_status}</td>
-                    <td className="py-2">
-                      <form
-                        action={updateProfileApproval}
-                        className="flex flex-wrap items-center gap-2"
-                      >
-                        <input name="id" type="hidden" value={profile.id} />
-                        <select
-                          className="rounded-md border border-[var(--border)] px-2 py-1 text-sm"
-                          defaultValue={profile.default_status}
-                          name="default_status"
-                        >
-                          <option value="owner">Owner</option>
-                          <option value="resident">Resident</option>
-                          <option value="proxy">Proxy</option>
-                        </select>
-                        <select
-                          className="rounded-md border border-[var(--border)] px-2 py-1 text-sm"
-                          defaultValue={profile.approval_status}
-                          name="approval_status"
-                        >
-                          <option value="pending">Pending</option>
-                          <option value="approved">Approved</option>
-                          <option value="rejected">Rejected</option>
-                        </select>
-                        <button
-                          className="rounded-md border border-[var(--border)] px-3 py-1 text-sm font-medium"
-                          type="submit"
-                        >
-                          Save
-                        </button>
-                      </form>
-                    </td>
-                  </tr>
-                ))}
+                {profiles.map((profile) => {
+                  const profileRoles = appRolesByProfile.get(profile.id) ?? [];
+
+                  return (
+                    <tr className="border-b border-[var(--border)]" key={profile.id}>
+                      <td className="py-2 pr-3">{profile.full_name}</td>
+                      <td className="py-2 pr-3">{profile.email}</td>
+                      <td className="py-2 pr-3">{profile.default_status}</td>
+                      <td className="py-2 pr-3">{profile.approval_status}</td>
+                      <td className="py-2 pr-3">
+                        <div className="flex flex-wrap gap-2">
+                          {profileRoles.map((role) => (
+                            <form
+                              action={revokeAppRole}
+                              className="inline-flex items-center gap-2 rounded-md border border-[var(--border)] px-2 py-1"
+                              key={role.id}
+                            >
+                              <span>{role.role}</span>
+                              <input name="id" type="hidden" value={role.id} />
+                              <button
+                                className="text-xs font-medium text-red-700"
+                                type="submit"
+                              >
+                                Revoke
+                              </button>
+                            </form>
+                          ))}
+                          {profileRoles.length === 0 ? "-" : null}
+                        </div>
+                      </td>
+                      <td className="py-2">
+                        <div className="flex flex-col gap-2">
+                          <form
+                            action={updateProfileApproval}
+                            className="flex flex-wrap items-center gap-2"
+                          >
+                            <input name="id" type="hidden" value={profile.id} />
+                            <select
+                              className="rounded-md border border-[var(--border)] px-2 py-1 text-sm"
+                              defaultValue={profile.default_status}
+                              name="default_status"
+                            >
+                              <option value="owner">Owner</option>
+                              <option value="resident">Resident</option>
+                              <option value="proxy">Proxy</option>
+                            </select>
+                            <select
+                              className="rounded-md border border-[var(--border)] px-2 py-1 text-sm"
+                              defaultValue={profile.approval_status}
+                              name="approval_status"
+                            >
+                              <option value="pending">Pending</option>
+                              <option value="approved">Approved</option>
+                              <option value="rejected">Rejected</option>
+                            </select>
+                            <button
+                              className="rounded-md border border-[var(--border)] px-3 py-1 text-sm font-medium"
+                              type="submit"
+                            >
+                              Save
+                            </button>
+                          </form>
+                          <form
+                            action={grantAppRole}
+                            className="flex flex-wrap items-center gap-2"
+                          >
+                            <input
+                              name="profile_id"
+                              type="hidden"
+                              value={profile.id}
+                            />
+                            <select
+                              className="rounded-md border border-[var(--border)] px-2 py-1 text-sm"
+                              name="role"
+                            >
+                              <option value="admin">Admin</option>
+                              <option value="committee">Committee</option>
+                            </select>
+                            <button
+                              className="rounded-md border border-[var(--border)] px-3 py-1 text-sm font-medium"
+                              type="submit"
+                            >
+                              Grant role
+                            </button>
+                          </form>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
