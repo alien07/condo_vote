@@ -1,0 +1,2 @@
+-- Local development seed data goes here.
+-- Use synthetic data only.

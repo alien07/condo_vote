@@ -31,6 +31,7 @@ Commands:
 ```bash
 npm run supabase:start
 npm run db:reset:local
+npm run types:supabase
 npm run supabase:status
 npm run supabase:stop
 ```
@@ -61,6 +62,13 @@ Apply migrations to the linked dev project:
 
 ```bash
 npm run db:push:dev
+```
+
+After schema changes:
+
+```bash
+npm run db:reset:local
+npm run types:supabase
 ```
 
 ## References
