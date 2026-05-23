@@ -74,7 +74,21 @@ npm run types:supabase
 ## Local Demo Admin
 Use only ignored local environment files for demo credentials and keys.
 
-After `npm run supabase:start`, add the local Supabase URL, publishable key, and secret key to `.env.local`. Do not commit `.env.local`.
+After `npm run supabase:start`, generate local demo URLs from the current LAN IP:
+
+```bash
+npm run demo:configure:local
+npm run supabase:stop
+npm run supabase:start
+```
+
+The script updates ignored `.env.local` and local `supabase/config.toml` so magic links use the current laptop LAN IP instead of `localhost`, `127.0.0.1`, or `0.0.0.0`.
+
+If automatic IP detection chooses the wrong network interface:
+
+```bash
+DEMO_LAN_IP=192.168.1.79 npm run demo:configure:local
+```
 
 Grant a local demo admin:
 
@@ -85,9 +99,9 @@ npm run admin:grant:local -- prajak.ma@gmail.com "Demo Admin"
 Local demo URLs:
 
 ```text
-App: http://localhost:3000
+App: printed by npm run demo:configure:local
 Supabase Studio: http://localhost:54323
-Mailpit: http://localhost:54324
+Mailpit: printed by npm run demo:configure:local
 ```
 
 Machines on the same Wi-Fi can use the `Network` URL printed by `npm run dev`.
