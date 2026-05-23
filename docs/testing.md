@@ -74,6 +74,10 @@ Scope:
 - Unit tests when available.
 - E2E smoke tests when available.
 
+Workflow:
+- `.github/workflows/ci.yml`
+- Runs on push and pull request targeting `dev`.
+
 Target command group:
 
 ```bash
