@@ -27,7 +27,7 @@ test.describe("@test:e2e app shell", () => {
       {
         path: "/login",
         heading: "Login",
-        text: `Version ${APP_VERSION}.`,
+        text: `Sign in with Google or email magic link. Version ${APP_VERSION}.`,
       },
       {
         path: "/admin",
