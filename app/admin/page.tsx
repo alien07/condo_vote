@@ -1,6 +1,9 @@
 import { ShieldCheck } from "lucide-react";
+import { requireAdmin } from "@/lib/auth/permissions";
 
-export default function AdminPage() {
+export default async function AdminPage() {
+  await requireAdmin();
+
   return (
     <main className="min-h-screen px-6 py-8">
       <section className="mx-auto max-w-5xl">

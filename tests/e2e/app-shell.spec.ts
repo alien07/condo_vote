@@ -22,29 +22,25 @@ test.describe("@test:e2e app shell", () => {
     );
   });
 
-  test("primary placeholder routes render", async ({ page }) => {
-    const routes = [
-      {
-        path: "/login",
-        heading: "Login",
-        text: `Sign in with Google or email magic link. Version ${APP_VERSION}.`,
-      },
-      {
-        path: "/admin",
-        heading: "Admin",
-        text: "Room, owner, meeting, approval, and result management.",
-      },
-      {
-        path: "/vote",
-        heading: "Vote",
-        text: "Eligible owners and approved proxies will vote from this area.",
-      },
-    ];
+  test("login route renders", async ({ page }) => {
+    await page.goto("/login");
 
-    for (const route of routes) {
-      await page.goto(route.path);
-      await expect(page.getByRole("heading", { name: route.heading })).toBeVisible();
-      await expect(page.getByText(route.text)).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Login" })).toBeVisible();
+    await expect(
+      page.getByText(
+        `Sign in with Google or email magic link. Version ${APP_VERSION}.`,
+      ),
+    ).toBeVisible();
+  });
+
+  test("@test:auth protected routes redirect signed-out users", async ({
+    page,
+  }) => {
+    for (const path of ["/admin", "/vote"]) {
+      await page.goto(path);
+
+      await expect(page).toHaveURL(/\/login$/);
+      await expect(page.getByRole("heading", { name: "Login" })).toBeVisible();
     }
   });
 });

@@ -2,7 +2,18 @@ import { redirect } from "next/navigation";
 import { APP_ROLES, type AppRole } from "@/lib/auth/roles";
 import { createClient } from "@/lib/supabase/server";
 
+function hasSupabaseAuthConfig() {
+  return Boolean(
+    process.env.NEXT_PUBLIC_SUPABASE_URL &&
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+  );
+}
+
 export async function getCurrentProfile() {
+  if (!hasSupabaseAuthConfig()) {
+    return null;
+  }
+
   const supabase = await createClient();
   const {
     data: { user },
@@ -20,6 +31,16 @@ export async function getCurrentProfile() {
 
   if (error) {
     throw error;
+  }
+
+  return profile;
+}
+
+export async function requireProfile() {
+  const profile = await getCurrentProfile();
+
+  if (!profile) {
+    redirect("/login");
   }
 
   return profile;

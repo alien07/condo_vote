@@ -1,6 +1,9 @@
 import { Vote } from "lucide-react";
+import { requireProfile } from "@/lib/auth/permissions";
 
-export default function VotePage() {
+export default async function VotePage() {
+  await requireProfile();
+
   return (
     <main className="min-h-screen px-6 py-8">
       <section className="mx-auto max-w-5xl">
