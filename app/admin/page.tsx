@@ -20,6 +20,7 @@ import {
   deleteMeetingQuestion,
   endRoomOwnerLink,
   linkRoomOwner,
+  publishMeeting,
   reviewProxyAuthorization,
   updateProfileApproval,
 } from "@/features/admin/actions";
@@ -40,6 +41,7 @@ export default async function AdminPage() {
     meetings,
     questions,
     proxyAuthorizations,
+    eligibleVoters,
     profiles,
   } =
     await getAdminDashboardData();
@@ -53,6 +55,7 @@ export default async function AdminPage() {
     (authorization) => authorization.status === "pending",
   ).length;
   const questionCount = questions.length;
+  const eligibleVoterCount = eligibleVoters.length;
 
   return (
     <main className="min-h-screen px-6 py-8">
@@ -87,6 +90,10 @@ export default async function AdminPage() {
             <div className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2">
               <div className="font-semibold">{questionCount}</div>
               <div className="text-[var(--muted)]">Questions</div>
+            </div>
+            <div className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2">
+              <div className="font-semibold">{eligibleVoterCount}</div>
+              <div className="text-[var(--muted)]">Eligible</div>
             </div>
             <div className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2">
               <div className="font-semibold">{pendingProxyAuthorizations}</div>
@@ -169,17 +176,30 @@ export default async function AdminPage() {
                     </td>
                     <td className="py-2 pr-3">{meeting.status}</td>
                     <td className="py-2">
-                      {meeting.status !== "archived" ? (
-                        <form action={archiveMeeting}>
-                          <input name="id" type="hidden" value={meeting.id} />
-                          <button
-                            className="text-sm font-medium text-red-700"
-                            type="submit"
-                          >
-                            Archive
-                          </button>
-                        </form>
-                      ) : null}
+                      <div className="flex flex-wrap gap-3">
+                        {meeting.status === "draft" ? (
+                          <form action={publishMeeting}>
+                            <input name="id" type="hidden" value={meeting.id} />
+                            <button
+                              className="text-sm font-medium text-[var(--primary)]"
+                              type="submit"
+                            >
+                              Publish
+                            </button>
+                          </form>
+                        ) : null}
+                        {meeting.status !== "archived" ? (
+                          <form action={archiveMeeting}>
+                            <input name="id" type="hidden" value={meeting.id} />
+                            <button
+                              className="text-sm font-medium text-red-700"
+                              type="submit"
+                            >
+                              Archive
+                            </button>
+                          </form>
+                        ) : null}
+                      </div>
                     </td>
                   </tr>
                 ))}

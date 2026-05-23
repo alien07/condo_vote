@@ -207,6 +207,12 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
     await expect(
       proxyRow.getByRole("cell", { name: "approved", exact: true }),
     ).toBeVisible();
+
+    const meetingRow = page.getByRole("row").filter({ hasText: meetingTitle });
+    await meetingRow.getByRole("button", { name: "Publish" }).click();
+    await expect(
+      meetingRow.getByRole("cell", { name: "published", exact: true }),
+    ).toBeVisible();
   });
 });
 

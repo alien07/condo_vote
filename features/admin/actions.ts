@@ -345,3 +345,134 @@ export async function deleteMeetingChoice(formData: FormData) {
 
   revalidatePath("/admin");
 }
+
+export async function publishMeeting(formData: FormData) {
+  await requireAdmin();
+
+  const meetingId = requiredText(formData.get("id"), "Meeting ID");
+  const supabase = await createClient();
+
+  const [
+    roomsResult,
+    profilesResult,
+    roomOwnersResult,
+    proxyAuthorizationsResult,
+  ] = await Promise.all([
+    supabase.from("rooms").select("id, ownership_percent").eq("active", true),
+    supabase
+      .from("profiles")
+      .select("id, email, default_status, approval_status")
+      .eq("approval_status", "approved"),
+    supabase
+      .from("room_owners")
+      .select("room_id, owners(email)")
+      .is("ends_at", null),
+    supabase
+      .from("proxy_authorizations")
+      .select("room_id, proxy_profile_id, rooms(ownership_percent)")
+      .eq("meeting_id", meetingId)
+      .eq("status", "approved"),
+  ]);
+
+  if (roomsResult.error) {
+    throw roomsResult.error;
+  }
+
+  if (profilesResult.error) {
+    throw profilesResult.error;
+  }
+
+  if (roomOwnersResult.error) {
+    throw roomOwnersResult.error;
+  }
+
+  if (proxyAuthorizationsResult.error) {
+    throw proxyAuthorizationsResult.error;
+  }
+
+  const profilesByEmail = new Map(
+    profilesResult.data.map((profile) => [profile.email.toLowerCase(), profile]),
+  );
+  const ownershipByRoom = new Map(
+    roomsResult.data.map((room) => [room.id, room.ownership_percent]),
+  );
+  const snapshotRows = new Map<
+    string,
+    {
+      meeting_id: string;
+      room_id: string;
+      profile_id: string;
+      voter_type: string;
+      ownership_percent: number;
+      source: string;
+    }
+  >();
+
+  for (const link of roomOwnersResult.data) {
+    const ownerEmail = link.owners?.email?.toLowerCase();
+    const profile = ownerEmail ? profilesByEmail.get(ownerEmail) : null;
+    const ownershipPercent = ownershipByRoom.get(link.room_id);
+
+    if (
+      profile?.default_status === "owner" &&
+      ownershipPercent &&
+      !snapshotRows.has(link.room_id)
+    ) {
+      snapshotRows.set(link.room_id, {
+        meeting_id: meetingId,
+        room_id: link.room_id,
+        profile_id: profile.id,
+        voter_type: "owner",
+        ownership_percent: ownershipPercent,
+        source: "owner_master",
+      });
+    }
+  }
+
+  for (const authorization of proxyAuthorizationsResult.data) {
+    const ownershipPercent = authorization.rooms?.ownership_percent;
+
+    if (ownershipPercent) {
+      snapshotRows.set(authorization.room_id, {
+        meeting_id: meetingId,
+        room_id: authorization.room_id,
+        profile_id: authorization.proxy_profile_id,
+        voter_type: "proxy",
+        ownership_percent: ownershipPercent,
+        source: "proxy_authorization",
+      });
+    }
+  }
+
+  const { error: deleteError } = await supabase
+    .from("eligible_voters_snapshot")
+    .delete()
+    .eq("meeting_id", meetingId);
+
+  if (deleteError) {
+    throw deleteError;
+  }
+
+  const rows = [...snapshotRows.values()];
+
+  if (rows.length > 0) {
+    const { error: insertError } = await supabase
+      .from("eligible_voters_snapshot")
+      .insert(rows);
+
+    if (insertError) {
+      throw insertError;
+    }
+  }
+
+  const { error: meetingError } = await supabase
+    .from("meetings")
+    .update({ status: "published", published_at: new Date().toISOString() })
+    .eq("id", meetingId);
+
+  if (meetingError) {
+    throw meetingError;
+  }
+
+  revalidatePath("/admin");
+}

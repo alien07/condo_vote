@@ -12,6 +12,7 @@ export async function getAdminDashboardData() {
     meetingsResult,
     questionsResult,
     proxyAuthorizationsResult,
+    eligibleVotersResult,
     profilesResult,
   ] =
     await Promise.all([
@@ -48,6 +49,9 @@ export async function getAdminDashboardData() {
         )
         .order("created_at", { ascending: false }),
       supabase
+        .from("eligible_voters_snapshot")
+        .select("id, meeting_id, room_id, profile_id, voter_type, source"),
+      supabase
         .from("profiles")
         .select(
           "id, full_name, email, default_status, approval_status, created_at",
@@ -79,6 +83,10 @@ export async function getAdminDashboardData() {
     throw proxyAuthorizationsResult.error;
   }
 
+  if (eligibleVotersResult.error) {
+    throw eligibleVotersResult.error;
+  }
+
   if (profilesResult.error) {
     throw profilesResult.error;
   }
@@ -90,6 +98,7 @@ export async function getAdminDashboardData() {
     meetings: meetingsResult.data,
     questions: questionsResult.data,
     proxyAuthorizations: proxyAuthorizationsResult.data,
+    eligibleVoters: eligibleVotersResult.data,
     profiles: profilesResult.data,
   };
 }
