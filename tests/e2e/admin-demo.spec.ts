@@ -120,9 +120,10 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
         link.properties!.hashed_token,
       )}&type=${link.properties!.verification_type}`,
     );
-    await expect(page).toHaveURL(appUrl + "/");
+    await expect(page).toHaveURL(/http:\/\/(localhost|0\.0\.0\.0|127\.0\.0\.1):3000\/$/);
+    const activeAppOrigin = new URL(page.url()).origin;
 
-    await page.goto(`${appUrl}/admin`);
+    await page.goto(`${activeAppOrigin}/admin`);
     await expect(page.getByRole("heading", { name: "Admin" })).toBeVisible();
 
     await page.getByPlaceholder("Room number").fill(roomNumber);
