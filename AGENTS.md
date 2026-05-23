@@ -20,6 +20,7 @@ condoVotes lets condominium admins create online meetings, questions, and choice
 - Local development: [docs/local-development.md](docs/local-development.md)
 - SQL draft: [docs/schema-draft.sql](docs/schema-draft.sql)
 - Security and privacy: [docs/security-privacy.md](docs/security-privacy.md)
+- Testing: [docs/testing.md](docs/testing.md)
 - Roadmap: [docs/roadmap.md](docs/roadmap.md)
 - Decisions: [docs/decisions.md](docs/decisions.md)
 

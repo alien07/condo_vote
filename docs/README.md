@@ -11,6 +11,7 @@ This folder contains the working specification for condoVotes.
 - [Local development](local-development.md)
 - [SQL schema draft](schema-draft.sql)
 - [Security and privacy](security-privacy.md)
+- [Testing](testing.md)
 - [Roadmap](roadmap.md)
 - [Decisions](decisions.md)
 
