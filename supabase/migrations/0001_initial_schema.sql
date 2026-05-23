@@ -1,8 +1,5 @@
--- condoVotes schema draft.
--- Status: draft only, not final migration SQL.
--- Notes:
--- - Types, constraints, indexes, RLS, triggers, and audit strategy still need review.
--- - This file mirrors docs/data-model.md and should not be applied to production as-is.
+-- Initial condoVotes schema draft.
+-- Review RLS, indexes, check constraints, and trigger strategy before production.
 
 create table rooms (
   id uuid primary key default gen_random_uuid(),

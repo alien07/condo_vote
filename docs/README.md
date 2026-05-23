@@ -1,6 +1,6 @@
-# CondoVote Docs
+# condoVotes Docs
 
-This folder contains the working specification for CondoVote.
+This folder contains the working specification for condoVotes.
 
 ## Index
 - [Requirements](requirements.md)
@@ -8,6 +8,7 @@ This folder contains the working specification for CondoVote.
 - [Admin workflows](admin-workflows.md)
 - [Communication](communication.md)
 - [Data model](data-model.md)
+- [Local development](local-development.md)
 - [SQL schema draft](schema-draft.sql)
 - [Security and privacy](security-privacy.md)
 - [Roadmap](roadmap.md)

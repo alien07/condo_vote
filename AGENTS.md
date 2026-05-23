@@ -1,6 +1,6 @@
 # AGENTS.md
 
-Project: CondoVote - online condominium meeting survey/voting system.
+Project: condoVotes - online condominium meeting survey/voting system.
 
 ## Working Rules
 - No guessing. If a requirement, schema, or legal rule is unclear, document the assumption or ask before implementing.
@@ -9,7 +9,7 @@ Project: CondoVote - online condominium meeting survey/voting system.
 - Keep this file compact. Put long-lived details in `docs/` and link them here.
 
 ## Product Summary
-CondoVote lets condominium admins create online meetings, questions, and choices. Eligible owners or approved proxies vote during an open voting window. Results are weighted by room ownership percentage and become visible only after committee approval.
+condoVotes lets condominium admins create online meetings, questions, and choices. Eligible owners or approved proxies vote during an open voting window. Results are weighted by room ownership percentage and become visible only after committee approval.
 
 ## Core Docs
 - Requirements: [docs/requirements.md](docs/requirements.md)
@@ -17,6 +17,7 @@ CondoVote lets condominium admins create online meetings, questions, and choices
 - Admin workflows: [docs/admin-workflows.md](docs/admin-workflows.md)
 - Communication: [docs/communication.md](docs/communication.md)
 - Data model: [docs/data-model.md](docs/data-model.md)
+- Local development: [docs/local-development.md](docs/local-development.md)
 - SQL draft: [docs/schema-draft.sql](docs/schema-draft.sql)
 - Security and privacy: [docs/security-privacy.md](docs/security-privacy.md)
 - Roadmap: [docs/roadmap.md](docs/roadmap.md)
