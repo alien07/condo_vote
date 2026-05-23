@@ -45,6 +45,22 @@ function requiredDateTime(value: FormDataEntryValue | null, fieldName: string) {
   return date.toISOString();
 }
 
+function optionalDate(value: FormDataEntryValue | null) {
+  const text = optionalText(value);
+
+  if (!text) {
+    return null;
+  }
+
+  const date = new Date(`${text}T00:00:00`);
+
+  if (Number.isNaN(date.getTime())) {
+    throw new Error("Date must be valid.");
+  }
+
+  return text;
+}
+
 export async function createRoom(formData: FormData) {
   await requireAdmin();
 
@@ -153,6 +169,43 @@ export async function deactivateOwner(formData: FormData) {
   const { error } = await supabase
     .from("owners")
     .update({ active: false })
+    .eq("id", id);
+
+  if (error) {
+    throw error;
+  }
+
+  revalidatePath("/admin");
+}
+
+export async function linkRoomOwner(formData: FormData) {
+  await requireAdmin();
+
+  const supabase = await createClient();
+  const { error } = await supabase.from("room_owners").insert({
+    room_id: requiredText(formData.get("room_id"), "Room"),
+    owner_id: requiredText(formData.get("owner_id"), "Owner"),
+    ownership_role: requiredText(formData.get("ownership_role"), "Role"),
+    starts_at: optionalDate(formData.get("starts_at")),
+    ends_at: optionalDate(formData.get("ends_at")),
+  });
+
+  if (error) {
+    throw error;
+  }
+
+  revalidatePath("/admin");
+}
+
+export async function endRoomOwnerLink(formData: FormData) {
+  await requireAdmin();
+
+  const id = requiredText(formData.get("id"), "Room owner link ID");
+  const endsAt = optionalDate(formData.get("ends_at")) ?? new Date().toISOString().slice(0, 10);
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("room_owners")
+    .update({ ends_at: endsAt })
     .eq("id", id);
 
   if (error) {

@@ -6,6 +6,8 @@ import {
   createRoom,
   deactivateOwner,
   deactivateRoom,
+  endRoomOwnerLink,
+  linkRoomOwner,
 } from "@/features/admin/actions";
 import { getAdminDashboardData } from "@/features/admin/data";
 
@@ -17,9 +19,11 @@ function formatDateTime(value: string) {
 }
 
 export default async function AdminPage() {
-  const { rooms, owners, meetings, profiles } = await getAdminDashboardData();
+  const { rooms, owners, roomOwners, meetings, profiles } =
+    await getAdminDashboardData();
   const activeRooms = rooms.filter((room) => room.active).length;
   const activeOwners = owners.filter((owner) => owner.active).length;
+  const activeRoomOwnerLinks = roomOwners.filter((link) => !link.ends_at).length;
   const activeMeetings = meetings.filter(
     (meeting) => meeting.status !== "archived",
   ).length;
@@ -45,6 +49,10 @@ export default async function AdminPage() {
             <div className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2">
               <div className="font-semibold">{activeOwners}</div>
               <div className="text-[var(--muted)]">Active owners</div>
+            </div>
+            <div className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2">
+              <div className="font-semibold">{activeRoomOwnerLinks}</div>
+              <div className="text-[var(--muted)]">Room links</div>
             </div>
             <div className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2">
               <div className="font-semibold">{activeMeetings}</div>
@@ -304,6 +312,117 @@ export default async function AdminPage() {
             </div>
           </section>
         </div>
+
+        <section className="mt-5 rounded-lg border border-[var(--border)] bg-[var(--surface)] p-5">
+          <div className="mb-4 flex items-center gap-2">
+            <Building2 className="text-[var(--primary)]" size={20} />
+            <h2 className="text-lg font-semibold">Room Ownership</h2>
+          </div>
+          <form action={linkRoomOwner} className="grid gap-3 md:grid-cols-3">
+            <select
+              className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+              name="room_id"
+              required
+            >
+              <option value="">Room</option>
+              {rooms
+                .filter((room) => room.active)
+                .map((room) => (
+                  <option key={room.id} value={room.id}>
+                    {room.room_number}
+                  </option>
+                ))}
+            </select>
+            <select
+              className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+              name="owner_id"
+              required
+            >
+              <option value="">Owner</option>
+              {owners
+                .filter((owner) => owner.active)
+                .map((owner) => (
+                  <option key={owner.id} value={owner.id}>
+                    {owner.full_name}
+                  </option>
+                ))}
+            </select>
+            <select
+              className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+              name="ownership_role"
+              required
+            >
+              <option value="owner">Owner</option>
+              <option value="co_owner">Co-owner</option>
+            </select>
+            <label className="text-sm font-medium">
+              Starts
+              <input
+                className="mt-1 w-full rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+                name="starts_at"
+                type="date"
+              />
+            </label>
+            <label className="text-sm font-medium">
+              Ends
+              <input
+                className="mt-1 w-full rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+                name="ends_at"
+                type="date"
+              />
+            </label>
+            <button
+              className="self-end rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)]"
+              type="submit"
+            >
+              Link owner to room
+            </button>
+          </form>
+
+          <div className="mt-5 overflow-x-auto">
+            <table className="w-full border-collapse text-left text-sm">
+              <thead className="border-b border-[var(--border)] text-[var(--muted)]">
+                <tr>
+                  <th className="py-2 pr-3 font-medium">Room</th>
+                  <th className="py-2 pr-3 font-medium">Owner</th>
+                  <th className="py-2 pr-3 font-medium">Role</th>
+                  <th className="py-2 pr-3 font-medium">Dates</th>
+                  <th className="py-2 font-medium">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {roomOwners.map((link) => (
+                  <tr className="border-b border-[var(--border)]" key={link.id}>
+                    <td className="py-2 pr-3">{link.rooms?.room_number ?? "-"}</td>
+                    <td className="py-2 pr-3">{link.owners?.full_name ?? "-"}</td>
+                    <td className="py-2 pr-3">{link.ownership_role}</td>
+                    <td className="py-2 pr-3">
+                      {link.starts_at ?? "Not set"} - {link.ends_at ?? "Current"}
+                    </td>
+                    <td className="py-2">
+                      {!link.ends_at ? (
+                        <form action={endRoomOwnerLink} className="flex gap-2">
+                          <input name="id" type="hidden" value={link.id} />
+                          <input
+                            className="w-36 rounded-md border border-[var(--border)] px-2 py-1 text-sm"
+                            name="ends_at"
+                            type="date"
+                          />
+                          <button
+                            className="text-sm font-medium text-red-700"
+                            type="submit"
+                          >
+                            End
+                          </button>
+                        </form>
+                      ) : null}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
 
         <section className="mt-5 rounded-lg border border-[var(--border)] bg-[var(--surface)] p-5">
           <h2 className="text-lg font-semibold">Registered Profiles</h2>

@@ -5,7 +5,13 @@ export async function getAdminDashboardData() {
   await requireAdmin();
 
   const supabase = await createClient();
-  const [roomsResult, ownersResult, meetingsResult, profilesResult] =
+  const [
+    roomsResult,
+    ownersResult,
+    roomOwnersResult,
+    meetingsResult,
+    profilesResult,
+  ] =
     await Promise.all([
       supabase
         .from("rooms")
@@ -16,6 +22,12 @@ export async function getAdminDashboardData() {
       supabase
         .from("owners")
         .select("id, full_name, email, phone, line_id, active")
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("room_owners")
+        .select(
+          "id, ownership_role, starts_at, ends_at, rooms(id, room_number), owners(id, full_name)",
+        )
         .order("created_at", { ascending: false }),
       supabase
         .from("meetings")
@@ -37,6 +49,10 @@ export async function getAdminDashboardData() {
     throw ownersResult.error;
   }
 
+  if (roomOwnersResult.error) {
+    throw roomOwnersResult.error;
+  }
+
   if (meetingsResult.error) {
     throw meetingsResult.error;
   }
@@ -48,6 +64,7 @@ export async function getAdminDashboardData() {
   return {
     rooms: roomsResult.data,
     owners: ownersResult.data,
+    roomOwners: roomOwnersResult.data,
     meetings: meetingsResult.data,
     profiles: profilesResult.data,
   };

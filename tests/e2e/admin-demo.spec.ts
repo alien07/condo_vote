@@ -128,20 +128,27 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
     await expect(page.getByRole("heading", { name: "Admin" })).toBeVisible();
 
     await page.getByPlaceholder("Meeting title").fill(meetingTitle);
-    await page.locator('input[name="starts_at"]').fill("2026-06-01T09:00");
-    await page.locator('input[name="ends_at"]').fill("2026-06-01T10:00");
+    await page.locator('input[name="starts_at"]').first().fill("2026-06-01T09:00");
+    await page.locator('input[name="ends_at"]').first().fill("2026-06-01T10:00");
     await page.getByRole("button", { name: "Add meeting" }).click();
     await expect(page.getByText(meetingTitle)).toBeVisible();
 
     await page.getByPlaceholder("Room number").fill(roomNumber);
     await page.getByPlaceholder("Ownership %").fill("1.25");
     await page.getByRole("button", { name: "Add room" }).click();
-    await expect(page.getByText(roomNumber)).toBeVisible();
+    await expect(page.getByRole("cell", { name: roomNumber })).toBeVisible();
 
     await page.getByPlaceholder("Full name").fill(ownerName);
     await page.getByPlaceholder("Email").fill("owner.demo@example.com");
     await page.getByRole("button", { name: "Add owner" }).click();
-    await expect(page.getByText(ownerName)).toBeVisible();
+    await expect(page.getByRole("cell", { name: ownerName })).toBeVisible();
+
+    await page.locator('select[name="room_id"]').selectOption({ label: roomNumber });
+    await page.locator('select[name="owner_id"]').selectOption({ label: ownerName });
+    await page.locator('input[name="starts_at"]').last().fill("2026-06-01");
+    await page.getByRole("button", { name: "Link owner to room" }).click();
+    await expect(page.getByRole("cell", { name: roomNumber })).toBeVisible();
+    await expect(page.getByRole("cell", { name: ownerName })).toBeVisible();
   });
 });
 
