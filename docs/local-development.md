@@ -71,6 +71,27 @@ npm run db:reset:local
 npm run types:supabase
 ```
 
+## Local Demo Admin
+Use only ignored local environment files for demo credentials and keys.
+
+After `npm run supabase:start`, add the local Supabase URL, publishable key, and secret key to `.env.local`. Do not commit `.env.local`.
+
+Grant a local demo admin:
+
+```bash
+npm run admin:grant:local -- prajak.ma@gmail.com "Demo Admin"
+```
+
+Local demo URLs:
+
+```text
+App: http://localhost:3000
+Supabase Studio: http://localhost:54323
+Mailpit: http://localhost:54324
+```
+
+Machines on the same Wi-Fi can use the `Network` URL printed by `npm run dev`.
+
 ## References
 - Supabase local development docs: https://supabase.com/docs/guides/cli
 - Supabase schema migration docs: https://supabase.com/docs/guides/cli/local-development

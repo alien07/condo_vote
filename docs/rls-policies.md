@@ -21,7 +21,7 @@ Both functions are `security definer` so policies can check profile and role dat
 - Admins can read and manage roles.
 
 ## Still Needed
-- Admin policies for rooms, owners, meetings, questions, choices, approvals, and result snapshots.
+- Admin policies for meetings, questions, choices, approvals, and result snapshots.
 - Owner/proxy policies for eligible meetings and ballots.
 - Committee policies for result approval.
 - Storage policies for private documents.
