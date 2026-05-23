@@ -5,20 +5,29 @@ export async function getAdminDashboardData() {
   await requireAdmin();
 
   const supabase = await createClient();
-  const [roomsResult, ownersResult, profilesResult] = await Promise.all([
-    supabase
-      .from("rooms")
-      .select("id, room_number, floor, building, area_size, ownership_percent, active")
-      .order("room_number", { ascending: true }),
-    supabase
-      .from("owners")
-      .select("id, full_name, email, phone, line_id, active")
-      .order("created_at", { ascending: false }),
-    supabase
-      .from("profiles")
-      .select("id, full_name, email, default_status, approval_status, created_at")
-      .order("created_at", { ascending: false }),
-  ]);
+  const [roomsResult, ownersResult, meetingsResult, profilesResult] =
+    await Promise.all([
+      supabase
+        .from("rooms")
+        .select(
+          "id, room_number, floor, building, area_size, ownership_percent, active",
+        )
+        .order("room_number", { ascending: true }),
+      supabase
+        .from("owners")
+        .select("id, full_name, email, phone, line_id, active")
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("meetings")
+        .select("id, title, description, starts_at, ends_at, status")
+        .order("starts_at", { ascending: false }),
+      supabase
+        .from("profiles")
+        .select(
+          "id, full_name, email, default_status, approval_status, created_at",
+        )
+        .order("created_at", { ascending: false }),
+    ]);
 
   if (roomsResult.error) {
     throw roomsResult.error;
@@ -28,6 +37,10 @@ export async function getAdminDashboardData() {
     throw ownersResult.error;
   }
 
+  if (meetingsResult.error) {
+    throw meetingsResult.error;
+  }
+
   if (profilesResult.error) {
     throw profilesResult.error;
   }
@@ -35,6 +48,7 @@ export async function getAdminDashboardData() {
   return {
     rooms: roomsResult.data,
     owners: ownersResult.data,
+    meetings: meetingsResult.data,
     profiles: profilesResult.data,
   };
 }

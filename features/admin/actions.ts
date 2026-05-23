@@ -34,6 +34,17 @@ function requiredNumber(value: FormDataEntryValue | null, fieldName: string) {
   return number;
 }
 
+function requiredDateTime(value: FormDataEntryValue | null, fieldName: string) {
+  const text = requiredText(value, fieldName);
+  const date = new Date(text);
+
+  if (Number.isNaN(date.getTime())) {
+    throw new Error(`${fieldName} must be a valid date and time.`);
+  }
+
+  return date.toISOString();
+}
+
 export async function createRoom(formData: FormData) {
   await requireAdmin();
 
@@ -48,6 +59,49 @@ export async function createRoom(formData: FormData) {
       "Ownership percentage",
     ),
   });
+
+  if (error) {
+    throw error;
+  }
+
+  revalidatePath("/admin");
+}
+
+export async function createMeeting(formData: FormData) {
+  await requireAdmin();
+
+  const startsAt = requiredDateTime(formData.get("starts_at"), "Start time");
+  const endsAt = requiredDateTime(formData.get("ends_at"), "End time");
+
+  if (new Date(startsAt) >= new Date(endsAt)) {
+    throw new Error("End time must be after start time.");
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.from("meetings").insert({
+    title: requiredText(formData.get("title"), "Meeting title"),
+    description: optionalText(formData.get("description")),
+    video_url: optionalText(formData.get("video_url")),
+    starts_at: startsAt,
+    ends_at: endsAt,
+  });
+
+  if (error) {
+    throw error;
+  }
+
+  revalidatePath("/admin");
+}
+
+export async function archiveMeeting(formData: FormData) {
+  await requireAdmin();
+
+  const id = requiredText(formData.get("id"), "Meeting ID");
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("meetings")
+    .update({ status: "archived" })
+    .eq("id", id);
 
   if (error) {
     throw error;

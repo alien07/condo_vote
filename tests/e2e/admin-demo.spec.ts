@@ -54,6 +54,7 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
     });
     const roomNumber = `DEMO-${Date.now()}`;
     const ownerName = `Demo Owner ${Date.now()}`;
+    const meetingTitle = `Demo Meeting ${Date.now()}`;
 
     let user = await findUserByEmail(supabase, demoAdminEmail);
 
@@ -125,6 +126,12 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
 
     await page.goto(`${activeAppOrigin}/admin`);
     await expect(page.getByRole("heading", { name: "Admin" })).toBeVisible();
+
+    await page.getByPlaceholder("Meeting title").fill(meetingTitle);
+    await page.locator('input[name="starts_at"]').fill("2026-06-01T09:00");
+    await page.locator('input[name="ends_at"]').fill("2026-06-01T10:00");
+    await page.getByRole("button", { name: "Add meeting" }).click();
+    await expect(page.getByText(meetingTitle)).toBeVisible();
 
     await page.getByPlaceholder("Room number").fill(roomNumber);
     await page.getByPlaceholder("Ownership %").fill("1.25");

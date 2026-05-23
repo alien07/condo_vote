@@ -1,5 +1,7 @@
-import { Building2, ShieldCheck, UserRound } from "lucide-react";
+import { Building2, CalendarDays, ShieldCheck, UserRound } from "lucide-react";
 import {
+  archiveMeeting,
+  createMeeting,
   createOwner,
   createRoom,
   deactivateOwner,
@@ -7,10 +9,20 @@ import {
 } from "@/features/admin/actions";
 import { getAdminDashboardData } from "@/features/admin/data";
 
+function formatDateTime(value: string) {
+  return new Intl.DateTimeFormat("en-GB", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(new Date(value));
+}
+
 export default async function AdminPage() {
-  const { rooms, owners, profiles } = await getAdminDashboardData();
+  const { rooms, owners, meetings, profiles } = await getAdminDashboardData();
   const activeRooms = rooms.filter((room) => room.active).length;
   const activeOwners = owners.filter((owner) => owner.active).length;
+  const activeMeetings = meetings.filter(
+    (meeting) => meeting.status !== "archived",
+  ).length;
 
   return (
     <main className="min-h-screen px-6 py-8">
@@ -25,7 +37,7 @@ export default async function AdminPage() {
               </p>
             </div>
           </div>
-          <div className="grid grid-cols-3 gap-2 text-center text-sm">
+          <div className="grid grid-cols-2 gap-2 text-center text-sm md:grid-cols-4">
             <div className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2">
               <div className="font-semibold">{activeRooms}</div>
               <div className="text-[var(--muted)]">Active rooms</div>
@@ -35,11 +47,104 @@ export default async function AdminPage() {
               <div className="text-[var(--muted)]">Active owners</div>
             </div>
             <div className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2">
+              <div className="font-semibold">{activeMeetings}</div>
+              <div className="text-[var(--muted)]">Meetings</div>
+            </div>
+            <div className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2">
               <div className="font-semibold">{profiles.length}</div>
               <div className="text-[var(--muted)]">Profiles</div>
             </div>
           </div>
         </div>
+
+        <section className="mb-5 rounded-lg border border-[var(--border)] bg-[var(--surface)] p-5">
+          <div className="mb-4 flex items-center gap-2">
+            <CalendarDays className="text-[var(--primary)]" size={20} />
+            <h2 className="text-lg font-semibold">Meetings</h2>
+          </div>
+          <form action={createMeeting} className="grid gap-3 md:grid-cols-2">
+            <input
+              className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+              name="title"
+              placeholder="Meeting title"
+              required
+            />
+            <input
+              className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+              name="video_url"
+              placeholder="Video URL"
+              type="url"
+            />
+            <label className="text-sm font-medium">
+              Starts
+              <input
+                className="mt-1 w-full rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+                name="starts_at"
+                required
+                type="datetime-local"
+              />
+            </label>
+            <label className="text-sm font-medium">
+              Ends
+              <input
+                className="mt-1 w-full rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+                name="ends_at"
+                required
+                type="datetime-local"
+              />
+            </label>
+            <textarea
+              className="rounded-md border border-[var(--border)] px-3 py-2 text-sm md:col-span-2"
+              name="description"
+              placeholder="Description"
+              rows={3}
+            />
+            <button
+              className="rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)] md:col-span-2"
+              type="submit"
+            >
+              Add meeting
+            </button>
+          </form>
+
+          <div className="mt-5 overflow-x-auto">
+            <table className="w-full border-collapse text-left text-sm">
+              <thead className="border-b border-[var(--border)] text-[var(--muted)]">
+                <tr>
+                  <th className="py-2 pr-3 font-medium">Title</th>
+                  <th className="py-2 pr-3 font-medium">Window</th>
+                  <th className="py-2 pr-3 font-medium">Status</th>
+                  <th className="py-2 font-medium">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {meetings.map((meeting) => (
+                  <tr className="border-b border-[var(--border)]" key={meeting.id}>
+                    <td className="py-2 pr-3">{meeting.title}</td>
+                    <td className="py-2 pr-3">
+                      {formatDateTime(meeting.starts_at)} -{" "}
+                      {formatDateTime(meeting.ends_at)}
+                    </td>
+                    <td className="py-2 pr-3">{meeting.status}</td>
+                    <td className="py-2">
+                      {meeting.status !== "archived" ? (
+                        <form action={archiveMeeting}>
+                          <input name="id" type="hidden" value={meeting.id} />
+                          <button
+                            className="text-sm font-medium text-red-700"
+                            type="submit"
+                          >
+                            Archive
+                          </button>
+                        </form>
+                      ) : null}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
 
         <div className="grid gap-5 lg:grid-cols-2">
           <section className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-5">
