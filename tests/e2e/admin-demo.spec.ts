@@ -126,6 +126,20 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
 
     await page.goto(`${activeAppOrigin}/admin`);
     await expect(page.getByRole("heading", { name: "Admin" })).toBeVisible();
+    const demoAdminRow = page
+      .getByRole("row")
+      .filter({ hasText: demoAdminEmail });
+    await demoAdminRow.locator('select[name="default_status"]').selectOption("owner");
+    await demoAdminRow
+      .locator('select[name="approval_status"]')
+      .selectOption("approved");
+    await demoAdminRow.getByRole("button", { name: "Save" }).click();
+    await expect(
+      demoAdminRow.getByRole("cell", { name: "owner", exact: true }),
+    ).toBeVisible();
+    await expect(
+      demoAdminRow.getByRole("cell", { name: "approved", exact: true }),
+    ).toBeVisible();
 
     await page.getByPlaceholder("Meeting title").fill(meetingTitle);
     await page.locator('input[name="starts_at"]').first().fill("2026-06-01T09:00");

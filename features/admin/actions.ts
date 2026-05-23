@@ -214,3 +214,28 @@ export async function endRoomOwnerLink(formData: FormData) {
 
   revalidatePath("/admin");
 }
+
+export async function updateProfileApproval(formData: FormData) {
+  await requireAdmin();
+
+  const id = requiredText(formData.get("id"), "Profile ID");
+  const defaultStatus = requiredText(formData.get("default_status"), "Default status");
+  const approvalStatus = requiredText(
+    formData.get("approval_status"),
+    "Approval status",
+  );
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("profiles")
+    .update({
+      default_status: defaultStatus,
+      approval_status: approvalStatus,
+    })
+    .eq("id", id);
+
+  if (error) {
+    throw error;
+  }
+
+  revalidatePath("/admin");
+}

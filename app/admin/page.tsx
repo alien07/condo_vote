@@ -8,6 +8,7 @@ import {
   deactivateRoom,
   endRoomOwnerLink,
   linkRoomOwner,
+  updateProfileApproval,
 } from "@/features/admin/actions";
 import { getAdminDashboardData } from "@/features/admin/data";
 
@@ -433,7 +434,8 @@ export default async function AdminPage() {
                   <th className="py-2 pr-3 font-medium">Name</th>
                   <th className="py-2 pr-3 font-medium">Email</th>
                   <th className="py-2 pr-3 font-medium">Default status</th>
-                  <th className="py-2 font-medium">Approval</th>
+                  <th className="py-2 pr-3 font-medium">Approval</th>
+                  <th className="py-2 font-medium">Action</th>
                 </tr>
               </thead>
               <tbody>
@@ -442,7 +444,39 @@ export default async function AdminPage() {
                     <td className="py-2 pr-3">{profile.full_name}</td>
                     <td className="py-2 pr-3">{profile.email}</td>
                     <td className="py-2 pr-3">{profile.default_status}</td>
-                    <td className="py-2">{profile.approval_status}</td>
+                    <td className="py-2 pr-3">{profile.approval_status}</td>
+                    <td className="py-2">
+                      <form
+                        action={updateProfileApproval}
+                        className="flex flex-wrap items-center gap-2"
+                      >
+                        <input name="id" type="hidden" value={profile.id} />
+                        <select
+                          className="rounded-md border border-[var(--border)] px-2 py-1 text-sm"
+                          defaultValue={profile.default_status}
+                          name="default_status"
+                        >
+                          <option value="owner">Owner</option>
+                          <option value="resident">Resident</option>
+                          <option value="proxy">Proxy</option>
+                        </select>
+                        <select
+                          className="rounded-md border border-[var(--border)] px-2 py-1 text-sm"
+                          defaultValue={profile.approval_status}
+                          name="approval_status"
+                        >
+                          <option value="pending">Pending</option>
+                          <option value="approved">Approved</option>
+                          <option value="rejected">Rejected</option>
+                        </select>
+                        <button
+                          className="rounded-md border border-[var(--border)] px-3 py-1 text-sm font-medium"
+                          type="submit"
+                        >
+                          Save
+                        </button>
+                      </form>
+                    </td>
                   </tr>
                 ))}
               </tbody>
