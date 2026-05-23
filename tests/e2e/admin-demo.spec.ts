@@ -55,6 +55,8 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
     const roomNumber = `DEMO-${Date.now()}`;
     const ownerName = `Demo Owner ${Date.now()}`;
     const meetingTitle = `Demo Meeting ${Date.now()}`;
+    const questionText = `Approve item ${Date.now()}?`;
+    const choiceText = `Yes ${Date.now()}`;
 
     let user = await findUserByEmail(supabase, demoAdminEmail);
 
@@ -147,6 +149,17 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
     await page.getByRole("button", { name: "Add meeting" }).click();
     await expect(page.getByRole("cell", { name: meetingTitle })).toBeVisible();
 
+    await page
+      .locator('select[name="meeting_id"]')
+      .first()
+      .selectOption({ label: meetingTitle });
+    await page.getByPlaceholder("Question").fill(questionText);
+    await page.getByRole("button", { name: "Add question" }).click();
+    await expect(page.getByText(questionText)).toBeVisible();
+    await page.getByPlaceholder("Choice").fill(choiceText);
+    await page.getByRole("button", { name: "Add choice" }).click();
+    await expect(page.getByText(choiceText)).toBeVisible();
+
     await page.getByPlaceholder("Room number").fill(roomNumber);
     await page.getByPlaceholder("Ownership %").fill("1.25");
     await page.getByRole("button", { name: "Add room" }).click();
@@ -172,6 +185,7 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
 
     await page
       .locator('select[name="meeting_id"]')
+      .last()
       .selectOption({ label: meetingTitle });
     await page.locator('select[name="room_id"]').last().selectOption({
       label: roomNumber,

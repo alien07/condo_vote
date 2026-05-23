@@ -281,3 +281,67 @@ export async function reviewProxyAuthorization(formData: FormData) {
 
   revalidatePath("/admin");
 }
+
+export async function createMeetingQuestion(formData: FormData) {
+  await requireAdmin();
+
+  const supabase = await createClient();
+  const { error } = await supabase.from("meeting_questions").insert({
+    meeting_id: requiredText(formData.get("meeting_id"), "Meeting"),
+    question_text: requiredText(formData.get("question_text"), "Question"),
+    question_type: requiredText(formData.get("question_type"), "Question type"),
+    display_order: Number(formData.get("display_order") ?? 0),
+    required: formData.get("required") === "on",
+  });
+
+  if (error) {
+    throw error;
+  }
+
+  revalidatePath("/admin");
+}
+
+export async function deleteMeetingQuestion(formData: FormData) {
+  await requireAdmin();
+
+  const id = requiredText(formData.get("id"), "Question ID");
+  const supabase = await createClient();
+  const { error } = await supabase.from("meeting_questions").delete().eq("id", id);
+
+  if (error) {
+    throw error;
+  }
+
+  revalidatePath("/admin");
+}
+
+export async function createMeetingChoice(formData: FormData) {
+  await requireAdmin();
+
+  const supabase = await createClient();
+  const { error } = await supabase.from("meeting_choices").insert({
+    question_id: requiredText(formData.get("question_id"), "Question"),
+    choice_text: requiredText(formData.get("choice_text"), "Choice"),
+    display_order: Number(formData.get("display_order") ?? 0),
+  });
+
+  if (error) {
+    throw error;
+  }
+
+  revalidatePath("/admin");
+}
+
+export async function deleteMeetingChoice(formData: FormData) {
+  await requireAdmin();
+
+  const id = requiredText(formData.get("id"), "Choice ID");
+  const supabase = await createClient();
+  const { error } = await supabase.from("meeting_choices").delete().eq("id", id);
+
+  if (error) {
+    throw error;
+  }
+
+  revalidatePath("/admin");
+}

@@ -1,18 +1,23 @@
 import {
   Building2,
   CalendarDays,
+  ListChecks,
   ShieldCheck,
   UserCheck,
   UserRound,
 } from "lucide-react";
 import {
   archiveMeeting,
+  createMeetingChoice,
   createMeeting,
+  createMeetingQuestion,
   createOwner,
   createProxyAuthorization,
   createRoom,
   deactivateOwner,
   deactivateRoom,
+  deleteMeetingChoice,
+  deleteMeetingQuestion,
   endRoomOwnerLink,
   linkRoomOwner,
   reviewProxyAuthorization,
@@ -28,7 +33,15 @@ function formatDateTime(value: string) {
 }
 
 export default async function AdminPage() {
-  const { rooms, owners, roomOwners, meetings, proxyAuthorizations, profiles } =
+  const {
+    rooms,
+    owners,
+    roomOwners,
+    meetings,
+    questions,
+    proxyAuthorizations,
+    profiles,
+  } =
     await getAdminDashboardData();
   const activeRooms = rooms.filter((room) => room.active).length;
   const activeOwners = owners.filter((owner) => owner.active).length;
@@ -39,6 +52,7 @@ export default async function AdminPage() {
   const pendingProxyAuthorizations = proxyAuthorizations.filter(
     (authorization) => authorization.status === "pending",
   ).length;
+  const questionCount = questions.length;
 
   return (
     <main className="min-h-screen px-6 py-8">
@@ -53,7 +67,7 @@ export default async function AdminPage() {
               </p>
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-2 text-center text-sm md:grid-cols-5">
+          <div className="grid grid-cols-2 gap-2 text-center text-sm md:grid-cols-6">
             <div className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2">
               <div className="font-semibold">{activeRooms}</div>
               <div className="text-[var(--muted)]">Active rooms</div>
@@ -69,6 +83,10 @@ export default async function AdminPage() {
             <div className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2">
               <div className="font-semibold">{activeMeetings}</div>
               <div className="text-[var(--muted)]">Meetings</div>
+            </div>
+            <div className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2">
+              <div className="font-semibold">{questionCount}</div>
+              <div className="text-[var(--muted)]">Questions</div>
             </div>
             <div className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2">
               <div className="font-semibold">{pendingProxyAuthorizations}</div>
@@ -167,6 +185,135 @@ export default async function AdminPage() {
                 ))}
               </tbody>
             </table>
+          </div>
+        </section>
+
+        <section className="mb-5 rounded-lg border border-[var(--border)] bg-[var(--surface)] p-5">
+          <div className="mb-4 flex items-center gap-2">
+            <ListChecks className="text-[var(--primary)]" size={20} />
+            <h2 className="text-lg font-semibold">Questions And Choices</h2>
+          </div>
+          <form
+            action={createMeetingQuestion}
+            className="grid gap-3 md:grid-cols-4"
+          >
+            <select
+              className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+              name="meeting_id"
+              required
+            >
+              <option value="">Meeting</option>
+              {meetings
+                .filter((meeting) => meeting.status !== "archived")
+                .map((meeting) => (
+                  <option key={meeting.id} value={meeting.id}>
+                    {meeting.title}
+                  </option>
+                ))}
+            </select>
+            <input
+              className="rounded-md border border-[var(--border)] px-3 py-2 text-sm md:col-span-2"
+              name="question_text"
+              placeholder="Question"
+              required
+            />
+            <select
+              className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+              name="question_type"
+              required
+            >
+              <option value="single_choice">Single choice</option>
+              <option value="multiple_choice">Multiple choice</option>
+            </select>
+            <input
+              className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+              defaultValue={0}
+              min={0}
+              name="display_order"
+              placeholder="Order"
+              type="number"
+            />
+            <label className="flex items-center gap-2 text-sm">
+              <input defaultChecked name="required" type="checkbox" />
+              Required
+            </label>
+            <button
+              className="rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)] md:col-span-2"
+              type="submit"
+            >
+              Add question
+            </button>
+          </form>
+
+          <div className="mt-5 grid gap-4">
+            {questions.map((question) => (
+              <div
+                className="rounded-md border border-[var(--border)] p-4"
+                key={question.id}
+              >
+                <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                  <div>
+                    <div className="text-sm text-[var(--muted)]">
+                      {question.meetings?.title ?? "-"} /{" "}
+                      {question.question_type} / order {question.display_order}
+                    </div>
+                    <h3 className="mt-1 font-semibold">{question.question_text}</h3>
+                  </div>
+                  <form action={deleteMeetingQuestion}>
+                    <input name="id" type="hidden" value={question.id} />
+                    <button
+                      className="text-sm font-medium text-red-700"
+                      type="submit"
+                    >
+                      Delete question
+                    </button>
+                  </form>
+                </div>
+                <form
+                  action={createMeetingChoice}
+                  className="mt-4 grid gap-3 md:grid-cols-[1fr_120px_160px]"
+                >
+                  <input name="question_id" type="hidden" value={question.id} />
+                  <input
+                    className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+                    name="choice_text"
+                    placeholder="Choice"
+                    required
+                  />
+                  <input
+                    className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+                    defaultValue={0}
+                    min={0}
+                    name="display_order"
+                    placeholder="Order"
+                    type="number"
+                  />
+                  <button
+                    className="rounded-md border border-[var(--border)] px-4 py-2 text-sm font-medium"
+                    type="submit"
+                  >
+                    Add choice
+                  </button>
+                </form>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {question.meeting_choices
+                    .sort((left, right) => left.display_order - right.display_order)
+                    .map((choice) => (
+                      <form
+                        action={deleteMeetingChoice}
+                        className="inline-flex items-center gap-2 rounded-md border border-[var(--border)] px-3 py-1 text-sm"
+                        key={choice.id}
+                      >
+                        <span>{choice.choice_text}</span>
+                        <input name="id" type="hidden" value={choice.id} />
+                        <button className="font-medium text-red-700" type="submit">
+                          Delete
+                        </button>
+                      </form>
+                    ))}
+                </div>
+              </div>
+            ))}
           </div>
         </section>
 
