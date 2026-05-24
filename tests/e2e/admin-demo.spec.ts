@@ -352,6 +352,61 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
     await voteCard.getByRole("button", { name: "Update ballot" }).click();
     await expect(voteCard.getByText("Submitted v2")).toBeVisible();
 
+    const [
+      persistedMeetingResult,
+      persistedRoomResult,
+      persistedQuestionResult,
+      persistedChoiceResult,
+    ] = await Promise.all([
+      supabase
+        .from("meetings")
+        .select("id")
+        .eq("title", meetingTitle)
+        .single(),
+      supabase.from("rooms").select("id").eq("room_number", roomNumber).single(),
+      supabase
+        .from("meeting_questions")
+        .select("id")
+        .eq("question_text", questionText)
+        .single(),
+      supabase
+        .from("meeting_choices")
+        .select("id")
+        .eq("choice_text", updatedChoiceText)
+        .single(),
+    ]);
+
+    expect(persistedMeetingResult.error).toBeNull();
+    expect(persistedRoomResult.error).toBeNull();
+    expect(persistedQuestionResult.error).toBeNull();
+    expect(persistedChoiceResult.error).toBeNull();
+
+    const { data: persistedBallot, error: persistedBallotError } = await supabase
+      .from("ballots")
+      .select(
+        "id, status, version_number, ballot_answers(question_id, choice_id), ballot_versions(version_number)",
+      )
+      .eq("meeting_id", persistedMeetingResult.data!.id)
+      .eq("room_id", persistedRoomResult.data!.id)
+      .eq("voter_profile_id", profile!.id)
+      .single();
+
+    expect(persistedBallotError).toBeNull();
+    expect(persistedBallot?.status).toBe("submitted");
+    expect(persistedBallot?.version_number).toBe(2);
+    expect(
+      persistedBallot?.ballot_answers.some(
+        (answer) =>
+          answer.question_id === persistedQuestionResult.data!.id &&
+          answer.choice_id === persistedChoiceResult.data!.id,
+      ),
+    ).toBe(true);
+    expect(
+      persistedBallot?.ballot_versions
+        .map((version) => version.version_number)
+        .sort((left, right) => left - right),
+    ).toEqual([1, 2]);
+
     await page.goto(`${activeAppOrigin}/admin/voting`);
     const conflictRow = page
       .getByRole("row")
