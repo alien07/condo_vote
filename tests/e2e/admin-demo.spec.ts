@@ -39,6 +39,14 @@ const serviceKey =
   localEnv.SUPABASE_SECRET_KEY ||
   localEnv.SUPABASE_SERVICE_ROLE_KEY;
 
+function toDateTimeLocal(date: Date) {
+  const pad = (value: number) => String(value).padStart(2, "0");
+
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(
+    date.getDate(),
+  )}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
 test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
   test.skip(
     !supabaseUrl || !serviceKey,
@@ -59,6 +67,8 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
     const questionText = `Approve item ${Date.now()}?`;
     const choiceText = `Yes ${Date.now()}`;
     const manualAuditNote = `Batch A row ${Date.now()}`;
+    const startsAt = toDateTimeLocal(new Date(Date.now() - 60 * 60 * 1000));
+    const endsAt = toDateTimeLocal(new Date(Date.now() + 60 * 60 * 1000));
 
     let user = await findUserByEmail(supabase, demoAdminEmail);
 
@@ -187,8 +197,8 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
     await page.getByPlaceholder("Fiscal year").fill("2026");
     await page.getByPlaceholder("Location / platform").fill("Online");
     await page.getByPlaceholder("Chairperson").fill(committeeName);
-    await page.locator('input[name="starts_at"]').first().fill("2026-06-01T09:00");
-    await page.locator('input[name="ends_at"]').first().fill("2026-06-01T10:00");
+    await page.locator('input[name="starts_at"]').first().fill(startsAt);
+    await page.locator('input[name="ends_at"]').first().fill(endsAt);
     await page.getByRole("button", { name: "Add meeting" }).click();
     await expect(page.getByRole("cell", { name: meetingTitle })).toBeVisible();
 
@@ -313,9 +323,36 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
       meetingRow.getByRole("cell", { name: "published", exact: true }),
     ).toBeVisible();
 
-    await meetingRow.getByRole("button", { name: "Generate result" }).click();
+    await page.goto(`${activeAppOrigin}/vote`);
+    const voteCard = page
+      .getByRole("heading", { name: meetingTitle })
+      .locator("xpath=ancestor::section[1]");
+    await expect(voteCard.getByText(`Room ${roomNumber}`)).toBeVisible();
+    await voteCard.getByLabel(choiceText).check();
+    await voteCard.getByRole("button", { name: "Submit ballot" }).click();
+    await expect(voteCard.getByText("Submitted v1")).toBeVisible();
+
+    await page.goto(`${activeAppOrigin}/admin/voting`);
+    const conflictRow = page
+      .getByRole("row")
+      .filter({ hasText: meetingTitle })
+      .filter({ hasText: roomNumber });
+    await conflictRow.locator('select[name="chosen_source"]').selectOption("online");
+    await conflictRow.getByPlaceholder("Conflict remark").fill("Use online demo vote");
+    await conflictRow.getByRole("button", { name: "Resolve source" }).click();
     await expect(
-      meetingRow.getByRole("cell", { name: "closed", exact: true }),
+      conflictRow.getByRole("cell", { name: "online", exact: true }),
+    ).toBeVisible();
+
+    await page.goto(`${activeAppOrigin}/admin/meetings`);
+    const publishedMeetingRow = page
+      .getByRole("row")
+      .filter({ hasText: meetingTitle });
+    await publishedMeetingRow
+      .getByRole("button", { name: "Generate result" })
+      .click();
+    await expect(
+      publishedMeetingRow.getByRole("cell", { name: "closed", exact: true }),
     ).toBeVisible();
 
     await page.goto(`${activeAppOrigin}/admin/results`);
