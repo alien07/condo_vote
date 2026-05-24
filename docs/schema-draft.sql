@@ -12,6 +12,44 @@ begin
 end;
 $$;
 
+create or replace function public.prevent_result_snapshot_change_after_approval()
+returns trigger
+language plpgsql
+as $$
+begin
+  if tg_op = 'INSERT' then
+    if exists (
+      select 1 from public.committee_approvals where meeting_id = new.meeting_id
+    ) then
+      raise exception 'Cannot generate result snapshots after committee approval.';
+    end if;
+
+    return new;
+  end if;
+
+  if exists (
+    select 1 from public.committee_approvals where result_snapshot_id = old.id
+  ) then
+    raise exception 'Approved result snapshots are immutable.';
+  end if;
+
+  if tg_op = 'UPDATE' then
+    return new;
+  end if;
+
+  return old;
+end;
+$$;
+
+create or replace function public.prevent_committee_approval_change()
+returns trigger
+language plpgsql
+as $$
+begin
+  raise exception 'Committee approvals are immutable.';
+end;
+$$;
+
 create table public.rooms (
   id uuid primary key default gen_random_uuid(),
   room_number text not null unique,
@@ -291,6 +329,7 @@ create table public.committee_approvals (
   approved_by uuid not null references public.profiles(id),
   approved_at timestamptz not null default now(),
   notes text,
+  unique (meeting_id),
   unique (meeting_id, result_snapshot_id)
 );
 
@@ -386,6 +425,14 @@ for each row execute function public.set_updated_at();
 create trigger vote_source_resolutions_set_updated_at
 before update on public.vote_source_resolutions
 for each row execute function public.set_updated_at();
+
+create trigger result_snapshots_prevent_change_after_approval
+before insert or update or delete on public.result_snapshots
+for each row execute function public.prevent_result_snapshot_change_after_approval();
+
+create trigger committee_approvals_prevent_change
+before update or delete on public.committee_approvals
+for each row execute function public.prevent_committee_approval_change();
 
 alter table public.rooms enable row level security;
 alter table public.owners enable row level security;

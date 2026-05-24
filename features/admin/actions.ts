@@ -813,6 +813,19 @@ export async function generateResultSnapshot(formData: FormData) {
 
   const meetingId = requiredText(formData.get("id"), "Meeting ID");
   const supabase = await createClient();
+  const { data: existingApproval, error: existingApprovalError } = await supabase
+    .from("committee_approvals")
+    .select("id")
+    .eq("meeting_id", meetingId)
+    .maybeSingle();
+
+  if (existingApprovalError) {
+    throw existingApprovalError;
+  }
+
+  if (existingApproval) {
+    throw new Error("Cannot generate a new result after committee approval.");
+  }
 
   const [
     meetingResult,
@@ -1111,6 +1124,32 @@ export async function approveResultSnapshot(formData: FormData) {
     "Result snapshot ID",
   );
   const supabase = await createClient();
+  const [snapshotResult, existingApprovalResult] = await Promise.all([
+    supabase
+      .from("result_snapshots")
+      .select("id")
+      .eq("id", resultSnapshotId)
+      .eq("meeting_id", meetingId)
+      .single(),
+    supabase
+      .from("committee_approvals")
+      .select("id")
+      .eq("meeting_id", meetingId)
+      .maybeSingle(),
+  ]);
+
+  if (snapshotResult.error) {
+    throw snapshotResult.error;
+  }
+
+  if (existingApprovalResult.error) {
+    throw existingApprovalResult.error;
+  }
+
+  if (existingApprovalResult.data) {
+    throw new Error("This meeting already has an approved result.");
+  }
+
   const { error } = await supabase.from("committee_approvals").insert({
     meeting_id: meetingId,
     result_snapshot_id: resultSnapshotId,

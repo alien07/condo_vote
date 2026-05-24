@@ -53,6 +53,8 @@ These workflows define the admin-facing MVP behavior. Ask before implementing an
 - Admin/committee can review the result snapshot.
 - Committee approval notes should mention material manual/online conflict handling before approving the result.
 - `committee_approvals` is the source of truth for publication approval.
+- After committee approval, the approved result snapshot and approval record are immutable.
+- After committee approval, generating another result snapshot for the same meeting is blocked.
 - Approved results can be viewed, exported to PDF, and sent by email.
 
 ## Open Questions

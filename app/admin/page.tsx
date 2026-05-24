@@ -100,6 +100,9 @@ export default async function AdminPage() {
   const approvedResultSnapshotIds = new Set(
     committeeApprovals.map((approval) => approval.result_snapshot_id),
   );
+  const approvedMeetingIds = new Set(
+    committeeApprovals.map((approval) => approval.meeting_id),
+  );
   const queuedEmailCount = emailLogs.filter((log) => log.status === "queued").length;
   const appRolesByProfile = new Map(
     profiles.map((profile) => [
@@ -228,7 +231,29 @@ export default async function AdminPage() {
           </div>
         </div>
 
-        <section className="mb-5 rounded-lg border border-[var(--border)] bg-[var(--surface)] p-5">
+        <nav className="sticky top-0 z-10 mb-5 flex gap-2 overflow-x-auto border-b border-[var(--border)] bg-[var(--background)] py-3 text-sm">
+          {[
+            ["#setup", "Setup"],
+            ["#voting", "Voting"],
+            ["#meetings", "Meetings"],
+            ["#results", "Results"],
+            ["#email", "Email"],
+            ["#people", "People"],
+          ].map(([href, label]) => (
+            <a
+              className="shrink-0 rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 font-medium"
+              href={href}
+              key={href}
+            >
+              {label}
+            </a>
+          ))}
+        </nav>
+
+        <section
+          className="mb-5 scroll-mt-20 rounded-lg border border-[var(--border)] bg-[var(--surface)] p-5"
+          id="setup"
+        >
           <div className="mb-4 flex items-center gap-2">
             <Building2 className="text-[var(--primary)]" size={20} />
             <h2 className="text-lg font-semibold">Juristic Person</h2>
@@ -302,7 +327,10 @@ export default async function AdminPage() {
           </form>
         </section>
 
-        <section className="mb-5 rounded-lg border border-[var(--border)] bg-[var(--surface)] p-5">
+        <section
+          className="mb-5 scroll-mt-20 rounded-lg border border-[var(--border)] bg-[var(--surface)] p-5"
+          id="voting"
+        >
           <div className="mb-4 flex items-center gap-2">
             <ListChecks className="text-[var(--primary)]" size={20} />
             <h2 className="text-lg font-semibold">Manual Votes</h2>
@@ -609,7 +637,10 @@ export default async function AdminPage() {
           </div>
         </section>
 
-        <section className="mb-5 rounded-lg border border-[var(--border)] bg-[var(--surface)] p-5">
+        <section
+          className="mb-5 scroll-mt-20 rounded-lg border border-[var(--border)] bg-[var(--surface)] p-5"
+          id="meetings"
+        >
           <div className="mb-4 flex items-center gap-2">
             <CalendarDays className="text-[var(--primary)]" size={20} />
             <h2 className="text-lg font-semibold">Meetings</h2>
@@ -714,57 +745,69 @@ export default async function AdminPage() {
                 </tr>
               </thead>
               <tbody>
-                {meetings.map((meeting) => (
-                  <tr className="border-b border-[var(--border)]" key={meeting.id}>
-                    <td className="py-2 pr-3">{meeting.title}</td>
-                    <td className="py-2 pr-3">
-                      {meeting.meeting_number ?? "-"} / {meeting.meeting_type}
-                    </td>
-                    <td className="py-2 pr-3">
-                      {formatDateTime(meeting.starts_at)} -{" "}
-                      {formatDateTime(meeting.ends_at)}
-                    </td>
-                    <td className="py-2 pr-3">{meeting.status}</td>
-                    <td className="py-2">
-                      <div className="flex flex-wrap gap-3">
-                        {meeting.status === "draft" ? (
-                          <form action={publishMeeting}>
-                            <input name="id" type="hidden" value={meeting.id} />
-                            <button
-                              className="text-sm font-medium text-[var(--primary)]"
-                              type="submit"
-                            >
-                              Publish
-                            </button>
-                          </form>
-                        ) : null}
-                        {meeting.status !== "archived" ? (
-                          <form action={archiveMeeting}>
-                            <input name="id" type="hidden" value={meeting.id} />
-                            <button
-                              className="text-sm font-medium text-red-700"
-                              type="submit"
-                            >
-                            Archive
-                          </button>
-                        </form>
-                      ) : null}
-                        {meeting.status === "published" ||
-                        meeting.status === "closed" ? (
-                          <form action={generateResultSnapshot}>
-                            <input name="id" type="hidden" value={meeting.id} />
-                            <button
-                              className="text-sm font-medium text-[var(--primary)]"
-                              type="submit"
-                            >
-                              Generate result
-                            </button>
-                          </form>
-                        ) : null}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                {meetings.map((meeting) => {
+                  const hasApprovedResult = approvedMeetingIds.has(meeting.id);
+
+                  return (
+                    <tr className="border-b border-[var(--border)]" key={meeting.id}>
+                      <td className="py-2 pr-3">{meeting.title}</td>
+                      <td className="py-2 pr-3">
+                        {meeting.meeting_number ?? "-"} / {meeting.meeting_type}
+                      </td>
+                      <td className="py-2 pr-3">
+                        {formatDateTime(meeting.starts_at)} -{" "}
+                        {formatDateTime(meeting.ends_at)}
+                      </td>
+                      <td className="py-2 pr-3">
+                        {hasApprovedResult ? "approved" : meeting.status}
+                      </td>
+                      <td className="py-2">
+                        <div className="flex flex-wrap gap-3">
+                          {meeting.status === "draft" ? (
+                            <form action={publishMeeting}>
+                              <input name="id" type="hidden" value={meeting.id} />
+                              <button
+                                className="text-sm font-medium text-[var(--primary)]"
+                                type="submit"
+                              >
+                                Publish
+                              </button>
+                            </form>
+                          ) : null}
+                          {meeting.status !== "archived" ? (
+                            <form action={archiveMeeting}>
+                              <input name="id" type="hidden" value={meeting.id} />
+                              <button
+                                className="text-sm font-medium text-red-700"
+                                type="submit"
+                              >
+                                Archive
+                              </button>
+                            </form>
+                          ) : null}
+                          {(meeting.status === "published" ||
+                            meeting.status === "closed") &&
+                          !hasApprovedResult ? (
+                            <form action={generateResultSnapshot}>
+                              <input name="id" type="hidden" value={meeting.id} />
+                              <button
+                                className="text-sm font-medium text-[var(--primary)]"
+                                type="submit"
+                              >
+                                Generate result
+                              </button>
+                            </form>
+                          ) : null}
+                          {hasApprovedResult ? (
+                            <span className="text-sm text-[var(--muted)]">
+                              Result locked
+                            </span>
+                          ) : null}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -952,7 +995,10 @@ export default async function AdminPage() {
           </div>
         </section>
 
-        <section className="mb-5 rounded-lg border border-[var(--border)] bg-[var(--surface)] p-5">
+        <section
+          className="mb-5 scroll-mt-20 rounded-lg border border-[var(--border)] bg-[var(--surface)] p-5"
+          id="results"
+        >
           <div className="mb-4 flex items-center gap-2">
             <ListChecks className="text-[var(--primary)]" size={20} />
             <h2 className="text-lg font-semibold">Results</h2>
@@ -973,6 +1019,9 @@ export default async function AdminPage() {
                 {resultSnapshots.map((snapshot) => {
                   const totals = getResultTotals(snapshot.payload_json);
                   const approved = approvedResultSnapshotIds.has(snapshot.id);
+                  const meetingApproved = approvedMeetingIds.has(
+                    snapshot.meeting_id,
+                  );
 
                   return (
                     <tr
@@ -997,7 +1046,7 @@ export default async function AdminPage() {
                         {approved ? "approved" : "pending"}
                       </td>
                       <td className="py-2">
-                        {!approved ? (
+                        {!meetingApproved ? (
                           <form
                             action={approveResultSnapshot}
                             className="flex flex-wrap gap-2"
@@ -1025,6 +1074,11 @@ export default async function AdminPage() {
                             </button>
                           </form>
                         ) : null}
+                        {meetingApproved && !approved ? (
+                          <span className="text-sm text-[var(--muted)]">
+                            Locked by approved result
+                          </span>
+                        ) : null}
                       </td>
                     </tr>
                   );
@@ -1039,7 +1093,10 @@ export default async function AdminPage() {
           ) : null}
         </section>
 
-        <section className="mb-5 rounded-lg border border-[var(--border)] bg-[var(--surface)] p-5">
+        <section
+          className="mb-5 scroll-mt-20 rounded-lg border border-[var(--border)] bg-[var(--surface)] p-5"
+          id="email"
+        >
           <div className="mb-4 flex items-center gap-2">
             <ListChecks className="text-[var(--primary)]" size={20} />
             <h2 className="text-lg font-semibold">Email Queue</h2>
@@ -1075,7 +1132,7 @@ export default async function AdminPage() {
           ) : null}
         </section>
 
-        <div className="grid gap-5 lg:grid-cols-2">
+        <div className="grid scroll-mt-20 gap-5 lg:grid-cols-2" id="people">
           <section className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-5">
             <div className="mb-4 flex items-center gap-2">
               <Building2 className="text-[var(--primary)]" size={20} />

@@ -175,12 +175,12 @@ Notes: Result generation should fail when an online/manual conflict exists witho
 ### result_snapshots
 Purpose: Stores generated result calculations.
 Key fields: meeting, generated timestamp, generator, result payload.
-Notes: Payload should include count, percentage against total project ownership, percentage against submitted-vote ownership, effective vote source, and conflict resolution audit.
+Notes: Payload should include count, percentage against total project ownership, percentage against submitted-vote ownership, effective vote source, and conflict resolution audit. Once a snapshot is referenced by `committee_approvals`, it is immutable. New snapshots for the same meeting are blocked after approval.
 
 ### committee_approvals
 Purpose: Stores approval that allows result publication.
 Key fields: meeting, result snapshot, approver, approved timestamp, notes.
-Notes: This is the source of truth for approved results. Results stay hidden until a related approval record exists.
+Notes: This is the source of truth for approved results. Results stay hidden until a related approval record exists. A meeting can have only one approved result, and approval records are immutable.
 
 ### documents
 Purpose: Stores private Supabase Storage references.
@@ -198,6 +198,7 @@ Notes: Used for invitations, reminders, and result notifications.
 - Result calculations use the latest valid ballot per room.
 - Manual votes can be combined with online votes, but one room can have only one effective source after conflict resolution.
 - `committee_approvals` is the source of truth for result publication approval.
+- Approved result snapshots and committee approval records are immutable.
 - Supporting documents are private by default.
 
 ## Open Questions
