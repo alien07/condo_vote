@@ -8,7 +8,21 @@ export function getVotingWindowStatus(meeting: {
   starts_at: string;
   ends_at: string;
 } | null): VotingWindowStatus {
-  if (!meeting || meeting.status !== "published") {
+  if (!meeting) {
+    return {
+      label: "Unavailable",
+      canSubmit: false,
+    };
+  }
+
+  if (meeting.status === "closed") {
+    return {
+      label: "Closed",
+      canSubmit: false,
+    };
+  }
+
+  if (meeting.status !== "published") {
     return {
       label: "Unavailable",
       canSubmit: false,

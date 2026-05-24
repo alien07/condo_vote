@@ -340,6 +340,7 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
     await expect(voteAssignment.getByText(`Room ${roomNumber}`)).toBeVisible();
     await voteAssignment.getByRole("link", { name: "Open ballot" }).click();
     await expect(page).toHaveURL(/\/vote\/[^/]+\/[^/]+$/);
+    const voteDetailUrl = page.url();
     const voteCard = page
       .getByRole("heading", { name: meetingTitle })
       .locator("xpath=ancestor::main[1]");
@@ -373,6 +374,15 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
     await expect(
       publishedMeetingRow.getByRole("cell", { name: "closed", exact: true }),
     ).toBeVisible();
+    await page.goto(voteDetailUrl);
+    const closedVoteCard = page
+      .getByRole("heading", { name: meetingTitle })
+      .locator("xpath=ancestor::main[1]");
+    await expect(closedVoteCard.getByText("Submitted v2")).toBeVisible();
+    await expect(closedVoteCard.getByText("Closed")).toBeVisible();
+    await expect(
+      closedVoteCard.getByRole("button", { name: "Update ballot" }),
+    ).toBeDisabled();
 
     await page.goto(`${activeAppOrigin}/admin/results`);
     const resultRow = page.getByRole("row").filter({ hasText: meetingTitle });
