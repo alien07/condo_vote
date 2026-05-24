@@ -1,26 +1,13 @@
 import Link from "next/link";
 import { Vote } from "lucide-react";
 import { getVotingDashboardData } from "@/features/voting/data";
+import { getVotingWindowStatus } from "@/features/voting/status";
 
 function formatDateTime(value: string) {
   return new Intl.DateTimeFormat("en-GB", {
     dateStyle: "medium",
     timeStyle: "short",
   }).format(new Date(value));
-}
-
-function isVotingOpen(meeting: {
-  status: string;
-  starts_at: string;
-  ends_at: string;
-}) {
-  const now = new Date();
-
-  return (
-    meeting.status === "published" &&
-    now >= new Date(meeting.starts_at) &&
-    now <= new Date(meeting.ends_at)
-  );
 }
 
 export default async function VotePage() {
@@ -51,7 +38,7 @@ export default async function VotePage() {
               const ballot = ballotsByMeetingRoom.get(
                 `${eligible.meeting_id}:${eligible.room_id}`,
               );
-              const votingOpen = meeting ? isVotingOpen(meeting) : false;
+              const votingStatus = getVotingWindowStatus(meeting);
               const href = `/vote/${eligible.meeting_id}/${eligible.room_id}`;
 
               return (
@@ -79,10 +66,15 @@ export default async function VotePage() {
                       <div className="text-sm text-[var(--muted)]">
                         {ballot?.status === "submitted"
                           ? `Submitted v${ballot.version_number}`
-                          : votingOpen
-                            ? "Open"
-                            : "Closed"}
+                          : votingStatus.label}
                       </div>
+                      {ballot?.status === "submitted" ? (
+                        <div className="text-sm text-[var(--muted)]">
+                          {votingStatus.canSubmit
+                            ? "Open for edits"
+                            : votingStatus.label}
+                        </div>
+                      ) : null}
                       <Link
                         className="rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)]"
                         href={href}

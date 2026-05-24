@@ -138,6 +138,10 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
     );
     await expect(page).toHaveURL(/http:\/\/(localhost|0\.0\.0\.0|127\.0\.0\.1):3000\/$/);
     const activeAppOrigin = new URL(page.url()).origin;
+    await page.goto(
+      `${activeAppOrigin}/vote/00000000-0000-0000-0000-000000000000/00000000-0000-0000-0000-000000000000`,
+    );
+    await expect(page.getByText(/404|not found/i).first()).toBeVisible();
 
     await page.goto(`${activeAppOrigin}/admin`);
     await expect(page.getByRole("heading", { name: "Admin" })).toBeVisible();

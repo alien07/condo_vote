@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { Vote } from "lucide-react";
 import { submitBallot } from "@/features/voting/actions";
 import { getVotingAssignmentData } from "@/features/voting/data";
+import { getVotingWindowStatus } from "@/features/voting/status";
 
 type VoteDetailPageProps = {
   params: Promise<{
@@ -16,20 +17,6 @@ function formatDateTime(value: string) {
     dateStyle: "medium",
     timeStyle: "short",
   }).format(new Date(value));
-}
-
-function isVotingOpen(meeting: {
-  status: string;
-  starts_at: string;
-  ends_at: string;
-}) {
-  const now = new Date();
-
-  return (
-    meeting.status === "published" &&
-    now >= new Date(meeting.starts_at) &&
-    now <= new Date(meeting.ends_at)
-  );
 }
 
 export default async function VoteDetailPage({ params }: VoteDetailPageProps) {
@@ -51,7 +38,7 @@ export default async function VoteDetailPage({ params }: VoteDetailPageProps) {
       answer.choice_id,
     ]) ?? [],
   );
-  const votingOpen = meeting ? isVotingOpen(meeting) : false;
+  const votingStatus = getVotingWindowStatus(meeting);
 
   return (
     <main className="min-h-screen px-6 py-8">
@@ -86,10 +73,13 @@ export default async function VoteDetailPage({ params }: VoteDetailPageProps) {
               <div>
                 {ballot?.status === "submitted"
                   ? `Submitted v${ballot.version_number}`
-                  : votingOpen
-                    ? "Open"
-                    : "Closed"}
+                  : votingStatus.label}
               </div>
+              {ballot?.status === "submitted" ? (
+                <div className="mt-1">
+                  {votingStatus.canSubmit ? "Open for edits" : votingStatus.label}
+                </div>
+              ) : null}
               {ballot?.submitted_at ? (
                 <div className="mt-1">{formatDateTime(ballot.submitted_at)}</div>
               ) : null}
@@ -132,7 +122,7 @@ export default async function VoteDetailPage({ params }: VoteDetailPageProps) {
                             defaultChecked={
                               answerByQuestion.get(question.id) === choice.id
                             }
-                            disabled={!votingOpen}
+                            disabled={!votingStatus.canSubmit}
                             name={`choice:${question.id}`}
                             required={question.required}
                             type="radio"
@@ -154,7 +144,7 @@ export default async function VoteDetailPage({ params }: VoteDetailPageProps) {
               </section>
               <button
                 className="rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)] disabled:cursor-not-allowed disabled:opacity-50"
-                disabled={!votingOpen}
+                disabled={!votingStatus.canSubmit}
                 type="submit"
               >
                 {ballot ? "Update ballot" : "Submit ballot"}
