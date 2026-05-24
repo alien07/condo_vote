@@ -76,3 +76,64 @@ export async function getVotingDashboardData() {
     ballotsByMeetingRoom,
   };
 }
+
+export async function getVotingAssignmentData(meetingId: string, roomId: string) {
+  const profile = await requireProfile();
+  const supabase = await createClient();
+  const { data: eligible, error: eligibleError } = await supabase
+    .from("eligible_voters_snapshot")
+    .select(
+      "id, meeting_id, room_id, voter_type, ownership_percent, source, meetings(id, title, description, starts_at, ends_at, status, meeting_number, meeting_type), rooms(id, room_number, ownership_percent)",
+    )
+    .eq("profile_id", profile.id)
+    .eq("meeting_id", meetingId)
+    .eq("room_id", roomId)
+    .maybeSingle();
+
+  if (eligibleError) {
+    throw eligibleError;
+  }
+
+  if (!eligible) {
+    return {
+      profile,
+      eligible: null,
+      questions: [],
+      ballot: null,
+    };
+  }
+
+  const [questionsResult, ballotResult] = await Promise.all([
+    supabase
+      .from("meeting_questions")
+      .select(
+        "id, meeting_id, agenda_no, agenda_title, question_text, question_type, display_order, required, meeting_choices(id, choice_text, display_order)",
+      )
+      .eq("meeting_id", meetingId)
+      .order("display_order", { ascending: true }),
+    supabase
+      .from("ballots")
+      .select(
+        "id, meeting_id, room_id, status, submitted_at, version_number, ballot_answers(id, question_id, choice_id)",
+      )
+      .eq("meeting_id", meetingId)
+      .eq("room_id", roomId)
+      .eq("voter_profile_id", profile.id)
+      .maybeSingle(),
+  ]);
+
+  if (questionsResult.error) {
+    throw questionsResult.error;
+  }
+
+  if (ballotResult.error) {
+    throw ballotResult.error;
+  }
+
+  return {
+    profile,
+    eligible,
+    questions: questionsResult.data,
+    ballot: ballotResult.data,
+  };
+}

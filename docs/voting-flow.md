@@ -1,11 +1,13 @@
 # Voting Flow
 
-The voter page is `/vote`.
+The voter assignment list is `/vote`. A specific ballot is opened at `/vote/[meetingId]/[roomId]`.
 
 ## Current Scope
 - Signed-in users see meeting/room assignments from `eligible_voters_snapshot`.
+- The assignment list links each eligible meeting/room to a dedicated ballot detail page.
 - A voter can submit one ballot per eligible meeting and room.
 - A voter can edit the submitted ballot while the meeting is still `published` and inside the voting window.
+- The ballot detail page includes a pre-submit review note and displays the latest submitted version/time.
 - Each submit/update writes the current `ballots` row, upserts `ballot_answers`, and inserts a new `ballot_versions` record.
 - Closed or out-of-window meetings render existing ballot status but disable submit/update.
 

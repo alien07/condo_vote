@@ -156,4 +156,5 @@ export async function submitBallot(formData: FormData) {
   }
 
   revalidatePath("/vote");
+  revalidatePath(`/vote/${meetingId}/${roomId}`);
 }

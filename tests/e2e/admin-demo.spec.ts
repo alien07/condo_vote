@@ -330,10 +330,16 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
     ).toBeVisible();
 
     await page.goto(`${activeAppOrigin}/vote`);
-    const voteCard = page
+    const voteAssignment = page
       .getByRole("heading", { name: meetingTitle })
       .locator("xpath=ancestor::section[1]");
-    await expect(voteCard.getByText(`Room ${roomNumber}`)).toBeVisible();
+    await expect(voteAssignment.getByText(`Room ${roomNumber}`)).toBeVisible();
+    await voteAssignment.getByRole("link", { name: "Open ballot" }).click();
+    await expect(page).toHaveURL(/\/vote\/[^/]+\/[^/]+$/);
+    const voteCard = page
+      .getByRole("heading", { name: meetingTitle })
+      .locator("xpath=ancestor::main[1]");
+    await expect(voteCard.getByText("Review")).toBeVisible();
     await voteCard.getByLabel(choiceText).check();
     await voteCard.getByRole("button", { name: "Submit ballot" }).click();
     await expect(voteCard.getByText("Submitted v1")).toBeVisible();
