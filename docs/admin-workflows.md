@@ -30,8 +30,11 @@ These workflows define the admin-facing MVP behavior. Ask before implementing an
 
 ## Meeting Setup
 - Admin can create, edit, and archive meetings.
-- Admin can set title, description, voting start/end time, optional video URL, and optional transcript.
+- Admin can maintain juristic-person profile data used as the issuer identity for generated documents.
+- Admin can maintain committee member names, positions, term dates, and active status for document approval/signature context.
+- Admin can set title, meeting number, meeting type, fiscal year, location/platform, chairperson, quorum rule, voting start/end time, optional video URL, and optional transcript.
 - Admin can create, edit, delete, and reorder questions.
+- Admin can define agenda number/title, resolution type, approval threshold, legal note, and land-office registration flag per question.
 - Admin can create, edit, delete, and reorder choices.
 - Admin can preview a meeting before publication.
 - Admin can publish a meeting when the setup is complete.

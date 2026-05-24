@@ -6,6 +6,8 @@ export async function getAdminDashboardData() {
 
   const supabase = await createClient();
   const [
+    condoProfilesResult,
+    committeeMembersResult,
     roomsResult,
     appRolesResult,
     ownersResult,
@@ -20,6 +22,20 @@ export async function getAdminDashboardData() {
     profilesResult,
   ] =
     await Promise.all([
+      supabase
+        .from("condo_profiles")
+        .select(
+          "id, juristic_name, project_name, registration_no, tax_id, address, phone, email, manager_name, document_footer",
+        )
+        .order("created_at", { ascending: false })
+        .limit(1),
+      supabase
+        .from("committee_members")
+        .select(
+          "id, profile_id, full_name, position_title, term_starts_at, term_ends_at, display_order, active",
+        )
+        .order("display_order", { ascending: true })
+        .order("created_at", { ascending: false }),
       supabase
         .from("rooms")
         .select(
@@ -42,12 +58,14 @@ export async function getAdminDashboardData() {
         .order("created_at", { ascending: false }),
       supabase
         .from("meetings")
-        .select("id, title, description, starts_at, ends_at, status")
+        .select(
+          "id, title, description, starts_at, ends_at, status, meeting_number, meeting_type, fiscal_year, location, chairperson_name, quorum_rule",
+        )
         .order("starts_at", { ascending: false }),
       supabase
         .from("meeting_questions")
         .select(
-          "id, meeting_id, question_text, question_type, display_order, required, meetings(id, title), meeting_choices(id, choice_text, display_order)",
+          "id, meeting_id, agenda_no, agenda_title, question_text, question_type, resolution_type, required_threshold, requires_land_office_registration, legal_note, display_order, required, meetings(id, title), meeting_choices(id, choice_text, display_order)",
         )
         .order("display_order", { ascending: true }),
       supabase
@@ -84,16 +102,24 @@ export async function getAdminDashboardData() {
         .order("created_at", { ascending: false }),
     ]);
 
+  if (condoProfilesResult.error) {
+    throw condoProfilesResult.error;
+  }
+
+  if (committeeMembersResult.error) {
+    throw committeeMembersResult.error;
+  }
+
   if (roomsResult.error) {
     throw roomsResult.error;
   }
 
-  if (ownersResult.error) {
-    throw ownersResult.error;
-  }
-
   if (appRolesResult.error) {
     throw appRolesResult.error;
+  }
+
+  if (ownersResult.error) {
+    throw ownersResult.error;
   }
 
   if (roomOwnersResult.error) {
@@ -133,6 +159,8 @@ export async function getAdminDashboardData() {
   }
 
   return {
+    condoProfile: condoProfilesResult.data[0] ?? null,
+    committeeMembers: committeeMembersResult.data,
     rooms: roomsResult.data,
     appRoles: appRolesResult.data,
     owners: ownersResult.data,

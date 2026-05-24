@@ -9,6 +9,7 @@ import {
 import {
   approveResultSnapshot,
   archiveMeeting,
+  createCommitteeMember,
   createMeetingChoice,
   createMeeting,
   createMeetingQuestion,
@@ -17,6 +18,7 @@ import {
   createRoom,
   deactivateOwner,
   deactivateRoom,
+  deactivateCommitteeMember,
   deleteMeetingChoice,
   deleteMeetingQuestion,
   endRoomOwnerLink,
@@ -26,6 +28,7 @@ import {
   publishMeeting,
   reviewProxyAuthorization,
   revokeAppRole,
+  saveCondoProfile,
   updateProfileApproval,
 } from "@/features/admin/actions";
 import { getAdminDashboardData } from "@/features/admin/data";
@@ -62,6 +65,8 @@ function formatPercent(value: number | undefined) {
 
 export default async function AdminPage() {
   const {
+    condoProfile,
+    committeeMembers,
     rooms,
     appRoles,
     owners,
@@ -161,6 +166,187 @@ export default async function AdminPage() {
 
         <section className="mb-5 rounded-lg border border-[var(--border)] bg-[var(--surface)] p-5">
           <div className="mb-4 flex items-center gap-2">
+            <Building2 className="text-[var(--primary)]" size={20} />
+            <h2 className="text-lg font-semibold">Juristic Person</h2>
+          </div>
+          <form action={saveCondoProfile} className="grid gap-3 md:grid-cols-2">
+            <input name="id" type="hidden" value={condoProfile?.id ?? ""} />
+            <input
+              className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+              defaultValue={condoProfile?.juristic_name ?? ""}
+              name="juristic_name"
+              placeholder="Juristic person name"
+              required
+            />
+            <input
+              className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+              defaultValue={condoProfile?.project_name ?? ""}
+              name="project_name"
+              placeholder="Project name"
+              required
+            />
+            <input
+              className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+              defaultValue={condoProfile?.registration_no ?? ""}
+              name="registration_no"
+              placeholder="Registration no."
+            />
+            <input
+              className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+              defaultValue={condoProfile?.tax_id ?? ""}
+              name="tax_id"
+              placeholder="Tax ID"
+            />
+            <input
+              className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+              defaultValue={condoProfile?.manager_name ?? ""}
+              name="manager_name"
+              placeholder="Juristic manager"
+            />
+            <input
+              className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+              defaultValue={condoProfile?.phone ?? ""}
+              name="phone"
+              placeholder="Phone"
+            />
+            <input
+              className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+              defaultValue={condoProfile?.email ?? ""}
+              name="email"
+              placeholder="Email"
+              type="email"
+            />
+            <input
+              className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+              defaultValue={condoProfile?.address ?? ""}
+              name="address"
+              placeholder="Address"
+            />
+            <textarea
+              className="rounded-md border border-[var(--border)] px-3 py-2 text-sm md:col-span-2"
+              defaultValue={condoProfile?.document_footer ?? ""}
+              name="document_footer"
+              placeholder="Document footer"
+              rows={2}
+            />
+            <button
+              className="rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)] md:col-span-2"
+              type="submit"
+            >
+              Save juristic profile
+            </button>
+          </form>
+        </section>
+
+        <section className="mb-5 rounded-lg border border-[var(--border)] bg-[var(--surface)] p-5">
+          <div className="mb-4 flex items-center gap-2">
+            <UserCheck className="text-[var(--primary)]" size={20} />
+            <h2 className="text-lg font-semibold">Committee Members</h2>
+          </div>
+          <form
+            action={createCommitteeMember}
+            className="grid gap-3 md:grid-cols-4"
+          >
+            <select
+              className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+              name="profile_id"
+            >
+              <option value="">Profile optional</option>
+              {profiles.map((profile) => (
+                <option key={profile.id} value={profile.id}>
+                  {profile.full_name} ({profile.email})
+                </option>
+              ))}
+            </select>
+            <input
+              className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+              name="full_name"
+              placeholder="Committee name"
+              required
+            />
+            <input
+              className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+              name="position_title"
+              placeholder="Position"
+              required
+            />
+            <input
+              className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+              defaultValue={0}
+              min={0}
+              name="display_order"
+              placeholder="Order"
+              type="number"
+            />
+            <label className="text-sm font-medium">
+              Term starts
+              <input
+                className="mt-1 w-full rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+                name="term_starts_at"
+                type="date"
+              />
+            </label>
+            <label className="text-sm font-medium">
+              Term ends
+              <input
+                className="mt-1 w-full rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+                name="term_ends_at"
+                type="date"
+              />
+            </label>
+            <button
+              className="self-end rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)] md:col-span-2"
+              type="submit"
+            >
+              Add committee member
+            </button>
+          </form>
+
+          <div className="mt-5 overflow-x-auto">
+            <table className="w-full border-collapse text-left text-sm">
+              <thead className="border-b border-[var(--border)] text-[var(--muted)]">
+                <tr>
+                  <th className="py-2 pr-3 font-medium">Name</th>
+                  <th className="py-2 pr-3 font-medium">Position</th>
+                  <th className="py-2 pr-3 font-medium">Term</th>
+                  <th className="py-2 pr-3 font-medium">Status</th>
+                  <th className="py-2 font-medium">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {committeeMembers.map((member) => (
+                  <tr className="border-b border-[var(--border)]" key={member.id}>
+                    <td className="py-2 pr-3">{member.full_name}</td>
+                    <td className="py-2 pr-3">{member.position_title}</td>
+                    <td className="py-2 pr-3">
+                      {member.term_starts_at ?? "Not set"} -{" "}
+                      {member.term_ends_at ?? "Current"}
+                    </td>
+                    <td className="py-2 pr-3">
+                      {member.active ? "Active" : "Inactive"}
+                    </td>
+                    <td className="py-2">
+                      {member.active ? (
+                        <form action={deactivateCommitteeMember}>
+                          <input name="id" type="hidden" value={member.id} />
+                          <button
+                            className="text-sm font-medium text-red-700"
+                            type="submit"
+                          >
+                            Deactivate
+                          </button>
+                        </form>
+                      ) : null}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section className="mb-5 rounded-lg border border-[var(--border)] bg-[var(--surface)] p-5">
+          <div className="mb-4 flex items-center gap-2">
             <CalendarDays className="text-[var(--primary)]" size={20} />
             <h2 className="text-lg font-semibold">Meetings</h2>
           </div>
@@ -177,6 +363,49 @@ export default async function AdminPage() {
               placeholder="Video URL"
               type="url"
             />
+            <input
+              className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+              name="meeting_number"
+              placeholder="Meeting no."
+            />
+            <select
+              className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+              defaultValue="online_vote"
+              name="meeting_type"
+            >
+              <option value="online_vote">Online vote</option>
+              <option value="agm">AGM</option>
+              <option value="egm">EGM</option>
+              <option value="committee">Committee</option>
+            </select>
+            <input
+              className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+              name="fiscal_year"
+              placeholder="Fiscal year"
+            />
+            <input
+              className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+              name="location"
+              placeholder="Location / platform"
+            />
+            <input
+              className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+              name="chairperson_name"
+              placeholder="Chairperson"
+            />
+            <select
+              className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+              defaultValue="one_fourth_total_ownership"
+              name="quorum_rule"
+            >
+              <option value="one_fourth_total_ownership">
+                Quorum: 1/4 ownership
+              </option>
+              <option value="not_required_second_call">
+                Second call: no quorum
+              </option>
+              <option value="committee_policy">Committee policy</option>
+            </select>
             <label className="text-sm font-medium">
               Starts
               <input
@@ -214,6 +443,7 @@ export default async function AdminPage() {
               <thead className="border-b border-[var(--border)] text-[var(--muted)]">
                 <tr>
                   <th className="py-2 pr-3 font-medium">Title</th>
+                  <th className="py-2 pr-3 font-medium">No./Type</th>
                   <th className="py-2 pr-3 font-medium">Window</th>
                   <th className="py-2 pr-3 font-medium">Status</th>
                   <th className="py-2 font-medium">Action</th>
@@ -223,6 +453,9 @@ export default async function AdminPage() {
                 {meetings.map((meeting) => (
                   <tr className="border-b border-[var(--border)]" key={meeting.id}>
                     <td className="py-2 pr-3">{meeting.title}</td>
+                    <td className="py-2 pr-3">
+                      {meeting.meeting_number ?? "-"} / {meeting.meeting_type}
+                    </td>
                     <td className="py-2 pr-3">
                       {formatDateTime(meeting.starts_at)} -{" "}
                       {formatDateTime(meeting.ends_at)}
@@ -297,6 +530,16 @@ export default async function AdminPage() {
                 ))}
             </select>
             <input
+              className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+              name="agenda_no"
+              placeholder="Agenda no."
+            />
+            <input
+              className="rounded-md border border-[var(--border)] px-3 py-2 text-sm md:col-span-2"
+              name="agenda_title"
+              placeholder="Agenda title"
+            />
+            <input
               className="rounded-md border border-[var(--border)] px-3 py-2 text-sm md:col-span-2"
               name="question_text"
               placeholder="Question"
@@ -310,6 +553,28 @@ export default async function AdminPage() {
               <option value="single_choice">Single choice</option>
               <option value="multiple_choice">Multiple choice</option>
             </select>
+            <select
+              className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+              defaultValue="ordinary"
+              name="resolution_type"
+              required
+            >
+              <option value="ordinary">Ordinary</option>
+              <option value="special">Special</option>
+              <option value="informational">Informational</option>
+            </select>
+            <select
+              className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+              defaultValue="majority_submitted"
+              name="required_threshold"
+              required
+            >
+              <option value="majority_submitted">Majority submitted</option>
+              <option value="one_third_total">1/3 total ownership</option>
+              <option value="half_total">1/2 total ownership</option>
+              <option value="three_fourths_total">3/4 total ownership</option>
+              <option value="informational">Informational</option>
+            </select>
             <input
               className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
               defaultValue={0}
@@ -322,6 +587,16 @@ export default async function AdminPage() {
               <input defaultChecked name="required" type="checkbox" />
               Required
             </label>
+            <label className="flex items-center gap-2 text-sm">
+              <input name="requires_land_office_registration" type="checkbox" />
+              Land office registration
+            </label>
+            <textarea
+              className="rounded-md border border-[var(--border)] px-3 py-2 text-sm md:col-span-4"
+              name="legal_note"
+              placeholder="Legal / admin note"
+              rows={2}
+            />
             <button
               className="rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)] md:col-span-2"
               type="submit"
@@ -339,10 +614,21 @@ export default async function AdminPage() {
                 <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                   <div>
                     <div className="text-sm text-[var(--muted)]">
-                      {question.meetings?.title ?? "-"} /{" "}
-                      {question.question_type} / order {question.display_order}
+                      {question.meetings?.title ?? "-"} / agenda{" "}
+                      {question.agenda_no ?? "-"} / {question.question_type} /{" "}
+                      {question.resolution_type} / {question.required_threshold}
                     </div>
+                    {question.agenda_title ? (
+                      <div className="mt-1 text-sm font-medium">
+                        {question.agenda_title}
+                      </div>
+                    ) : null}
                     <h3 className="mt-1 font-semibold">{question.question_text}</h3>
+                    {question.requires_land_office_registration ? (
+                      <div className="mt-1 text-xs text-[var(--muted)]">
+                        Requires land office registration
+                      </div>
+                    ) : null}
                   </div>
                   <form action={deleteMeetingQuestion}>
                     <input name="id" type="hidden" value={question.id} />

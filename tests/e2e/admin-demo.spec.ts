@@ -148,7 +148,39 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
       demoAdminRow.locator("td").nth(4).getByText("committee", { exact: true }),
     ).toBeVisible();
 
+    const juristicSection = page
+      .getByRole("heading", { name: "Juristic Person" })
+      .locator("xpath=ancestor::section[1]");
+    await juristicSection
+      .getByPlaceholder("Juristic person name")
+      .fill("Demo Juristic Person");
+    await juristicSection.getByPlaceholder("Project name").fill("Demo Condo");
+    await juristicSection.getByPlaceholder("Registration no.").fill("REG-001");
+    await juristicSection.getByPlaceholder("Juristic manager").fill("Demo Manager");
+    await juristicSection
+      .getByRole("button", { name: "Save juristic profile" })
+      .click();
+    await expect(juristicSection.locator('input[name="juristic_name"]')).toHaveValue(
+      "Demo Juristic Person",
+    );
+
+    const committeeSection = page
+      .getByRole("heading", { name: "Committee Members" })
+      .locator("xpath=ancestor::section[1]");
+    await committeeSection.getByPlaceholder("Committee name").fill("Demo Chair");
+    await committeeSection.getByPlaceholder("Position").fill("Chairperson");
+    await committeeSection
+      .getByRole("button", { name: "Add committee member" })
+      .click();
+    await expect(
+      committeeSection.getByRole("cell", { name: "Demo Chair" }),
+    ).toBeVisible();
+
     await page.getByPlaceholder("Meeting title").fill(meetingTitle);
+    await page.getByPlaceholder("Meeting no.").fill("AGM-2026-001");
+    await page.getByPlaceholder("Fiscal year").fill("2026");
+    await page.getByPlaceholder("Location / platform").fill("Online");
+    await page.getByPlaceholder("Chairperson").fill("Demo Chair");
     await page.locator('input[name="starts_at"]').first().fill("2026-06-01T09:00");
     await page.locator('input[name="ends_at"]').first().fill("2026-06-01T10:00");
     await page.getByRole("button", { name: "Add meeting" }).click();
@@ -158,7 +190,12 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
       .locator('select[name="meeting_id"]')
       .first()
       .selectOption({ label: meetingTitle });
+    await page.getByPlaceholder("Agenda no.").fill("1");
+    await page.getByPlaceholder("Agenda title").fill("Approve demo agenda");
     await page.getByPlaceholder("Question").fill(questionText);
+    await page
+      .locator('select[name="required_threshold"]')
+      .selectOption("majority_submitted");
     await page.getByRole("button", { name: "Add question" }).click();
     await expect(page.getByText(questionText)).toBeVisible();
     const questionCard = page
@@ -173,9 +210,12 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
     await page.getByRole("button", { name: "Add room" }).click();
     await expect(page.getByRole("cell", { name: roomNumber })).toBeVisible();
 
+    const ownerSection = page
+      .getByRole("heading", { name: "Owners" })
+      .locator("xpath=ancestor::section[1]");
     await page.getByPlaceholder("Full name").fill(ownerName);
-    await page.getByPlaceholder("Email").fill("owner.demo@example.com");
-    await page.getByRole("button", { name: "Add owner" }).click();
+    await ownerSection.getByPlaceholder("Email").fill("owner.demo@example.com");
+    await ownerSection.getByRole("button", { name: "Add owner" }).click();
     await expect(page.getByRole("cell", { name: ownerName })).toBeVisible();
 
     await page

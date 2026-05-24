@@ -316,6 +316,107 @@ export type Database = {
           },
         ]
       }
+      committee_members: {
+        Row: {
+          active: boolean
+          created_at: string
+          display_order: number
+          full_name: string
+          id: string
+          position_title: string
+          profile_id: string | null
+          signature_storage_path: string | null
+          term_ends_at: string | null
+          term_starts_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          display_order?: number
+          full_name: string
+          id?: string
+          position_title: string
+          profile_id?: string | null
+          signature_storage_path?: string | null
+          term_ends_at?: string | null
+          term_starts_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          display_order?: number
+          full_name?: string
+          id?: string
+          position_title?: string
+          profile_id?: string | null
+          signature_storage_path?: string | null
+          term_ends_at?: string | null
+          term_starts_at?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "committee_members_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      condo_profiles: {
+        Row: {
+          address: string | null
+          created_at: string
+          document_footer: string | null
+          email: string | null
+          id: string
+          juristic_name: string
+          logo_storage_path: string | null
+          manager_name: string | null
+          phone: string | null
+          project_name: string
+          registration_no: string | null
+          seal_storage_path: string | null
+          tax_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string
+          document_footer?: string | null
+          email?: string | null
+          id?: string
+          juristic_name: string
+          logo_storage_path?: string | null
+          manager_name?: string | null
+          phone?: string | null
+          project_name: string
+          registration_no?: string | null
+          seal_storage_path?: string | null
+          tax_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          created_at?: string
+          document_footer?: string | null
+          email?: string | null
+          id?: string
+          juristic_name?: string
+          logo_storage_path?: string | null
+          manager_name?: string | null
+          phone?: string | null
+          project_name?: string
+          registration_no?: string | null
+          seal_storage_path?: string | null
+          tax_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       documents: {
         Row: {
           created_at: string
@@ -479,31 +580,49 @@ export type Database = {
       }
       meeting_questions: {
         Row: {
+          agenda_no: string | null
+          agenda_title: string | null
           created_at: string
           display_order: number
           id: string
+          legal_note: string | null
           meeting_id: string
           question_text: string
           question_type: string
           required: boolean
+          required_threshold: string
+          requires_land_office_registration: boolean
+          resolution_type: string
         }
         Insert: {
+          agenda_no?: string | null
+          agenda_title?: string | null
           created_at?: string
           display_order?: number
           id?: string
+          legal_note?: string | null
           meeting_id: string
           question_text: string
           question_type?: string
           required?: boolean
+          required_threshold?: string
+          requires_land_office_registration?: boolean
+          resolution_type?: string
         }
         Update: {
+          agenda_no?: string | null
+          agenda_title?: string | null
           created_at?: string
           display_order?: number
           id?: string
+          legal_note?: string | null
           meeting_id?: string
           question_text?: string
           question_type?: string
           required?: boolean
+          required_threshold?: string
+          requires_land_office_registration?: boolean
+          resolution_type?: string
         }
         Relationships: [
           {
@@ -517,11 +636,17 @@ export type Database = {
       }
       meetings: {
         Row: {
+          chairperson_name: string | null
           created_at: string
           description: string | null
           ends_at: string
+          fiscal_year: string | null
           id: string
+          location: string | null
+          meeting_number: string | null
+          meeting_type: string
           published_at: string | null
+          quorum_rule: string
           starts_at: string
           status: string
           title: string
@@ -530,11 +655,17 @@ export type Database = {
           video_url: string | null
         }
         Insert: {
+          chairperson_name?: string | null
           created_at?: string
           description?: string | null
           ends_at: string
+          fiscal_year?: string | null
           id?: string
+          location?: string | null
+          meeting_number?: string | null
+          meeting_type?: string
           published_at?: string | null
+          quorum_rule?: string
           starts_at: string
           status?: string
           title: string
@@ -543,11 +674,17 @@ export type Database = {
           video_url?: string | null
         }
         Update: {
+          chairperson_name?: string | null
           created_at?: string
           description?: string | null
           ends_at?: string
+          fiscal_year?: string | null
           id?: string
+          location?: string | null
+          meeting_number?: string | null
+          meeting_type?: string
           published_at?: string | null
+          quorum_rule?: string
           starts_at?: string
           status?: string
           title?: string

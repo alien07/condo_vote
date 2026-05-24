@@ -88,12 +88,49 @@ create table public.approval_requests (
   constraint approval_requests_status_check check (status in ('pending', 'approved', 'rejected', 'cancelled'))
 );
 
+create table public.condo_profiles (
+  id uuid primary key default gen_random_uuid(),
+  juristic_name text not null,
+  project_name text not null,
+  registration_no text,
+  tax_id text,
+  address text,
+  phone text,
+  email text,
+  manager_name text,
+  logo_storage_path text,
+  seal_storage_path text,
+  document_footer text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table public.committee_members (
+  id uuid primary key default gen_random_uuid(),
+  profile_id uuid references public.profiles(id),
+  full_name text not null,
+  position_title text not null,
+  term_starts_at date,
+  term_ends_at date,
+  display_order integer not null default 0,
+  signature_storage_path text,
+  active boolean not null default true,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
 create table public.meetings (
   id uuid primary key default gen_random_uuid(),
   title text not null,
   description text,
   video_url text,
   transcript text,
+  meeting_number text,
+  meeting_type text not null default 'online_vote',
+  fiscal_year text,
+  location text,
+  chairperson_name text,
+  quorum_rule text not null default 'one_fourth_total_ownership',
   starts_at timestamptz not null,
   ends_at timestamptz not null,
   status text not null default 'draft',
@@ -123,8 +160,14 @@ create table public.proxy_authorizations (
 create table public.meeting_questions (
   id uuid primary key default gen_random_uuid(),
   meeting_id uuid not null references public.meetings(id),
+  agenda_no text,
+  agenda_title text,
   question_text text not null,
   question_type text not null default 'single_choice',
+  resolution_type text not null default 'ordinary',
+  required_threshold text not null default 'majority_submitted',
+  requires_land_office_registration boolean not null default false,
+  legal_note text,
   display_order integer not null default 0,
   required boolean not null default true,
   created_at timestamptz not null default now(),
@@ -242,6 +285,7 @@ create index app_roles_profile_id_idx on public.app_roles(profile_id);
 create index approval_requests_profile_id_idx on public.approval_requests(profile_id);
 create index approval_requests_room_id_idx on public.approval_requests(room_id);
 create index approval_requests_status_idx on public.approval_requests(status);
+create index committee_members_active_order_idx on public.committee_members(active, display_order);
 create index proxy_authorizations_meeting_id_idx on public.proxy_authorizations(meeting_id);
 create index proxy_authorizations_room_id_idx on public.proxy_authorizations(room_id);
 create index proxy_authorizations_proxy_profile_id_idx on public.proxy_authorizations(proxy_profile_id);
@@ -270,6 +314,14 @@ create trigger profiles_set_updated_at
 before update on public.profiles
 for each row execute function public.set_updated_at();
 
+create trigger condo_profiles_set_updated_at
+before update on public.condo_profiles
+for each row execute function public.set_updated_at();
+
+create trigger committee_members_set_updated_at
+before update on public.committee_members
+for each row execute function public.set_updated_at();
+
 create trigger meetings_set_updated_at
 before update on public.meetings
 for each row execute function public.set_updated_at();
@@ -284,6 +336,8 @@ alter table public.room_owners enable row level security;
 alter table public.profiles enable row level security;
 alter table public.app_roles enable row level security;
 alter table public.approval_requests enable row level security;
+alter table public.condo_profiles enable row level security;
+alter table public.committee_members enable row level security;
 alter table public.meetings enable row level security;
 alter table public.proxy_authorizations enable row level security;
 alter table public.meeting_questions enable row level security;

@@ -42,6 +42,8 @@ erDiagram
 
 | Table | Purpose |
 | --- | --- |
+| [condo_profiles](#condo_profiles) | Juristic person profile used as the issuer identity for formal documents and PDFs. |
+| [committee_members](#committee_members) | Real committee roster and positions for document approval/signature context. |
 | [rooms](#rooms) | Master data for condominium units. Used as the base voting right because one room equals one vote. |
 | [owners](#owners) | Master data for legal owners from juristic office records or verified admin input. |
 | [room_owners](#room_owners) | Links owners to rooms and supports ownership history or co-owner cases. |
@@ -71,6 +73,16 @@ This section explains table responsibilities at the domain level. Column types a
 Purpose: Stores one condominium unit.
 Key fields: room number, floor/building, area size, ownership percentage, active flag.
 Notes: Source of truth for one-room-one-vote and ownership-weighted result calculation.
+
+### condo_profiles
+Purpose: Stores the juristic-person/project identity printed on formal documents.
+Key fields: juristic name, project name, registration number, tax ID, address, contact channels, manager name, document footer.
+Notes: Keep this separate from app config because it is legal/business data, not application branding.
+
+### committee_members
+Purpose: Stores actual committee member names and positions.
+Key fields: profile link, full name, position title, term dates, display order, active flag.
+Notes: This is document and governance data. `app_roles` remains system authorization only.
 
 ### owners
 Purpose: Stores verified legal owner master data.
@@ -104,13 +116,13 @@ Notes: Proxy voting is scoped to a meeting, not global.
 
 ### meetings
 Purpose: Stores each voting event or condominium meeting.
-Key fields: title, description, video URL, transcript, start/end time, status, published timestamp.
-Notes: Voting is allowed only inside the configured window after publication.
+Key fields: title, meeting number, meeting type, fiscal year, location/platform, chairperson, quorum rule, start/end time, status.
+Notes: Voting is allowed only inside the configured window after publication. Meeting metadata is copied into result snapshots for PDF/audit use.
 
 ### meeting_questions
 Purpose: Stores questions configured by admin for a meeting.
-Key fields: meeting, question text, question type, display order, required flag.
-Notes: MVP assumes single-choice unless requirements confirm multi-choice.
+Key fields: meeting, agenda number/title, question text, question type, resolution type, required threshold, land-office registration flag, legal note.
+Notes: Resolution metadata lets the PDF explain why an agenda passed or failed under the configured rule.
 
 ### meeting_choices
 Purpose: Stores choices under each question.

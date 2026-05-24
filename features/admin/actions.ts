@@ -61,6 +61,10 @@ function optionalDate(value: FormDataEntryValue | null) {
   return text;
 }
 
+function optionalBoolean(value: FormDataEntryValue | null) {
+  return value === "on";
+}
+
 function toNumber(value: number | string | null | undefined) {
   return Number(value ?? 0);
 }
@@ -150,6 +154,71 @@ async function queueResultApprovedEmails(meetingId: string) {
   }
 }
 
+export async function saveCondoProfile(formData: FormData) {
+  await requireAdmin();
+
+  const id = optionalText(formData.get("id"));
+  const values = {
+    juristic_name: requiredText(formData.get("juristic_name"), "Juristic name"),
+    project_name: requiredText(formData.get("project_name"), "Project name"),
+    registration_no: optionalText(formData.get("registration_no")),
+    tax_id: optionalText(formData.get("tax_id")),
+    address: optionalText(formData.get("address")),
+    phone: optionalText(formData.get("phone")),
+    email: optionalText(formData.get("email")),
+    manager_name: optionalText(formData.get("manager_name")),
+    document_footer: optionalText(formData.get("document_footer")),
+  };
+  const supabase = await createClient();
+  const { error } = id
+    ? await supabase.from("condo_profiles").update(values).eq("id", id)
+    : await supabase.from("condo_profiles").insert(values);
+
+  if (error) {
+    throw error;
+  }
+
+  revalidatePath("/admin");
+}
+
+export async function createCommitteeMember(formData: FormData) {
+  await requireAdmin();
+
+  const profileId = optionalText(formData.get("profile_id"));
+  const supabase = await createClient();
+  const { error } = await supabase.from("committee_members").insert({
+    profile_id: profileId,
+    full_name: requiredText(formData.get("full_name"), "Full name"),
+    position_title: requiredText(formData.get("position_title"), "Position"),
+    term_starts_at: optionalDate(formData.get("term_starts_at")),
+    term_ends_at: optionalDate(formData.get("term_ends_at")),
+    display_order: Number(formData.get("display_order") ?? 0),
+  });
+
+  if (error) {
+    throw error;
+  }
+
+  revalidatePath("/admin");
+}
+
+export async function deactivateCommitteeMember(formData: FormData) {
+  await requireAdmin();
+
+  const id = requiredText(formData.get("id"), "Committee member ID");
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("committee_members")
+    .update({ active: false })
+    .eq("id", id);
+
+  if (error) {
+    throw error;
+  }
+
+  revalidatePath("/admin");
+}
+
 export async function createRoom(formData: FormData) {
   await requireAdmin();
 
@@ -189,6 +258,12 @@ export async function createMeeting(formData: FormData) {
     video_url: optionalText(formData.get("video_url")),
     starts_at: startsAt,
     ends_at: endsAt,
+    meeting_number: optionalText(formData.get("meeting_number")),
+    meeting_type: requiredText(formData.get("meeting_type"), "Meeting type"),
+    fiscal_year: optionalText(formData.get("fiscal_year")),
+    location: optionalText(formData.get("location")),
+    chairperson_name: optionalText(formData.get("chairperson_name")),
+    quorum_rule: requiredText(formData.get("quorum_rule"), "Quorum rule"),
   });
 
   if (error) {
@@ -424,10 +499,24 @@ export async function createMeetingQuestion(formData: FormData) {
   const supabase = await createClient();
   const { error } = await supabase.from("meeting_questions").insert({
     meeting_id: requiredText(formData.get("meeting_id"), "Meeting"),
+    agenda_no: optionalText(formData.get("agenda_no")),
+    agenda_title: optionalText(formData.get("agenda_title")),
     question_text: requiredText(formData.get("question_text"), "Question"),
     question_type: requiredText(formData.get("question_type"), "Question type"),
+    resolution_type: requiredText(
+      formData.get("resolution_type"),
+      "Resolution type",
+    ),
+    required_threshold: requiredText(
+      formData.get("required_threshold"),
+      "Required threshold",
+    ),
+    requires_land_office_registration: optionalBoolean(
+      formData.get("requires_land_office_registration"),
+    ),
+    legal_note: optionalText(formData.get("legal_note")),
     display_order: Number(formData.get("display_order") ?? 0),
-    required: formData.get("required") === "on",
+    required: optionalBoolean(formData.get("required")),
   });
 
   if (error) {
@@ -623,13 +712,15 @@ export async function generateResultSnapshot(formData: FormData) {
     await Promise.all([
       supabase
         .from("meetings")
-        .select("id, title, starts_at, ends_at, status")
+        .select(
+          "id, title, starts_at, ends_at, status, meeting_number, meeting_type, fiscal_year, location, chairperson_name, quorum_rule",
+        )
         .eq("id", meetingId)
         .single(),
       supabase
         .from("meeting_questions")
         .select(
-          "id, question_text, question_type, display_order, meeting_choices(id, choice_text, display_order)",
+          "id, agenda_no, agenda_title, question_text, question_type, resolution_type, required_threshold, requires_land_office_registration, legal_note, display_order, meeting_choices(id, choice_text, display_order)",
         )
         .eq("meeting_id", meetingId)
         .order("display_order", { ascending: true }),
@@ -710,8 +801,15 @@ export async function generateResultSnapshot(formData: FormData) {
     },
     questions: questionsResult.data.map((question) => ({
       id: question.id,
+      agenda_no: question.agenda_no,
+      agenda_title: question.agenda_title,
       text: question.question_text,
       type: question.question_type,
+      resolution_type: question.resolution_type,
+      required_threshold: question.required_threshold,
+      requires_land_office_registration:
+        question.requires_land_office_registration,
+      legal_note: question.legal_note,
       choices: question.meeting_choices
         .sort((left, right) => left.display_order - right.display_order)
         .map((choice) => {
