@@ -54,6 +54,8 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
   );
 
   test("demo admin can sign in and manage master data", async ({ page }) => {
+    test.setTimeout(60_000);
+
     const supabase = createClient<Database>(supabaseUrl!, serviceKey!, {
       auth: {
         autoRefreshToken: false,
@@ -448,6 +450,15 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
     await expect(
       resultRow.getByRole("cell", { name: "approved", exact: true }),
     ).toBeVisible();
+    const pdfPreview = page.locator("#mock-pdf-summary");
+    await expect(
+      pdfPreview.getByRole("heading", { name: "Mock PDF Result Summary" }),
+    ).toBeVisible();
+    await expect(pdfPreview.getByText(meetingTitle)).toBeVisible();
+    await expect(pdfPreview.getByText("Agenda Results")).toBeVisible();
+    await expect(pdfPreview.getByText(updatedChoiceText)).toBeVisible();
+    await expect(pdfPreview.getByText("Use online demo vote")).toBeVisible();
+
     await page.goto(`${activeAppOrigin}/admin/meetings`);
     const lockedMeetingRow = page
       .getByRole("row")

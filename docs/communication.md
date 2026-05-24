@@ -51,16 +51,22 @@ Content:
 - Do not log sensitive document URLs if they contain signed access tokens.
 
 ## PDF Summary Scope
-The generated PDF can be adjusted later, but the MVP should include:
+The generated PDF can be adjusted later. The current MVP exposes a mock
+print-ready preview in `/admin/results` from the selected result snapshot.
+Production PDF file generation remains a Tail V1 task.
+
+The summary should include:
 - Project or condominium name if configured.
 - Meeting title and description.
 - Voting start/end time.
 - Result approval timestamp.
 - Approver name or role.
+- Committee member names when configured.
 - Question list.
 - Choice-level vote count by room.
 - Choice-level ownership percentage against total project ownership.
 - Choice-level ownership percentage against submitted-vote ownership.
+- Manual/online vote source conflict count and conflict remarks when applicable.
 - Notes that results are based on the latest valid ballot per room.
 
 ## Open Questions
