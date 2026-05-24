@@ -46,9 +46,9 @@ These workflows define the admin-facing MVP behavior. Ask before implementing an
 
 ## Result Management
 - Admin can import manual/paper votes for a meeting by room, agenda question, and choice.
-- Manual votes are stored separately from online ballots for audit.
+- Manual votes are stored as `manual_ballots` and `manual_ballot_answers`, parallel to online `ballots` and `ballot_answers`.
 - If the same room has submitted online votes and imported manual votes, admin must choose one effective source before result generation.
-- Conflict resolution must include a remark when relevant and is copied into the result snapshot audit payload.
+- Conflict resolution references the online ballot ID and manual ballot ID directly, and must include a remark when relevant.
 - Admin can generate a result snapshot after voting closes.
 - Admin/committee can review the result snapshot.
 - Committee approval notes should mention material manual/online conflict handling before approving the result.

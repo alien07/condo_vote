@@ -546,74 +546,103 @@ export type Database = {
         }
         Relationships: []
       }
-      manual_vote_entries: {
+      manual_ballot_answers: {
         Row: {
-          audit_note: string | null
           choice_id: string
+          created_at: string
           id: string
-          imported_at: string
-          imported_by: string
-          meeting_id: string
+          manual_ballot_id: string
           question_id: string
-          room_id: string
-          source_label: string | null
-          updated_at: string
         }
         Insert: {
-          audit_note?: string | null
           choice_id: string
+          created_at?: string
           id?: string
-          imported_at?: string
-          imported_by: string
-          meeting_id: string
+          manual_ballot_id: string
           question_id: string
-          room_id: string
-          source_label?: string | null
-          updated_at?: string
         }
         Update: {
-          audit_note?: string | null
           choice_id?: string
+          created_at?: string
           id?: string
-          imported_at?: string
-          imported_by?: string
-          meeting_id?: string
+          manual_ballot_id?: string
           question_id?: string
-          room_id?: string
-          source_label?: string | null
-          updated_at?: string
         }
         Relationships: [
           {
-            foreignKeyName: "manual_vote_entries_choice_id_fkey"
+            foreignKeyName: "manual_ballot_answers_choice_id_fkey"
             columns: ["choice_id"]
             isOneToOne: false
             referencedRelation: "meeting_choices"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "manual_vote_entries_imported_by_fkey"
+            foreignKeyName: "manual_ballot_answers_manual_ballot_id_fkey"
+            columns: ["manual_ballot_id"]
+            isOneToOne: false
+            referencedRelation: "manual_ballots"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "manual_ballot_answers_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "meeting_questions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      manual_ballots: {
+        Row: {
+          audit_note: string | null
+          id: string
+          imported_at: string
+          imported_by: string
+          meeting_id: string
+          room_id: string
+          source_label: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          audit_note?: string | null
+          id?: string
+          imported_at?: string
+          imported_by: string
+          meeting_id: string
+          room_id: string
+          source_label?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          audit_note?: string | null
+          id?: string
+          imported_at?: string
+          imported_by?: string
+          meeting_id?: string
+          room_id?: string
+          source_label?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "manual_ballots_imported_by_fkey"
             columns: ["imported_by"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "manual_vote_entries_meeting_id_fkey"
+            foreignKeyName: "manual_ballots_meeting_id_fkey"
             columns: ["meeting_id"]
             isOneToOne: false
             referencedRelation: "meetings"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "manual_vote_entries_question_id_fkey"
-            columns: ["question_id"]
-            isOneToOne: false
-            referencedRelation: "meeting_questions"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "manual_vote_entries_room_id_fkey"
+            foreignKeyName: "manual_ballots_room_id_fkey"
             columns: ["room_id"]
             isOneToOne: false
             referencedRelation: "rooms"
@@ -1041,30 +1070,39 @@ export type Database = {
       }
       vote_source_resolutions: {
         Row: {
+          chosen_ballot_id: string
           chosen_source: string
           conflict_remark: string | null
           id: string
+          manual_ballot_id: string
           meeting_id: string
+          online_ballot_id: string
           resolved_at: string
           resolved_by: string
           room_id: string
           updated_at: string
         }
         Insert: {
+          chosen_ballot_id: string
           chosen_source: string
           conflict_remark?: string | null
           id?: string
+          manual_ballot_id: string
           meeting_id: string
+          online_ballot_id: string
           resolved_at?: string
           resolved_by: string
           room_id: string
           updated_at?: string
         }
         Update: {
+          chosen_ballot_id?: string
           chosen_source?: string
           conflict_remark?: string | null
           id?: string
+          manual_ballot_id?: string
           meeting_id?: string
+          online_ballot_id?: string
           resolved_at?: string
           resolved_by?: string
           room_id?: string
@@ -1072,10 +1110,24 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "vote_source_resolutions_manual_ballot_id_fkey"
+            columns: ["manual_ballot_id"]
+            isOneToOne: false
+            referencedRelation: "manual_ballots"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "vote_source_resolutions_meeting_id_fkey"
             columns: ["meeting_id"]
             isOneToOne: false
             referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vote_source_resolutions_online_ballot_id_fkey"
+            columns: ["online_ballot_id"]
+            isOneToOne: false
+            referencedRelation: "ballots"
             referencedColumns: ["id"]
           },
           {

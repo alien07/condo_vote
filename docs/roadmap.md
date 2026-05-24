@@ -33,6 +33,13 @@
 - Better admin dashboard.
 - Result snapshot immutability checks.
 
+## Phase 4 - V2 Voting And Meeting Flexibility
+- Committee approval notes include conflict handling remarks when applicable.
+- Design for dynamic agenda or vote topics added during a meeting, from 0 to n items.
+- Future schema concept: `meeting_question_revisions` or `agenda_change_requests`.
+- Runtime-added agenda items require approval and an audit trail before voting.
+- Preserve immutable result snapshots after committee approval.
+
 ## Later
 - LINE login or LINE notification.
 - Multi-condo tenancy.

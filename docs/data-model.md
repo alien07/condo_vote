@@ -32,6 +32,11 @@ erDiagram
     profiles ||--o{ ballots : submitted_by
     ballots ||--o{ ballot_answers : includes
     ballots ||--o{ ballot_versions : versions
+    meetings ||--o{ manual_ballots : imports
+    rooms ||--o{ manual_ballots : manual_room
+    manual_ballots ||--o{ manual_ballot_answers : includes
+    ballots ||--o{ vote_source_resolutions : online_conflict
+    manual_ballots ||--o{ vote_source_resolutions : manual_conflict
     meetings ||--o{ result_snapshots : calculates
     result_snapshots ||--o{ committee_approvals : approved_by
     documents }o--|| profiles : uploaded_by
@@ -58,7 +63,8 @@ erDiagram
 | [ballots](#ballots) | Current ballot record per meeting and room. |
 | [ballot_answers](#ballot_answers) | Current effective answers for a ballot. |
 | [ballot_versions](#ballot_versions) | Historical ballot payloads whenever a voter edits before close. |
-| [manual_vote_entries](#manual_vote_entries) | Admin-imported paper/offline votes for a meeting agenda. |
+| [manual_ballots](#manual_ballots) | Admin-imported paper/offline ballot record per meeting and room. |
+| [manual_ballot_answers](#manual_ballot_answers) | Current effective answers for an imported manual ballot. |
 | [vote_source_resolutions](#vote_source_resolutions) | Admin decision record when the same room has both online and manual votes. |
 | [result_snapshots](#result_snapshots) | Calculated result payloads for a meeting before/after approval. |
 | [committee_approvals](#committee_approvals) | Approval record that makes a result visible to viewers. |
@@ -151,15 +157,20 @@ Purpose: Stores immutable ballot history.
 Key fields: ballot, version number, payload snapshot, created timestamp.
 Notes: Every submit/edit should create a version for audit.
 
-### manual_vote_entries
-Purpose: Stores manual/offline vote imports per meeting, room, and question.
-Key fields: meeting, room, question, choice, source label, audit note, importer, import timestamp.
-Notes: Manual votes remain separate from online ballots so the source is auditable. One manual answer is stored per meeting-room-question.
+### manual_ballots
+Purpose: Stores imported manual/offline ballot records per meeting and room.
+Key fields: meeting, room, importer, source label, audit note, status, imported timestamp.
+Notes: Mirrors the online `ballots` table closely enough that result calculation can choose either source per room.
+
+### manual_ballot_answers
+Purpose: Stores current effective selected choices for an imported manual ballot.
+Key fields: manual ballot, question, choice.
+Notes: Mirrors `ballot_answers`. One answer is stored per manual ballot and question.
 
 ### vote_source_resolutions
 Purpose: Stores admin conflict decisions when a room has both online and manual vote sources.
-Key fields: meeting, room, chosen source, conflict remark, resolver, resolved timestamp.
-Notes: Result generation should fail when an online/manual conflict exists without a resolution. Result snapshots must include the source audit summary.
+Key fields: meeting, room, online ballot ID, manual ballot ID, chosen source, chosen ballot ID, conflict remark, resolver, resolved timestamp.
+Notes: Result generation should fail when an online/manual conflict exists without a matching resolution for the current ballot IDs. Result snapshots must include the source audit summary.
 
 ### result_snapshots
 Purpose: Stores generated result calculations.

@@ -75,7 +75,7 @@ export default async function AdminPage() {
     roomOwners,
     meetings,
     questions,
-    manualVotes,
+    manualBallots,
     voteSourceResolutions,
     ballots,
     proxyAuthorizations,
@@ -110,9 +110,19 @@ export default async function AdminPage() {
   const submittedOnlineRoomKeys = new Set(
     ballots.map((ballot) => `${ballot.meeting_id}:${ballot.room_id}`),
   );
-  const manualRoomKeys = new Set(
-    manualVotes.map((manualVote) => `${manualVote.meeting_id}:${manualVote.room_id}`),
+  const onlineBallotByRoomKey = new Map(
+    ballots.map((ballot) => [
+      `${ballot.meeting_id}:${ballot.room_id}`,
+      ballot,
+    ]),
   );
+  const manualBallotByRoomKey = new Map(
+    manualBallots.map((manualBallot) => [
+      `${manualBallot.meeting_id}:${manualBallot.room_id}`,
+      manualBallot,
+    ]),
+  );
+  const manualRoomKeys = new Set(manualBallotByRoomKey.keys());
   const resolutionByRoomKey = new Map(
     voteSourceResolutions.map((resolution) => [
       `${resolution.meeting_id}:${resolution.room_id}`,
@@ -125,14 +135,27 @@ export default async function AdminPage() {
       const [meetingId, roomId] = key.split(":");
       const meeting = meetings.find((item) => item.id === meetingId);
       const room = rooms.find((item) => item.id === roomId);
+      const onlineBallot = onlineBallotByRoomKey.get(key);
+      const manualBallot = manualBallotByRoomKey.get(key);
+      const resolution = resolutionByRoomKey.get(key);
+      const matchingResolution =
+        resolution &&
+        onlineBallot &&
+        manualBallot &&
+        resolution.online_ballot_id === onlineBallot.id &&
+        resolution.manual_ballot_id === manualBallot.id
+          ? resolution
+          : null;
 
       return {
         key,
         meetingId,
         roomId,
+        onlineBallotId: onlineBallot?.id ?? "",
+        manualBallotId: manualBallot?.id ?? "",
         meetingTitle: meeting?.title ?? "-",
         roomNumber: room?.room_number ?? "-",
-        resolution: resolutionByRoomKey.get(key) ?? null,
+        resolution: matchingResolution,
       };
     });
 
@@ -175,7 +198,7 @@ export default async function AdminPage() {
               <div className="text-[var(--muted)]">Eligible</div>
             </div>
             <div className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2">
-              <div className="font-semibold">{manualVotes.length}</div>
+              <div className="font-semibold">{manualBallots.length}</div>
               <div className="text-[var(--muted)]">Manual votes</div>
             </div>
             <div className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2">
@@ -375,26 +398,28 @@ export default async function AdminPage() {
                 </tr>
               </thead>
               <tbody>
-                {manualVotes.map((manualVote) => (
-                  <tr className="border-b border-[var(--border)]" key={manualVote.id}>
-                    <td className="py-2 pr-3">
-                      {manualVote.meetings?.title ?? "-"}
-                    </td>
-                    <td className="py-2 pr-3">
-                      {manualVote.rooms?.room_number ?? "-"}
-                    </td>
-                    <td className="py-2 pr-3">
-                      {manualVote.meeting_questions?.question_text ?? "-"}
-                    </td>
-                    <td className="py-2 pr-3">
-                      {manualVote.meeting_choices?.choice_text ?? "-"}
-                    </td>
-                    <td className="py-2">
-                      {manualVote.source_label ?? "manual"} /{" "}
-                      {manualVote.audit_note ?? "-"}
-                    </td>
-                  </tr>
-                ))}
+                {manualBallots.flatMap((manualBallot) =>
+                  manualBallot.manual_ballot_answers.map((answer) => (
+                    <tr className="border-b border-[var(--border)]" key={answer.id}>
+                      <td className="py-2 pr-3">
+                        {manualBallot.meetings?.title ?? "-"}
+                      </td>
+                      <td className="py-2 pr-3">
+                        {manualBallot.rooms?.room_number ?? "-"}
+                      </td>
+                      <td className="py-2 pr-3">
+                        {answer.meeting_questions?.question_text ?? "-"}
+                      </td>
+                      <td className="py-2 pr-3">
+                        {answer.meeting_choices?.choice_text ?? "-"}
+                      </td>
+                      <td className="py-2">
+                        {manualBallot.source_label ?? "manual"} /{" "}
+                        {manualBallot.audit_note ?? "-"}
+                      </td>
+                    </tr>
+                  )),
+                )}
               </tbody>
             </table>
           </div>
@@ -432,6 +457,16 @@ export default async function AdminPage() {
                             name="room_id"
                             type="hidden"
                             value={conflict.roomId}
+                          />
+                          <input
+                            name="online_ballot_id"
+                            type="hidden"
+                            value={conflict.onlineBallotId}
+                          />
+                          <input
+                            name="manual_ballot_id"
+                            type="hidden"
+                            value={conflict.manualBallotId}
                           />
                           <select
                             className="rounded-md border border-[var(--border)] px-2 py-1 text-sm"

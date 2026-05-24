@@ -14,7 +14,7 @@ export async function getAdminDashboardData() {
     roomOwnersResult,
     meetingsResult,
     questionsResult,
-    manualVotesResult,
+    manualBallotsResult,
     voteSourceResolutionsResult,
     ballotsResult,
     proxyAuthorizationsResult,
@@ -72,15 +72,15 @@ export async function getAdminDashboardData() {
         )
         .order("display_order", { ascending: true }),
       supabase
-        .from("manual_vote_entries")
+        .from("manual_ballots")
         .select(
-          "id, meeting_id, room_id, question_id, choice_id, source_label, audit_note, imported_at, meetings(id, title), rooms(id, room_number), meeting_questions(id, question_text), meeting_choices(id, choice_text)",
+          "id, meeting_id, room_id, source_label, audit_note, status, imported_at, meetings(id, title), rooms(id, room_number), manual_ballot_answers(id, question_id, choice_id, meeting_questions(id, question_text), meeting_choices(id, choice_text))",
         )
         .order("imported_at", { ascending: false }),
       supabase
         .from("vote_source_resolutions")
         .select(
-          "id, meeting_id, room_id, chosen_source, conflict_remark, resolved_at, meetings(id, title), rooms(id, room_number)",
+          "id, meeting_id, room_id, online_ballot_id, manual_ballot_id, chosen_source, chosen_ballot_id, conflict_remark, resolved_at, meetings(id, title), rooms(id, room_number)",
         )
         .order("resolved_at", { ascending: false }),
       supabase
@@ -153,8 +153,8 @@ export async function getAdminDashboardData() {
     throw questionsResult.error;
   }
 
-  if (manualVotesResult.error) {
-    throw manualVotesResult.error;
+  if (manualBallotsResult.error) {
+    throw manualBallotsResult.error;
   }
 
   if (voteSourceResolutionsResult.error) {
@@ -198,7 +198,7 @@ export async function getAdminDashboardData() {
     roomOwners: roomOwnersResult.data,
     meetings: meetingsResult.data,
     questions: questionsResult.data,
-    manualVotes: manualVotesResult.data,
+    manualBallots: manualBallotsResult.data,
     voteSourceResolutions: voteSourceResolutionsResult.data,
     ballots: ballotsResult.data,
     proxyAuthorizations: proxyAuthorizationsResult.data,

@@ -602,21 +602,39 @@ export async function importManualVoteEntry(formData: FormData) {
     throw choiceResult.error;
   }
 
-  const { error } = await supabase.from("manual_vote_entries").upsert(
-    {
-      meeting_id: meetingId,
-      room_id: roomId,
-      question_id: questionId,
-      choice_id: choiceId,
-      source_label: optionalText(formData.get("source_label")),
-      audit_note: optionalText(formData.get("audit_note")),
-      imported_by: importer.id,
-    },
-    { onConflict: "meeting_id,room_id,question_id" },
-  );
+  const { data: manualBallot, error: manualBallotError } = await supabase
+    .from("manual_ballots")
+    .upsert(
+      {
+        meeting_id: meetingId,
+        room_id: roomId,
+        source_label: optionalText(formData.get("source_label")),
+        audit_note: optionalText(formData.get("audit_note")),
+        imported_by: importer.id,
+        status: "submitted",
+      },
+      { onConflict: "meeting_id,room_id" },
+    )
+    .select("id")
+    .single();
 
-  if (error) {
-    throw error;
+  if (manualBallotError) {
+    throw manualBallotError;
+  }
+
+  const { error: answerError } = await supabase
+    .from("manual_ballot_answers")
+    .upsert(
+      {
+        manual_ballot_id: manualBallot.id,
+        question_id: questionId,
+        choice_id: choiceId,
+      },
+      { onConflict: "manual_ballot_id,question_id" },
+    );
+
+  if (answerError) {
+    throw answerError;
   }
 
   revalidatePath("/admin");
@@ -625,12 +643,26 @@ export async function importManualVoteEntry(formData: FormData) {
 export async function resolveVoteSourceConflict(formData: FormData) {
   const resolver = await requireAdmin();
 
+  const chosenSource = requiredText(formData.get("chosen_source"), "Chosen source");
+  const onlineBallotId = requiredText(
+    formData.get("online_ballot_id"),
+    "Online ballot",
+  );
+  const manualBallotId = requiredText(
+    formData.get("manual_ballot_id"),
+    "Manual ballot",
+  );
+  const chosenBallotId =
+    chosenSource === "online" ? onlineBallotId : manualBallotId;
   const supabase = await createClient();
   const { error } = await supabase.from("vote_source_resolutions").upsert(
     {
       meeting_id: requiredText(formData.get("meeting_id"), "Meeting"),
       room_id: requiredText(formData.get("room_id"), "Room"),
-      chosen_source: requiredText(formData.get("chosen_source"), "Chosen source"),
+      online_ballot_id: onlineBallotId,
+      manual_ballot_id: manualBallotId,
+      chosen_source: chosenSource,
+      chosen_ballot_id: chosenBallotId,
       conflict_remark: optionalText(formData.get("conflict_remark")),
       resolved_by: resolver.id,
       resolved_at: new Date().toISOString(),
@@ -787,7 +819,7 @@ export async function generateResultSnapshot(formData: FormData) {
     questionsResult,
     eligibleResult,
     ballotsResult,
-    manualVotesResult,
+    manualBallotsResult,
     voteSourceResolutionsResult,
   ] = await Promise.all([
       supabase
@@ -814,12 +846,16 @@ export async function generateResultSnapshot(formData: FormData) {
         .eq("meeting_id", meetingId)
         .eq("status", "submitted"),
       supabase
-        .from("manual_vote_entries")
-        .select("id, room_id, question_id, choice_id, source_label, audit_note")
+        .from("manual_ballots")
+        .select(
+          "id, room_id, source_label, audit_note, manual_ballot_answers(question_id, choice_id)",
+        )
         .eq("meeting_id", meetingId),
       supabase
         .from("vote_source_resolutions")
-        .select("room_id, chosen_source, conflict_remark, resolved_at")
+        .select(
+          "room_id, online_ballot_id, manual_ballot_id, chosen_source, chosen_ballot_id, conflict_remark, resolved_at",
+        )
         .eq("meeting_id", meetingId),
     ]);
 
@@ -839,8 +875,8 @@ export async function generateResultSnapshot(formData: FormData) {
     throw ballotsResult.error;
   }
 
-  if (manualVotesResult.error) {
-    throw manualVotesResult.error;
+  if (manualBallotsResult.error) {
+    throw manualBallotsResult.error;
   }
 
   if (voteSourceResolutionsResult.error) {
@@ -853,10 +889,17 @@ export async function generateResultSnapshot(formData: FormData) {
       toNumber(eligible.ownership_percent),
     ]),
   );
-  const onlineRoomIds = new Set(ballotsResult.data.map((ballot) => ballot.room_id));
-  const manualRoomIds = new Set(
-    manualVotesResult.data.map((manualVote) => manualVote.room_id),
+  const onlineBallotByRoom = new Map(
+    ballotsResult.data.map((ballot) => [ballot.room_id, ballot]),
   );
+  const manualBallotByRoom = new Map(
+    manualBallotsResult.data.map((manualBallot) => [
+      manualBallot.room_id,
+      manualBallot,
+    ]),
+  );
+  const onlineRoomIds = new Set(onlineBallotByRoom.keys());
+  const manualRoomIds = new Set(manualBallotByRoom.keys());
   const resolutionByRoom = new Map(
     voteSourceResolutionsResult.data.map((resolution) => [
       resolution.room_id,
@@ -865,10 +908,26 @@ export async function generateResultSnapshot(formData: FormData) {
   );
   const conflicts = [...manualRoomIds]
     .filter((roomId) => onlineRoomIds.has(roomId))
-    .map((roomId) => ({
-      room_id: roomId,
-      resolution: resolutionByRoom.get(roomId) ?? null,
-    }));
+    .map((roomId) => {
+      const onlineBallot = onlineBallotByRoom.get(roomId);
+      const manualBallot = manualBallotByRoom.get(roomId);
+      const resolution = resolutionByRoom.get(roomId);
+      const matchingResolution =
+        resolution &&
+        onlineBallot &&
+        manualBallot &&
+        resolution.online_ballot_id === onlineBallot.id &&
+        resolution.manual_ballot_id === manualBallot.id
+          ? resolution
+          : null;
+
+      return {
+        room_id: roomId,
+        online_ballot_id: onlineBallot?.id ?? null,
+        manual_ballot_id: manualBallot?.id ?? null,
+        resolution: matchingResolution,
+      };
+    });
   const unresolvedConflicts = conflicts.filter((conflict) => !conflict.resolution);
 
   if (unresolvedConflicts.length > 0) {
@@ -931,21 +990,24 @@ export async function generateResultSnapshot(formData: FormData) {
     }
   }
 
-  for (const manualVote of manualVotesResult.data) {
-    if (effectiveRoomSources.get(manualVote.room_id) !== "manual") {
+  for (const manualBallot of manualBallotsResult.data) {
+    if (effectiveRoomSources.get(manualBallot.room_id) !== "manual") {
       continue;
     }
 
-    const ownership = ownershipByRoom.get(manualVote.room_id) ?? 0;
-    const current = countsByChoice.get(manualVote.choice_id) ?? {
-      voteCount: 0,
-      ownership: 0,
-    };
+    const ownership = ownershipByRoom.get(manualBallot.room_id) ?? 0;
 
-    countsByChoice.set(manualVote.choice_id, {
-      voteCount: current.voteCount + 1,
-      ownership: current.ownership + ownership,
-    });
+    for (const answer of manualBallot.manual_ballot_answers) {
+      const current = countsByChoice.get(answer.choice_id) ?? {
+        voteCount: 0,
+        ownership: 0,
+      };
+
+      countsByChoice.set(answer.choice_id, {
+        voteCount: current.voteCount + 1,
+        ownership: current.ownership + ownership,
+      });
+    }
   }
 
   const payload = {
@@ -953,9 +1015,9 @@ export async function generateResultSnapshot(formData: FormData) {
     generated_at: new Date().toISOString(),
     totals: {
       eligible_voters: eligibleResult.data.length,
-      submitted_ballots: ballotsResult.data.length,
+      submitted_ballots: submittedRoomIds.size,
       online_ballots: ballotsResult.data.length,
-      manual_vote_rooms: manualRoomIds.size,
+      manual_ballots: manualBallotsResult.data.length,
       effective_vote_rooms: submittedRoomIds.size,
       total_eligible_ownership: totalEligibleOwnership,
       submitted_ownership: submittedOwnership,
@@ -972,7 +1034,10 @@ export async function generateResultSnapshot(formData: FormData) {
       })),
       conflicts: conflicts.map((conflict) => ({
         room_id: conflict.room_id,
+        online_ballot_id: conflict.online_ballot_id,
+        manual_ballot_id: conflict.manual_ballot_id,
         chosen_source: conflict.resolution?.chosen_source ?? null,
+        chosen_ballot_id: conflict.resolution?.chosen_ballot_id ?? null,
         conflict_remark: conflict.resolution?.conflict_remark ?? null,
         resolved_at: conflict.resolution?.resolved_at ?? null,
       })),
