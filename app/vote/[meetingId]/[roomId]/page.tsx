@@ -19,6 +19,30 @@ function formatDateTime(value: string) {
   }).format(new Date(value));
 }
 
+function getVersionAnswers(payload: unknown) {
+  if (!payload || typeof payload !== "object" || !("answers" in payload)) {
+    return [];
+  }
+
+  const answers = payload.answers;
+
+  if (!Array.isArray(answers)) {
+    return [];
+  }
+
+  return answers.filter(
+    (answer): answer is { question_id: string; choice_id: string } =>
+      Boolean(
+        answer &&
+          typeof answer === "object" &&
+          "question_id" in answer &&
+          "choice_id" in answer &&
+          typeof answer.question_id === "string" &&
+          typeof answer.choice_id === "string",
+      ),
+  );
+}
+
 export default async function VoteDetailPage({ params }: VoteDetailPageProps) {
   const { meetingId, roomId } = await params;
   const { eligible, questions, ballot } = await getVotingAssignmentData(
@@ -39,6 +63,17 @@ export default async function VoteDetailPage({ params }: VoteDetailPageProps) {
     ]) ?? [],
   );
   const votingStatus = getVotingWindowStatus(meeting);
+  const choiceTextById = new Map(
+    questions.flatMap((question) =>
+      question.meeting_choices.map((choice) => [choice.id, choice.choice_text]),
+    ),
+  );
+  const questionTextById = new Map(
+    questions.map((question) => [question.id, question.question_text]),
+  );
+  const ballotVersions = [...(ballot?.ballot_versions ?? [])].sort(
+    (left, right) => right.version_number - left.version_number,
+  );
 
   return (
     <main className="min-h-screen px-6 py-8">
@@ -152,6 +187,58 @@ export default async function VoteDetailPage({ params }: VoteDetailPageProps) {
             </form>
           )}
         </section>
+
+        {ballotVersions.length > 0 ? (
+          <section className="mt-5 rounded-lg border border-[var(--border)] bg-[var(--surface)] p-5">
+            <h2 className="text-lg font-semibold">Version history</h2>
+            <p className="mt-1 text-sm text-[var(--muted)]">
+              Each submit or edit creates an immutable ballot version for audit.
+            </p>
+            <div className="mt-4 grid gap-3">
+              {ballotVersions.map((version) => {
+                const answers = getVersionAnswers(version.payload_json);
+
+                return (
+                  <article
+                    className="rounded-md border border-[var(--border)] p-4"
+                    key={version.id}
+                  >
+                    <div className="flex flex-col gap-1 md:flex-row md:items-center md:justify-between">
+                      <h3 className="font-semibold">
+                        Version v{version.version_number}
+                      </h3>
+                      <div className="text-sm text-[var(--muted)]">
+                        {formatDateTime(version.created_at)}
+                      </div>
+                    </div>
+                    {answers.length > 0 ? (
+                      <dl className="mt-3 grid gap-2 text-sm">
+                        {answers.map((answer) => (
+                          <div
+                            className="grid gap-1 md:grid-cols-[1fr_1fr]"
+                            key={`${version.id}:${answer.question_id}`}
+                          >
+                            <dt className="text-[var(--muted)]">
+                              {questionTextById.get(answer.question_id) ??
+                                "Question"}
+                            </dt>
+                            <dd className="font-medium">
+                              {choiceTextById.get(answer.choice_id) ?? "Choice"}
+                            </dd>
+                          </div>
+                        ))}
+                      </dl>
+                    ) : (
+                      <p className="mt-3 text-sm text-[var(--muted)]">
+                        No answers were captured for this version.
+                      </p>
+                    )}
+                  </article>
+                );
+              })}
+            </div>
+          </section>
+        ) : null}
       </section>
     </main>
   );

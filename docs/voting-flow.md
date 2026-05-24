@@ -9,6 +9,7 @@ The voter assignment list is `/vote`. A specific ballot is opened at `/vote/[mee
 - A voter can edit the submitted ballot while the meeting is still `published` and inside the voting window.
 - The ballot detail page includes a pre-submit review note and displays the latest submitted version/time.
 - Each submit/update writes the current `ballots` row, upserts `ballot_answers`, and inserts a new `ballot_versions` record.
+- The ballot detail page shows version history so voters can review submitted choices across edits.
 - Closed or out-of-window meetings render existing ballot status but disable submit/update.
 
 ## Access Rules

@@ -353,6 +353,13 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
     await voteCard.getByLabel(updatedChoiceText).check();
     await voteCard.getByRole("button", { name: "Update ballot" }).click();
     await expect(voteCard.getByText("Submitted v2")).toBeVisible();
+    const versionHistory = page
+      .getByRole("heading", { name: "Version history" })
+      .locator("xpath=ancestor::section[1]");
+    await expect(versionHistory.getByText("Version v2")).toBeVisible();
+    await expect(versionHistory.getByText("Version v1")).toBeVisible();
+    await expect(versionHistory.getByText(choiceText)).toBeVisible();
+    await expect(versionHistory.getByText(updatedChoiceText)).toBeVisible();
 
     const [
       persistedMeetingResult,

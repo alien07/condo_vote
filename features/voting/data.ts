@@ -114,7 +114,7 @@ export async function getVotingAssignmentData(meetingId: string, roomId: string)
     supabase
       .from("ballots")
       .select(
-        "id, meeting_id, room_id, status, submitted_at, version_number, ballot_answers(id, question_id, choice_id)",
+        "id, meeting_id, room_id, status, submitted_at, version_number, ballot_answers(id, question_id, choice_id), ballot_versions(id, version_number, created_at, payload_json)",
       )
       .eq("meeting_id", meetingId)
       .eq("room_id", roomId)
