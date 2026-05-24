@@ -23,8 +23,14 @@
 - Proxy approval documents.
 - Private document storage.
 - Email invitations.
-- Email result notification.
-- PDF result export.
+- Mock PDF result summary.
+- Mock Thai/English result notification email queue.
+
+## Tail V1 - Production Communication
+- Generate juristic-person PDF result summary from approved snapshots.
+- Send Thai/English result notification emails together.
+- Apply provider send limits with queued delivery ordering.
+- Attach PDF or provide a signed PDF download link.
 
 ## Phase 3 - Hardening
 - Full RLS coverage.
