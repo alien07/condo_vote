@@ -69,6 +69,10 @@ function toNumber(value: number | string | null | undefined) {
   return Number(value ?? 0);
 }
 
+function revalidateAdminPaths() {
+  revalidatePath("/admin", "layout");
+}
+
 async function queueResultApprovedEmails(meetingId: string) {
   const supabase = await createClient();
   const [ownersResult, residentsResult, existingLogsResult] = await Promise.all([
@@ -178,7 +182,7 @@ export async function saveCondoProfile(formData: FormData) {
     throw error;
   }
 
-  revalidatePath("/admin");
+  revalidateAdminPaths();
 }
 
 export async function createCommitteeMember(formData: FormData) {
@@ -199,7 +203,7 @@ export async function createCommitteeMember(formData: FormData) {
     throw error;
   }
 
-  revalidatePath("/admin");
+  revalidateAdminPaths();
 }
 
 export async function deactivateCommitteeMember(formData: FormData) {
@@ -216,7 +220,7 @@ export async function deactivateCommitteeMember(formData: FormData) {
     throw error;
   }
 
-  revalidatePath("/admin");
+  revalidateAdminPaths();
 }
 
 export async function createRoom(formData: FormData) {
@@ -238,7 +242,7 @@ export async function createRoom(formData: FormData) {
     throw error;
   }
 
-  revalidatePath("/admin");
+  revalidateAdminPaths();
 }
 
 export async function createMeeting(formData: FormData) {
@@ -270,7 +274,7 @@ export async function createMeeting(formData: FormData) {
     throw error;
   }
 
-  revalidatePath("/admin");
+  revalidateAdminPaths();
 }
 
 export async function archiveMeeting(formData: FormData) {
@@ -287,7 +291,7 @@ export async function archiveMeeting(formData: FormData) {
     throw error;
   }
 
-  revalidatePath("/admin");
+  revalidateAdminPaths();
 }
 
 export async function deactivateRoom(formData: FormData) {
@@ -304,7 +308,7 @@ export async function deactivateRoom(formData: FormData) {
     throw error;
   }
 
-  revalidatePath("/admin");
+  revalidateAdminPaths();
 }
 
 export async function createOwner(formData: FormData) {
@@ -322,7 +326,7 @@ export async function createOwner(formData: FormData) {
     throw error;
   }
 
-  revalidatePath("/admin");
+  revalidateAdminPaths();
 }
 
 export async function deactivateOwner(formData: FormData) {
@@ -339,7 +343,7 @@ export async function deactivateOwner(formData: FormData) {
     throw error;
   }
 
-  revalidatePath("/admin");
+  revalidateAdminPaths();
 }
 
 export async function linkRoomOwner(formData: FormData) {
@@ -358,7 +362,7 @@ export async function linkRoomOwner(formData: FormData) {
     throw error;
   }
 
-  revalidatePath("/admin");
+  revalidateAdminPaths();
 }
 
 export async function endRoomOwnerLink(formData: FormData) {
@@ -376,7 +380,7 @@ export async function endRoomOwnerLink(formData: FormData) {
     throw error;
   }
 
-  revalidatePath("/admin");
+  revalidateAdminPaths();
 }
 
 export async function updateProfileApproval(formData: FormData) {
@@ -401,7 +405,7 @@ export async function updateProfileApproval(formData: FormData) {
     throw error;
   }
 
-  revalidatePath("/admin");
+  revalidateAdminPaths();
 }
 
 export async function grantAppRole(formData: FormData) {
@@ -420,7 +424,7 @@ export async function grantAppRole(formData: FormData) {
     throw error;
   }
 
-  revalidatePath("/admin");
+  revalidateAdminPaths();
 }
 
 export async function revokeAppRole(formData: FormData) {
@@ -448,7 +452,7 @@ export async function revokeAppRole(formData: FormData) {
     throw error;
   }
 
-  revalidatePath("/admin");
+  revalidateAdminPaths();
 }
 
 export async function createProxyAuthorization(formData: FormData) {
@@ -468,7 +472,7 @@ export async function createProxyAuthorization(formData: FormData) {
     throw error;
   }
 
-  revalidatePath("/admin");
+  revalidateAdminPaths();
 }
 
 export async function reviewProxyAuthorization(formData: FormData) {
@@ -490,7 +494,7 @@ export async function reviewProxyAuthorization(formData: FormData) {
     throw error;
   }
 
-  revalidatePath("/admin");
+  revalidateAdminPaths();
 }
 
 export async function createMeetingQuestion(formData: FormData) {
@@ -523,7 +527,7 @@ export async function createMeetingQuestion(formData: FormData) {
     throw error;
   }
 
-  revalidatePath("/admin");
+  revalidateAdminPaths();
 }
 
 export async function deleteMeetingQuestion(formData: FormData) {
@@ -537,7 +541,7 @@ export async function deleteMeetingQuestion(formData: FormData) {
     throw error;
   }
 
-  revalidatePath("/admin");
+  revalidateAdminPaths();
 }
 
 export async function createMeetingChoice(formData: FormData) {
@@ -554,7 +558,7 @@ export async function createMeetingChoice(formData: FormData) {
     throw error;
   }
 
-  revalidatePath("/admin");
+  revalidateAdminPaths();
 }
 
 export async function deleteMeetingChoice(formData: FormData) {
@@ -568,7 +572,7 @@ export async function deleteMeetingChoice(formData: FormData) {
     throw error;
   }
 
-  revalidatePath("/admin");
+  revalidateAdminPaths();
 }
 
 export async function importManualVoteEntry(formData: FormData) {
@@ -637,7 +641,7 @@ export async function importManualVoteEntry(formData: FormData) {
     throw answerError;
   }
 
-  revalidatePath("/admin");
+  revalidateAdminPaths();
 }
 
 export async function resolveVoteSourceConflict(formData: FormData) {
@@ -674,7 +678,7 @@ export async function resolveVoteSourceConflict(formData: FormData) {
     throw error;
   }
 
-  revalidatePath("/admin");
+  revalidateAdminPaths();
 }
 
 export async function publishMeeting(formData: FormData) {
@@ -805,7 +809,7 @@ export async function publishMeeting(formData: FormData) {
     throw meetingError;
   }
 
-  revalidatePath("/admin");
+  revalidateAdminPaths();
 }
 
 export async function generateResultSnapshot(formData: FormData) {
@@ -1112,7 +1116,7 @@ export async function generateResultSnapshot(formData: FormData) {
     throw meetingError;
   }
 
-  revalidatePath("/admin");
+  revalidateAdminPaths();
 }
 
 export async function approveResultSnapshot(formData: FormData) {
@@ -1163,5 +1167,5 @@ export async function approveResultSnapshot(formData: FormData) {
 
   await queueResultApprovedEmails(meetingId);
 
-  revalidatePath("/admin");
+  revalidateAdminPaths();
 }

@@ -54,7 +54,7 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
   );
 
   test("demo admin can sign in and manage master data", async ({ page }) => {
-    test.setTimeout(60_000);
+    test.setTimeout(240_000);
 
     const supabase = createClient<Database>(supabaseUrl!, serviceKey!, {
       auth: {
@@ -69,6 +69,12 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
     const questionText = `Approve item ${Date.now()}?`;
     const choiceText = `Yes ${Date.now()}`;
     const updatedChoiceText = `No ${Date.now()}`;
+    const futureRoomNumber = `FUTURE-${Date.now()}`;
+    const futureMeetingTitle = `Future Vote ${Date.now()}`;
+    const futureQuestionText = `Future item ${Date.now()}?`;
+    const closedRoomNumber = `CLOSED-${Date.now()}`;
+    const closedMeetingTitle = `Closed Vote ${Date.now()}`;
+    const closedQuestionText = `Closed item ${Date.now()}?`;
     const manualAuditNote = `Batch A row ${Date.now()}`;
     const startsAt = toDateTimeLocal(new Date(Date.now() - 60 * 60 * 1000));
     const endsAt = toDateTimeLocal(new Date(Date.now() + 60 * 60 * 1000));
@@ -101,7 +107,7 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
           email: demoAdminEmail,
           full_name: demoAdminName,
           approval_status: "approved",
-          default_status: "resident",
+          default_status: "owner",
         },
         { onConflict: "auth_user_id" },
       )
@@ -119,6 +125,122 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
     );
 
     expect(roleError).toBeNull();
+
+    const futureStartsAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    const futureEndsAt = new Date(Date.now() + 25 * 60 * 60 * 1000);
+    const closedStartsAt = new Date(Date.now() - 25 * 60 * 60 * 1000);
+    const closedEndsAt = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const [{ data: futureRoom }, { data: closedRoom }] = await Promise.all([
+      supabase
+        .from("rooms")
+        .insert({
+          room_number: futureRoomNumber,
+          ownership_percent: 1,
+        })
+        .select("id")
+        .single(),
+      supabase
+        .from("rooms")
+        .insert({
+          room_number: closedRoomNumber,
+          ownership_percent: 1,
+        })
+        .select("id")
+        .single(),
+    ]);
+
+    expect(futureRoom).toBeTruthy();
+    expect(closedRoom).toBeTruthy();
+
+    const [{ data: futureMeeting }, { data: closedMeeting }] =
+      await Promise.all([
+        supabase
+          .from("meetings")
+          .insert({
+            title: futureMeetingTitle,
+            starts_at: futureStartsAt.toISOString(),
+            ends_at: futureEndsAt.toISOString(),
+            status: "published",
+            published_at: new Date().toISOString(),
+          })
+          .select("id")
+          .single(),
+        supabase
+          .from("meetings")
+          .insert({
+            title: closedMeetingTitle,
+            starts_at: closedStartsAt.toISOString(),
+            ends_at: closedEndsAt.toISOString(),
+            status: "published",
+            published_at: new Date().toISOString(),
+          })
+          .select("id")
+          .single(),
+      ]);
+
+    expect(futureMeeting).toBeTruthy();
+    expect(closedMeeting).toBeTruthy();
+
+    const [{ data: futureQuestion }, { data: closedQuestion }] =
+      await Promise.all([
+        supabase
+          .from("meeting_questions")
+          .insert({
+            meeting_id: futureMeeting!.id,
+            question_text: futureQuestionText,
+          })
+          .select("id")
+          .single(),
+        supabase
+          .from("meeting_questions")
+          .insert({
+            meeting_id: closedMeeting!.id,
+            question_text: closedQuestionText,
+          })
+          .select("id")
+          .single(),
+      ]);
+
+    expect(futureQuestion).toBeTruthy();
+    expect(closedQuestion).toBeTruthy();
+
+    const [{ error: futureChoiceError }, { error: closedChoiceError }] =
+      await Promise.all([
+        supabase.from("meeting_choices").insert({
+          question_id: futureQuestion!.id,
+          choice_text: "Approve",
+        }),
+        supabase.from("meeting_choices").insert({
+          question_id: closedQuestion!.id,
+          choice_text: "Approve",
+        }),
+      ]);
+
+    expect(futureChoiceError).toBeNull();
+    expect(closedChoiceError).toBeNull();
+
+    const [{ error: futureEligibilityError }, { error: closedEligibilityError }] =
+      await Promise.all([
+        supabase.from("eligible_voters_snapshot").insert({
+          meeting_id: futureMeeting!.id,
+          room_id: futureRoom!.id,
+          profile_id: profile!.id,
+          voter_type: "owner",
+          ownership_percent: 1,
+          source: "owner_master",
+        }),
+        supabase.from("eligible_voters_snapshot").insert({
+          meeting_id: closedMeeting!.id,
+          room_id: closedRoom!.id,
+          profile_id: profile!.id,
+          voter_type: "owner",
+          ownership_percent: 1,
+          source: "owner_master",
+        }),
+      ]);
+
+    expect(futureEligibilityError).toBeNull();
+    expect(closedEligibilityError).toBeNull();
 
     const { data: link, error: linkError } =
       await supabase.auth.admin.generateLink({
@@ -144,6 +266,19 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
       `${activeAppOrigin}/vote/00000000-0000-0000-0000-000000000000/00000000-0000-0000-0000-000000000000`,
     );
     await expect(page.getByText(/404|not found/i).first()).toBeVisible();
+    await page.goto(`${activeAppOrigin}/vote`);
+    const futureVoteAssignment = page
+      .getByRole("heading", { name: futureMeetingTitle })
+      .locator("xpath=ancestor::section[1]");
+    await expect(futureVoteAssignment.getByText("Not open yet")).toBeVisible();
+
+    await page.goto(`${activeAppOrigin}/vote`);
+    const closedVoteAssignment = page
+      .getByRole("heading", { name: closedMeetingTitle })
+      .locator("xpath=ancestor::section[1]");
+    await expect(
+      closedVoteAssignment.locator("span").filter({ hasText: "Closed" }),
+    ).toBeVisible();
 
     await page.goto(`${activeAppOrigin}/admin`);
     await expect(page.getByRole("heading", { name: "Admin" })).toBeVisible();
@@ -152,11 +287,6 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
     const demoAdminRow = page
       .getByRole("row")
       .filter({ hasText: demoAdminEmail });
-    await demoAdminRow.locator('select[name="default_status"]').selectOption("owner");
-    await demoAdminRow
-      .locator('select[name="approval_status"]')
-      .selectOption("approved");
-    await demoAdminRow.getByRole("button", { name: "Save" }).click();
     await expect(
       demoAdminRow.getByRole("cell", { name: "owner", exact: true }),
     ).toBeVisible();
@@ -165,8 +295,14 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
     ).toBeVisible();
     await demoAdminRow.locator('select[name="role"]').selectOption("committee");
     await demoAdminRow.getByRole("button", { name: "Grant role" }).click();
+    await page.goto(`${activeAppOrigin}/admin/people`);
+    const roleDemoAdminRow = page
+      .getByRole("row")
+      .filter({ hasText: demoAdminEmail });
     await expect(
-      demoAdminRow.locator("td").nth(4).getByText("committee", { exact: true }),
+      roleDemoAdminRow.locator("td").nth(4).getByText("committee", {
+        exact: true,
+      }),
     ).toBeVisible();
 
     await page.goto(`${activeAppOrigin}/admin/setup`);

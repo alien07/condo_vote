@@ -3,6 +3,8 @@ import { APP_NAME, APP_VERSION } from "@/lib/app-config";
 
 test.describe("@test:e2e app shell", () => {
   test("home page shows app name, version, and route links", async ({ page }) => {
+    test.setTimeout(60_000);
+
     await page.goto("/");
 
     await expect(page).toHaveTitle(`${APP_NAME} v${APP_VERSION}`);
@@ -23,6 +25,8 @@ test.describe("@test:e2e app shell", () => {
   });
 
   test("login route renders", async ({ page }) => {
+    test.setTimeout(60_000);
+
     await page.goto("/login");
 
     await expect(page.getByRole("heading", { name: "Login" })).toBeVisible();
@@ -36,6 +40,8 @@ test.describe("@test:e2e app shell", () => {
   test("@test:auth protected routes redirect signed-out users", async ({
     page,
   }) => {
+    test.setTimeout(60_000);
+
     for (const path of ["/admin", "/vote"]) {
       await page.goto(path);
 

@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { Vote } from "lucide-react";
 import { submitBallot } from "@/features/voting/actions";
 import { getVotingAssignmentData } from "@/features/voting/data";
+import { VotingStatusBadge } from "@/features/voting/status-badge";
 import { getVotingWindowStatus } from "@/features/voting/status";
 
 type VoteDetailPageProps = {
@@ -104,19 +105,20 @@ export default async function VoteDetailPage({ params }: VoteDetailPageProps) {
                 </p>
               ) : null}
             </div>
-            <div className="text-sm text-[var(--muted)]">
-              <div>
-                {ballot?.status === "submitted"
-                  ? `Submitted v${ballot.version_number}`
-                  : votingStatus.label}
-              </div>
+            <div className="flex flex-col items-start gap-2 text-sm text-[var(--muted)] md:items-end">
+              <VotingStatusBadge
+                status={votingStatus}
+                submittedVersion={
+                  ballot?.status === "submitted" ? ballot.version_number : null
+                }
+              />
               {ballot?.status === "submitted" ? (
-                <div className="mt-1">
+                <div>
                   {votingStatus.canSubmit ? "Open for edits" : votingStatus.label}
                 </div>
               ) : null}
               {ballot?.submitted_at ? (
-                <div className="mt-1">{formatDateTime(ballot.submitted_at)}</div>
+                <div>{formatDateTime(ballot.submitted_at)}</div>
               ) : null}
             </div>
           </div>
@@ -178,7 +180,7 @@ export default async function VoteDetailPage({ params }: VoteDetailPageProps) {
                 </p>
               </section>
               <button
-                className="rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)] disabled:cursor-not-allowed disabled:opacity-50"
+                className="min-h-10 rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)] disabled:cursor-not-allowed disabled:opacity-50"
                 disabled={!votingStatus.canSubmit}
                 type="submit"
               >

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Vote } from "lucide-react";
 import { getVotingDashboardData } from "@/features/voting/data";
+import { VotingStatusBadge } from "@/features/voting/status-badge";
 import { getVotingWindowStatus } from "@/features/voting/status";
 
 function formatDateTime(value: string) {
@@ -43,7 +44,7 @@ export default async function VotePage() {
 
               return (
                 <section
-                  className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-5"
+                  className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-5 shadow-sm"
                   key={eligible.id}
                 >
                   <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
@@ -63,11 +64,14 @@ export default async function VotePage() {
                       ) : null}
                     </div>
                     <div className="flex flex-col items-start gap-2 md:items-end">
-                      <div className="text-sm text-[var(--muted)]">
-                        {ballot?.status === "submitted"
-                          ? `Submitted v${ballot.version_number}`
-                          : votingStatus.label}
-                      </div>
+                      <VotingStatusBadge
+                        status={votingStatus}
+                        submittedVersion={
+                          ballot?.status === "submitted"
+                            ? ballot.version_number
+                            : null
+                        }
+                      />
                       {ballot?.status === "submitted" ? (
                         <div className="text-sm text-[var(--muted)]">
                           {votingStatus.canSubmit
@@ -76,7 +80,7 @@ export default async function VotePage() {
                         </div>
                       ) : null}
                       <Link
-                        className="rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)]"
+                        className="inline-flex min-h-10 items-center justify-center rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)]"
                         href={href}
                       >
                         Open ballot
