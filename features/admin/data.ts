@@ -14,6 +14,9 @@ export async function getAdminDashboardData() {
     roomOwnersResult,
     meetingsResult,
     questionsResult,
+    manualVotesResult,
+    voteSourceResolutionsResult,
+    ballotsResult,
     proxyAuthorizationsResult,
     eligibleVotersResult,
     resultSnapshotsResult,
@@ -68,6 +71,22 @@ export async function getAdminDashboardData() {
           "id, meeting_id, agenda_no, agenda_title, question_text, question_type, resolution_type, required_threshold, requires_land_office_registration, legal_note, display_order, required, meetings(id, title), meeting_choices(id, choice_text, display_order)",
         )
         .order("display_order", { ascending: true }),
+      supabase
+        .from("manual_vote_entries")
+        .select(
+          "id, meeting_id, room_id, question_id, choice_id, source_label, audit_note, imported_at, meetings(id, title), rooms(id, room_number), meeting_questions(id, question_text), meeting_choices(id, choice_text)",
+        )
+        .order("imported_at", { ascending: false }),
+      supabase
+        .from("vote_source_resolutions")
+        .select(
+          "id, meeting_id, room_id, chosen_source, conflict_remark, resolved_at, meetings(id, title), rooms(id, room_number)",
+        )
+        .order("resolved_at", { ascending: false }),
+      supabase
+        .from("ballots")
+        .select("id, meeting_id, room_id, status")
+        .eq("status", "submitted"),
       supabase
         .from("proxy_authorizations")
         .select(
@@ -134,6 +153,18 @@ export async function getAdminDashboardData() {
     throw questionsResult.error;
   }
 
+  if (manualVotesResult.error) {
+    throw manualVotesResult.error;
+  }
+
+  if (voteSourceResolutionsResult.error) {
+    throw voteSourceResolutionsResult.error;
+  }
+
+  if (ballotsResult.error) {
+    throw ballotsResult.error;
+  }
+
   if (proxyAuthorizationsResult.error) {
     throw proxyAuthorizationsResult.error;
   }
@@ -167,6 +198,9 @@ export async function getAdminDashboardData() {
     roomOwners: roomOwnersResult.data,
     meetings: meetingsResult.data,
     questions: questionsResult.data,
+    manualVotes: manualVotesResult.data,
+    voteSourceResolutions: voteSourceResolutionsResult.data,
+    ballots: ballotsResult.data,
     proxyAuthorizations: proxyAuthorizationsResult.data,
     eligibleVoters: eligibleVotersResult.data,
     resultSnapshots: resultSnapshotsResult.data,

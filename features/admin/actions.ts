@@ -571,6 +571,80 @@ export async function deleteMeetingChoice(formData: FormData) {
   revalidatePath("/admin");
 }
 
+export async function importManualVoteEntry(formData: FormData) {
+  const importer = await requireAdmin();
+
+  const meetingId = requiredText(formData.get("meeting_id"), "Meeting");
+  const roomId = requiredText(formData.get("room_id"), "Room");
+  const questionId = requiredText(formData.get("question_id"), "Question");
+  const choiceId = requiredText(formData.get("choice_id"), "Choice");
+  const supabase = await createClient();
+  const [questionResult, choiceResult] = await Promise.all([
+    supabase
+      .from("meeting_questions")
+      .select("id")
+      .eq("id", questionId)
+      .eq("meeting_id", meetingId)
+      .single(),
+    supabase
+      .from("meeting_choices")
+      .select("id")
+      .eq("id", choiceId)
+      .eq("question_id", questionId)
+      .single(),
+  ]);
+
+  if (questionResult.error) {
+    throw questionResult.error;
+  }
+
+  if (choiceResult.error) {
+    throw choiceResult.error;
+  }
+
+  const { error } = await supabase.from("manual_vote_entries").upsert(
+    {
+      meeting_id: meetingId,
+      room_id: roomId,
+      question_id: questionId,
+      choice_id: choiceId,
+      source_label: optionalText(formData.get("source_label")),
+      audit_note: optionalText(formData.get("audit_note")),
+      imported_by: importer.id,
+    },
+    { onConflict: "meeting_id,room_id,question_id" },
+  );
+
+  if (error) {
+    throw error;
+  }
+
+  revalidatePath("/admin");
+}
+
+export async function resolveVoteSourceConflict(formData: FormData) {
+  const resolver = await requireAdmin();
+
+  const supabase = await createClient();
+  const { error } = await supabase.from("vote_source_resolutions").upsert(
+    {
+      meeting_id: requiredText(formData.get("meeting_id"), "Meeting"),
+      room_id: requiredText(formData.get("room_id"), "Room"),
+      chosen_source: requiredText(formData.get("chosen_source"), "Chosen source"),
+      conflict_remark: optionalText(formData.get("conflict_remark")),
+      resolved_by: resolver.id,
+      resolved_at: new Date().toISOString(),
+    },
+    { onConflict: "meeting_id,room_id" },
+  );
+
+  if (error) {
+    throw error;
+  }
+
+  revalidatePath("/admin");
+}
+
 export async function publishMeeting(formData: FormData) {
   await requireAdmin();
 
@@ -708,8 +782,14 @@ export async function generateResultSnapshot(formData: FormData) {
   const meetingId = requiredText(formData.get("id"), "Meeting ID");
   const supabase = await createClient();
 
-  const [meetingResult, questionsResult, eligibleResult, ballotsResult] =
-    await Promise.all([
+  const [
+    meetingResult,
+    questionsResult,
+    eligibleResult,
+    ballotsResult,
+    manualVotesResult,
+    voteSourceResolutionsResult,
+  ] = await Promise.all([
       supabase
         .from("meetings")
         .select(
@@ -733,6 +813,14 @@ export async function generateResultSnapshot(formData: FormData) {
         .select("id, room_id, status, ballot_answers(question_id, choice_id)")
         .eq("meeting_id", meetingId)
         .eq("status", "submitted"),
+      supabase
+        .from("manual_vote_entries")
+        .select("id, room_id, question_id, choice_id, source_label, audit_note")
+        .eq("meeting_id", meetingId),
+      supabase
+        .from("vote_source_resolutions")
+        .select("room_id, chosen_source, conflict_remark, resolved_at")
+        .eq("meeting_id", meetingId),
     ]);
 
   if (meetingResult.error) {
@@ -751,13 +839,62 @@ export async function generateResultSnapshot(formData: FormData) {
     throw ballotsResult.error;
   }
 
+  if (manualVotesResult.error) {
+    throw manualVotesResult.error;
+  }
+
+  if (voteSourceResolutionsResult.error) {
+    throw voteSourceResolutionsResult.error;
+  }
+
   const ownershipByRoom = new Map(
     eligibleResult.data.map((eligible) => [
       eligible.room_id,
       toNumber(eligible.ownership_percent),
     ]),
   );
-  const submittedRoomIds = new Set(ballotsResult.data.map((ballot) => ballot.room_id));
+  const onlineRoomIds = new Set(ballotsResult.data.map((ballot) => ballot.room_id));
+  const manualRoomIds = new Set(
+    manualVotesResult.data.map((manualVote) => manualVote.room_id),
+  );
+  const resolutionByRoom = new Map(
+    voteSourceResolutionsResult.data.map((resolution) => [
+      resolution.room_id,
+      resolution,
+    ]),
+  );
+  const conflicts = [...manualRoomIds]
+    .filter((roomId) => onlineRoomIds.has(roomId))
+    .map((roomId) => ({
+      room_id: roomId,
+      resolution: resolutionByRoom.get(roomId) ?? null,
+    }));
+  const unresolvedConflicts = conflicts.filter((conflict) => !conflict.resolution);
+
+  if (unresolvedConflicts.length > 0) {
+    throw new Error(
+      `Resolve ${unresolvedConflicts.length} manual/online vote conflict(s) before generating results.`,
+    );
+  }
+
+  const effectiveRoomSources = new Map<string, "online" | "manual">();
+
+  for (const roomId of onlineRoomIds) {
+    effectiveRoomSources.set(roomId, "online");
+  }
+
+  for (const roomId of manualRoomIds) {
+    effectiveRoomSources.set(roomId, "manual");
+  }
+
+  for (const conflict of conflicts) {
+    effectiveRoomSources.set(
+      conflict.room_id,
+      conflict.resolution?.chosen_source === "online" ? "online" : "manual",
+    );
+  }
+
+  const submittedRoomIds = new Set(effectiveRoomSources.keys());
   const totalEligibleOwnership = [...ownershipByRoom.values()].reduce(
     (sum, ownership) => sum + ownership,
     0,
@@ -775,6 +912,10 @@ export async function generateResultSnapshot(formData: FormData) {
   >();
 
   for (const ballot of ballotsResult.data) {
+    if (effectiveRoomSources.get(ballot.room_id) !== "online") {
+      continue;
+    }
+
     const ownership = ownershipByRoom.get(ballot.room_id) ?? 0;
 
     for (const answer of ballot.ballot_answers) {
@@ -790,14 +931,51 @@ export async function generateResultSnapshot(formData: FormData) {
     }
   }
 
+  for (const manualVote of manualVotesResult.data) {
+    if (effectiveRoomSources.get(manualVote.room_id) !== "manual") {
+      continue;
+    }
+
+    const ownership = ownershipByRoom.get(manualVote.room_id) ?? 0;
+    const current = countsByChoice.get(manualVote.choice_id) ?? {
+      voteCount: 0,
+      ownership: 0,
+    };
+
+    countsByChoice.set(manualVote.choice_id, {
+      voteCount: current.voteCount + 1,
+      ownership: current.ownership + ownership,
+    });
+  }
+
   const payload = {
     meeting: meetingResult.data,
     generated_at: new Date().toISOString(),
     totals: {
       eligible_voters: eligibleResult.data.length,
       submitted_ballots: ballotsResult.data.length,
+      online_ballots: ballotsResult.data.length,
+      manual_vote_rooms: manualRoomIds.size,
+      effective_vote_rooms: submittedRoomIds.size,
       total_eligible_ownership: totalEligibleOwnership,
       submitted_ownership: submittedOwnership,
+      source_conflicts: conflicts.length,
+      resolved_source_conflicts: conflicts.filter((conflict) => conflict.resolution)
+        .length,
+    },
+    vote_source_audit: {
+      online_room_ids: [...onlineRoomIds],
+      manual_room_ids: [...manualRoomIds],
+      effective_sources: [...effectiveRoomSources].map(([roomId, source]) => ({
+        room_id: roomId,
+        source,
+      })),
+      conflicts: conflicts.map((conflict) => ({
+        room_id: conflict.room_id,
+        chosen_source: conflict.resolution?.chosen_source ?? null,
+        conflict_remark: conflict.resolution?.conflict_remark ?? null,
+        resolved_at: conflict.resolution?.resolved_at ?? null,
+      })),
     },
     questions: questionsResult.data.map((question) => ({
       id: question.id,

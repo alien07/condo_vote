@@ -24,9 +24,11 @@ import {
   endRoomOwnerLink,
   generateResultSnapshot,
   grantAppRole,
+  importManualVoteEntry,
   linkRoomOwner,
   publishMeeting,
   reviewProxyAuthorization,
+  resolveVoteSourceConflict,
   revokeAppRole,
   saveCondoProfile,
   updateProfileApproval,
@@ -73,6 +75,9 @@ export default async function AdminPage() {
     roomOwners,
     meetings,
     questions,
+    manualVotes,
+    voteSourceResolutions,
+    ballots,
     proxyAuthorizations,
     eligibleVoters,
     resultSnapshots,
@@ -102,6 +107,34 @@ export default async function AdminPage() {
       appRoles.filter((role) => role.profile_id === profile.id),
     ]),
   );
+  const submittedOnlineRoomKeys = new Set(
+    ballots.map((ballot) => `${ballot.meeting_id}:${ballot.room_id}`),
+  );
+  const manualRoomKeys = new Set(
+    manualVotes.map((manualVote) => `${manualVote.meeting_id}:${manualVote.room_id}`),
+  );
+  const resolutionByRoomKey = new Map(
+    voteSourceResolutions.map((resolution) => [
+      `${resolution.meeting_id}:${resolution.room_id}`,
+      resolution,
+    ]),
+  );
+  const voteSourceConflicts = [...manualRoomKeys]
+    .filter((key) => submittedOnlineRoomKeys.has(key))
+    .map((key) => {
+      const [meetingId, roomId] = key.split(":");
+      const meeting = meetings.find((item) => item.id === meetingId);
+      const room = rooms.find((item) => item.id === roomId);
+
+      return {
+        key,
+        meetingId,
+        roomId,
+        meetingTitle: meeting?.title ?? "-",
+        roomNumber: room?.room_number ?? "-",
+        resolution: resolutionByRoomKey.get(key) ?? null,
+      };
+    });
 
   return (
     <main className="min-h-screen px-6 py-8">
@@ -140,6 +173,14 @@ export default async function AdminPage() {
             <div className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2">
               <div className="font-semibold">{eligibleVoterCount}</div>
               <div className="text-[var(--muted)]">Eligible</div>
+            </div>
+            <div className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2">
+              <div className="font-semibold">{manualVotes.length}</div>
+              <div className="text-[var(--muted)]">Manual votes</div>
+            </div>
+            <div className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2">
+              <div className="font-semibold">{voteSourceConflicts.length}</div>
+              <div className="text-[var(--muted)]">Conflicts</div>
             </div>
             <div className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2">
               <div className="font-semibold">{pendingProxyAuthorizations}</div>
@@ -236,6 +277,194 @@ export default async function AdminPage() {
               Save juristic profile
             </button>
           </form>
+        </section>
+
+        <section className="mb-5 rounded-lg border border-[var(--border)] bg-[var(--surface)] p-5">
+          <div className="mb-4 flex items-center gap-2">
+            <ListChecks className="text-[var(--primary)]" size={20} />
+            <h2 className="text-lg font-semibold">Manual Votes</h2>
+          </div>
+          <form
+            action={importManualVoteEntry}
+            className="grid gap-3 md:grid-cols-4"
+          >
+            <select
+              className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+              name="meeting_id"
+              required
+            >
+              <option value="">Meeting</option>
+              {meetings
+                .filter((meeting) => meeting.status !== "archived")
+                .map((meeting) => (
+                  <option key={meeting.id} value={meeting.id}>
+                    {meeting.title}
+                  </option>
+                ))}
+            </select>
+            <select
+              className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+              name="room_id"
+              required
+            >
+              <option value="">Room</option>
+              {rooms
+                .filter((room) => room.active)
+                .map((room) => (
+                  <option key={room.id} value={room.id}>
+                    {room.room_number}
+                  </option>
+                ))}
+            </select>
+            <select
+              className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+              name="question_id"
+              required
+            >
+              <option value="">Question</option>
+              {questions.map((question) => (
+                <option key={question.id} value={question.id}>
+                  {question.meetings?.title ?? "-"} / {question.agenda_no ?? "-"}{" "}
+                  {question.question_text}
+                </option>
+              ))}
+            </select>
+            <select
+              className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+              name="choice_id"
+              required
+            >
+              <option value="">Choice</option>
+              {questions.flatMap((question) =>
+                question.meeting_choices
+                  .sort((left, right) => left.display_order - right.display_order)
+                  .map((choice) => (
+                    <option key={choice.id} value={choice.id}>
+                      {question.question_text} / {choice.choice_text}
+                    </option>
+                  )),
+              )}
+            </select>
+            <input
+              className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+              name="source_label"
+              placeholder="Source label"
+            />
+            <input
+              className="rounded-md border border-[var(--border)] px-3 py-2 text-sm md:col-span-2"
+              name="audit_note"
+              placeholder="Audit note"
+            />
+            <button
+              className="rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)]"
+              type="submit"
+            >
+              Import manual vote
+            </button>
+          </form>
+
+          <div className="mt-5 overflow-x-auto">
+            <table className="w-full border-collapse text-left text-sm">
+              <thead className="border-b border-[var(--border)] text-[var(--muted)]">
+                <tr>
+                  <th className="py-2 pr-3 font-medium">Meeting</th>
+                  <th className="py-2 pr-3 font-medium">Room</th>
+                  <th className="py-2 pr-3 font-medium">Question</th>
+                  <th className="py-2 pr-3 font-medium">Choice</th>
+                  <th className="py-2 font-medium">Audit</th>
+                </tr>
+              </thead>
+              <tbody>
+                {manualVotes.map((manualVote) => (
+                  <tr className="border-b border-[var(--border)]" key={manualVote.id}>
+                    <td className="py-2 pr-3">
+                      {manualVote.meetings?.title ?? "-"}
+                    </td>
+                    <td className="py-2 pr-3">
+                      {manualVote.rooms?.room_number ?? "-"}
+                    </td>
+                    <td className="py-2 pr-3">
+                      {manualVote.meeting_questions?.question_text ?? "-"}
+                    </td>
+                    <td className="py-2 pr-3">
+                      {manualVote.meeting_choices?.choice_text ?? "-"}
+                    </td>
+                    <td className="py-2">
+                      {manualVote.source_label ?? "manual"} /{" "}
+                      {manualVote.audit_note ?? "-"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {voteSourceConflicts.length > 0 ? (
+            <div className="mt-5 overflow-x-auto">
+              <table className="w-full border-collapse text-left text-sm">
+                <thead className="border-b border-[var(--border)] text-[var(--muted)]">
+                  <tr>
+                    <th className="py-2 pr-3 font-medium">Conflict</th>
+                    <th className="py-2 pr-3 font-medium">Resolution</th>
+                    <th className="py-2 font-medium">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {voteSourceConflicts.map((conflict) => (
+                    <tr className="border-b border-[var(--border)]" key={conflict.key}>
+                      <td className="py-2 pr-3">
+                        {conflict.meetingTitle} / room {conflict.roomNumber}
+                      </td>
+                      <td className="py-2 pr-3">
+                        {conflict.resolution?.chosen_source ?? "unresolved"}
+                      </td>
+                      <td className="py-2">
+                        <form
+                          action={resolveVoteSourceConflict}
+                          className="flex flex-wrap gap-2"
+                        >
+                          <input
+                            name="meeting_id"
+                            type="hidden"
+                            value={conflict.meetingId}
+                          />
+                          <input
+                            name="room_id"
+                            type="hidden"
+                            value={conflict.roomId}
+                          />
+                          <select
+                            className="rounded-md border border-[var(--border)] px-2 py-1 text-sm"
+                            defaultValue={
+                              conflict.resolution?.chosen_source ?? "manual"
+                            }
+                            name="chosen_source"
+                          >
+                            <option value="manual">Manual</option>
+                            <option value="online">Online</option>
+                          </select>
+                          <input
+                            className="w-56 rounded-md border border-[var(--border)] px-2 py-1 text-sm"
+                            defaultValue={
+                              conflict.resolution?.conflict_remark ?? ""
+                            }
+                            name="conflict_remark"
+                            placeholder="Conflict remark"
+                          />
+                          <button
+                            className="rounded-md border border-[var(--border)] px-3 py-1 text-sm font-medium"
+                            type="submit"
+                          >
+                            Resolve source
+                          </button>
+                        </form>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : null}
         </section>
 
         <section className="mb-5 rounded-lg border border-[var(--border)] bg-[var(--surface)] p-5">
@@ -751,7 +980,7 @@ export default async function AdminPage() {
                             <input
                               className="w-48 rounded-md border border-[var(--border)] px-2 py-1 text-sm"
                               name="notes"
-                              placeholder="Approval notes"
+                              placeholder="Approval / conflict notes"
                             />
                             <button
                               className="rounded-md border border-[var(--border)] px-3 py-1 text-sm font-medium"

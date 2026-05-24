@@ -58,6 +58,8 @@ erDiagram
 | [ballots](#ballots) | Current ballot record per meeting and room. |
 | [ballot_answers](#ballot_answers) | Current effective answers for a ballot. |
 | [ballot_versions](#ballot_versions) | Historical ballot payloads whenever a voter edits before close. |
+| [manual_vote_entries](#manual_vote_entries) | Admin-imported paper/offline votes for a meeting agenda. |
+| [vote_source_resolutions](#vote_source_resolutions) | Admin decision record when the same room has both online and manual votes. |
 | [result_snapshots](#result_snapshots) | Calculated result payloads for a meeting before/after approval. |
 | [committee_approvals](#committee_approvals) | Approval record that makes a result visible to viewers. |
 | [documents](#documents) | Private file references for owner/proxy approval and generated PDFs. |
@@ -149,10 +151,20 @@ Purpose: Stores immutable ballot history.
 Key fields: ballot, version number, payload snapshot, created timestamp.
 Notes: Every submit/edit should create a version for audit.
 
+### manual_vote_entries
+Purpose: Stores manual/offline vote imports per meeting, room, and question.
+Key fields: meeting, room, question, choice, source label, audit note, importer, import timestamp.
+Notes: Manual votes remain separate from online ballots so the source is auditable. One manual answer is stored per meeting-room-question.
+
+### vote_source_resolutions
+Purpose: Stores admin conflict decisions when a room has both online and manual vote sources.
+Key fields: meeting, room, chosen source, conflict remark, resolver, resolved timestamp.
+Notes: Result generation should fail when an online/manual conflict exists without a resolution. Result snapshots must include the source audit summary.
+
 ### result_snapshots
 Purpose: Stores generated result calculations.
 Key fields: meeting, generated timestamp, generator, result payload.
-Notes: Payload should include count, percentage against total project ownership, and percentage against submitted-vote ownership.
+Notes: Payload should include count, percentage against total project ownership, percentage against submitted-vote ownership, effective vote source, and conflict resolution audit.
 
 ### committee_approvals
 Purpose: Stores approval that allows result publication.
@@ -173,6 +185,7 @@ Notes: Used for invitations, reminders, and result notifications.
 - One effective ballot per meeting and room.
 - Ballot edits create new versions.
 - Result calculations use the latest valid ballot per room.
+- Manual votes can be combined with online votes, but one room can have only one effective source after conflict resolution.
 - `committee_approvals` is the source of truth for result publication approval.
 - Supporting documents are private by default.
 

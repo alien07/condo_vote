@@ -233,6 +233,33 @@ create table public.ballot_versions (
   constraint ballot_versions_version_number_check check (version_number > 0)
 );
 
+create table public.manual_vote_entries (
+  id uuid primary key default gen_random_uuid(),
+  meeting_id uuid not null references public.meetings(id),
+  room_id uuid not null references public.rooms(id),
+  question_id uuid not null references public.meeting_questions(id),
+  choice_id uuid not null references public.meeting_choices(id),
+  source_label text,
+  audit_note text,
+  imported_by uuid not null references public.profiles(id),
+  imported_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (meeting_id, room_id, question_id)
+);
+
+create table public.vote_source_resolutions (
+  id uuid primary key default gen_random_uuid(),
+  meeting_id uuid not null references public.meetings(id),
+  room_id uuid not null references public.rooms(id),
+  chosen_source text not null,
+  conflict_remark text,
+  resolved_by uuid not null references public.profiles(id),
+  resolved_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (meeting_id, room_id),
+  constraint vote_source_resolutions_chosen_source_check check (chosen_source in ('online', 'manual'))
+);
+
 create table public.result_snapshots (
   id uuid primary key default gen_random_uuid(),
   meeting_id uuid not null references public.meetings(id),
@@ -297,6 +324,9 @@ create index ballots_meeting_id_idx on public.ballots(meeting_id);
 create index ballots_voter_profile_id_idx on public.ballots(voter_profile_id);
 create index ballot_answers_ballot_id_idx on public.ballot_answers(ballot_id);
 create index ballot_versions_ballot_id_idx on public.ballot_versions(ballot_id);
+create index manual_vote_entries_meeting_room_idx on public.manual_vote_entries(meeting_id, room_id);
+create index manual_vote_entries_question_idx on public.manual_vote_entries(question_id);
+create index vote_source_resolutions_meeting_room_idx on public.vote_source_resolutions(meeting_id, room_id);
 create index result_snapshots_meeting_id_idx on public.result_snapshots(meeting_id);
 create index committee_approvals_meeting_id_idx on public.committee_approvals(meeting_id);
 create index documents_owner_idx on public.documents(owner_type, owner_id);
@@ -330,6 +360,14 @@ create trigger ballots_set_updated_at
 before update on public.ballots
 for each row execute function public.set_updated_at();
 
+create trigger manual_vote_entries_set_updated_at
+before update on public.manual_vote_entries
+for each row execute function public.set_updated_at();
+
+create trigger vote_source_resolutions_set_updated_at
+before update on public.vote_source_resolutions
+for each row execute function public.set_updated_at();
+
 alter table public.rooms enable row level security;
 alter table public.owners enable row level security;
 alter table public.room_owners enable row level security;
@@ -346,6 +384,8 @@ alter table public.eligible_voters_snapshot enable row level security;
 alter table public.ballots enable row level security;
 alter table public.ballot_answers enable row level security;
 alter table public.ballot_versions enable row level security;
+alter table public.manual_vote_entries enable row level security;
+alter table public.vote_source_resolutions enable row level security;
 alter table public.result_snapshots enable row level security;
 alter table public.committee_approvals enable row level security;
 alter table public.documents enable row level security;

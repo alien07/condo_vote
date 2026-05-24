@@ -45,8 +45,13 @@ These workflows define the admin-facing MVP behavior. Ask before implementing an
 - Editing published meetings should be restricted. If allowed, it must be audited.
 
 ## Result Management
+- Admin can import manual/paper votes for a meeting by room, agenda question, and choice.
+- Manual votes are stored separately from online ballots for audit.
+- If the same room has submitted online votes and imported manual votes, admin must choose one effective source before result generation.
+- Conflict resolution must include a remark when relevant and is copied into the result snapshot audit payload.
 - Admin can generate a result snapshot after voting closes.
 - Admin/committee can review the result snapshot.
+- Committee approval notes should mention material manual/online conflict handling before approving the result.
 - `committee_approvals` is the source of truth for publication approval.
 - Approved results can be viewed, exported to PDF, and sent by email.
 

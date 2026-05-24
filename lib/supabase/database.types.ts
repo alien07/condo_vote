@@ -546,6 +546,81 @@ export type Database = {
         }
         Relationships: []
       }
+      manual_vote_entries: {
+        Row: {
+          audit_note: string | null
+          choice_id: string
+          id: string
+          imported_at: string
+          imported_by: string
+          meeting_id: string
+          question_id: string
+          room_id: string
+          source_label: string | null
+          updated_at: string
+        }
+        Insert: {
+          audit_note?: string | null
+          choice_id: string
+          id?: string
+          imported_at?: string
+          imported_by: string
+          meeting_id: string
+          question_id: string
+          room_id: string
+          source_label?: string | null
+          updated_at?: string
+        }
+        Update: {
+          audit_note?: string | null
+          choice_id?: string
+          id?: string
+          imported_at?: string
+          imported_by?: string
+          meeting_id?: string
+          question_id?: string
+          room_id?: string
+          source_label?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "manual_vote_entries_choice_id_fkey"
+            columns: ["choice_id"]
+            isOneToOne: false
+            referencedRelation: "meeting_choices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "manual_vote_entries_imported_by_fkey"
+            columns: ["imported_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "manual_vote_entries_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "manual_vote_entries_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "meeting_questions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "manual_vote_entries_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       meeting_choices: {
         Row: {
           choice_text: string
@@ -963,6 +1038,61 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      vote_source_resolutions: {
+        Row: {
+          chosen_source: string
+          conflict_remark: string | null
+          id: string
+          meeting_id: string
+          resolved_at: string
+          resolved_by: string
+          room_id: string
+          updated_at: string
+        }
+        Insert: {
+          chosen_source: string
+          conflict_remark?: string | null
+          id?: string
+          meeting_id: string
+          resolved_at?: string
+          resolved_by: string
+          room_id: string
+          updated_at?: string
+        }
+        Update: {
+          chosen_source?: string
+          conflict_remark?: string | null
+          id?: string
+          meeting_id?: string
+          resolved_at?: string
+          resolved_by?: string
+          room_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vote_source_resolutions_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vote_source_resolutions_resolved_by_fkey"
+            columns: ["resolved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vote_source_resolutions_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
