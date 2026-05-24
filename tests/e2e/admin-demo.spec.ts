@@ -130,6 +130,8 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
 
     await page.goto(`${activeAppOrigin}/admin`);
     await expect(page.getByRole("heading", { name: "Admin" })).toBeVisible();
+    await page.goto(`${activeAppOrigin}/admin/people`);
+    await expect(page.getByRole("heading", { name: "People" })).toBeVisible();
     const demoAdminRow = page
       .getByRole("row")
       .filter({ hasText: demoAdminEmail });
@@ -150,6 +152,7 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
       demoAdminRow.locator("td").nth(4).getByText("committee", { exact: true }),
     ).toBeVisible();
 
+    await page.goto(`${activeAppOrigin}/admin/setup`);
     const juristicSection = page
       .getByRole("heading", { name: "Juristic Person" })
       .locator("xpath=ancestor::section[1]");
@@ -178,6 +181,7 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
       committeeSection.getByRole("cell", { name: committeeName }),
     ).toBeVisible();
 
+    await page.goto(`${activeAppOrigin}/admin/meetings`);
     await page.getByPlaceholder("Meeting title").fill(meetingTitle);
     await page.getByPlaceholder("Meeting no.").fill("AGM-2026-001");
     await page.getByPlaceholder("Fiscal year").fill("2026");
@@ -213,11 +217,13 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
       questionCard.locator("span").filter({ hasText: choiceText }),
     ).toBeVisible();
 
+    await page.goto(`${activeAppOrigin}/admin/people`);
     await page.getByPlaceholder("Room number").fill(roomNumber);
     await page.getByPlaceholder("Ownership %").fill("1.25");
     await page.getByRole("button", { name: "Add room" }).click();
     await expect(page.getByRole("cell", { name: roomNumber })).toBeVisible();
 
+    await page.goto(`${activeAppOrigin}/admin/voting`);
     const manualVotesSection = page
       .getByRole("heading", { name: "Manual Votes" })
       .locator("xpath=ancestor::section[1]");
@@ -245,6 +251,7 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
         .filter({ hasText: manualAuditNote }),
     ).toBeVisible();
 
+    await page.goto(`${activeAppOrigin}/admin/people`);
     const ownerSection = page
       .getByRole("heading", { name: "Owners" })
       .locator("xpath=ancestor::section[1]");
@@ -253,6 +260,7 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
     await ownerSection.getByRole("button", { name: "Add owner" }).click();
     await expect(page.getByRole("cell", { name: ownerName })).toBeVisible();
 
+    await page.goto(`${activeAppOrigin}/admin/ownership`);
     const roomOwnershipSection = page
       .getByRole("heading", { name: "Room Ownership" })
       .locator("xpath=ancestor::section[1]");
@@ -272,6 +280,7 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
       .filter({ hasText: ownerName });
     await expect(roomOwnerRow).toBeVisible();
 
+    await page.goto(`${activeAppOrigin}/admin/proxies`);
     await page
       .locator('select[name="meeting_id"]')
       .last()
@@ -297,6 +306,7 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
       proxyRow.getByRole("cell", { name: "approved", exact: true }),
     ).toBeVisible();
 
+    await page.goto(`${activeAppOrigin}/admin/meetings`);
     const meetingRow = page.getByRole("row").filter({ hasText: meetingTitle });
     await meetingRow.getByRole("button", { name: "Publish" }).click();
     await expect(
@@ -307,6 +317,8 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
     await expect(
       meetingRow.getByRole("cell", { name: "closed", exact: true }),
     ).toBeVisible();
+
+    await page.goto(`${activeAppOrigin}/admin/results`);
     const resultRow = page.getByRole("row").filter({ hasText: meetingTitle });
     await expect(
       resultRow.getByRole("cell", { name: "pending", exact: true }),
@@ -315,13 +327,22 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
     await expect(
       resultRow.getByRole("cell", { name: "approved", exact: true }),
     ).toBeVisible();
-    await expect(meetingRow.getByText("Result locked")).toBeVisible();
+    await page.goto(`${activeAppOrigin}/admin/meetings`);
+    const lockedMeetingRow = page
+      .getByRole("row")
+      .filter({ hasText: meetingTitle });
+    await expect(lockedMeetingRow.getByText("Result locked")).toBeVisible();
     await expect(
-      meetingRow.getByRole("button", { name: "Generate result" }),
+      lockedMeetingRow.getByRole("button", { name: "Generate result" }),
     ).toHaveCount(0);
+    await page.goto(`${activeAppOrigin}/admin/results`);
+    const lockedResultRow = page
+      .getByRole("row")
+      .filter({ hasText: meetingTitle });
     await expect(
-      resultRow.getByRole("button", { name: "Approve result" }),
+      lockedResultRow.getByRole("button", { name: "Approve result" }),
     ).toHaveCount(0);
+    await page.goto(`${activeAppOrigin}/admin/communications`);
     await expect(page.getByText(/result_approved:/).first()).toBeVisible();
   });
 });
