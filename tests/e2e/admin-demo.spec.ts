@@ -66,6 +66,7 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
     const committeeName = `Demo Chair ${Date.now()}`;
     const questionText = `Approve item ${Date.now()}?`;
     const choiceText = `Yes ${Date.now()}`;
+    const updatedChoiceText = `No ${Date.now()}`;
     const manualAuditNote = `Batch A row ${Date.now()}`;
     const startsAt = toDateTimeLocal(new Date(Date.now() - 60 * 60 * 1000));
     const endsAt = toDateTimeLocal(new Date(Date.now() + 60 * 60 * 1000));
@@ -226,6 +227,11 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
     await expect(
       questionCard.locator("span").filter({ hasText: choiceText }),
     ).toBeVisible();
+    await questionCard.getByPlaceholder("Choice").fill(updatedChoiceText);
+    await questionCard.getByRole("button", { name: "Add choice" }).click();
+    await expect(
+      questionCard.locator("span").filter({ hasText: updatedChoiceText }),
+    ).toBeVisible();
 
     await page.goto(`${activeAppOrigin}/admin/people`);
     await page.getByPlaceholder("Room number").fill(roomNumber);
@@ -331,6 +337,9 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
     await voteCard.getByLabel(choiceText).check();
     await voteCard.getByRole("button", { name: "Submit ballot" }).click();
     await expect(voteCard.getByText("Submitted v1")).toBeVisible();
+    await voteCard.getByLabel(updatedChoiceText).check();
+    await voteCard.getByRole("button", { name: "Update ballot" }).click();
+    await expect(voteCard.getByText("Submitted v2")).toBeVisible();
 
     await page.goto(`${activeAppOrigin}/admin/voting`);
     const conflictRow = page

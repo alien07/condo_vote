@@ -86,11 +86,18 @@ export default async function VotePage() {
                       ) : null}
                     </div>
                     <div className="text-sm text-[var(--muted)]">
-                      {ballot?.status === "submitted"
-                        ? `Submitted v${ballot.version_number}`
-                        : votingOpen
-                          ? "Open"
-                          : "Closed"}
+                      <div>
+                        {ballot?.status === "submitted"
+                          ? `Submitted v${ballot.version_number}`
+                          : votingOpen
+                            ? "Open"
+                            : "Closed"}
+                      </div>
+                      {ballot?.submitted_at ? (
+                        <div className="mt-1">
+                          {formatDateTime(ballot.submitted_at)}
+                        </div>
+                      ) : null}
                     </div>
                   </div>
 
