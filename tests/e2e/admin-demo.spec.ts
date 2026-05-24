@@ -315,6 +315,13 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
     await expect(
       resultRow.getByRole("cell", { name: "approved", exact: true }),
     ).toBeVisible();
+    await expect(meetingRow.getByText("Result locked")).toBeVisible();
+    await expect(
+      meetingRow.getByRole("button", { name: "Generate result" }),
+    ).toHaveCount(0);
+    await expect(
+      resultRow.getByRole("button", { name: "Approve result" }),
+    ).toHaveCount(0);
     await expect(page.getByText(/result_approved:/).first()).toBeVisible();
   });
 });
