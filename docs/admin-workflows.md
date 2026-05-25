@@ -44,6 +44,13 @@ These workflows define the admin-facing MVP behavior. Ask before implementing an
 - After publication, invitation emails can be queued for eligible voters.
 - Editing published meetings should be restricted. If allowed, it must be audited.
 
+## Excel Master Data Import
+- Admin can download a locked Excel template from `Admin > People`.
+- The template has `Rooms` and `Owners` sheets with protected headers, validation lists, and unlocked input rows.
+- Rooms are imported by upsert using `room_number` as the key.
+- Owners are imported by upsert using `email` as the key.
+- The import supports only `upsert`; deleting or deactivating master data must be done from the relevant update/edit menu.
+
 ## Result Management
 - Admin can import manual/paper votes for a meeting by room, agenda question, and choice.
 - Manual votes are stored as `manual_ballots` and `manual_ballot_answers`, parallel to online `ballots` and `ballot_answers`.

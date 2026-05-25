@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import ExcelJS from "exceljs";
 import { requireAdmin } from "@/lib/auth/permissions";
 import { createClient } from "@/lib/supabase/server";
 
@@ -32,6 +33,46 @@ function requiredNumber(value: FormDataEntryValue | null, fieldName: string) {
   }
 
   return number;
+}
+
+function parseBooleanText(value: string | null, defaultValue = true) {
+  if (value === null || value === "") {
+    return defaultValue;
+  }
+
+  const normalized = value.trim().toLowerCase();
+
+  if (["true", "yes", "y", "1", "active"].includes(normalized)) {
+    return true;
+  }
+
+  if (["false", "no", "n", "0", "inactive"].includes(normalized)) {
+    return false;
+  }
+
+  throw new Error(`Invalid active value "${value}". Use true or false.`);
+}
+
+function hasImportData(
+  row: string[],
+  value: (row: string[], header: string) => string | null,
+  headers: string[],
+) {
+  return headers.some((header) => header !== "import_action" && value(row, header));
+}
+
+function assertUpsertAction(
+  row: string[],
+  value: (row: string[], header: string) => string | null,
+  rowNumber: number,
+) {
+  const action = (value(row, "import_action") ?? "upsert").toLowerCase();
+
+  if (action !== "upsert") {
+    throw new Error(
+      `Row ${rowNumber}: only upsert is allowed. Delete master data from the edit menu.`,
+    );
+  }
 }
 
 function requiredDateTime(value: FormDataEntryValue | null, fieldName: string) {
@@ -71,6 +112,57 @@ function toNumber(value: number | string | null | undefined) {
 
 function revalidateAdminPaths() {
   revalidatePath("/admin", "layout");
+}
+
+async function readExcelSheetUpload(formData: FormData, sheetName: string) {
+  const file = formData.get("file");
+
+  if (!(file instanceof File)) {
+    throw new Error("Excel file is required.");
+  }
+
+  if (!file.name.toLowerCase().endsWith(".xlsx")) {
+    throw new Error("Upload must be an .xlsx file from the Excel template.");
+  }
+
+  const workbook = new ExcelJS.Workbook();
+  await workbook.xlsx.load(await file.arrayBuffer());
+  const worksheet = workbook.getWorksheet(sheetName);
+
+  if (!worksheet) {
+    throw new Error(`Sheet "${sheetName}" is required.`);
+  }
+
+  const rawRows: string[][] = [];
+
+  worksheet.eachRow({ includeEmpty: false }, (excelRow) => {
+    const values = Array.isArray(excelRow.values) ? excelRow.values.slice(1) : [];
+    rawRows.push(values.map((value) => String(value ?? "").trim()));
+  });
+  const headerRowIndex = rawRows.findIndex((row) =>
+    row.some((value) => String(value).trim().toLowerCase() === "import_action"),
+  );
+
+  if (headerRowIndex === -1) {
+    throw new Error(`Sheet "${sheetName}" does not match the import template.`);
+  }
+
+  const headers = rawRows[headerRowIndex].map((header) => String(header).trim());
+  const rows = rawRows
+    .slice(headerRowIndex + 1)
+    .map((row) => headers.map((_, index) => String(row[index] ?? "").trim()))
+    .filter((row) => row.some((value) => value !== ""));
+  const headerIndex = new Map(
+    headers.map((header, index) => [header.trim().toLowerCase(), index]),
+  );
+
+  return {
+    rows,
+    value(row: string[], header: string) {
+      const index = headerIndex.get(header);
+      return index === undefined ? null : row[index]?.trim() || null;
+    },
+  };
 }
 
 async function queueResultApprovedEmails(meetingId: string) {
@@ -245,6 +337,60 @@ export async function createRoom(formData: FormData) {
   revalidateAdminPaths();
 }
 
+export async function importRoomsExcel(formData: FormData) {
+  await requireAdmin();
+
+  const { rows, value } = await readExcelSheetUpload(formData, "Rooms");
+  const importedRows = rows
+    .filter((row) =>
+      hasImportData(row, value, [
+        "room_number",
+        "ownership_percent",
+        "building",
+        "floor",
+        "area_size",
+        "active",
+      ]),
+    )
+    .map((row, index) => {
+      assertUpsertAction(row, value, index + 5);
+      const ownershipPercent = Number(value(row, "ownership_percent"));
+
+      if (!Number.isFinite(ownershipPercent) || ownershipPercent <= 0) {
+        throw new Error(
+          `Row ${index + 5}: ownership_percent must be greater than 0.`,
+        );
+      }
+
+      return {
+        room_number: requiredText(
+          value(row, "room_number"),
+          `Row ${index + 5} room_number`,
+        ),
+        building: value(row, "building"),
+        floor: value(row, "floor"),
+        area_size: optionalNumber(value(row, "area_size")),
+        ownership_percent: ownershipPercent,
+        active: parseBooleanText(value(row, "active"), true),
+      };
+    });
+
+  if (importedRows.length === 0) {
+    throw new Error("Excel file has no room rows to upsert.");
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("rooms")
+    .upsert(importedRows, { onConflict: "room_number" });
+
+  if (error) {
+    throw error;
+  }
+
+  revalidateAdminPaths();
+}
+
 export async function createMeeting(formData: FormData) {
   await requireAdmin();
 
@@ -324,6 +470,61 @@ export async function createOwner(formData: FormData) {
 
   if (error) {
     throw error;
+  }
+
+  revalidateAdminPaths();
+}
+
+export async function importOwnersExcel(formData: FormData) {
+  await requireAdmin();
+
+  const { rows, value } = await readExcelSheetUpload(formData, "Owners");
+  const importedRows = rows
+    .filter((row) =>
+      hasImportData(row, value, ["full_name", "email", "phone", "line_id", "active"]),
+    )
+    .map((row, index) => {
+      assertUpsertAction(row, value, index + 5);
+
+      return {
+        full_name: requiredText(
+          value(row, "full_name"),
+          `Row ${index + 5} full_name`,
+        ),
+        email: requiredText(value(row, "email"), `Row ${index + 5} email`)
+          .toLowerCase(),
+        phone: value(row, "phone"),
+        line_id: value(row, "line_id"),
+        active: parseBooleanText(value(row, "active"), true),
+      };
+    });
+
+  if (importedRows.length === 0) {
+    throw new Error("Excel file has no owner rows to upsert.");
+  }
+
+  const supabase = await createClient();
+
+  for (const row of importedRows) {
+    const { data: existingOwner, error: existingOwnerError } = await supabase
+      .from("owners")
+      .select("id")
+      .eq("email", row.email)
+      .order("created_at", { ascending: false })
+      .limit(1);
+
+    if (existingOwnerError) {
+      throw existingOwnerError;
+    }
+
+    const currentOwner = existingOwner?.[0] ?? null;
+    const { error } = currentOwner
+      ? await supabase.from("owners").update(row).eq("id", currentOwner.id)
+      : await supabase.from("owners").insert(row);
+
+    if (error) {
+      throw error;
+    }
   }
 
   revalidateAdminPaths();

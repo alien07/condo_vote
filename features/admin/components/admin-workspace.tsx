@@ -2,8 +2,10 @@ import {
   Building2,
   CalendarDays,
   FileText,
+  FileSpreadsheet,
   ListChecks,
   ShieldCheck,
+  Upload,
   UserCheck,
   UserRound,
 } from "lucide-react";
@@ -24,6 +26,8 @@ import {
   deleteMeetingQuestion,
   endRoomOwnerLink,
   generateResultSnapshot,
+  importOwnersExcel,
+  importRoomsExcel,
   grantAppRole,
   importManualVoteEntry,
   linkRoomOwner,
@@ -1515,6 +1519,84 @@ export async function AdminWorkspace({
           hidden={!visibleSections.has("people")}
           id="people"
         >
+          <section className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-5 lg:col-span-2">
+            <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+              <div className="flex items-start gap-2">
+                <FileSpreadsheet className="mt-1 text-[var(--primary)]" size={20} />
+                <div>
+                  <h2 className="text-lg font-semibold">
+                    Excel Import Rooms / Owners
+                  </h2>
+                  <p className="mt-1 text-sm text-[var(--muted)]">
+                    Download the locked Excel template, edit only the input rows,
+                    then upload the same .xlsx file. Imports are upserts only;
+                    deletion stays in the edit/update menus.
+                  </p>
+                </div>
+              </div>
+              <a
+                className="inline-flex min-h-10 items-center justify-center rounded-md border border-[var(--border)] px-4 py-2 text-sm font-medium"
+                href="/templates/condovotes-master-import-template.xlsx"
+              >
+                Download Excel template
+              </a>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <form
+                action={importRoomsExcel}
+                className="rounded-md border border-[var(--border)] p-4"
+              >
+                <div className="mb-3 flex items-center gap-2">
+                  <Upload className="text-[var(--primary)]" size={18} />
+                  <h3 className="font-semibold">Import rooms</h3>
+                </div>
+                <p className="mb-3 text-sm text-[var(--muted)]">
+                  Reads the `Rooms` sheet. Upsert key: `room_number`.
+                </p>
+                <input
+                  accept=".xlsx"
+                  className="block w-full rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+                  name="file"
+                  required
+                  type="file"
+                />
+                <button
+                  className="mt-3 min-h-10 rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)]"
+                  type="submit"
+                >
+                  Upload rooms Excel
+                </button>
+              </form>
+
+              <form
+                action={importOwnersExcel}
+                className="rounded-md border border-[var(--border)] p-4"
+              >
+                <div className="mb-3 flex items-center gap-2">
+                  <Upload className="text-[var(--primary)]" size={18} />
+                  <h3 className="font-semibold">Import owners</h3>
+                </div>
+                <p className="mb-3 text-sm text-[var(--muted)]">
+                  Reads the `Owners` sheet. Upsert key: `email`.
+                </p>
+                <input
+                  accept=".xlsx"
+                  className="block w-full rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+                  name="file"
+                  required
+                  type="file"
+                />
+                <button
+                  className="mt-3 min-h-10 rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)]"
+                  type="submit"
+                >
+                  Upload owners Excel
+                </button>
+              </form>
+            </div>
+          </section>
+
           <section className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-5">
             <div className="mb-4 flex items-center gap-2">
               <Building2 className="text-[var(--primary)]" size={20} />
