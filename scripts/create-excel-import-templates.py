@@ -5,7 +5,7 @@ from openpyxl.styles import Alignment, Border, Font, PatternFill, Protection, Si
 from openpyxl.worksheet.datavalidation import DataValidation
 
 
-OUTPUT = Path("public/templates/condovotes-master-import-template.xlsx")
+OUTPUT_DIR = Path("public/templates")
 DATA_START_ROW = 5
 DATA_END_ROW = 504
 
@@ -30,7 +30,7 @@ def unlock_input_area(ws, column_count):
             ws.cell(row=row, column=col).protection = Protection(locked=False)
 
 
-def add_sheet_common(ws, title, description, headers, widths):
+def add_common_sheet(ws, title, description, headers, widths, active_col):
     ws.sheet_view.showGridLines = False
     ws.freeze_panes = "A5"
     ws["A1"] = title
@@ -48,12 +48,6 @@ def add_sheet_common(ws, title, description, headers, widths):
     for col_letter, width in widths.items():
         ws.column_dimensions[col_letter].width = width
 
-    ws.auto_filter.ref = f"A4:{chr(64 + len(headers))}{DATA_END_ROW}"
-    ws.protection.sheet = True
-    ws.protection.enable()
-
-
-def add_validations(ws, active_col):
     action_validation = DataValidation(
         type="list",
         formula1='"upsert"',
@@ -76,32 +70,42 @@ def add_validations(ws, active_col):
     for row in range(DATA_START_ROW, DATA_END_ROW + 1):
         ws.cell(row=row, column=1, value="upsert")
 
+    ws.auto_filter.ref = f"A4:{chr(64 + len(headers))}{DATA_END_ROW}"
+    ws.protection.sheet = True
+    ws.protection.enable()
 
-def main():
-    wb = Workbook()
+
+def add_instructions(wb, rows):
     instructions = wb.active
     instructions.title = "Instructions"
     instructions.sheet_view.showGridLines = False
-    instructions["A1"] = "condoVotes master data import template"
+    instructions["A1"] = "condoVotes Excel import template"
     instructions["A1"].font = Font(size=16, bold=True, color="0F172A")
     instructions["A3"] = "Workflow"
     instructions["A3"].font = Font(bold=True)
-    instruction_rows = [
-        "1. Fill only the unlocked rows in Rooms and Owners.",
-        "2. Keep import_action as upsert. This template intentionally does not support delete.",
-        "3. Upload this same .xlsx file from Admin > People.",
-        "4. Rooms are upserted by room_number.",
-        "5. Owners are upserted by email.",
-        "6. To delete or deactivate master data, use the update/edit menu in the app.",
-    ]
-    for index, text in enumerate(instruction_rows, start=4):
+
+    for index, text in enumerate(rows, start=4):
         instructions.cell(row=index, column=1, value=text)
+
     instructions.column_dimensions["A"].width = 110
     instructions.protection.sheet = True
     instructions.protection.enable()
 
+
+def build_rooms_template():
+    wb = Workbook()
+    add_instructions(
+        wb,
+        [
+            "1. Fill only the unlocked rows in the Rooms sheet.",
+            "2. Keep import_action as upsert. This template intentionally does not support delete.",
+            "3. Upload this same .xlsx file from Admin > People > Import rooms.",
+            "4. Rooms are upserted by room_number.",
+            "5. To delete or deactivate rooms, use the room edit/update menu in the app.",
+        ],
+    )
     rooms = wb.create_sheet("Rooms")
-    room_headers = [
+    headers = [
         "import_action",
         "room_number",
         "ownership_percent",
@@ -110,11 +114,11 @@ def main():
         "area_size",
         "active",
     ]
-    add_sheet_common(
+    add_common_sheet(
         rooms,
         "Rooms",
         "Required: room_number, ownership_percent. Optional: building, floor, area_size, active.",
-        room_headers,
+        headers,
         {
             "A": 16,
             "B": 18,
@@ -124,11 +128,25 @@ def main():
             "F": 14,
             "G": 12,
         },
+        "G",
     )
-    add_validations(rooms, "G")
+    wb.save(OUTPUT_DIR / "rooms-import-template.xlsx")
 
+
+def build_owners_template():
+    wb = Workbook()
+    add_instructions(
+        wb,
+        [
+            "1. Fill only the unlocked rows in the Owners sheet.",
+            "2. Keep import_action as upsert. This template intentionally does not support delete.",
+            "3. Upload this same .xlsx file from Admin > People > Import owners.",
+            "4. Owners are upserted by email.",
+            "5. To delete or deactivate owners, use the owner edit/update menu in the app.",
+        ],
+    )
     owners = wb.create_sheet("Owners")
-    owner_headers = [
+    headers = [
         "import_action",
         "full_name",
         "email",
@@ -136,11 +154,11 @@ def main():
         "line_id",
         "active",
     ]
-    add_sheet_common(
+    add_common_sheet(
         owners,
         "Owners",
         "Required: full_name, email. Optional: phone, line_id, active.",
-        owner_headers,
+        headers,
         {
             "A": 16,
             "B": 28,
@@ -149,10 +167,15 @@ def main():
             "E": 18,
             "F": 12,
         },
+        "F",
     )
-    add_validations(owners, "F")
-    OUTPUT.parent.mkdir(parents=True, exist_ok=True)
-    wb.save(OUTPUT)
+    wb.save(OUTPUT_DIR / "owners-import-template.xlsx")
+
+
+def main():
+    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    build_rooms_template()
+    build_owners_template()
 
 
 if __name__ == "__main__":

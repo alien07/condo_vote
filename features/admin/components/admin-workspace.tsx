@@ -1528,18 +1528,13 @@ export async function AdminWorkspace({
                     Excel Import Rooms / Owners
                   </h2>
                   <p className="mt-1 text-sm text-[var(--muted)]">
-                    Download the locked Excel template, edit only the input rows,
-                    then upload the same .xlsx file. Imports are upserts only;
-                    deletion stays in the edit/update menus.
+                    Download the locked Excel template for each master table,
+                    edit only the input rows, then upload the same .xlsx file.
+                    Imports are upserts only; deletion stays in the edit/update
+                    menus.
                   </p>
                 </div>
               </div>
-              <a
-                className="inline-flex min-h-10 items-center justify-center rounded-md border border-[var(--border)] px-4 py-2 text-sm font-medium"
-                href="/templates/condovotes-master-import-template.xlsx"
-              >
-                Download Excel template
-              </a>
             </div>
 
             <div className="grid gap-4 md:grid-cols-2">
@@ -1554,6 +1549,12 @@ export async function AdminWorkspace({
                 <p className="mb-3 text-sm text-[var(--muted)]">
                   Reads the `Rooms` sheet. Upsert key: `room_number`.
                 </p>
+                <a
+                  className="mb-3 inline-flex min-h-10 items-center justify-center rounded-md border border-[var(--border)] px-4 py-2 text-sm font-medium"
+                  href="/templates/rooms-import-template.xlsx"
+                >
+                  Download rooms template
+                </a>
                 <input
                   accept=".xlsx"
                   className="block w-full rounded-md border border-[var(--border)] px-3 py-2 text-sm"
@@ -1580,6 +1581,12 @@ export async function AdminWorkspace({
                 <p className="mb-3 text-sm text-[var(--muted)]">
                   Reads the `Owners` sheet. Upsert key: `email`.
                 </p>
+                <a
+                  className="mb-3 inline-flex min-h-10 items-center justify-center rounded-md border border-[var(--border)] px-4 py-2 text-sm font-medium"
+                  href="/templates/owners-import-template.xlsx"
+                >
+                  Download owners template
+                </a>
                 <input
                   accept=".xlsx"
                   className="block w-full rounded-md border border-[var(--border)] px-3 py-2 text-sm"

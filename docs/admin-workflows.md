@@ -45,8 +45,9 @@ These workflows define the admin-facing MVP behavior. Ask before implementing an
 - Editing published meetings should be restricted. If allowed, it must be audited.
 
 ## Excel Master Data Import
-- Admin can download a locked Excel template from `Admin > People`.
-- The template has `Rooms` and `Owners` sheets with protected headers, validation lists, and unlocked input rows.
+- Admin can download locked Excel templates from `Admin > People`.
+- Master imports are separated by table: `rooms-import-template.xlsx` and `owners-import-template.xlsx`.
+- Each template has one import sheet with protected headers, validation lists, and unlocked input rows.
 - Rooms are imported by upsert using `room_number` as the key.
 - Owners are imported by upsert using `email` as the key.
 - The import supports only `upsert`; deleting or deactivating master data must be done from the relevant update/edit menu.
