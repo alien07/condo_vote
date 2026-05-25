@@ -530,6 +530,99 @@ export async function importOwnersExcel(formData: FormData) {
   revalidateAdminPaths();
 }
 
+export async function importRoomOwnersExcel(formData: FormData) {
+  await requireAdmin();
+
+  const { rows, value } = await readExcelSheetUpload(formData, "RoomOwners");
+  const importedRows = rows
+    .filter((row) => hasImportData(row, value, ["room_number", "owner_email"]))
+    .map((row, index) => {
+      assertUpsertAction(row, value, index + 5);
+
+      return {
+        roomNumber: requiredText(
+          value(row, "room_number"),
+          `Row ${index + 5} room_number`,
+        ),
+        ownerEmail: requiredText(
+          value(row, "owner_email"),
+          `Row ${index + 5} owner_email`,
+        ).toLowerCase(),
+      };
+    });
+
+  if (importedRows.length === 0) {
+    throw new Error("Excel file has no room-owner rows to upsert.");
+  }
+
+  const supabase = await createClient();
+
+  for (const row of importedRows) {
+    const [roomResult, ownerResult] = await Promise.all([
+      supabase
+        .from("rooms")
+        .select("id")
+        .eq("room_number", row.roomNumber)
+        .maybeSingle(),
+      supabase
+        .from("owners")
+        .select("id")
+        .eq("email", row.ownerEmail)
+        .order("created_at", { ascending: false })
+        .limit(1),
+    ]);
+
+    if (roomResult.error) {
+      throw roomResult.error;
+    }
+
+    if (ownerResult.error) {
+      throw ownerResult.error;
+    }
+
+    if (!roomResult.data) {
+      throw new Error(`Room "${row.roomNumber}" was not found.`);
+    }
+
+    const owner = ownerResult.data?.[0] ?? null;
+
+    if (!owner) {
+      throw new Error(`Owner email "${row.ownerEmail}" was not found.`);
+    }
+
+    const { data: existingLink, error: existingLinkError } = await supabase
+      .from("room_owners")
+      .select("id")
+      .eq("room_id", roomResult.data.id)
+      .eq("owner_id", owner.id)
+      .eq("ownership_role", "owner")
+      .order("created_at", { ascending: false })
+      .limit(1);
+
+    if (existingLinkError) {
+      throw existingLinkError;
+    }
+
+    const currentLink = existingLink?.[0] ?? null;
+    const values = {
+      room_id: roomResult.data.id,
+      owner_id: owner.id,
+      ownership_role: "owner",
+      starts_at: null,
+      ends_at: null,
+    };
+    const { error } = currentLink
+      ? await supabase.from("room_owners").update(values).eq("id", currentLink.id)
+      : await supabase.from("room_owners").insert(values);
+
+    if (error) {
+      throw error;
+    }
+  }
+
+  revalidateAdminPaths();
+}
+
 export async function deactivateOwner(formData: FormData) {
   await requireAdmin();
 

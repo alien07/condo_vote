@@ -75,6 +75,42 @@ def add_common_sheet(ws, title, description, headers, widths, active_col):
     ws.protection.enable()
 
 
+def add_mapping_sheet(ws, title, description, headers, widths):
+    ws.sheet_view.showGridLines = False
+    ws.freeze_panes = "A5"
+    ws["A1"] = title
+    ws["A1"].font = Font(size=16, bold=True, color="0F172A")
+    ws["A2"] = description
+    ws["A2"].font = Font(color="475569")
+    ws["A2"].alignment = Alignment(wrap_text=True)
+    ws.merge_cells(start_row=1, start_column=1, end_row=1, end_column=len(headers))
+    ws.merge_cells(start_row=2, start_column=1, end_row=2, end_column=len(headers))
+    ws.row_dimensions[2].height = 36
+
+    style_header(ws, headers)
+    unlock_input_area(ws, len(headers))
+
+    for col_letter, width in widths.items():
+        ws.column_dimensions[col_letter].width = width
+
+    action_validation = DataValidation(
+        type="list",
+        formula1='"upsert"',
+        allow_blank=False,
+        showErrorMessage=True,
+        error="Only upsert is allowed. Delete master data from the edit menu.",
+    )
+    ws.add_data_validation(action_validation)
+    action_validation.add(f"A{DATA_START_ROW}:A{DATA_END_ROW}")
+
+    for row in range(DATA_START_ROW, DATA_END_ROW + 1):
+        ws.cell(row=row, column=1, value="upsert")
+
+    ws.auto_filter.ref = f"A4:{chr(64 + len(headers))}{DATA_END_ROW}"
+    ws.protection.sheet = True
+    ws.protection.enable()
+
+
 def add_instructions(wb, rows):
     instructions = wb.active
     instructions.title = "Instructions"
@@ -172,10 +208,44 @@ def build_owners_template():
     wb.save(OUTPUT_DIR / "owners-import-template.xlsx")
 
 
+def build_room_owners_template():
+    wb = Workbook()
+    add_instructions(
+        wb,
+        [
+            "1. Fill only the unlocked rows in the RoomOwners sheet.",
+            "2. Keep import_action as upsert. This template intentionally does not support delete.",
+            "3. Upload this same .xlsx file from Admin > People > Import room owners.",
+            "4. Room-owner links use room_number and owner_email.",
+            "5. ownership_role is fixed as owner by the app.",
+            "6. starts_at and ends_at are intentionally omitted because ownership is treated as permanent.",
+        ],
+    )
+    room_owners = wb.create_sheet("RoomOwners")
+    headers = [
+        "import_action",
+        "room_number",
+        "owner_email",
+    ]
+    add_mapping_sheet(
+        room_owners,
+        "Room Owners",
+        "Required: room_number, owner_email. Role is fixed as owner. Dates are intentionally omitted.",
+        headers,
+        {
+            "A": 16,
+            "B": 18,
+            "C": 32,
+        },
+    )
+    wb.save(OUTPUT_DIR / "room-owners-import-template.xlsx")
+
+
 def main():
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     build_rooms_template()
     build_owners_template()
+    build_room_owners_template()
 
 
 if __name__ == "__main__":

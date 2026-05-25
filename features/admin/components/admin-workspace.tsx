@@ -27,6 +27,7 @@ import {
   endRoomOwnerLink,
   generateResultSnapshot,
   importOwnersExcel,
+  importRoomOwnersExcel,
   importRoomsExcel,
   grantAppRole,
   importManualVoteEntry,
@@ -1525,7 +1526,7 @@ export async function AdminWorkspace({
                 <FileSpreadsheet className="mt-1 text-[var(--primary)]" size={20} />
                 <div>
                   <h2 className="text-lg font-semibold">
-                    Excel Import Rooms / Owners
+                    Excel Import Master Data
                   </h2>
                   <p className="mt-1 text-sm text-[var(--muted)]">
                     Download the locked Excel template for each master table,
@@ -1537,7 +1538,7 @@ export async function AdminWorkspace({
               </div>
             </div>
 
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="grid gap-4 lg:grid-cols-3">
               <form
                 action={importRoomsExcel}
                 className="rounded-md border border-[var(--border)] p-4"
@@ -1599,6 +1600,39 @@ export async function AdminWorkspace({
                   type="submit"
                 >
                   Upload owners Excel
+                </button>
+              </form>
+
+              <form
+                action={importRoomOwnersExcel}
+                className="rounded-md border border-[var(--border)] p-4"
+              >
+                <div className="mb-3 flex items-center gap-2">
+                  <Upload className="text-[var(--primary)]" size={18} />
+                  <h3 className="font-semibold">Import room owners</h3>
+                </div>
+                <p className="mb-3 text-sm text-[var(--muted)]">
+                  Reads the `RoomOwners` sheet. Links `room_number` to
+                  `owner_email` with role `owner`.
+                </p>
+                <a
+                  className="mb-3 inline-flex min-h-10 items-center justify-center rounded-md border border-[var(--border)] px-4 py-2 text-sm font-medium"
+                  href="/templates/room-owners-import-template.xlsx"
+                >
+                  Download room owners template
+                </a>
+                <input
+                  accept=".xlsx"
+                  className="block w-full rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+                  name="file"
+                  required
+                  type="file"
+                />
+                <button
+                  className="mt-3 min-h-10 rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)]"
+                  type="submit"
+                >
+                  Upload room owners Excel
                 </button>
               </form>
             </div>

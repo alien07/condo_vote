@@ -46,10 +46,11 @@ These workflows define the admin-facing MVP behavior. Ask before implementing an
 
 ## Excel Master Data Import
 - Admin can download locked Excel templates from `Admin > People`.
-- Master imports are separated by table: `rooms-import-template.xlsx` and `owners-import-template.xlsx`.
+- Master imports are separated by table: `rooms-import-template.xlsx`, `owners-import-template.xlsx`, and `room-owners-import-template.xlsx`.
 - Each template has one import sheet with protected headers, validation lists, and unlocked input rows.
 - Rooms are imported by upsert using `room_number` as the key.
 - Owners are imported by upsert using `email` as the key.
+- Room-owner links import `room_number` and `owner_email`; `ownership_role` is fixed as `owner`, and ownership dates are intentionally omitted.
 - The import supports only `upsert`; deleting or deactivating master data must be done from the relevant update/edit menu.
 
 ## Result Management
