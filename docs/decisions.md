@@ -15,7 +15,7 @@ Do not upload video files into Supabase for MVP. Store an external video URL to 
 ### D003 - Google Or Email Auth Before LINE
 Status: accepted
 
-Use Google login or email magic link for MVP. LINE login can be revisited after the voting flow is validated.
+Use Google login for MVP. Vote invitation links carry the intended in-app destination, but Supabase policy checks decide whether the user can vote after login. LINE login can be revisited after the voting flow is validated.
 
 ### D004 - Results Require Approval Before Publication
 Status: accepted

@@ -28,7 +28,7 @@ export async function getAdminDashboardData() {
       supabase
         .from("condo_profiles")
         .select(
-          "id, juristic_name, project_name, registration_no, tax_id, address, phone, email, manager_name, document_footer",
+          "id, juristic_name, project_name, registration_no, tax_id, address, phone, email, manager_name, document_footer, summary_history_limit",
         )
         .order("created_at", { ascending: false })
         .limit(1),

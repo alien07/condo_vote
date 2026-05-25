@@ -7,6 +7,8 @@ This folder contains the working specification for condoVotes.
 - [Architecture](architecture.md)
 - [Admin workflows](admin-workflows.md)
 - [Communication](communication.md)
+- [Email invite flow](email_invite_flow.md)
+- [Error codes](error_code.md)
 - [Data model](data-model.md)
 - [Local development](local-development.md)
 - [SQL schema draft](schema-draft.sql)

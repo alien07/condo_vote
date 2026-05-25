@@ -2,87 +2,63 @@
 
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { ERROR_CODES } from "@/lib/error-codes";
 import { createClient } from "@/lib/supabase/server";
 
-export type LoginState = {
-  error?: string;
-};
+function getSafeNext(value: FormDataEntryValue | string | null) {
+  const next = String(value ?? "").trim();
+
+  if (!next || !next.startsWith("/") || next.startsWith("//")) {
+    return "/";
+  }
+
+  return next;
+}
 
 async function getRedirectOrigin() {
   const requestOrigin = (await headers()).get("origin");
   const configuredOrigin = process.env.NEXT_PUBLIC_APP_URL;
 
+  if (requestOrigin) {
+    const url = new URL(requestOrigin);
+
+    if (url.hostname !== "0.0.0.0") {
+      return requestOrigin;
+    }
+  }
+
   if (configuredOrigin) {
     return configuredOrigin;
   }
 
-  if (!requestOrigin) {
-    return null;
-  }
-
-  const url = new URL(requestOrigin);
-
-  if (url.hostname === "0.0.0.0") {
-    return null;
-  }
-
-  return requestOrigin;
+  return null;
 }
 
-export async function signInWithGoogle() {
+export async function signInWithGoogle(formData: FormData) {
   const supabase = await createClient();
   const origin = await getRedirectOrigin();
+  const next = getSafeNext(formData.get("next"));
 
   if (!origin) {
-    redirect("/login?error=missing-origin");
+    redirect(`/login?error=${ERROR_CODES.AUTH_MISSING_ORIGIN}`);
   }
 
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "google",
     options: {
-      redirectTo: `${origin}/auth/callback`,
+      redirectTo: `${origin}/auth/callback?next=${encodeURIComponent(next)}`,
     },
   });
 
   if (error) {
-    redirect(`/login?error=${encodeURIComponent(error.message)}`);
+    redirect(`/login?error=${ERROR_CODES.AUTH_GOOGLE_PROVIDER}`);
   }
 
   if (data.url) {
     redirect(data.url);
   }
 
-  redirect("/login?error=google-login");
-}
-
-export async function signInWithEmail(
-  _previousState: LoginState,
-  formData: FormData,
-) {
-  const email = String(formData.get("email") ?? "").trim().toLowerCase();
-  const supabase = await createClient();
-  const origin = await getRedirectOrigin();
-
-  if (!email) {
-    return { error: "Email is required." };
-  }
-
-  if (!origin) {
-    return { error: "Missing request origin." };
-  }
-
-  const { error } = await supabase.auth.signInWithOtp({
-    email,
-    options: {
-      emailRedirectTo: `${origin}/auth/callback`,
-    },
-  });
-
-  if (error) {
-    return { error: error.message };
-  }
-
-  return {};
+  redirect(`/login?error=${ERROR_CODES.AUTH_GOOGLE_REDIRECT_MISSING}`);
 }
 
 export async function signOut() {

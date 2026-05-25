@@ -13,6 +13,9 @@ Content:
 - Voting link
 - Basic support/contact text
 
+See [Email invite flow](email_invite_flow.md) for resend modes, Google OAuth
+redirect behavior, resident FYI handling, and summary routing.
+
 ### Reminder
 Trigger: admin action or scheduled reminder before voting closes.
 Recipients: eligible voters who have not submitted a ballot.
@@ -42,6 +45,7 @@ Content:
 - Because daily email limits may apply, emails should be queued and sent in descending active date/time order.
 - The active date/time should represent the most recent relevant activity or active registration timestamp available for the recipient.
 - Failed sends should not block the whole queue.
+- Invitation and resend routing decisions are defined in [Email invite flow](email_invite_flow.md).
 
 ## Retry And Logging
 - Every send attempt should create or update an `email_logs` record.

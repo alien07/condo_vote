@@ -8,7 +8,7 @@
 - Define RLS policy strategy.
 
 ## Phase 1 - MVP Admin And Voting
-- Auth with Google or email magic link.
+- Auth with Google login and policy-based vote invitation links.
 - Admin room and owner CRUD.
 - Voter registration and approval.
 - Meeting CRUD.

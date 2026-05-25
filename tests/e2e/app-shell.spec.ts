@@ -31,9 +31,7 @@ test.describe("@test:e2e app shell", () => {
 
     await expect(page.getByRole("heading", { name: "Login" })).toBeVisible();
     await expect(
-      page.getByText(
-        `Sign in with Google or email magic link. Version ${APP_VERSION}.`,
-      ),
+      page.getByText(`Sign in with Google. Version ${APP_VERSION}.`),
     ).toBeVisible();
   });
 
@@ -42,7 +40,19 @@ test.describe("@test:e2e app shell", () => {
   }) => {
     test.setTimeout(60_000);
 
-    for (const path of ["/admin", "/vote"]) {
+    for (const path of [
+      "/admin",
+      "/admin/setup",
+      "/admin/meetings",
+      "/admin/voting",
+      "/admin/results",
+      "/admin/communications",
+      "/admin/people",
+      "/admin/ownership",
+      "/admin/proxies",
+      "/vote",
+      "/summary",
+    ]) {
       await page.goto(path);
 
       await expect(page).toHaveURL(/\/login$/);

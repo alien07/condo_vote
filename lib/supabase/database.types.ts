@@ -380,6 +380,7 @@ export type Database = {
           project_name: string
           registration_no: string | null
           seal_storage_path: string | null
+          summary_history_limit: number
           tax_id: string | null
           updated_at: string
         }
@@ -396,6 +397,7 @@ export type Database = {
           project_name: string
           registration_no?: string | null
           seal_storage_path?: string | null
+          summary_history_limit?: number
           tax_id?: string | null
           updated_at?: string
         }
@@ -412,6 +414,7 @@ export type Database = {
           project_name?: string
           registration_no?: string | null
           seal_storage_path?: string | null
+          summary_history_limit?: number
           tax_id?: string | null
           updated_at?: string
         }
@@ -1288,4 +1291,3 @@ export const Constants = {
     Enums: {},
   },
 } as const
-

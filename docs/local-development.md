@@ -74,6 +74,18 @@ npm run types:supabase
 ## Local Demo Admin
 Use only ignored local environment files for demo credentials and keys.
 
+Google login requires local OAuth credentials outside git:
+
+```bash
+SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID=<google oauth client id>
+SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET=<google oauth client secret>
+```
+
+The Google OAuth client must allow the local Supabase callback URL:
+`http://127.0.0.1:54321/auth/v1/callback`. LAN IPs such as
+`192.168.x.x` are for opening the web app from another device, not for the
+Google OAuth callback, because Google rejects private-network IP redirect URIs.
+
 After `npm run supabase:start`, generate local demo URLs from the current LAN IP:
 
 ```bash
@@ -82,7 +94,10 @@ npm run supabase:stop
 npm run supabase:start
 ```
 
-The script updates ignored `.env.local` and local `supabase/config.toml` so magic links use the current laptop LAN IP instead of `localhost`, `127.0.0.1`, or `0.0.0.0`.
+The script updates ignored `.env.local` with the current laptop LAN IP for
+device demo access, and updates local `supabase/config.toml` redirect allowlist.
+Supabase Auth `external_url` stays on `127.0.0.1` for Google OAuth callback
+compatibility.
 
 If automatic IP detection chooses the wrong network interface:
 

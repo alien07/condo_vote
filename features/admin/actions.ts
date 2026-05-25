@@ -25,6 +25,21 @@ function optionalNumber(value: FormDataEntryValue | null) {
   return text ? Number(text) : null;
 }
 
+function requiredIntegerInRange(
+  value: FormDataEntryValue | null,
+  fieldName: string,
+  min: number,
+  max: number,
+) {
+  const number = Number(value);
+
+  if (!Number.isInteger(number) || number < min || number > max) {
+    throw new Error(`${fieldName} must be between ${min} and ${max}.`);
+  }
+
+  return number;
+}
+
 function requiredNumber(value: FormDataEntryValue | null, fieldName: string) {
   const number = Number(value);
 
@@ -112,6 +127,243 @@ function toNumber(value: number | string | null | undefined) {
 
 function revalidateAdminPaths() {
   revalidatePath("/admin", "layout");
+}
+
+function normalizeEmail(value: FormDataEntryValue | null) {
+  return String(value ?? "").trim().toLowerCase();
+}
+
+function getRelatedProfileEmail(
+  profile:
+    | { email?: string | null }
+    | { email?: string | null }[]
+    | null
+    | undefined,
+) {
+  const item = Array.isArray(profile) ? profile[0] : profile;
+  return item?.email?.trim().toLowerCase() || null;
+}
+
+export type EmailInviteState = {
+  error?: string;
+  message?: string;
+};
+
+async function insertEmailLogs(
+  rows: {
+    recipient_email: string;
+    template_key: string;
+    status: string;
+    error_message?: string | null;
+  }[],
+) {
+  if (rows.length === 0) {
+    return;
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.from("email_logs").insert(rows);
+
+  if (error) {
+    throw error;
+  }
+}
+
+export async function resendVoteInvitation(
+  _previousState: EmailInviteState,
+  formData: FormData,
+): Promise<EmailInviteState> {
+  await requireAdmin();
+
+  const meetingId = requiredText(formData.get("meeting_id"), "Meeting");
+  const email = normalizeEmail(formData.get("email"));
+
+  if (!email) {
+    return { error: "Recipient email is required." };
+  }
+
+  const supabase = await createClient();
+
+  const [meetingResult, profileResult] = await Promise.all([
+    supabase
+      .from("meetings")
+      .select("id, status")
+      .eq("id", meetingId)
+      .single(),
+    supabase
+      .from("profiles")
+      .select("id, email")
+      .eq("email", email)
+      .maybeSingle(),
+  ]);
+
+  if (meetingResult.error) {
+    return { error: meetingResult.error.message };
+  }
+
+  if (profileResult.error) {
+    return { error: profileResult.error.message };
+  }
+
+  if (meetingResult.data.status !== "published") {
+    return { error: "Vote invitation links can only be resent for published meetings." };
+  }
+
+  if (!profileResult.data) {
+    return { error: `No profile found for ${email}.` };
+  }
+
+  const { data: eligible, error: eligibleError } = await supabase
+    .from("eligible_voters_snapshot")
+    .select("room_id, voter_type")
+    .eq("meeting_id", meetingId)
+    .eq("profile_id", profileResult.data.id)
+    .maybeSingle();
+
+  if (eligibleError) {
+    return { error: eligibleError.message };
+  }
+
+  if (!eligible || !["owner", "proxy"].includes(eligible.voter_type)) {
+    return {
+      error: `${email} is not an owner/proxy eligible voter for this meeting.`,
+    };
+  }
+
+  await insertEmailLogs([
+    {
+      recipient_email: email,
+      template_key: `vote_invitation:${meetingId}`,
+      status: "queued",
+    },
+  ]);
+  revalidateAdminPaths();
+
+  return { message: `Queued vote invitation for ${email}.` };
+}
+
+export async function queueVoteInvitationGroup(
+  _previousState: EmailInviteState,
+  formData: FormData,
+): Promise<EmailInviteState> {
+  await requireAdmin();
+
+  const meetingId = requiredText(formData.get("meeting_id"), "Meeting");
+  const groupMode = requiredText(formData.get("group_mode"), "Group mode");
+  const supabase = await createClient();
+  const { data: meeting, error: meetingError } = await supabase
+    .from("meetings")
+    .select("id, status")
+    .eq("id", meetingId)
+    .single();
+
+  if (meetingError) {
+    return { error: meetingError.message };
+  }
+
+  if (!["eligible", "all_active"].includes(groupMode)) {
+    return { error: "Invalid group resend mode." };
+  }
+
+  if (groupMode === "eligible" && meeting.status !== "published") {
+    return { error: "Eligible voter links can only be queued for published meetings." };
+  }
+
+  const { data: eligibleRows, error: eligibleError } = await supabase
+    .from("eligible_voters_snapshot")
+    .select("voter_type, profiles(email)")
+    .eq("meeting_id", meetingId);
+
+  if (eligibleError) {
+    return { error: eligibleError.message };
+  }
+
+  const voteEmails = new Set(
+    eligibleRows
+      .filter((row) => row.voter_type === "owner" || row.voter_type === "proxy")
+      .map((row) => getRelatedProfileEmail(row.profiles))
+      .filter((email): email is string => Boolean(email)),
+  );
+
+  const logsByEmail = new Map<
+    string,
+    {
+      recipient_email: string;
+      template_key: string;
+      status: string;
+    }
+  >();
+
+  if (groupMode === "eligible") {
+    for (const email of voteEmails) {
+      logsByEmail.set(email, {
+        recipient_email: email,
+        template_key: `vote_invitation:${meetingId}`,
+        status: "queued",
+      });
+    }
+  } else {
+    const [ownersResult, residentsResult] = await Promise.all([
+      supabase
+        .from("owners")
+        .select("email")
+        .eq("active", true)
+        .not("email", "is", null),
+      supabase
+        .from("profiles")
+        .select("email")
+        .eq("approval_status", "approved")
+        .eq("default_status", "resident"),
+    ]);
+
+    if (ownersResult.error) {
+      return { error: ownersResult.error.message };
+    }
+
+    if (residentsResult.error) {
+      return { error: residentsResult.error.message };
+    }
+
+    for (const owner of ownersResult.data) {
+      const email = owner.email?.trim().toLowerCase();
+
+      if (!email) {
+        continue;
+      }
+
+      logsByEmail.set(email, {
+        recipient_email: email,
+        template_key:
+          meeting.status === "published" && voteEmails.has(email)
+            ? `vote_invitation:${meetingId}`
+            : `vote_fyi:${meetingId}`,
+        status: "queued",
+      });
+    }
+
+    for (const resident of residentsResult.data) {
+      const email = resident.email.trim().toLowerCase();
+
+      if (!logsByEmail.has(email)) {
+        logsByEmail.set(email, {
+          recipient_email: email,
+          template_key: `vote_fyi:${meetingId}`,
+          status: "queued",
+        });
+      }
+    }
+  }
+
+  const rows = [...logsByEmail.values()];
+
+  if (rows.length === 0) {
+    return { error: "No recipients matched this resend policy." };
+  }
+
+  await insertEmailLogs(rows);
+  revalidateAdminPaths();
+
+  return { message: `Queued ${rows.length} email event(s).` };
 }
 
 async function readExcelSheetUpload(formData: FormData, sheetName: string) {
@@ -264,6 +516,12 @@ export async function saveCondoProfile(formData: FormData) {
     email: optionalText(formData.get("email")),
     manager_name: optionalText(formData.get("manager_name")),
     document_footer: optionalText(formData.get("document_footer")),
+    summary_history_limit: requiredIntegerInRange(
+      formData.get("summary_history_limit"),
+      "Summary history limit",
+      1,
+      20,
+    ),
   };
   const supabase = await createClient();
   const { error } = id

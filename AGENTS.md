@@ -27,7 +27,7 @@ condoVotes lets condominium admins create online meetings, questions, and choice
 ## Current Implementation Direction
 - Frontend: React or Next.js.
 - Backend: Supabase Auth, PostgreSQL, RLS, Storage, Edge Functions.
-- Auth MVP: Google login or email magic link.
+- Auth MVP: Google login with policy-based vote invitation links.
 - Video MVP: store an external video URL, not uploaded video files.
 
 ## Voting Rules

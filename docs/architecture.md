@@ -5,7 +5,7 @@
 - Hosting: Vercel or Netlify for MVP.
 - Backend: Supabase.
 - Database: Supabase PostgreSQL.
-- Auth: Supabase Auth with Google login or email magic link.
+- Auth: Supabase Auth with Google login.
 - Authorization: Supabase Row Level Security.
 - Files: Supabase Storage for PDFs and approval/proxy documents.
 - Email: Resend, Brevo, or existing Google Workspace SMTP depending on cost and deliverability.
@@ -13,7 +13,7 @@
 
 ## High-Level Flow
 1. Admin imports or creates room and owner master data.
-2. User registers with Google/email.
+2. User registers or signs in with Google.
 3. Admin approves owner or proxy eligibility.
 4. Admin creates meeting, questions, choices, and voting window.
 5. Admin publishes meeting and sends invitation links.
@@ -25,6 +25,8 @@
 
 ## Vote Flow
 This is more specific than the high-level architecture flow. It describes the business path for one voting event.
+Invitation, resend, login redirect, and summary routing details are defined in
+[Email invite flow](email_invite_flow.md).
 
 1. Admin prepares room and owner master data.
 2. Admin creates meeting, voting window, optional video URL, and optional transcript.
@@ -33,7 +35,7 @@ This is more specific than the high-level architecture flow. It describes the bu
 5. Admin publishes the meeting.
 6. System creates or refreshes `eligible_voters_snapshot` for the meeting.
 7. System sends invitation links to eligible voters.
-8. Voter logs in with Google/email.
+8. Voter logs in with Google.
 9. System checks voter eligibility against the meeting snapshot.
 10. Voter submits ballot for one eligible room.
 11. If voter edits before `ends_at`, system stores a new ballot version and updates current answers.
@@ -63,7 +65,7 @@ This is more specific than the high-level architecture flow. It describes the bu
 ## MVP Constraints
 - Keep video as URL only.
 - Keep all documents private.
-- Avoid custom OAuth until Google/email auth is validated.
+- Avoid custom OAuth until Google auth and policy-based vote links are validated.
 - Use synthetic data in seed scripts and demos.
 
 ## Deployment Environments

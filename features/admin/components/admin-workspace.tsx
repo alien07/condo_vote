@@ -39,6 +39,7 @@ import {
   saveCondoProfile,
   updateProfileApproval,
 } from "@/features/admin/actions";
+import { EmailInviteControls } from "@/features/admin/components/email-invite-controls";
 import { getAdminDashboardData } from "@/features/admin/data";
 
 function formatDateTime(value: string) {
@@ -418,6 +419,17 @@ export async function AdminWorkspace({
               placeholder="Email"
               type="email"
             />
+            <label className="text-sm font-medium">
+              Summary history limit
+              <input
+                className="mt-1 w-full rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+                defaultValue={condoProfile?.summary_history_limit ?? 5}
+                max={20}
+                min={1}
+                name="summary_history_limit"
+                type="number"
+              />
+            </label>
             <input
               className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
               defaultValue={condoProfile?.address ?? ""}
@@ -1484,6 +1496,7 @@ export async function AdminWorkspace({
             <ListChecks className="text-[var(--primary)]" size={20} />
             <h2 className="text-lg font-semibold">Email Queue</h2>
           </div>
+          <EmailInviteControls meetings={meetings} />
           <div className="overflow-x-auto">
             <table className="w-full border-collapse text-left text-sm">
               <thead className="border-b border-[var(--border)] text-[var(--muted)]">

@@ -12,7 +12,7 @@ if (!ipAddress) {
 }
 
 const appUrl = `http://${ipAddress}:${appPort}`;
-const authUrl = `http://${ipAddress}:${supabasePort}/auth/v1`;
+const authUrl = `http://127.0.0.1:${supabasePort}/auth/v1`;
 const envValues = readSupabaseEnv();
 
 writeLocalEnv({
@@ -27,6 +27,7 @@ writeSupabaseConfig({ appUrl, authUrl });
 console.log(`Demo LAN IP: ${ipAddress}`);
 console.log(`App: ${appUrl}`);
 console.log(`Mailpit: http://${ipAddress}:54324`);
+console.log(`Supabase Auth callback: ${authUrl}/callback`);
 console.log("Restart Supabase after this script when config.toml changed.");
 
 function detectLanIp() {
