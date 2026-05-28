@@ -3,15 +3,22 @@
 This document defines the robot test plan and re-test tags for condoVotes.
 
 ## Current Status
-Robot tests are not implemented yet.
+Robot tests are implemented with Playwright E2E coverage.
 
-Current verification is manual/command-based:
+Current verification:
 - `npm run lint`
 - `npm run typecheck`
 - `npm run build`
-- `npm run db:reset:local`
-- `npm run types:supabase`
-- Browser smoke check for `/`, `/login`, `/admin`, `/vote`
+- `npm run test:e2e`
+- Targeted auth/admin checks:
+  `npx playwright test tests/e2e/app-shell.spec.ts tests/e2e/role-access.spec.ts --project=chromium`
+- Targeted owner/proxy voting checks:
+  `npx playwright test tests/e2e/vote-flow.spec.ts --project=chromium`
+- Admin demo flow:
+  `npx playwright test tests/e2e/admin-demo.spec.ts --project=chromium`
+- Database checks when schema changes:
+  `npm run db:reset:local`
+  `npm run types:supabase`
 
 ## Test Layers
 
@@ -31,14 +38,18 @@ npm run test:unit
 ```
 
 ### E2E Tests
-Recommended tool: Playwright.
+Tool: Playwright.
 
 Scope:
 - App shell loads.
 - Browser title shows `condoVotes v<version>`.
 - Routes `/`, `/login`, `/admin`, `/vote` render.
-- Auth redirect behavior when implemented.
-- Admin guard behavior when implemented.
+- Signed-out protected routes redirect to `/login`.
+- Local generated-link auth can establish a session.
+- Admin can access admin, vote, and summary pages.
+- Resident cannot access admin pages and can access summary.
+- Owner/proxy voters can submit and edit ballots, creating ballot versions.
+- Demo admin can exercise master data, meeting, manual vote, result, approval, and Excel import flows.
 
 Target command:
 
@@ -134,9 +145,9 @@ Run unit tests when any of these paths change:
 
 ## Implementation Order
 
-1. Add Playwright smoke tests first because the app currently has route shells.
-2. Add Vitest when pure domain logic starts to exist.
-3. Add database smoke checks after the first RLS policies are written.
+1. Expand Playwright coverage for closed-meeting summary redirects.
+2. Add Vitest when pure domain logic is split out of server actions.
+3. Add database smoke checks for RLS policy coverage.
 4. Add GitHub Actions once local scripts are stable.
 
 ## Open Questions

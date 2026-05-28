@@ -13,16 +13,16 @@ The admin area uses a shared layout plus route-level pages by workflow.
 - `/admin/proxies`: proxy authorization create/review flow.
 - `/admin/communications`: mock email queue and delivery logs.
 
-## Components
+## Components And Server Modules
 - `app/admin/layout.tsx` owns the admin navigation shell.
 - `features/admin/components/admin-workspace.tsx` contains the migrated server-rendered admin sections.
+- `features/admin/actions.ts` remains the stable import entrypoint and re-exports domain server actions from `features/admin/action-modules/`.
+- `features/admin/data.ts` remains the dashboard aggregator and loads domain data from `features/admin/data-modules/`.
 
-The current split keeps server actions and data loading in `features/admin/actions.ts` and `features/admin/data.ts` to reduce routing risk. Once route behavior is stable, the next refactor can split those files by domain:
+Domain module split:
 - setup
 - people
-- ownership
 - meetings
 - voting
 - results
-- proxies
 - communications

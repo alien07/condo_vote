@@ -35,7 +35,7 @@
 ## Phase 3 - Hardening
 - Full RLS coverage.
 - Audit log.
-- Import rooms/owners from CSV.
+- Import rooms, owners, and room-owner links from locked Excel templates.
 - Better admin dashboard.
 
 ## Phase 4 - V2 Voting And Meeting Flexibility

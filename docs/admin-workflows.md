@@ -7,7 +7,7 @@ These workflows define the admin-facing MVP behavior. Ask before implementing an
 - Required room data: room number, ownership percentage.
 - Optional room data: floor, building, area size.
 - Room records should be deactivated instead of deleted after real voting data exists.
-- Admin can import rooms from CSV in a later hardening phase.
+- Admin can import rooms from the locked Excel room template.
 
 ## Owner Master Data
 - Admin can create, view, update, and deactivate owners.
