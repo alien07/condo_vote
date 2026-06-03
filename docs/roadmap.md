@@ -21,7 +21,7 @@
 
 ## Phase 2 - Documents And Communication
 - Proxy approval documents.
-- Private document storage.
+- Private document registry foundation with configurable local-drive or Google Drive references.
 - Email invitations.
 - Mock PDF result summary.
 - Mock Thai/English result notification email queue.
@@ -34,7 +34,7 @@
 
 ## Phase 3 - Hardening
 - Full RLS coverage.
-- Audit log.
+- Business audit log foundation.
 - Import rooms, owners, and room-owner links from locked Excel templates.
 - Better admin dashboard.
 
@@ -45,6 +45,7 @@
 - Runtime-added agenda items require approval and an audit trail before voting.
 
 ## Later
+- Direct private document upload adapters and Google Drive API synchronization after credential and sharing policy approval.
 - LINE login or LINE notification.
 - Multi-condo tenancy.
 - Legal-grade signing flow.

@@ -99,6 +99,15 @@ device demo access, and updates local `supabase/config.toml` redirect allowlist.
 Supabase Auth `external_url` stays on `127.0.0.1` for Google OAuth callback
 compatibility.
 
+For laptop Google login, start and finish one OAuth attempt on the same app
+host, preferably `http://127.0.0.1:3000`. Do not switch between `localhost`,
+`127.0.0.1`, and the LAN IP during one attempt because PKCE state and cookies
+are host-specific. After `npm run db:reset:local`, clear stale local app cookies
+or use a fresh private window before testing Google login again.
+
+Do not open `http://0.0.0.0:3000` in a browser. It is the server bind address,
+not a stable browser host. The app redirects it to `http://127.0.0.1:3000`.
+
 If automatic IP detection chooses the wrong network interface:
 
 ```bash
@@ -120,6 +129,10 @@ Mailpit: printed by npm run demo:configure:local
 ```
 
 Machines on the same Wi-Fi can use the `Network` URL printed by `npm run dev`.
+For a human walkthrough, use [Demo manual steps](demo-manual-steps.md).
+
+`npm run dev` clears `.next/dev/logs/next-development.log` before starting
+Next.js so each demo/debug session starts with a fresh log.
 
 ## References
 - Supabase local development docs: https://supabase.com/docs/guides/cli

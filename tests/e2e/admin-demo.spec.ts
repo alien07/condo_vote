@@ -76,6 +76,8 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
     const closedMeetingTitle = `Closed Vote ${Date.now()}`;
     const closedQuestionText = `Closed item ${Date.now()}?`;
     const manualAuditNote = `Batch A row ${Date.now()}`;
+    const documentSetKey = `demo-owner-verification-${Date.now()}`;
+    const documentPath = `/private/condovotes-demo/${documentSetKey}.pdf`;
     const startsAt = toDateTimeLocal(new Date(Date.now() - 60 * 60 * 1000));
     const endsAt = toDateTimeLocal(new Date(Date.now() + 60 * 60 * 1000));
 
@@ -321,6 +323,52 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
     await expect(juristicSection.locator('input[name="juristic_name"]')).toHaveValue(
       "Demo Juristic Person",
     );
+
+    const storageSection = page
+      .getByRole("heading", { name: "Private Document Registry" })
+      .locator("xpath=ancestor::section[1]");
+    await storageSection
+      .locator('select[name="document_storage_provider"]')
+      .selectOption("local_drive");
+    await storageSection
+      .locator('input[name="document_storage_root"]')
+      .fill("/private/condovotes-demo");
+    await storageSection
+      .getByRole("button", { name: "Save document storage config" })
+      .click();
+    await storageSection.locator('input[name="owner_id"]').fill(profile!.id);
+    await storageSection
+      .locator('input[name="storage_path"]')
+      .fill(documentPath);
+    await storageSection
+      .locator('input[name="document_set_key"]')
+      .fill(documentSetKey);
+    await storageSection
+      .locator('input[name="original_filename"]')
+      .fill(`${documentSetKey}.pdf`);
+    await storageSection
+      .locator('input[name="mime_type"]')
+      .fill("application/pdf");
+    await storageSection.locator('input[name="file_size_bytes"]').fill("123");
+    await storageSection
+      .locator('input[name="checksum_sha256"]')
+      .fill("a".repeat(64));
+    await storageSection
+      .getByRole("button", { name: "Register private document reference" })
+      .click();
+    await expect(
+      storageSection.getByRole("cell", { name: `${documentSetKey} / v1` }),
+    ).toBeVisible();
+    await expect(
+      storageSection.getByRole("cell", { name: documentPath }),
+    ).toBeVisible();
+
+    const auditSection = page
+      .getByRole("heading", { name: "Business Audit Log" })
+      .locator("xpath=ancestor::section[1]");
+    await expect(
+      auditSection.getByRole("cell", { name: "document.registered" }).first(),
+    ).toBeVisible();
 
     const committeeSection = page
       .getByRole("heading", { name: "Committee Members" })

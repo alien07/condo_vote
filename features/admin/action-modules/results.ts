@@ -9,6 +9,7 @@ import {
   revalidateAdminPaths,
   toNumber,
 } from "@/features/admin/action-modules/shared";
+import { writeAuditLog } from "@/lib/audit/business-audit";
 
 export async function generateResultSnapshot(formData: FormData) {
   const generator = await requireAdmin();
@@ -294,11 +295,15 @@ export async function generateResultSnapshot(formData: FormData) {
     })),
   };
 
-  const { error: insertError } = await supabase.from("result_snapshots").insert({
-    meeting_id: meetingId,
-    generated_by: generator.id,
-    payload_json: payload,
-  });
+  const { data: snapshot, error: insertError } = await supabase
+    .from("result_snapshots")
+    .insert({
+      meeting_id: meetingId,
+      generated_by: generator.id,
+      payload_json: payload,
+    })
+    .select("id")
+    .single();
 
   if (insertError) {
     throw insertError;
@@ -314,6 +319,17 @@ export async function generateResultSnapshot(formData: FormData) {
     throw meetingError;
   }
 
+  await writeAuditLog(supabase, {
+    action: "result_snapshot.generated",
+    actorProfileId: generator.id,
+    details: {
+      effective_vote_rooms: submittedRoomIds.size,
+      meeting_id: meetingId,
+      source_conflicts: conflicts.length,
+    },
+    entityId: snapshot.id,
+    entityType: "result_snapshot",
+  });
   revalidateAdminPaths();
 }
 
@@ -352,18 +368,32 @@ export async function approveResultSnapshot(formData: FormData) {
     throw new Error("This meeting already has an approved result.");
   }
 
-  const { error } = await supabase.from("committee_approvals").insert({
-    meeting_id: meetingId,
-    result_snapshot_id: resultSnapshotId,
-    approved_by: approver.id,
-    notes: optionalText(formData.get("notes")),
-  });
+  const { data: approval, error } = await supabase
+    .from("committee_approvals")
+    .insert({
+      meeting_id: meetingId,
+      result_snapshot_id: resultSnapshotId,
+      approved_by: approver.id,
+      notes: optionalText(formData.get("notes")),
+    })
+    .select("id")
+    .single();
 
   if (error) {
     throw error;
   }
 
   await queueResultApprovedEmails(meetingId);
+  await writeAuditLog(supabase, {
+    action: "result_snapshot.approved",
+    actorProfileId: approver.id,
+    details: {
+      meeting_id: meetingId,
+      result_snapshot_id: resultSnapshotId,
+    },
+    entityId: approval.id,
+    entityType: "committee_approval",
+  });
 
   revalidateAdminPaths();
 }

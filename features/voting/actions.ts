@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireProfile } from "@/lib/auth/permissions";
+import { writeAuditLog } from "@/lib/audit/business-audit";
 import { createClient } from "@/lib/supabase/server";
 
 function requiredText(value: FormDataEntryValue | null, fieldName: string) {
@@ -155,6 +156,17 @@ export async function submitBallot(formData: FormData) {
     throw versionError;
   }
 
+  await writeAuditLog(supabase, {
+    action: existingBallotResult.data ? "ballot.updated" : "ballot.submitted",
+    actorProfileId: profile.id,
+    details: {
+      meeting_id: meetingId,
+      room_id: roomId,
+      version_number: versionNumber,
+    },
+    entityId: ballot.id,
+    entityType: "ballot",
+  });
   revalidatePath("/vote");
   revalidatePath(`/vote/${meetingId}/${roomId}`);
 }

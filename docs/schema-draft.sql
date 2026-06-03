@@ -337,14 +337,46 @@ create table public.documents (
   id uuid primary key default gen_random_uuid(),
   owner_type text not null,
   owner_id uuid not null,
+  storage_provider text not null default 'local_drive',
   storage_path text not null,
+  document_set_key text not null default gen_random_uuid()::text,
+  document_version integer not null default 1,
   document_type text not null,
+  original_filename text,
+  mime_type text,
+  file_size_bytes bigint,
+  checksum_sha256 text,
   visibility text not null default 'private',
   uploaded_by uuid references public.profiles(id),
   created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
   constraint documents_owner_type_check check (owner_type in ('profile', 'approval_request', 'proxy_authorization', 'meeting', 'result_snapshot')),
+  constraint documents_storage_provider_check check (storage_provider in ('local_drive', 'google_drive')),
+  constraint documents_document_version_check check (document_version > 0),
+  constraint documents_file_size_bytes_check check (file_size_bytes is null or file_size_bytes >= 0),
+  constraint documents_checksum_sha256_check check (checksum_sha256 is null or checksum_sha256 ~ '^[0-9a-f]{64}$'),
+  constraint documents_document_set_version_unique unique (document_set_key, document_version),
   constraint documents_document_type_check check (document_type in ('owner_verification', 'proxy_authorization', 'meeting_attachment', 'result_pdf', 'other')),
   constraint documents_visibility_check check (visibility in ('private', 'public'))
+);
+
+create table public.app_settings (
+  id uuid primary key default gen_random_uuid(),
+  document_storage_provider text not null default 'local_drive',
+  document_storage_root text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  constraint app_settings_document_storage_provider_check check (document_storage_provider in ('local_drive', 'google_drive'))
+);
+
+create table public.audit_logs (
+  id uuid primary key default gen_random_uuid(),
+  actor_profile_id uuid not null references public.profiles(id),
+  action text not null,
+  entity_type text not null,
+  entity_id uuid,
+  details_json jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now()
 );
 
 create table public.email_logs (
@@ -388,6 +420,9 @@ create index vote_source_resolutions_manual_ballot_idx on public.vote_source_res
 create index result_snapshots_meeting_id_idx on public.result_snapshots(meeting_id);
 create index committee_approvals_meeting_id_idx on public.committee_approvals(meeting_id);
 create index documents_owner_idx on public.documents(owner_type, owner_id);
+create index documents_document_set_key_idx on public.documents(document_set_key, document_version desc);
+create index audit_logs_created_at_idx on public.audit_logs(created_at desc);
+create index audit_logs_entity_idx on public.audit_logs(entity_type, entity_id, created_at desc);
 create index email_logs_status_created_at_idx on public.email_logs(status, created_at);
 
 create trigger rooms_set_updated_at
@@ -426,6 +461,14 @@ create trigger vote_source_resolutions_set_updated_at
 before update on public.vote_source_resolutions
 for each row execute function public.set_updated_at();
 
+create trigger documents_set_updated_at
+before update on public.documents
+for each row execute function public.set_updated_at();
+
+create trigger app_settings_set_updated_at
+before update on public.app_settings
+for each row execute function public.set_updated_at();
+
 create trigger result_snapshots_prevent_change_after_approval
 before insert or update or delete on public.result_snapshots
 for each row execute function public.prevent_result_snapshot_change_after_approval();
@@ -456,4 +499,6 @@ alter table public.vote_source_resolutions enable row level security;
 alter table public.result_snapshots enable row level security;
 alter table public.committee_approvals enable row level security;
 alter table public.documents enable row level security;
+alter table public.app_settings enable row level security;
+alter table public.audit_logs enable row level security;
 alter table public.email_logs enable row level security;

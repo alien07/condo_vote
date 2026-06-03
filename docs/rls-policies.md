@@ -20,8 +20,19 @@ Both functions are `security definer` so policies can check profile and role dat
 - Authenticated users can read only their own roles.
 - Admins can read and manage roles.
 
+### app_settings
+- Admins can read, insert, and update operational settings.
+
+### audit_logs
+- Admins can read business audit entries.
+- Authenticated users can insert audit entries only for their own profile.
+
+### documents
+- Admins can read, insert, and update private document references.
+- Document storage credentials are intentionally outside PostgreSQL.
+
 ## Still Needed
 - Admin policies for questions, choices, approvals, and result snapshots.
 - Owner/proxy policies for eligible meetings and ballots.
 - Committee policies for result approval.
-- Storage policies for private documents.
+- Provider-specific file access policies after direct upload adapters are selected.

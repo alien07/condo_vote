@@ -3,6 +3,7 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { ERROR_CODES } from "@/lib/error-codes";
+import { debugAction } from "@/lib/debug/action-log";
 import { createClient } from "@/lib/supabase/server";
 
 function getSafeNext(value: FormDataEntryValue | string | null) {
@@ -39,7 +40,13 @@ export async function signInWithGoogle(formData: FormData) {
   const origin = await getRedirectOrigin();
   const next = getSafeNext(formData.get("next"));
 
+  debugAction("auth.google.start", {
+    hasOrigin: Boolean(origin),
+    next,
+  });
+
   if (!origin) {
+    debugAction("auth.google.missing_origin", { next });
     redirect(`/login?error=${ERROR_CODES.AUTH_MISSING_ORIGIN}`);
   }
 
@@ -51,18 +58,29 @@ export async function signInWithGoogle(formData: FormData) {
   });
 
   if (error) {
+    debugAction("auth.google.provider_error", {
+      message: error.message,
+      next,
+    });
     redirect(`/login?error=${ERROR_CODES.AUTH_GOOGLE_PROVIDER}`);
   }
 
   if (data.url) {
+    debugAction("auth.google.redirect", {
+      next,
+      provider: "google",
+    });
     redirect(data.url);
   }
 
+  debugAction("auth.google.redirect_missing", { next });
   redirect(`/login?error=${ERROR_CODES.AUTH_GOOGLE_REDIRECT_MISSING}`);
 }
 
 export async function signOut() {
   const supabase = await createClient();
+  debugAction("auth.sign_out.start");
   await supabase.auth.signOut();
+  debugAction("auth.sign_out.complete");
   redirect("/login");
 }

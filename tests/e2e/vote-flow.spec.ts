@@ -247,6 +247,10 @@ test.describe("@test:e2e @test:voting owner/proxy vote flow", () => {
       await expect(
         page.getByRole("heading", { name: fixture.meetingTitle }),
       ).toBeVisible();
+      await expect(
+        page.getByRole("link", { exact: true, name: "Back" }),
+      ).toHaveAttribute("href", "/vote");
+      await expect(page.getByRole("link", { name: "Ballot" })).toBeVisible();
 
       await page
         .locator(`input[name="choice:${fixture.questionId}"]`)
@@ -279,6 +283,18 @@ test.describe("@test:e2e @test:voting owner/proxy vote flow", () => {
       expect(ballot!.ballot_versions.map((version) => version.version_number).sort()).toEqual([
         1,
         2,
+      ]);
+
+      const { data: auditLogs, error: auditError } = await supabase
+        .from("audit_logs")
+        .select("action")
+        .eq("entity_type", "ballot")
+        .eq("entity_id", ballot!.id);
+
+      expect(auditError).toBeNull();
+      expect(auditLogs!.map((log) => log.action).sort()).toEqual([
+        "ballot.submitted",
+        "ballot.updated",
       ]);
     });
   }

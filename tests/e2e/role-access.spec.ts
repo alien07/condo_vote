@@ -136,6 +136,22 @@ test.describe("@test:e2e @test:auth @test:role role access", () => {
 
     await page.goto("/admin");
     await expect(page.getByRole("heading", { name: "Admin" })).toBeVisible();
+    await expect(page.getByText(admin.email)).toBeVisible();
+    await expect(page.getByText(/owner \/ admin/)).toBeVisible();
+    const primaryNav = page.getByRole("navigation", {
+      name: "Primary navigation",
+    });
+    await expect(primaryNav.getByRole("link", { name: "Admin" })).toBeVisible();
+    await expect(primaryNav.getByRole("link", { name: "Vote" })).toBeVisible();
+    await expect(
+      primaryNav.getByRole("link", { name: "Summary" }),
+    ).toBeVisible();
+
+    await page.goto("/");
+    await expect(page.getByText(admin.email)).toBeVisible();
+    await expect(page.getByText(/owner \/ admin/)).toBeVisible();
+    await expect(page.getByRole("button", { name: "Logout" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Login" })).toHaveCount(0);
 
     await page.goto("/admin/communications");
     await expect(
@@ -147,8 +163,14 @@ test.describe("@test:e2e @test:auth @test:role role access", () => {
 
     await page.goto("/summary");
     await expect(
-      page.getByRole("heading", { name: "Result Summary" }),
+      page.getByRole("heading", { exact: true, name: "Result Summary" }),
     ).toBeVisible();
+
+    await page.getByRole("button", { name: "Logout" }).click();
+    await expect(page).toHaveURL(/\/login$/);
+
+    await page.goto("/admin");
+    await expect(page).toHaveURL(/\/login$/);
   });
 
   test("resident cannot access admin pages but can access summary", async ({
@@ -174,13 +196,23 @@ test.describe("@test:e2e @test:auth @test:role role access", () => {
 
     await page.goto("/summary");
     await expect(
-      page.getByRole("heading", { name: "Result Summary" }),
+      page.getByRole("heading", { exact: true, name: "Result Summary" }),
+    ).toBeVisible();
+    await expect(page.getByText(resident.email)).toBeVisible();
+    await expect(page.getByText(/resident \/ user/)).toBeVisible();
+    const primaryNav = page.getByRole("navigation", {
+      name: "Primary navigation",
+    });
+    await expect(primaryNav.getByRole("link", { name: "Admin" })).toHaveCount(0);
+    await expect(primaryNav.getByRole("link", { name: "Vote" })).toBeVisible();
+    await expect(
+      primaryNav.getByRole("link", { name: "Summary" }),
     ).toBeVisible();
 
     await page.goto("/vote");
     await expect(page.getByRole("heading", { name: "Vote" })).toBeVisible();
     await expect(
-      page.getByText("No eligible voting assignments are available for your profile."),
+      page.getByRole("heading", { name: "No eligible voting assignments" }),
     ).toBeVisible();
   });
 });

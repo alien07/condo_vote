@@ -40,6 +40,7 @@ erDiagram
     meetings ||--o{ result_snapshots : calculates
     result_snapshots ||--o{ committee_approvals : approved_by
     documents }o--|| profiles : uploaded_by
+    profiles ||--o{ audit_logs : acts
     email_logs }o--|| profiles : optional_recipient
 ```
 
@@ -69,6 +70,8 @@ erDiagram
 | [result_snapshots](#result_snapshots) | Calculated result payloads for a meeting before/after approval. |
 | [committee_approvals](#committee_approvals) | Approval record that makes a result visible to viewers. |
 | [documents](#documents) | Private file references for owner/proxy approval and generated PDFs. |
+| [app_settings](#app_settings) | App-level operational settings such as the selected private document storage provider. |
+| [audit_logs](#audit_logs) | Append-only business action records for traceability and troubleshooting. |
 | [email_logs](#email_logs) | Delivery log for invitations, reminders, and result notifications. |
 
 SQL draft: [schema-draft.sql](schema-draft.sql). This is not final and must be reviewed before migration.
@@ -183,9 +186,19 @@ Key fields: meeting, result snapshot, approver, approved timestamp, notes.
 Notes: This is the source of truth for approved results. Results stay hidden until a related approval record exists. A meeting can have only one approved result, and approval records are immutable.
 
 ### documents
-Purpose: Stores private Supabase Storage references.
-Key fields: owner type, owner ID, storage path, document type, visibility, uploader.
-Notes: Used for owner/proxy approval documents and generated PDFs. Default visibility should be private.
+Purpose: Stores provider-agnostic private document references.
+Key fields: owner type, owner ID, document type, provider, storage path or private link, document set key, version, original filename, MIME type, file size, SHA-256 checksum, visibility, uploader.
+Notes: Used for owner/proxy approval documents and generated PDFs. Default visibility is private. The `document_set_key` groups revisions of one logical document; SHA-256 and file size verify the exact file. Provider credentials must not be stored in this table.
+
+### app_settings
+Purpose: Stores operational settings controlled by admin.
+Key fields: document storage provider and root path or private folder link.
+Notes: V1 supports `local_drive` and `google_drive` as registry providers. Store only the root locator. Keep Google credentials outside the database.
+
+### audit_logs
+Purpose: Stores business audit entries created by authenticated actions.
+Key fields: actor profile, action, entity type, entity ID, JSON details, created timestamp.
+Notes: Admin can inspect the latest audit entries. Ballot versions remain the detailed immutable vote history. For legal-grade atomic audit guarantees, move each business mutation and audit insert into a database transaction or RPC.
 
 ### email_logs
 Purpose: Stores email send attempts for audit and troubleshooting.

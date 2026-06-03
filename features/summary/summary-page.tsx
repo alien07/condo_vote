@@ -58,8 +58,18 @@ export function SummaryPage({
         </div>
 
         {!selected || !payload ? (
-          <section className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-5 text-sm text-[var(--muted)]">
-            No approved result summary is available yet.
+          <section className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-5 text-sm">
+            <h2 className="font-semibold">No approved result summary</h2>
+            <p className="mt-1 text-[var(--muted)]">
+              Approved meeting results will appear here after admin generates a
+              result snapshot and committee approval is recorded.
+            </p>
+            <Link
+              className="mt-4 inline-flex min-h-10 items-center justify-center rounded-md border border-[var(--border)] px-4 py-2 font-medium"
+              href="/vote"
+            >
+              Open vote dashboard
+            </Link>
           </section>
         ) : (
           <div className="grid gap-5 lg:grid-cols-[1fr_280px]">

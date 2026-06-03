@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { AuthenticatedShell } from "@/features/shell/authenticated-shell";
 
 const adminNav = [
   ["/admin", "Overview"],
@@ -15,12 +16,12 @@ const adminNav = [
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
   return (
-    <>
-      <nav className="sticky top-0 z-20 border-b border-[var(--border)] bg-[var(--background)] px-6 py-3">
-        <div className="mx-auto flex max-w-5xl gap-2 overflow-x-auto text-sm">
+    <AuthenticatedShell>
+      <nav className="border-b border-[var(--border)] bg-[var(--background)] px-4 py-3 md:px-6">
+        <div className="mx-auto flex max-w-6xl gap-2 overflow-x-auto text-sm">
           {adminNav.map(([href, label]) => (
             <Link
-              className="shrink-0 rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 font-medium"
+              className="inline-flex min-h-10 shrink-0 items-center rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 font-medium"
               href={href}
               key={href}
             >
@@ -30,6 +31,6 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
         </div>
       </nav>
       {children}
-    </>
+    </AuthenticatedShell>
   );
 }

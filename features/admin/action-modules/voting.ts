@@ -8,24 +8,35 @@ import {
   requireAdmin,
   revalidateAdminPaths,
 } from "@/features/admin/action-modules/shared";
+import { writeAuditLog } from "@/lib/audit/business-audit";
 
 export async function createProxyAuthorization(formData: FormData) {
-  await requireAdmin();
+  const admin = await requireAdmin();
 
   const supabase = await createClient();
-  const { error } = await supabase.from("proxy_authorizations").insert({
-    meeting_id: requiredText(formData.get("meeting_id"), "Meeting"),
-    room_id: requiredText(formData.get("room_id"), "Room"),
-    owner_id: optionalText(formData.get("owner_id")),
-    proxy_profile_id: requiredText(formData.get("proxy_profile_id"), "Proxy profile"),
-    valid_from: optionalDate(formData.get("valid_from")),
-    valid_until: optionalDate(formData.get("valid_until")),
-  });
+  const { data: authorization, error } = await supabase
+    .from("proxy_authorizations")
+    .insert({
+      meeting_id: requiredText(formData.get("meeting_id"), "Meeting"),
+      room_id: requiredText(formData.get("room_id"), "Room"),
+      owner_id: optionalText(formData.get("owner_id")),
+      proxy_profile_id: requiredText(formData.get("proxy_profile_id"), "Proxy profile"),
+      valid_from: optionalDate(formData.get("valid_from")),
+      valid_until: optionalDate(formData.get("valid_until")),
+    })
+    .select("id")
+    .single();
 
   if (error) {
     throw error;
   }
 
+  await writeAuditLog(supabase, {
+    action: "proxy_authorization.created",
+    actorProfileId: admin.id,
+    entityId: authorization.id,
+    entityType: "proxy_authorization",
+  });
   revalidateAdminPaths();
 }
 
@@ -48,6 +59,13 @@ export async function reviewProxyAuthorization(formData: FormData) {
     throw error;
   }
 
+  await writeAuditLog(supabase, {
+    action: "proxy_authorization.reviewed",
+    actorProfileId: reviewer.id,
+    details: { status },
+    entityId: id,
+    entityType: "proxy_authorization",
+  });
   revalidateAdminPaths();
 }
 
@@ -117,6 +135,17 @@ export async function importManualVoteEntry(formData: FormData) {
     throw answerError;
   }
 
+  await writeAuditLog(supabase, {
+    action: "manual_ballot.imported",
+    actorProfileId: importer.id,
+    details: {
+      choice_id: choiceId,
+      question_id: questionId,
+      room_id: roomId,
+    },
+    entityId: manualBallot.id,
+    entityType: "manual_ballot",
+  });
   revalidateAdminPaths();
 }
 
@@ -134,11 +163,13 @@ export async function resolveVoteSourceConflict(formData: FormData) {
   );
   const chosenBallotId =
     chosenSource === "online" ? onlineBallotId : manualBallotId;
+  const meetingId = requiredText(formData.get("meeting_id"), "Meeting");
+  const roomId = requiredText(formData.get("room_id"), "Room");
   const supabase = await createClient();
-  const { error } = await supabase.from("vote_source_resolutions").upsert(
+  const { data: resolution, error } = await supabase.from("vote_source_resolutions").upsert(
     {
-      meeting_id: requiredText(formData.get("meeting_id"), "Meeting"),
-      room_id: requiredText(formData.get("room_id"), "Room"),
+      meeting_id: meetingId,
+      room_id: roomId,
       online_ballot_id: onlineBallotId,
       manual_ballot_id: manualBallotId,
       chosen_source: chosenSource,
@@ -148,11 +179,25 @@ export async function resolveVoteSourceConflict(formData: FormData) {
       resolved_at: new Date().toISOString(),
     },
     { onConflict: "meeting_id,room_id" },
-  );
+  )
+    .select("id")
+    .single();
 
   if (error) {
     throw error;
   }
 
+  await writeAuditLog(supabase, {
+    action: "vote_source_conflict.resolved",
+    actorProfileId: resolver.id,
+    details: {
+      chosen_ballot_id: chosenBallotId,
+      chosen_source: chosenSource,
+      meeting_id: meetingId,
+      room_id: roomId,
+    },
+    entityId: resolution.id,
+    entityType: "vote_source_resolution",
+  });
   revalidateAdminPaths();
 }

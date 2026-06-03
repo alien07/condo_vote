@@ -73,6 +73,30 @@ export type Database = {
           },
         ]
       }
+      app_settings: {
+        Row: {
+          created_at: string
+          document_storage_provider: string
+          document_storage_root: string | null
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          document_storage_provider?: string
+          document_storage_root?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          document_storage_provider?: string
+          document_storage_root?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       approval_requests: {
         Row: {
           created_at: string
@@ -127,6 +151,44 @@ export type Database = {
             columns: ["room_id"]
             isOneToOne: false
             referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      audit_logs: {
+        Row: {
+          action: string
+          actor_profile_id: string
+          created_at: string
+          details_json: Json
+          entity_id: string | null
+          entity_type: string
+          id: string
+        }
+        Insert: {
+          action: string
+          actor_profile_id: string
+          created_at?: string
+          details_json?: Json
+          entity_id?: string | null
+          entity_type: string
+          id?: string
+        }
+        Update: {
+          action?: string
+          actor_profile_id?: string
+          created_at?: string
+          details_json?: Json
+          entity_id?: string | null
+          entity_type?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_logs_actor_profile_id_fkey"
+            columns: ["actor_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -422,32 +484,56 @@ export type Database = {
       }
       documents: {
         Row: {
+          checksum_sha256: string | null
           created_at: string
+          document_set_key: string
           document_type: string
+          document_version: number
+          file_size_bytes: number | null
           id: string
+          mime_type: string | null
+          original_filename: string | null
           owner_id: string
           owner_type: string
           storage_path: string
+          storage_provider: string
+          updated_at: string
           uploaded_by: string | null
           visibility: string
         }
         Insert: {
+          checksum_sha256?: string | null
           created_at?: string
+          document_set_key?: string
           document_type: string
+          document_version?: number
+          file_size_bytes?: number | null
           id?: string
+          mime_type?: string | null
+          original_filename?: string | null
           owner_id: string
           owner_type: string
           storage_path: string
+          storage_provider?: string
+          updated_at?: string
           uploaded_by?: string | null
           visibility?: string
         }
         Update: {
+          checksum_sha256?: string | null
           created_at?: string
+          document_set_key?: string
           document_type?: string
+          document_version?: number
+          file_size_bytes?: number | null
           id?: string
+          mime_type?: string | null
+          original_filename?: string | null
           owner_id?: string
           owner_type?: string
           storage_path?: string
+          storage_provider?: string
+          updated_at?: string
           uploaded_by?: string | null
           visibility?: string
         }

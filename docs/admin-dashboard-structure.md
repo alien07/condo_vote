@@ -4,7 +4,7 @@ The admin area uses a shared layout plus route-level pages by workflow.
 
 ## Routes
 - `/admin`: overview dashboard and shortcuts.
-- `/admin/setup`: juristic profile and committee members.
+- `/admin/setup`: juristic profile, private document registry, committee members, and business audit log.
 - `/admin/people`: rooms, owners, registered profiles, and app roles.
 - `/admin/ownership`: room-owner relationship management.
 - `/admin/meetings`: meetings, agenda questions, choices, publish/archive, and result generation action.
@@ -26,3 +26,4 @@ Domain module split:
 - voting
 - results
 - communications
+- documents

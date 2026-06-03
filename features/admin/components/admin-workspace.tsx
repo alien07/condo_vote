@@ -3,6 +3,8 @@ import {
   CalendarDays,
   FileText,
   FileSpreadsheet,
+  FolderLock,
+  History,
   ListChecks,
   ShieldCheck,
   Upload,
@@ -35,7 +37,9 @@ import {
   publishMeeting,
   reviewProxyAuthorization,
   resolveVoteSourceConflict,
+  registerDocumentReference,
   revokeAppRole,
+  saveAppSettings,
   saveCondoProfile,
   updateProfileApproval,
 } from "@/features/admin/actions";
@@ -127,6 +131,8 @@ function formatPercent(value: number | undefined) {
 
 export type AdminSection =
   | "setup"
+  | "storage"
+  | "audit"
   | "voting"
   | "committee"
   | "meetings"
@@ -146,6 +152,8 @@ type AdminWorkspaceProps = {
 
 const allSections: AdminSection[] = [
   "setup",
+  "storage",
+  "audit",
   "voting",
   "committee",
   "meetings",
@@ -165,7 +173,10 @@ export async function AdminWorkspace({
 }: AdminWorkspaceProps) {
   const {
     condoProfile,
+    appSettings,
+    auditLogs,
     committeeMembers,
+    documents,
     rooms,
     appRoles,
     owners,
@@ -344,6 +355,8 @@ export async function AdminWorkspace({
           <nav className="sticky top-0 z-10 mb-5 flex gap-2 overflow-x-auto border-b border-[var(--border)] bg-[var(--background)] py-3 text-sm">
             {[
               ["setup", "#setup", "Setup"],
+              ["storage", "#storage", "Storage"],
+              ["audit", "#audit", "Audit"],
               ["voting", "#voting", "Voting"],
               ["meetings", "#meetings", "Meetings"],
               ["results", "#results", "Results"],
@@ -450,6 +463,216 @@ export async function AdminWorkspace({
               Save juristic profile
             </button>
           </form>
+        </section>
+
+        <section
+          className="mb-5 scroll-mt-20 rounded-lg border border-[var(--border)] bg-[var(--surface)] p-5"
+          hidden={!visibleSections.has("storage")}
+          id="storage"
+        >
+          <div className="mb-4 flex items-center gap-2">
+            <FolderLock className="text-[var(--primary)]" size={20} />
+            <h2 className="text-lg font-semibold">Private Document Registry</h2>
+          </div>
+          <p className="mb-4 text-sm text-[var(--muted)]">
+            Store a local-drive path or private Google Drive link. Keep file
+            credentials outside the database. SHA-256 and file size verify the
+            exact file; document set key groups versions of the same document.
+          </p>
+
+          <form action={saveAppSettings} className="grid gap-3 md:grid-cols-2">
+            <input name="id" type="hidden" value={appSettings?.id ?? ""} />
+            <label className="text-sm font-medium">
+              Document storage provider
+              <select
+                className="mt-1 w-full rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+                defaultValue={
+                  appSettings?.document_storage_provider ?? "local_drive"
+                }
+                name="document_storage_provider"
+              >
+                <option value="local_drive">Local drive</option>
+                <option value="google_drive">Google Drive</option>
+              </select>
+            </label>
+            <label className="text-sm font-medium">
+              Root path or private folder link
+              <input
+                className="mt-1 w-full rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+                defaultValue={appSettings?.document_storage_root ?? ""}
+                name="document_storage_root"
+                placeholder="/secure/condovotes or private Drive folder URL"
+              />
+            </label>
+            <button
+              className="rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)] md:col-span-2"
+              type="submit"
+            >
+              Save document storage config
+            </button>
+          </form>
+
+          <form
+            action={registerDocumentReference}
+            className="mt-6 grid gap-3 border-t border-[var(--border)] pt-5 md:grid-cols-3"
+          >
+            <select
+              className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+              defaultValue="local_drive"
+              name="storage_provider"
+            >
+              <option value="local_drive">Local drive</option>
+              <option value="google_drive">Google Drive</option>
+            </select>
+            <select
+              className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+              name="owner_type"
+            >
+              <option value="profile">Profile</option>
+              <option value="approval_request">Approval request</option>
+              <option value="proxy_authorization">Proxy authorization</option>
+              <option value="meeting">Meeting</option>
+              <option value="result_snapshot">Result snapshot</option>
+            </select>
+            <select
+              className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+              name="document_type"
+            >
+              <option value="owner_verification">Owner verification</option>
+              <option value="proxy_authorization">Proxy authorization</option>
+              <option value="meeting_attachment">Meeting attachment</option>
+              <option value="result_pdf">Result PDF</option>
+              <option value="other">Other</option>
+            </select>
+            <input
+              className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+              name="owner_id"
+              placeholder="Owner UUID"
+              required
+            />
+            <input
+              className="rounded-md border border-[var(--border)] px-3 py-2 text-sm md:col-span-2"
+              name="storage_path"
+              placeholder="Relative path or private Drive file link"
+              required
+            />
+            <input
+              className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+              name="document_set_key"
+              placeholder="Document set key, e.g. proxy-meeting-room"
+              required
+            />
+            <input
+              className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+              defaultValue={1}
+              min={1}
+              name="document_version"
+              placeholder="Version"
+              type="number"
+              required
+            />
+            <input
+              className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+              name="original_filename"
+              placeholder="Original filename"
+            />
+            <input
+              className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+              name="mime_type"
+              placeholder="MIME type"
+            />
+            <input
+              className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+              min={0}
+              name="file_size_bytes"
+              placeholder="File size bytes"
+              type="number"
+            />
+            <input
+              className="rounded-md border border-[var(--border)] px-3 py-2 text-sm md:col-span-3"
+              name="checksum_sha256"
+              placeholder="SHA-256 checksum, 64 hex characters"
+            />
+            <button
+              className="rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)] md:col-span-3"
+              type="submit"
+            >
+              Register private document reference
+            </button>
+          </form>
+
+          <div className="mt-6 overflow-x-auto">
+            <table className="w-full min-w-[900px] border-collapse text-left text-sm">
+              <thead className="border-b border-[var(--border)] text-[var(--muted)]">
+                <tr>
+                  <th className="py-2 pr-3 font-medium">Set / version</th>
+                  <th className="py-2 pr-3 font-medium">Type</th>
+                  <th className="py-2 pr-3 font-medium">Provider</th>
+                  <th className="py-2 pr-3 font-medium">Path or link</th>
+                  <th className="py-2 font-medium">SHA-256</th>
+                </tr>
+              </thead>
+              <tbody>
+                {documents.map((document) => (
+                  <tr
+                    className="border-b border-[var(--border)]"
+                    key={document.id}
+                  >
+                    <td className="py-2 pr-3">
+                      {document.document_set_key} / v{document.document_version}
+                    </td>
+                    <td className="py-2 pr-3">{document.document_type}</td>
+                    <td className="py-2 pr-3">{document.storage_provider}</td>
+                    <td className="max-w-xs truncate py-2 pr-3">
+                      {document.storage_path}
+                    </td>
+                    <td className="max-w-xs truncate py-2">
+                      {document.checksum_sha256 ?? "-"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section
+          className="mb-5 scroll-mt-20 rounded-lg border border-[var(--border)] bg-[var(--surface)] p-5"
+          hidden={!visibleSections.has("audit")}
+          id="audit"
+        >
+          <div className="mb-4 flex items-center gap-2">
+            <History className="text-[var(--primary)]" size={20} />
+            <h2 className="text-lg font-semibold">Business Audit Log</h2>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[760px] border-collapse text-left text-sm">
+              <thead className="border-b border-[var(--border)] text-[var(--muted)]">
+                <tr>
+                  <th className="py-2 pr-3 font-medium">Time</th>
+                  <th className="py-2 pr-3 font-medium">Actor</th>
+                  <th className="py-2 pr-3 font-medium">Action</th>
+                  <th className="py-2 pr-3 font-medium">Entity</th>
+                  <th className="py-2 font-medium">Details</th>
+                </tr>
+              </thead>
+              <tbody>
+                {auditLogs.map((log) => (
+                  <tr className="border-b border-[var(--border)]" key={log.id}>
+                    <td className="py-2 pr-3">{formatDateTime(log.created_at)}</td>
+                    <td className="py-2 pr-3">
+                      {log.profiles?.full_name ?? log.profiles?.email ?? "-"}
+                    </td>
+                    <td className="py-2 pr-3">{log.action}</td>
+                    <td className="py-2 pr-3">{log.entity_type}</td>
+                    <td className="max-w-sm truncate py-2">
+                      {JSON.stringify(log.details_json)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </section>
 
         <section

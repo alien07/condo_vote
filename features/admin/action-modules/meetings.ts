@@ -9,6 +9,7 @@ import {
   requireAdmin,
   revalidateAdminPaths,
 } from "@/features/admin/action-modules/shared";
+import { writeAuditLog } from "@/lib/audit/business-audit";
 
 export async function createMeeting(formData: FormData) {
   await requireAdmin();
@@ -138,7 +139,7 @@ export async function deleteMeetingChoice(formData: FormData) {
 }
 
 export async function publishMeeting(formData: FormData) {
-  await requireAdmin();
+  const admin = await requireAdmin();
 
   const meetingId = requiredText(formData.get("id"), "Meeting ID");
   const supabase = await createClient();
@@ -265,5 +266,14 @@ export async function publishMeeting(formData: FormData) {
     throw meetingError;
   }
 
+  await writeAuditLog(supabase, {
+    action: "meeting.published",
+    actorProfileId: admin.id,
+    details: {
+      eligible_voter_count: rows.length,
+    },
+    entityId: meetingId,
+    entityType: "meeting",
+  });
   revalidateAdminPaths();
 }

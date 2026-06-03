@@ -36,6 +36,30 @@ export async function getCurrentProfile() {
   return profile;
 }
 
+export async function getCurrentProfileWithRoles() {
+  const profile = await getCurrentProfile();
+
+  if (!profile) {
+    return null;
+  }
+
+  const supabase = await createClient();
+  const { data: roles, error } = await supabase
+    .from("app_roles")
+    .select("role")
+    .eq("profile_id", profile.id)
+    .order("role", { ascending: true });
+
+  if (error) {
+    throw error;
+  }
+
+  return {
+    profile,
+    roles: roles.map((role) => role.role),
+  };
+}
+
 export async function requireProfile() {
   const profile = await getCurrentProfile();
 
@@ -44,6 +68,16 @@ export async function requireProfile() {
   }
 
   return profile;
+}
+
+export async function requireProfileWithRoles() {
+  const current = await getCurrentProfileWithRoles();
+
+  if (!current) {
+    redirect("/login");
+  }
+
+  return current;
 }
 
 export async function hasAppRole(role: AppRole) {

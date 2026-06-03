@@ -4,7 +4,7 @@ export default function AdminSetupPage() {
   return (
     <AdminWorkspace
       description="Juristic profile and committee setup for formal meeting documents."
-      sections={["setup", "committee"]}
+      sections={["setup", "storage", "committee", "audit"]}
       title="Setup"
     />
   );

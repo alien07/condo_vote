@@ -7,7 +7,7 @@
 - Database: Supabase PostgreSQL.
 - Auth: Supabase Auth with Google login.
 - Authorization: Supabase Row Level Security.
-- Files: Supabase Storage for PDFs and approval/proxy documents.
+- Files: provider-agnostic private document registry with local-drive or Google Drive references for V1.
 - Email: Resend, Brevo, or existing Google Workspace SMTP depending on cost and deliverability.
 - Video: external URL such as YouTube unlisted, Google Drive, or Vimeo.
 
@@ -52,7 +52,7 @@ Invitation, resend, login redirect, and summary routing details are defined in
 - Profiles: application-level user profile and approval status.
 - Postgres: all relational voting data.
 - RLS: enforce per-user and per-role access rules.
-- Storage: private supporting documents and generated PDFs.
+- Documents: PostgreSQL registry stores private provider, link or path, document set key, version, SHA-256, and file size. Credentials remain outside the database.
 - Edge Functions: email delivery, PDF generation, scheduled closing/snapshot work.
 
 ## Free-Tier Rationale
@@ -64,14 +64,14 @@ Invitation, resend, login redirect, and summary routing details are defined in
 
 ## MVP Constraints
 - Keep video as URL only.
-- Keep all documents private.
+- Keep all documents private. V1 registers references only; direct upload adapters can be added after provider credentials and sharing policy are approved.
 - Avoid custom OAuth until Google auth and policy-based vote links are validated.
 - Use synthetic data in seed scripts and demos.
 
 ## Deployment Environments
 - Local: development with Supabase local or a Supabase development project.
 - Preview: branch deploy with non-production Supabase project.
-- Production: separate Supabase project and storage buckets.
+- Production: separate Supabase project and separately secured document storage.
 
 ## Open Questions
 - Next.js App Router vs React SPA.

@@ -1,5 +1,6 @@
 import { LogIn } from "lucide-react";
 import { signInWithGoogle } from "@/features/auth/actions";
+import { GoogleLoginForm } from "@/features/auth/google-login-form";
 import { ERROR_CODES } from "@/lib/error-codes";
 import { APP_VERSION } from "@/lib/app-config";
 
@@ -58,15 +59,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
             <span>{errorMessage}</span>
           </p>
         ) : null}
-        <form action={signInWithGoogle} className="mt-5">
-          <input name="next" type="hidden" value={next} />
-          <button
-            className="w-full rounded-md border border-[var(--border)] bg-[var(--surface)] px-4 py-2 text-sm font-medium"
-            type="submit"
-          >
-            Continue with Google
-          </button>
-        </form>
+        <GoogleLoginForm action={signInWithGoogle} next={next} />
       </section>
     </main>
   );

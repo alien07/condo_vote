@@ -35,6 +35,18 @@ test.describe("@test:e2e app shell", () => {
     ).toBeVisible();
   });
 
+  test("0.0.0.0 redirects to the canonical laptop host", async ({ request }) => {
+    const response = await request.get("http://127.0.0.1:3000/login", {
+      headers: {
+        host: "0.0.0.0:3000",
+      },
+      maxRedirects: 0,
+    });
+
+    expect(response.status()).toBe(307);
+    expect(response.headers().location).toBe("http://127.0.0.1:3000/login");
+  });
+
   test("@test:auth protected routes redirect signed-out users", async ({
     page,
   }) => {

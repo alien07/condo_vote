@@ -11,6 +11,7 @@ This folder contains the working specification for condoVotes.
 - [Error codes](error_code.md)
 - [Data model](data-model.md)
 - [Local development](local-development.md)
+- [Demo manual steps](demo-manual-steps.md)
 - [SQL schema draft](schema-draft.sql)
 - [Security and privacy](security-privacy.md)
 - [RLS policies](rls-policies.md)

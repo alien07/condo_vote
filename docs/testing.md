@@ -49,7 +49,8 @@ Scope:
 - Admin can access admin, vote, and summary pages.
 - Resident cannot access admin pages and can access summary.
 - Owner/proxy voters can submit and edit ballots, creating ballot versions.
-- Demo admin can exercise master data, meeting, manual vote, result, approval, and Excel import flows.
+- Authenticated pages show profile identity, top navigation, breadcrumbs, and logout.
+- Demo admin can exercise master data, private document registry, business audit, meeting, manual vote, result, approval, and Excel import flows.
 
 Target command:
 
@@ -116,6 +117,8 @@ Use these tags in PR notes, commits, or task summaries to choose what to re-run.
 | `@test:voting` | Meeting eligibility, ballot, or vote flow changed. | `@test:unit`, `@test:e2e`, `@test:db` |
 | `@test:results` | Result calculation, approval, PDF, or result visibility changed. | `@test:unit`, `@test:e2e`, `@test:db` |
 | `@test:email` | Email queue, notification, or delivery logging changed. | `@test:unit`, `@test:db` |
+| `@test:audit` | Business audit entries or audit visibility changed. | `@test:typecheck`, `@test:e2e`, `@test:db` |
+| `@test:documents` | Document registry, storage settings, or provider metadata changed. | `@test:typecheck`, `@test:e2e`, `@test:db` |
 | `@test:all` | Broad or risky change. | lint, typecheck, build, unit, e2e, db |
 
 ## Default Re-Test Selection

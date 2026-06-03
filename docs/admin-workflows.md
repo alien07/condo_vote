@@ -44,6 +44,18 @@ These workflows define the admin-facing MVP behavior. Ask before implementing an
 - After publication, invitation emails can be queued for eligible voters.
 - Editing published meetings should be restricted. If allowed, it must be audited.
 
+## Private Document Registry
+- Admin can choose `local_drive` or `google_drive` from `Admin > Setup`.
+- Admin stores a root path or private Google Drive folder link. Credentials remain outside the database.
+- Admin can register a private document reference with its owner record, type, path or private link, document set key, version, filename, MIME type, file size, and SHA-256 checksum.
+- V1 registers references and verification metadata only. Direct file upload and Google Drive API sync are deferred until the credential and sharing policy is approved.
+- Use the same document set key for revisions of one logical document and increment the version.
+
+## Business Audit Log
+- Admin can inspect recent business audit entries from `Admin > Setup`.
+- Audit entries include actor, action, entity type, entity ID, JSON details, and timestamp.
+- Current audited actions include meeting publication, profile approval, proxy create/review, manual vote import, online/manual conflict resolution, ballot submit/update, result snapshot generation/approval, storage setting changes, and document registration.
+
 ## Excel Master Data Import
 - Admin can download locked Excel templates from `Admin > People`.
 - Master imports are separated by table: `rooms-import-template.xlsx`, `owners-import-template.xlsx`, and `room-owners-import-template.xlsx`.

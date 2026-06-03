@@ -5,7 +5,8 @@ const dashboardLinks = [
   {
     href: "/admin/setup",
     title: "Setup",
-    description: "Juristic profile and committee members.",
+    description:
+      "Juristic profile, private document registry, committee members, and audit log.",
   },
   {
     href: "/admin/people",

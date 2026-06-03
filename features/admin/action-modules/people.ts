@@ -14,6 +14,7 @@ import {
   requireAdmin,
   revalidateAdminPaths,
 } from "@/features/admin/action-modules/shared";
+import { writeAuditLog } from "@/lib/audit/business-audit";
 
 export async function createRoom(formData: FormData) {
   await requireAdmin();
@@ -329,7 +330,7 @@ export async function endRoomOwnerLink(formData: FormData) {
 }
 
 export async function updateProfileApproval(formData: FormData) {
-  await requireAdmin();
+  const admin = await requireAdmin();
 
   const id = requiredText(formData.get("id"), "Profile ID");
   const defaultStatus = requiredText(formData.get("default_status"), "Default status");
@@ -350,6 +351,16 @@ export async function updateProfileApproval(formData: FormData) {
     throw error;
   }
 
+  await writeAuditLog(supabase, {
+    action: "profile.approval_updated",
+    actorProfileId: admin.id,
+    details: {
+      approval_status: approvalStatus,
+      default_status: defaultStatus,
+    },
+    entityId: id,
+    entityType: "profile",
+  });
   revalidateAdminPaths();
 }
 

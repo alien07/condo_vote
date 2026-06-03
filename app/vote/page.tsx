@@ -28,8 +28,19 @@ export default async function VotePage() {
         </div>
 
         {eligibleRows.length === 0 ? (
-          <section className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-5 text-sm text-[var(--muted)]">
-            No eligible voting assignments are available for your profile.
+          <section className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-5 text-sm">
+            <h2 className="font-semibold">No eligible voting assignments</h2>
+            <p className="mt-1 text-[var(--muted)]">
+              Your profile is signed in, but no published owner/proxy voting
+              assignment is available yet. Check Summary for approved results or
+              contact the admin if you expect voting access.
+            </p>
+            <Link
+              className="mt-4 inline-flex min-h-10 items-center justify-center rounded-md border border-[var(--border)] px-4 py-2 font-medium"
+              href="/summary"
+            >
+              Open summary
+            </Link>
           </section>
         ) : (
           <div className="grid gap-4">
