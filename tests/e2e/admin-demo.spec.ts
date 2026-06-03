@@ -284,6 +284,29 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
 
     await page.goto(`${activeAppOrigin}/admin`);
     await expect(page.getByRole("heading", { name: "Admin" })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Master Data" }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Voting Readiness" }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Needs Attention" }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Results & Communication" }),
+    ).toBeVisible();
+    await expect(page.getByRole("link", { name: /Conflicts/ })).toHaveAttribute(
+      "href",
+      "/admin/voting",
+    );
+    await expect(page.getByRole("link", { name: /Queued mail/ })).toHaveAttribute(
+      "href",
+      "/admin/communications",
+    );
+    await expect(
+      page.getByRole("link", { name: /Eligible voters/ }),
+    ).toContainText(/% room coverage/);
     await page.goto(`${activeAppOrigin}/admin/people`);
     await expect(page.getByRole("heading", { name: "People" })).toBeVisible();
     const demoAdminRow = page

@@ -1,5 +1,30 @@
 import Link from "next/link";
+import {
+  AlertTriangle,
+  BarChart3,
+  Building2,
+  CheckCircle2,
+  ClipboardList,
+  Link2,
+  Mail,
+  Send,
+  UserCheck,
+  Users,
+  Vote,
+} from "lucide-react";
 import { getAdminDashboardData } from "@/features/admin/data";
+
+type MetricCardProps = {
+  actionLabel?: string;
+  detail: string;
+  href: string;
+  icon: typeof Building2;
+  label: string;
+  percent?: number;
+  status: string;
+  tone?: "default" | "warning" | "success";
+  value: string;
+};
 
 const dashboardLinks = [
   {
@@ -45,6 +70,93 @@ const dashboardLinks = [
   },
 ];
 
+function percent(value: number, total: number) {
+  if (total <= 0) {
+    return 0;
+  }
+
+  return Math.round((value / total) * 100);
+}
+
+function formatPercent(value: number) {
+  return `${Math.max(0, Math.min(100, value))}%`;
+}
+
+function MetricCard({
+  actionLabel,
+  detail,
+  href,
+  icon: Icon,
+  label,
+  percent: percentValue,
+  status,
+  tone = "default",
+  value,
+}: MetricCardProps) {
+  const toneClass =
+    tone === "warning"
+      ? "border-amber-300 bg-amber-50"
+      : tone === "success"
+        ? "border-emerald-200 bg-emerald-50"
+        : "border-[var(--border)] bg-[var(--surface)]";
+  const statusClass =
+    tone === "warning"
+      ? "text-amber-800"
+      : tone === "success"
+        ? "text-emerald-800"
+        : "text-[var(--muted)]";
+
+  return (
+    <Link
+      className={[
+        "flex min-h-36 flex-col rounded-lg border p-4 transition hover:border-[var(--primary)] hover:shadow-sm",
+        toneClass,
+      ].join(" ")}
+      href={href}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="text-sm font-medium text-[var(--muted)]">{label}</div>
+          <div className="mt-2 text-2xl font-semibold text-[var(--foreground)]">
+            {value}
+          </div>
+        </div>
+        <Icon
+          className={
+            tone === "warning"
+              ? "shrink-0 text-amber-700"
+              : "shrink-0 text-[var(--primary)]"
+          }
+          size={20}
+          aria-hidden="true"
+        />
+      </div>
+      <div className="mt-2 text-sm text-[var(--muted)]">{detail}</div>
+      {typeof percentValue === "number" ? (
+        <div className="mt-3">
+          <div className="h-2 rounded-full bg-black/10">
+            <div
+              className="h-2 rounded-full bg-[var(--primary)]"
+              style={{ width: formatPercent(percentValue) }}
+            />
+          </div>
+          <div className="mt-1 text-xs text-[var(--muted)]">
+            {formatPercent(percentValue)}
+          </div>
+        </div>
+      ) : null}
+      <div
+        className={[
+          "mt-auto pt-3 text-xs font-medium uppercase tracking-wide",
+          statusClass,
+        ].join(" ")}
+      >
+        {actionLabel ?? status}
+      </div>
+    </Link>
+  );
+}
+
 export default async function AdminDashboardPage() {
   const {
     rooms,
@@ -54,6 +166,7 @@ export default async function AdminDashboardPage() {
     questions,
     manualBallots,
     voteSourceResolutions,
+    ballots,
     proxyAuthorizations,
     eligibleVoters,
     resultSnapshots,
@@ -61,24 +174,200 @@ export default async function AdminDashboardPage() {
     emailLogs,
     profiles,
   } = await getAdminDashboardData();
-  const stats = [
-    ["Active rooms", rooms.filter((room) => room.active).length],
-    ["Active owners", owners.filter((owner) => owner.active).length],
-    ["Room links", roomOwners.filter((link) => !link.ends_at).length],
-    ["Meetings", meetings.filter((meeting) => meeting.status !== "archived").length],
-    ["Questions", questions.length],
-    ["Eligible", eligibleVoters.length],
-    ["Manual votes", manualBallots.length],
-    ["Conflicts", voteSourceResolutions.length],
-    [
-      "Proxy requests",
-      proxyAuthorizations.filter((authorization) => authorization.status === "pending")
-        .length,
-    ],
-    ["Results", resultSnapshots.length],
-    ["Approvals", committeeApprovals.length],
-    ["Queued mail", emailLogs.filter((log) => log.status === "queued").length],
-    ["Profiles", profiles.length],
+  const totalRooms = rooms.length;
+  const activeRooms = rooms.filter((room) => room.active).length;
+  const activeRoomIds = new Set(
+    rooms.filter((room) => room.active).map((room) => room.id),
+  );
+  const totalOwners = owners.length;
+  const activeOwners = owners.filter((owner) => owner.active).length;
+  const activeRoomOwnerLinks = roomOwners.filter((link) => !link.ends_at).length;
+  const linkedActiveRoomIds = new Set(
+    roomOwners
+      .filter((link) => !link.ends_at && link.rooms?.id)
+      .map((link) => link.rooms!.id)
+      .filter((roomId) => activeRoomIds.has(roomId)),
+  );
+  const activeMeetings = meetings.filter(
+    (meeting) => meeting.status !== "archived",
+  ).length;
+  const archivedMeetings = meetings.length - activeMeetings;
+  const eligibleRoomIds = new Set(
+    eligibleVoters
+      .map((eligibleVoter) => eligibleVoter.room_id)
+      .filter((roomId) => activeRoomIds.has(roomId)),
+  );
+  const submittedOnlineRoomKeys = new Set(
+    ballots.map((ballot) => `${ballot.meeting_id}:${ballot.room_id}`),
+  );
+  const manualRoomKeys = new Set(
+    manualBallots.map((ballot) => `${ballot.meeting_id}:${ballot.room_id}`),
+  );
+  const conflictCount = [...manualRoomKeys].filter((key) =>
+    submittedOnlineRoomKeys.has(key),
+  ).length;
+  const pendingProxyAuthorizations = proxyAuthorizations.filter(
+    (authorization) => authorization.status === "pending",
+  ).length;
+  const queuedEmailCount = emailLogs.filter((log) => log.status === "queued").length;
+  const approvedResultCount = committeeApprovals.length;
+  const ownerProfiles = profiles.filter(
+    (profile) => profile.default_status === "owner",
+  ).length;
+  const residentProfiles = profiles.filter(
+    (profile) => profile.default_status === "resident",
+  ).length;
+  const dashboardGroups = [
+    {
+      title: "Master Data",
+      description: "Room, owner, and profile readiness.",
+      metrics: [
+        {
+          href: "/admin/people",
+          icon: Building2,
+          label: "Active rooms",
+          value: `${activeRooms} / ${totalRooms}`,
+          detail: `${activeRooms} of ${totalRooms} rooms active`,
+          percent: percent(activeRooms, totalRooms),
+          status: `${formatPercent(percent(activeRooms, totalRooms))} active`,
+          tone: "success" as const,
+        },
+        {
+          href: "/admin/people",
+          icon: Users,
+          label: "Active owners",
+          value: `${activeOwners} / ${totalOwners}`,
+          detail: `${activeOwners} of ${totalOwners} owners active`,
+          percent: percent(activeOwners, totalOwners),
+          status: `${formatPercent(percent(activeOwners, totalOwners))} active`,
+          tone: "success" as const,
+        },
+        {
+          href: "/admin/ownership",
+          icon: Link2,
+          label: "Room links",
+          value: `${linkedActiveRoomIds.size} / ${activeRooms}`,
+          detail: `${activeRoomOwnerLinks} active ownership links`,
+          percent: percent(linkedActiveRoomIds.size, activeRooms),
+          status: `${formatPercent(percent(linkedActiveRoomIds.size, activeRooms))} coverage`,
+          tone:
+            linkedActiveRoomIds.size < activeRooms ? ("warning" as const) : ("success" as const),
+        },
+        {
+          href: "/admin/people",
+          icon: UserCheck,
+          label: "Profiles",
+          value: String(profiles.length),
+          detail: `${ownerProfiles} owners, ${residentProfiles} residents`,
+          status: "View profiles",
+        },
+      ],
+    },
+    {
+      title: "Voting Readiness",
+      description: "Meeting setup and eligible voter coverage.",
+      metrics: [
+        {
+          href: "/admin/meetings",
+          icon: ClipboardList,
+          label: "Meetings",
+          value: String(activeMeetings),
+          detail: `${activeMeetings} active, ${archivedMeetings} archived`,
+          status: "Manage meetings",
+        },
+        {
+          href: "/admin/meetings",
+          icon: Vote,
+          label: "Questions",
+          value: String(questions.length),
+          detail: `${questions.length} agenda questions configured`,
+          status: "Review agenda",
+        },
+        {
+          href: "/admin/voting",
+          icon: CheckCircle2,
+          label: "Eligible voters",
+          value: `${eligibleRoomIds.size} / ${activeRooms}`,
+          detail: `${eligibleVoters.length} eligible voter records`,
+          percent: percent(eligibleRoomIds.size, activeRooms),
+          status: `${formatPercent(percent(eligibleRoomIds.size, activeRooms))} room coverage`,
+          tone:
+            eligibleRoomIds.size < activeRooms ? ("warning" as const) : ("success" as const),
+        },
+      ],
+    },
+    {
+      title: "Needs Attention",
+      description: "Operational queues that may require admin action.",
+      metrics: [
+        {
+          href: "/admin/voting",
+          icon: AlertTriangle,
+          label: "Conflicts",
+          value: String(conflictCount),
+          detail: `${voteSourceResolutions.length} source resolutions recorded`,
+          status: conflictCount > 0 ? "Review required" : "All clear",
+          tone: conflictCount > 0 ? ("warning" as const) : ("success" as const),
+        },
+        {
+          href: "/admin/communications",
+          icon: Mail,
+          label: "Queued mail",
+          value: String(queuedEmailCount),
+          detail: `${emailLogs.length} recent email log records`,
+          status: queuedEmailCount > 0 ? "Send/check queue" : "All clear",
+          tone: queuedEmailCount > 0 ? ("warning" as const) : ("success" as const),
+        },
+        {
+          href: "/admin/proxies",
+          icon: UserCheck,
+          label: "Proxy requests",
+          value: String(pendingProxyAuthorizations),
+          detail: `${proxyAuthorizations.length} proxy requests total`,
+          status: pendingProxyAuthorizations > 0 ? "Review pending" : "All clear",
+          tone:
+            pendingProxyAuthorizations > 0
+              ? ("warning" as const)
+              : ("success" as const),
+        },
+      ],
+    },
+    {
+      title: "Results & Communication",
+      description: "Result snapshot approval and delivery readiness.",
+      metrics: [
+        {
+          href: "/admin/results",
+          icon: BarChart3,
+          label: "Results",
+          value: String(resultSnapshots.length),
+          detail: `${resultSnapshots.length} generated snapshots`,
+          status: "Open results",
+        },
+        {
+          href: "/admin/results",
+          icon: CheckCircle2,
+          label: "Approvals",
+          value: `${approvedResultCount} / ${resultSnapshots.length}`,
+          detail: `${approvedResultCount} committee approvals recorded`,
+          percent: percent(approvedResultCount, resultSnapshots.length),
+          status: `${formatPercent(percent(approvedResultCount, resultSnapshots.length))} approved`,
+          tone:
+            approvedResultCount < resultSnapshots.length
+              ? ("warning" as const)
+              : ("success" as const),
+        },
+        {
+          href: "/admin/communications",
+          icon: Send,
+          label: "Manual votes",
+          value: String(manualBallots.length),
+          detail: `${manualBallots.length} manual ballots, ${eligibleVoters.length} eligible records`,
+          percent: percent(manualBallots.length, eligibleVoters.length),
+          status: `${formatPercent(percent(manualBallots.length, eligibleVoters.length))} of eligible records`,
+        },
+      ],
+    },
   ];
 
   return (
@@ -91,15 +380,21 @@ export default async function AdminDashboardPage() {
           </p>
         </div>
 
-        <section className="grid grid-cols-2 gap-2 text-center text-sm md:grid-cols-4 lg:grid-cols-6">
-          {stats.map(([label, value]) => (
-            <div
-              className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2"
-              key={label}
-            >
-              <div className="font-semibold">{value}</div>
-              <div className="text-[var(--muted)]">{label}</div>
-            </div>
+        <section className="grid gap-6">
+          {dashboardGroups.map((group) => (
+            <section key={group.title}>
+              <div className="mb-3">
+                <h2 className="text-lg font-semibold">{group.title}</h2>
+                <p className="text-sm text-[var(--muted)]">
+                  {group.description}
+                </p>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                {group.metrics.map((metric) => (
+                  <MetricCard key={metric.label} {...metric} />
+                ))}
+              </div>
+            </section>
           ))}
         </section>
 

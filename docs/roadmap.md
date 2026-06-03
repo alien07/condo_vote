@@ -31,6 +31,8 @@
 - Send Thai/English result notification emails together.
 - Apply provider send limits with queued delivery ordering.
 - Attach PDF or provide a signed PDF download link.
+- Start Thai-first owner-facing UI copy for Home, Login, Vote, Summary, email,
+  and mock PDF preview where practical.
 
 ## Phase 3 - Hardening
 - Full RLS coverage.
@@ -43,6 +45,11 @@
 - Design for dynamic agenda or vote topics added during a meeting, from 0 to n items.
 - Future schema concept: `meeting_question_revisions` or `agenda_change_requests`.
 - Runtime-added agenda items require approval and an audit trail before voting.
+- Full bilingual web app support with Thai as the default language and English
+  as an alternate language.
+- Add a language switcher, dictionary files, locale-aware date/number
+  formatting, and admin-configurable default language.
+- Translate admin pages after owner-facing Vote and Summary flows are stable.
 
 ## Later
 - Direct private document upload adapters and Google Drive API synchronization after credential and sharing policy approval.
