@@ -42,22 +42,25 @@ client allows `http://127.0.0.1:54321/auth/v1/callback`.
 
 ## 4. Admin Demo Path
 
-1. Open `/admin/setup` and confirm juristic profile, private document registry,
-   committee, and business audit sections render.
-2. Save `local_drive` or `google_drive` document storage settings.
+1. Open `/admin/setup` and confirm the juristic profile section renders without
+   the overview metrics.
+2. Open `/admin/setup?tab=storage` and save `local_drive` or `google_drive`
+   document storage settings.
 3. Register one synthetic private document reference with a path/link, document
-   set key, version, file size, and SHA-256. Confirm `document.registered`
-   appears in the business audit log.
-4. Open `/admin/people`.
-5. Download each Excel template: rooms, owners, room owners.
-6. Upload edited `.xlsx` files and confirm rows appear after upsert.
-7. Create or verify owner/resident profiles and app roles.
-8. Open `/admin/meetings`.
-9. Create a meeting, question, and choices.
-10. Publish the meeting and confirm eligible voters are generated.
-11. Open `/admin/communications`.
-12. Queue a vote invitation for one eligible owner/proxy.
-13. Queue group invitations for eligible voters.
+   set key, version, file size, and SHA-256.
+4. Open `/admin/setup?tab=audit` and confirm `document.registered` appears in
+   the business audit log.
+5. Open `/admin/setup?tab=committee` and add one committee member.
+6. Open `/admin/people`.
+7. Download each Excel template: rooms, owners, room owners.
+8. Upload edited `.xlsx` files and confirm rows appear after upsert.
+9. Create or verify owner/resident profiles and app roles.
+10. Open `/admin/meetings`.
+11. Create a meeting, question, and choices.
+12. Publish the meeting and confirm eligible voters are generated.
+13. Open `/admin/communications`.
+14. Queue a vote invitation for one eligible owner/proxy.
+15. Queue group invitations for eligible voters.
 
 ## 5. Vote Demo Path
 

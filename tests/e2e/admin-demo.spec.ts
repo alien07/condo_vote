@@ -347,6 +347,7 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
       "Demo Juristic Person",
     );
 
+    await page.goto(`${activeAppOrigin}/admin/setup?tab=storage`);
     const storageSection = page
       .getByRole("heading", { name: "Private Document Registry" })
       .locator("xpath=ancestor::section[1]");
@@ -386,6 +387,7 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
       storageSection.getByRole("cell", { name: documentPath }),
     ).toBeVisible();
 
+    await page.goto(`${activeAppOrigin}/admin/setup?tab=audit`);
     const auditSection = page
       .getByRole("heading", { name: "Business Audit Log" })
       .locator("xpath=ancestor::section[1]");
@@ -393,6 +395,7 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
       auditSection.getByRole("cell", { name: "document.registered" }).first(),
     ).toBeVisible();
 
+    await page.goto(`${activeAppOrigin}/admin/setup?tab=committee`);
     const committeeSection = page
       .getByRole("heading", { name: "Committee Members" })
       .locator("xpath=ancestor::section[1]");

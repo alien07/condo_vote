@@ -145,6 +145,7 @@ export type AdminSection =
   | "profiles";
 
 type AdminWorkspaceProps = {
+  activeSection?: AdminSection | string;
   sections?: AdminSection[];
   title?: string;
   description?: string;
@@ -167,6 +168,7 @@ const allSections: AdminSection[] = [
 ];
 
 export async function AdminWorkspace({
+  activeSection: requestedActiveSection,
   sections = allSections,
   title = "Admin",
   description = "Room, owner, profile, and role-controlled demo workspace.",
@@ -187,24 +189,12 @@ export async function AdminWorkspace({
     voteSourceResolutions,
     ballots,
     proxyAuthorizations,
-    eligibleVoters,
     resultSnapshots,
     committeeApprovals,
     emailLogs,
     profiles,
   } =
     await getAdminDashboardData();
-  const activeRooms = rooms.filter((room) => room.active).length;
-  const activeOwners = owners.filter((owner) => owner.active).length;
-  const activeRoomOwnerLinks = roomOwners.filter((link) => !link.ends_at).length;
-  const activeMeetings = meetings.filter(
-    (meeting) => meeting.status !== "archived",
-  ).length;
-  const pendingProxyAuthorizations = proxyAuthorizations.filter(
-    (authorization) => authorization.status === "pending",
-  ).length;
-  const questionCount = questions.length;
-  const eligibleVoterCount = eligibleVoters.length;
   const approvedResultSnapshotIds = new Set(
     committeeApprovals.map((approval) => approval.result_snapshot_id),
   );
@@ -214,7 +204,6 @@ export async function AdminWorkspace({
   const approvedMeetingIds = new Set(
     committeeApprovals.map((approval) => approval.meeting_id),
   );
-  const queuedEmailCount = emailLogs.filter((log) => log.status === "queued").length;
   const appRolesByProfile = new Map(
     profiles.map((profile) => [
       profile.id,
@@ -282,12 +271,32 @@ export async function AdminWorkspace({
   const pdfPreviewApproval = pdfPreviewSnapshot
     ? approvalBySnapshotId.get(pdfPreviewSnapshot.id)
     : null;
-  const visibleSections = new Set(sections);
+  const activeSection =
+    requestedActiveSection &&
+    sections.includes(requestedActiveSection as AdminSection)
+      ? (requestedActiveSection as AdminSection)
+      : sections[0];
+  const visibleSections = new Set([activeSection]);
+  const sectionLabels = new Map<AdminSection, string>([
+    ["setup", "Setup"],
+    ["storage", "Storage"],
+    ["committee", "Committee"],
+    ["audit", "Audit"],
+    ["voting", "Voting"],
+    ["meetings", "Meetings"],
+    ["questions", "Questions"],
+    ["results", "Results"],
+    ["email", "Email"],
+    ["people", "People"],
+    ["ownership", "Ownership"],
+    ["proxies", "Proxies"],
+    ["profiles", "Profiles"],
+  ]);
 
   return (
     <main className="min-h-screen px-6 py-8">
       <section className="mx-auto max-w-5xl">
-        <div className="mb-6 flex flex-col gap-4 border-b border-[var(--border)] pb-5 md:flex-row md:items-center md:justify-between">
+        <div className="mb-6 border-b border-[var(--border)] pb-5">
           <div className="flex items-center gap-3">
             <ShieldCheck className="text-[var(--primary)]" size={26} />
             <div>
@@ -295,84 +304,29 @@ export async function AdminWorkspace({
               <p className="text-sm text-[var(--muted)]">{description}</p>
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-2 text-center text-sm md:grid-cols-6">
-            <div className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2">
-              <div className="font-semibold">{activeRooms}</div>
-              <div className="text-[var(--muted)]">Active rooms</div>
-            </div>
-            <div className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2">
-              <div className="font-semibold">{activeOwners}</div>
-              <div className="text-[var(--muted)]">Active owners</div>
-            </div>
-            <div className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2">
-              <div className="font-semibold">{activeRoomOwnerLinks}</div>
-              <div className="text-[var(--muted)]">Room links</div>
-            </div>
-            <div className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2">
-              <div className="font-semibold">{activeMeetings}</div>
-              <div className="text-[var(--muted)]">Meetings</div>
-            </div>
-            <div className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2">
-              <div className="font-semibold">{questionCount}</div>
-              <div className="text-[var(--muted)]">Questions</div>
-            </div>
-            <div className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2">
-              <div className="font-semibold">{eligibleVoterCount}</div>
-              <div className="text-[var(--muted)]">Eligible</div>
-            </div>
-            <div className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2">
-              <div className="font-semibold">{manualBallots.length}</div>
-              <div className="text-[var(--muted)]">Manual votes</div>
-            </div>
-            <div className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2">
-              <div className="font-semibold">{voteSourceConflicts.length}</div>
-              <div className="text-[var(--muted)]">Conflicts</div>
-            </div>
-            <div className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2">
-              <div className="font-semibold">{pendingProxyAuthorizations}</div>
-              <div className="text-[var(--muted)]">Proxy requests</div>
-            </div>
-            <div className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2">
-              <div className="font-semibold">{resultSnapshots.length}</div>
-              <div className="text-[var(--muted)]">Results</div>
-            </div>
-            <div className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2">
-              <div className="font-semibold">{committeeApprovals.length}</div>
-              <div className="text-[var(--muted)]">Approvals</div>
-            </div>
-            <div className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2">
-              <div className="font-semibold">{queuedEmailCount}</div>
-              <div className="text-[var(--muted)]">Queued mail</div>
-            </div>
-            <div className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2">
-              <div className="font-semibold">{profiles.length}</div>
-              <div className="text-[var(--muted)]">Profiles</div>
-            </div>
-          </div>
         </div>
 
         {sections.length > 1 ? (
           <nav className="sticky top-0 z-10 mb-5 flex gap-2 overflow-x-auto border-b border-[var(--border)] bg-[var(--background)] py-3 text-sm">
-            {[
-              ["setup", "#setup", "Setup"],
-              ["storage", "#storage", "Storage"],
-              ["audit", "#audit", "Audit"],
-              ["voting", "#voting", "Voting"],
-              ["meetings", "#meetings", "Meetings"],
-              ["results", "#results", "Results"],
-              ["email", "#email", "Email"],
-              ["people", "#people", "People"],
-            ]
-              .filter(([section]) => visibleSections.has(section as AdminSection))
-              .map(([, href, label]) => (
+            {sections.map((section) => {
+              const active = section === activeSection;
+
+              return (
                 <a
-                  className="shrink-0 rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 font-medium"
-                  href={href}
-                  key={href}
+                  aria-current={active ? "page" : undefined}
+                  className={[
+                    "shrink-0 rounded-md border px-3 py-2 font-medium",
+                    active
+                      ? "border-[var(--primary)] bg-[var(--primary)] text-[var(--primary-foreground)]"
+                      : "border-[var(--border)] bg-[var(--surface)]",
+                  ].join(" ")}
+                  href={`?tab=${section}`}
+                  key={section}
                 >
-                  {label}
+                  {sectionLabels.get(section)}
                 </a>
-              ))}
+              );
+            })}
           </nav>
         ) : null}
 
