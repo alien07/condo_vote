@@ -106,7 +106,11 @@ are host-specific. After `npm run db:reset:local`, clear stale local app cookies
 or use a fresh private window before testing Google login again.
 
 Do not open `http://0.0.0.0:3000` in a browser. It is the server bind address,
-not a stable browser host. The app redirects it to `http://127.0.0.1:3000`.
+not a stable browser host. The app redirects it to `APP_CANONICAL_URL`, which
+defaults to `http://127.0.0.1:3000`. Keep this separate from
+`NEXT_PUBLIC_APP_URL`: the canonical URL normalizes browser host usage, while
+`NEXT_PUBLIC_APP_URL` is the configured app origin used by auth redirects and
+LAN demo setup.
 
 If automatic IP detection chooses the wrong network interface:
 
