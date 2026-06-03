@@ -109,7 +109,7 @@ function MetricCard({
   return (
     <Link
       className={[
-        "flex min-h-36 flex-col rounded-lg border p-4 transition hover:border-[var(--primary)] hover:shadow-sm",
+        "flex min-h-32 flex-col rounded-lg border p-4 transition hover:border-[var(--primary)] hover:shadow-sm",
         toneClass,
       ].join(" ")}
       href={href}
@@ -140,14 +140,11 @@ function MetricCard({
               style={{ width: formatPercent(percentValue) }}
             />
           </div>
-          <div className="mt-1 text-xs text-[var(--muted)]">
-            {formatPercent(percentValue)}
-          </div>
         </div>
       ) : null}
       <div
         className={[
-          "mt-auto pt-3 text-xs font-medium uppercase tracking-wide",
+          "mt-auto pt-3 text-xs font-medium",
           statusClass,
         ].join(" ")}
       >
@@ -380,11 +377,18 @@ export default async function AdminDashboardPage() {
           </p>
         </div>
 
-        <section className="grid gap-6">
+        <section>
+          <div className="mb-4">
+            <h2 className="text-xl font-semibold">Operational Dashboard</h2>
+            <p className="mt-1 text-sm text-[var(--muted)]">
+              Readiness, attention items, and result delivery status.
+            </p>
+          </div>
+          <div className="grid gap-6">
           {dashboardGroups.map((group) => (
             <section key={group.title}>
               <div className="mb-3">
-                <h2 className="text-lg font-semibold">{group.title}</h2>
+                <h3 className="text-lg font-semibold">{group.title}</h3>
                 <p className="text-sm text-[var(--muted)]">
                   {group.description}
                 </p>
@@ -396,21 +400,31 @@ export default async function AdminDashboardPage() {
               </div>
             </section>
           ))}
+          </div>
         </section>
 
-        <section className="mt-6 grid gap-4 md:grid-cols-2">
-          {dashboardLinks.map((link) => (
-            <Link
-              className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-5 transition hover:border-[var(--primary)]"
-              href={link.href}
-              key={link.href}
-            >
-              <h2 className="text-lg font-semibold">{link.title}</h2>
-              <p className="mt-2 text-sm text-[var(--muted)]">
-                {link.description}
-              </p>
-            </Link>
-          ))}
+        <section className="mt-8 border-t border-[var(--border)] pt-6">
+          <div className="mb-4">
+            <h2 className="text-xl font-semibold">Admin Functions</h2>
+            <p className="mt-1 text-sm text-[var(--muted)]">
+              Open a workspace area to manage setup, people, meetings, voting,
+              results, proxies, or communications.
+            </p>
+          </div>
+          <div className="grid gap-4 md:grid-cols-2">
+            {dashboardLinks.map((link) => (
+              <Link
+                className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-5 transition hover:border-[var(--primary)]"
+                href={link.href}
+                key={link.href}
+              >
+                <h3 className="text-lg font-semibold">{link.title}</h3>
+                <p className="mt-2 text-sm text-[var(--muted)]">
+                  {link.description}
+                </p>
+              </Link>
+            ))}
+          </div>
         </section>
       </section>
     </main>
