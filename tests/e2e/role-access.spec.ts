@@ -150,8 +150,8 @@ test.describe("@test:e2e @test:auth @test:role role access", () => {
     await page.goto("/");
     await expect(page.getByText(admin.email)).toBeVisible();
     await expect(page.getByText(/owner \/ admin/)).toBeVisible();
-    await expect(page.getByRole("button", { name: "Logout" })).toBeVisible();
-    await expect(page.getByRole("link", { name: "Login" })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Sign out" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Sign in" })).toHaveCount(0);
 
     await page.goto("/admin/communications");
     await expect(
@@ -166,8 +166,9 @@ test.describe("@test:e2e @test:auth @test:role role access", () => {
       page.getByRole("heading", { exact: true, name: "Result Summary" }),
     ).toBeVisible();
 
-    await page.getByRole("button", { name: "Logout" }).click();
-    await expect(page).toHaveURL(/\/login$/);
+    await page.getByRole("button", { name: "Sign out" }).click();
+    await expect(page).toHaveURL(/\/$/);
+    await expect(page.getByRole("link", { name: "Sign in" })).toBeVisible();
 
     await page.goto("/admin");
     await expect(page).toHaveURL(/\/login$/);

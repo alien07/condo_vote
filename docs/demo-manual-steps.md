@@ -25,16 +25,17 @@ DEMO_LAN_IP=<laptop-lan-ip> npm run demo:configure:local
 - Supabase Studio: `http://localhost:54323`
 - Mailpit: use the Mailpit URL printed by `npm run demo:configure:local`
 
-## 3. Login
+## 3. Sign in
 
 1. Open `/login`.
 2. Click `Continue with Google`.
-3. Login with the configured local demo admin email.
+3. Sign in with the configured local demo admin email.
 4. Confirm the app redirects back and `/admin` is accessible.
 5. Confirm the top shell shows the logged-in full name, email, default status,
-   app roles, and `Logout`.
+   app roles, and `Sign out`.
 6. Use the top navigation to switch between `Admin`, `Vote`, and `Summary`.
-7. Click `Logout`, then confirm protected pages redirect back to `/login`.
+7. Click `Sign out`, then confirm the app returns Home and protected pages
+   redirect back to `/login`.
 
 If Google login fails, check `docs/error_code.md` and confirm the Google OAuth
 client allows `http://127.0.0.1:54321/auth/v1/callback`.
@@ -60,7 +61,7 @@ client allows `http://127.0.0.1:54321/auth/v1/callback`.
 
 ## 5. Vote Demo Path
 
-1. Login as an owner or proxy profile with eligibility.
+1. Sign in as an owner or proxy profile with eligibility.
 2. Open `/vote`.
 3. Confirm the top shell shows the owner/proxy profile and the breadcrumb shows
    `Vote`.

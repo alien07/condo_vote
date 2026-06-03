@@ -10,7 +10,7 @@ test.describe("@test:e2e app shell", () => {
     await expect(page).toHaveTitle(`${APP_NAME} v${APP_VERSION}`);
     await expect(page.getByRole("heading", { name: APP_NAME })).toBeVisible();
     await expect(page.getByText(`workspace v${APP_VERSION}`)).toBeVisible();
-    await expect(page.getByRole("link", { name: "Login" })).toHaveAttribute(
+    await expect(page.getByRole("link", { name: "Sign in" })).toHaveAttribute(
       "href",
       "/login",
     );
@@ -29,7 +29,7 @@ test.describe("@test:e2e app shell", () => {
 
     await page.goto("/login");
 
-    await expect(page.getByRole("heading", { name: "Login" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Sign in" })).toBeVisible();
     await expect(
       page.getByText(`Sign in with Google. Version ${APP_VERSION}.`),
     ).toBeVisible();
@@ -68,7 +68,7 @@ test.describe("@test:e2e app shell", () => {
       await page.goto(path);
 
       await expect(page).toHaveURL(/\/login$/);
-      await expect(page.getByRole("heading", { name: "Login" })).toBeVisible();
+      await expect(page.getByRole("heading", { name: "Sign in" })).toBeVisible();
     }
   });
 });

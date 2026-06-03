@@ -82,5 +82,5 @@ export async function signOut() {
   debugAction("auth.sign_out.start");
   await supabase.auth.signOut();
   debugAction("auth.sign_out.complete");
-  redirect("/login");
+  redirect("/");
 }

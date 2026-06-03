@@ -29,8 +29,8 @@ export async function AuthenticatedShell({ children }: AuthenticatedShellProps) 
             </div>
           </div>
 
-          <div className="flex min-w-0 flex-col gap-2 text-sm md:flex-row md:items-center">
-            <div className="min-w-0 rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2">
+          <div className="flex min-w-0 flex-col gap-2 text-sm sm:flex-row sm:items-center">
+            <div className="min-w-0 rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 sm:max-w-72">
               <div className="truncate font-medium">{profile.full_name}</div>
               <div className="truncate text-xs text-[var(--muted)]">
                 {profile.email} / {profile.default_status} / {roleLabel}
@@ -43,7 +43,7 @@ export async function AuthenticatedShell({ children }: AuthenticatedShellProps) 
                 type="submit"
               >
                 <LogOut size={16} aria-hidden="true" />
-                Logout
+                Sign out
               </TrackedSubmitButton>
             </form>
           </div>

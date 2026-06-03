@@ -65,7 +65,7 @@ export function HomeAuthControls({ initialCurrent }: HomeAuthControlsProps) {
         debugName="home.login"
         href="/login"
       >
-        Login
+        Sign in
       </TrackedLink>
     );
   }
@@ -87,7 +87,7 @@ export function HomeAuthControls({ initialCurrent }: HomeAuthControlsProps) {
           type="submit"
         >
           <LogOut size={16} aria-hidden="true" />
-          Logout
+          Sign out
         </TrackedSubmitButton>
       </form>
     </div>
