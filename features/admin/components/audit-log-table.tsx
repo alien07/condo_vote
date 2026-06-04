@@ -310,6 +310,7 @@ export function AuditLogTable({
             <label className="flex items-center gap-2 text-xs font-medium text-[var(--muted)]">
               <span>Page</span>
               <select
+                aria-label="Page"
                 className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-2 py-1 text-sm text-[var(--foreground)]"
                 disabled={loading || totalPages <= 1}
                 onChange={(event) => {
@@ -336,6 +337,7 @@ export function AuditLogTable({
             <label className="flex items-center gap-2 text-xs font-medium text-[var(--muted)]">
               <span>Per page</span>
               <select
+                aria-label="Per page"
                 className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-2 py-1 text-sm text-[var(--foreground)]"
                 disabled={loading}
                 onChange={(event) => {

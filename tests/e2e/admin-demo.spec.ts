@@ -787,7 +787,9 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
     const pilotRoomNumber = `PILOT-${Date.now()}`;
     await page.goto(`${appUrl}/admin/people`);
     await expect(page).toHaveURL(/tab=rooms|\/admin\/people$/);
-    await expect(page.getByRole("heading", { name: "Rooms" })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Rooms", exact: true }),
+    ).toBeVisible();
     await page.getByRole("link", { name: "Add room" }).click();
     const addRoomDrawer = page.getByLabel("Add room");
     await expect(addRoomDrawer).toBeVisible();
