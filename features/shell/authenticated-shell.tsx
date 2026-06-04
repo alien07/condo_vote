@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { Building2, LogOut } from "lucide-react";
 import { signOut } from "@/features/auth/actions";
 import { TrackedSubmitButton } from "@/features/debug/tracked-submit-button";
+import { AppFeedbackBanner } from "@/features/shell/app-feedback-banner";
 import { AppShellNav } from "@/features/shell/app-shell-nav";
 import { APP_NAME, APP_VERSION } from "@/lib/app-config";
 import { requireProfileWithRoles } from "@/lib/auth/permissions";
@@ -40,6 +41,7 @@ export async function AuthenticatedShell({ children }: AuthenticatedShellProps) 
               <TrackedSubmitButton
                 className="inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm font-medium md:w-auto"
                 debugName="auth.logout"
+                pendingLabel="Signing out..."
                 type="submit"
               >
                 <LogOut size={16} aria-hidden="true" />
@@ -50,6 +52,7 @@ export async function AuthenticatedShell({ children }: AuthenticatedShellProps) 
         </div>
         <AppShellNav isAdmin={isAdmin} />
       </header>
+      <AppFeedbackBanner />
       {children}
     </>
   );

@@ -7,8 +7,15 @@ import { fetchPeopleData } from "@/features/admin/data-modules/people";
 import { fetchResultsData } from "@/features/admin/data-modules/results";
 import { fetchSetupData } from "@/features/admin/data-modules/setup";
 import { fetchVotingData } from "@/features/admin/data-modules/voting";
+import type { AuditLogFilters } from "@/features/admin/data-modules/documents";
 
-export async function getAdminDashboardData() {
+type AdminDashboardDataOptions = {
+  auditFilters?: AuditLogFilters;
+};
+
+export async function getAdminDashboardData(
+  options: AdminDashboardDataOptions = {},
+) {
   await requireAdmin();
 
   const supabase = await createClient();
@@ -20,7 +27,7 @@ export async function getAdminDashboardData() {
       fetchVotingData(supabase),
       fetchResultsData(supabase),
       fetchCommunicationsData(supabase),
-      fetchDocumentData(supabase),
+      fetchDocumentData(supabase, options.auditFilters),
     ]);
 
   return {

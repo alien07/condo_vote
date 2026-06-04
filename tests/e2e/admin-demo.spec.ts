@@ -283,7 +283,9 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
     ).toBeVisible();
 
     await page.goto(`${activeAppOrigin}/admin`);
-    await expect(page.getByRole("heading", { name: "Admin" })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Admin", exact: true }),
+    ).toBeVisible();
     await expect(
       page.getByRole("heading", { name: "Master Data" }),
     ).toBeVisible();
@@ -307,8 +309,10 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
     await expect(
       page.getByRole("link", { name: /Eligible voters/ }),
     ).toContainText(/% room coverage/);
-    await page.goto(`${activeAppOrigin}/admin/people`);
-    await expect(page.getByRole("heading", { name: "People" })).toBeVisible();
+    await page.goto(`${activeAppOrigin}/admin/people?tab=profiles`);
+    await expect(
+      page.getByRole("heading", { name: "Rooms & Owners", exact: true }),
+    ).toBeVisible();
     const demoAdminRow = page
       .getByRole("row")
       .filter({ hasText: demoAdminEmail });
@@ -318,16 +322,16 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
     await expect(
       demoAdminRow.getByRole("cell", { name: "approved", exact: true }),
     ).toBeVisible();
-    await demoAdminRow.locator('select[name="role"]').selectOption("committee");
-    await demoAdminRow.getByRole("button", { name: "Grant role" }).click();
-    await page.goto(`${activeAppOrigin}/admin/people`);
+    await demoAdminRow.getByRole("link", { name: "Edit roles/status" }).click();
+    const profileAccessDrawer = page.getByLabel("Edit roles/status");
+    await profileAccessDrawer.locator('select[name="role"]').selectOption("committee");
+    await profileAccessDrawer.getByRole("button", { name: "Save changes" }).click();
+    await page.goto(`${activeAppOrigin}/admin/people?tab=profiles`);
     const roleDemoAdminRow = page
       .getByRole("row")
       .filter({ hasText: demoAdminEmail });
     await expect(
-      roleDemoAdminRow.locator("td").nth(4).getByText("committee", {
-        exact: true,
-      }),
+      roleDemoAdminRow.locator("td").nth(4).getByText("committee"),
     ).toBeVisible();
 
     await page.goto(`${activeAppOrigin}/admin/setup`);
@@ -335,11 +339,17 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
       .getByRole("heading", { name: "Juristic Person" })
       .locator("xpath=ancestor::section[1]");
     await juristicSection
-      .getByPlaceholder("Juristic person name")
+      .getByRole("textbox", { name: "Juristic person name" })
       .fill("Demo Juristic Person");
-    await juristicSection.getByPlaceholder("Project name").fill("Demo Condo");
-    await juristicSection.getByPlaceholder("Registration no.").fill("REG-001");
-    await juristicSection.getByPlaceholder("Juristic manager").fill("Demo Manager");
+    await juristicSection
+      .getByRole("textbox", { name: "Project name" })
+      .fill("Demo Condo");
+    await juristicSection
+      .getByRole("textbox", { name: "Registration no." })
+      .fill("REG-001");
+    await juristicSection
+      .getByRole("textbox", { name: "Juristic manager" })
+      .fill("Demo Manager");
     await juristicSection
       .getByRole("button", { name: "Save juristic profile" })
       .click();
@@ -449,10 +459,12 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
       questionCard.locator("span").filter({ hasText: updatedChoiceText }),
     ).toBeVisible();
 
-    await page.goto(`${activeAppOrigin}/admin/people`);
-    await page.getByPlaceholder("Room number").fill(roomNumber);
-    await page.getByPlaceholder("Ownership %").fill("1.25");
-    await page.getByRole("button", { name: "Add room" }).click();
+    await page.goto(`${activeAppOrigin}/admin/people?tab=rooms`);
+    await page.getByRole("link", { name: "Add room" }).click();
+    const addRoomDrawer = page.getByLabel("Add room");
+    await addRoomDrawer.locator('input[name="room_number"]').fill(roomNumber);
+    await addRoomDrawer.locator('input[name="ownership_percent"]').fill("1.25");
+    await addRoomDrawer.getByRole("button", { name: "Create room" }).click();
     await expect(page.getByRole("cell", { name: roomNumber })).toBeVisible();
 
     await page.goto(`${activeAppOrigin}/admin/voting`);
@@ -483,13 +495,12 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
         .filter({ hasText: manualAuditNote }),
     ).toBeVisible();
 
-    await page.goto(`${activeAppOrigin}/admin/people`);
-    const ownerSection = page
-      .getByRole("heading", { name: "Owners" })
-      .locator("xpath=ancestor::section[1]");
-    await page.getByPlaceholder("Full name").fill(ownerName);
-    await ownerSection.getByPlaceholder("Email").fill("owner.demo@example.com");
-    await ownerSection.getByRole("button", { name: "Add owner" }).click();
+    await page.goto(`${activeAppOrigin}/admin/people?tab=owners`);
+    await page.getByRole("link", { name: "Add owner" }).click();
+    const addOwnerDrawer = page.getByLabel("Add owner");
+    await addOwnerDrawer.locator('input[name="full_name"]').fill(ownerName);
+    await addOwnerDrawer.locator('input[name="email"]').fill("owner.demo@example.com");
+    await addOwnerDrawer.getByRole("button", { name: "Create owner" }).click();
     await expect(page.getByRole("cell", { name: ownerName })).toBeVisible();
 
     await page.goto(`${activeAppOrigin}/admin/ownership`);
@@ -693,6 +704,137 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
     ).toHaveCount(0);
     await page.goto(`${activeAppOrigin}/admin/communications`);
     await expect(page.getByText(/result_approved:/).first()).toBeVisible();
+  });
+
+  test("people CRUD pilot uses drawer actions and validation", async ({
+    page,
+  }) => {
+    test.setTimeout(120_000);
+
+    const supabase = createClient<Database>(supabaseUrl!, serviceKey!, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+    });
+    let user = await findUserByEmail(supabase, demoAdminEmail);
+
+    if (!user) {
+      const { data, error } = await supabase.auth.admin.createUser({
+        email: demoAdminEmail,
+        email_confirm: true,
+        user_metadata: {
+          full_name: demoAdminName,
+        },
+      });
+
+      expect(error).toBeNull();
+      user = data.user;
+    }
+
+    expect(user).toBeTruthy();
+
+    const { data: profile, error: profileError } = await supabase
+      .from("profiles")
+      .upsert(
+        {
+          auth_user_id: user!.id,
+          email: demoAdminEmail,
+          full_name: demoAdminName,
+          approval_status: "approved",
+          default_status: "owner",
+        },
+        { onConflict: "auth_user_id" },
+      )
+      .select("id")
+      .single();
+
+    expect(profileError).toBeNull();
+    const { error: roleError } = await supabase.from("app_roles").upsert(
+      {
+        profile_id: profile!.id,
+        role: "admin",
+      },
+      { onConflict: "profile_id,role" },
+    );
+
+    expect(roleError).toBeNull();
+
+    const { data: link, error: linkError } =
+      await supabase.auth.admin.generateLink({
+        type: "magiclink",
+        email: demoAdminEmail,
+        options: {
+          redirectTo: `${appUrl}/auth/callback`,
+        },
+      });
+
+    expect(linkError).toBeNull();
+    await page.goto(
+      `${appUrl}/auth/callback?token_hash=${encodeURIComponent(
+        link.properties!.hashed_token,
+      )}&type=${link.properties!.verification_type}`,
+    );
+
+    const pilotRoomNumber = `PILOT-${Date.now()}`;
+    await page.goto(`${appUrl}/admin/people`);
+    await expect(page).toHaveURL(/tab=rooms|\/admin\/people$/);
+    await expect(page.getByRole("heading", { name: "Rooms" })).toBeVisible();
+    await page.getByRole("link", { name: "Add room" }).click();
+    const addRoomDrawer = page.getByLabel("Add room");
+    await expect(addRoomDrawer).toBeVisible();
+    await addRoomDrawer.getByRole("button", { name: "Create room" }).click();
+    await expect(
+      addRoomDrawer.getByText("Please fix 2 fields before saving."),
+    ).toBeVisible();
+    await expect(addRoomDrawer.getByText("Room number is required.")).toBeVisible();
+    await expect(addRoomDrawer.locator('input[name="room_number"]')).toBeFocused();
+    await addRoomDrawer.locator('input[name="room_number"]').fill(pilotRoomNumber);
+    await addRoomDrawer.locator('input[name="ownership_percent"]').fill("101");
+    await addRoomDrawer.getByRole("button", { name: "Create room" }).click();
+    await expect(
+      addRoomDrawer.getByText("Ownership percentage must be between 0 and 100."),
+    ).toBeVisible();
+    await expect(addRoomDrawer.locator('input[name="room_number"]')).toHaveValue(
+      pilotRoomNumber,
+    );
+    await expect(
+      addRoomDrawer.locator('input[name="ownership_percent"]'),
+    ).toHaveValue("101");
+    await expect(
+      addRoomDrawer.locator('input[name="ownership_percent"]'),
+    ).toBeFocused();
+    await addRoomDrawer.locator('input[name="ownership_percent"]').fill("1.5");
+    await addRoomDrawer.getByRole("button", { name: "Create room" }).click();
+    await expect(page.getByRole("cell", { name: pilotRoomNumber })).toBeVisible();
+
+    const pilotRoomRow = page.getByRole("row").filter({ hasText: pilotRoomNumber });
+    await pilotRoomRow.getByRole("link", { name: "Edit" }).click();
+    const editRoomDrawer = page.getByLabel("Edit room");
+    await expect(editRoomDrawer.getByText(`Room: ${pilotRoomNumber}`)).toBeVisible();
+    await expect(pilotRoomRow).toHaveClass(/border-l-\[var\(--primary\)\]/);
+    await editRoomDrawer.getByRole("link", { name: "Cancel" }).click();
+    await expect(editRoomDrawer).toHaveCount(0);
+    await expect(page).toHaveURL(/tab=rooms/);
+
+    await page.goto(`${appUrl}/admin/people?tab=profiles`);
+    const profileRow = page.getByRole("row").filter({ hasText: demoAdminEmail });
+    await profileRow.getByRole("link", { name: "Edit roles/status" }).click();
+    await expect(page.getByLabel("Edit roles/status")).toBeVisible();
+    await page.getByLabel("Close drawer").click();
+    await expect(page).toHaveURL(/tab=profiles/);
+
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto(`${appUrl}/admin/people?tab=owners`);
+    await expect(page.getByRole("heading", { name: "Owners" })).toBeVisible();
+    await page.getByRole("link", { name: "Add owner" }).click();
+    const addOwnerMobileDrawer = page.getByLabel("Add owner");
+    await expect(addOwnerMobileDrawer).toBeVisible();
+    const drawerWidth = await addOwnerMobileDrawer.evaluate(
+      (element) => element.getBoundingClientRect().width,
+    );
+    const viewportWidth = page.viewportSize()?.width ?? 390;
+    expect(drawerWidth).toBeLessThanOrEqual(viewportWidth);
   });
 });
 

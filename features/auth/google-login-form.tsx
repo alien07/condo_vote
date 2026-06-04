@@ -25,6 +25,7 @@ export function GoogleLoginForm({ action, next }: GoogleLoginFormProps) {
       <TrackedSubmitButton
         className="w-full rounded-md border border-[var(--border)] bg-[var(--surface)] px-4 py-2 text-sm font-medium"
         debugName="login.google"
+        pendingLabel="Signing in..."
       >
         Continue with Google
       </TrackedSubmitButton>

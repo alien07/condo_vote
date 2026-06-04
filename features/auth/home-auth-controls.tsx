@@ -84,6 +84,7 @@ export function HomeAuthControls({ initialCurrent }: HomeAuthControlsProps) {
         <TrackedSubmitButton
           className="inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm font-medium sm:w-auto"
           debugName="home.logout"
+          pendingLabel="Signing out..."
           type="submit"
         >
           <LogOut size={16} aria-hidden="true" />

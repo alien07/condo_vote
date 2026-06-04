@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Vote } from "lucide-react";
+import { RequiredMark, RequiredNote } from "@/features/admin/components/field-label";
+import { PendingSubmitButton } from "@/features/debug/tracked-submit-button";
 import { submitBallot } from "@/features/voting/actions";
 import { getVotingAssignmentData } from "@/features/voting/data";
 import { VotingStatusBadge } from "@/features/voting/status-badge";
@@ -129,6 +131,7 @@ export default async function VoteDetailPage({ params }: VoteDetailPageProps) {
             </p>
           ) : (
             <form action={submitBallot} className="mt-4 grid gap-5">
+              <RequiredNote />
               <input name="meeting_id" type="hidden" value={eligible.meeting_id} />
               <input name="room_id" type="hidden" value={eligible.room_id} />
               {questions.map((question) => (
@@ -139,6 +142,12 @@ export default async function VoteDetailPage({ params }: VoteDetailPageProps) {
                   <legend className="px-1 text-sm font-semibold">
                     {question.agenda_no ? `${question.agenda_no}. ` : ""}
                     {question.question_text}
+                    {question.required ? (
+                      <>
+                        {" "}
+                        <RequiredMark />
+                      </>
+                    ) : null}
                   </legend>
                   {question.agenda_title ? (
                     <p className="mt-1 text-sm text-[var(--muted)]">
@@ -179,13 +188,14 @@ export default async function VoteDetailPage({ params }: VoteDetailPageProps) {
                   open.
                 </p>
               </section>
-              <button
+              <PendingSubmitButton
                 className="min-h-10 rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)] disabled:cursor-not-allowed disabled:opacity-50"
                 disabled={!votingStatus.canSubmit}
+                pendingLabel="Submitting..."
                 type="submit"
               >
                 {ballot ? "Update ballot" : "Submit ballot"}
-              </button>
+              </PendingSubmitButton>
             </form>
           )}
         </section>

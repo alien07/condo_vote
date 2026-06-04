@@ -2,6 +2,8 @@
 
 import { useActionState } from "react";
 import { Mail, Send } from "lucide-react";
+import { FieldLabel, RequiredNote } from "@/features/admin/components/field-label";
+import { PendingSubmitButton } from "@/features/debug/tracked-submit-button";
 import {
   queueVoteInvitationGroup,
   resendVoteInvitation,
@@ -57,33 +59,41 @@ export function EmailInviteControls({ meetings }: EmailInviteControlsProps) {
           <h3 className="font-semibold">Resend To One Recipient</h3>
         </div>
         <form action={singleAction} className="grid gap-3">
-          <select
-            className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-            name="meeting_id"
-            required
-          >
-            <option value="">Meeting</option>
-            {activeMeetings.map((meeting) => (
-              <option key={meeting.id} value={meeting.id}>
-                {meeting.title} ({meeting.status})
-              </option>
-            ))}
-          </select>
-          <input
-            className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-            name="email"
-            placeholder="recipient@example.com"
-            required
-            type="email"
-          />
-          <button
+          <RequiredNote />
+          <label className="grid gap-1 text-sm font-medium">
+            <FieldLabel required>Meeting</FieldLabel>
+            <select
+              className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+              name="meeting_id"
+              required
+            >
+              <option value="">Select meeting</option>
+              {activeMeetings.map((meeting) => (
+                <option key={meeting.id} value={meeting.id}>
+                  {meeting.title} ({meeting.status})
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="grid gap-1 text-sm font-medium">
+            <FieldLabel required>Recipient email</FieldLabel>
+            <input
+              className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+              name="email"
+              placeholder="recipient@example.com"
+              required
+              type="email"
+            />
+          </label>
+          <PendingSubmitButton
             className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)] disabled:opacity-60"
             disabled={singlePending}
+            pendingLabel="Sending..."
             type="submit"
           >
             <Send size={16} aria-hidden="true" />
-            {singlePending ? "Checking..." : "Resend vote invitation"}
-          </button>
+            Resend vote invitation
+          </PendingSubmitButton>
         </form>
         <StatusMessage state={singleState} />
       </section>
@@ -94,36 +104,45 @@ export function EmailInviteControls({ meetings }: EmailInviteControlsProps) {
           <h3 className="font-semibold">Group Resend</h3>
         </div>
         <form action={groupAction} className="grid gap-3">
-          <select
-            className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-            name="meeting_id"
-            required
-          >
-            <option value="">Meeting</option>
-            {activeMeetings.map((meeting) => (
-              <option key={meeting.id} value={meeting.id}>
-                {meeting.title} ({meeting.status})
+          <RequiredNote />
+          <label className="grid gap-1 text-sm font-medium">
+            <FieldLabel required>Meeting</FieldLabel>
+            <select
+              className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+              name="meeting_id"
+              required
+            >
+              <option value="">Select meeting</option>
+              {activeMeetings.map((meeting) => (
+                <option key={meeting.id} value={meeting.id}>
+                  {meeting.title} ({meeting.status})
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="grid gap-1 text-sm font-medium">
+            <FieldLabel required>Recipient policy</FieldLabel>
+            <select
+              className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+              defaultValue="eligible"
+              name="group_mode"
+              required
+            >
+              <option value="eligible">Eligible voters only</option>
+              <option value="all_active">
+                All active recipients, policy checked
               </option>
-            ))}
-          </select>
-          <select
-            className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-            defaultValue="eligible"
-            name="group_mode"
-          >
-            <option value="eligible">Eligible voters only</option>
-            <option value="all_active">
-              All active recipients, policy checked
-            </option>
-          </select>
-          <button
+            </select>
+          </label>
+          <PendingSubmitButton
             className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)] disabled:opacity-60"
             disabled={groupPending}
+            pendingLabel="Queueing..."
             type="submit"
           >
             <Send size={16} aria-hidden="true" />
-            {groupPending ? "Queueing..." : "Queue group email"}
-          </button>
+            Queue group email
+          </PendingSubmitButton>
         </form>
         <StatusMessage state={groupState} />
       </section>

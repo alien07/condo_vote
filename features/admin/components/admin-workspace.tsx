@@ -2,14 +2,12 @@ import {
   Building2,
   CalendarDays,
   FileText,
-  FileSpreadsheet,
   FolderLock,
   History,
   ListChecks,
   ShieldCheck,
   Upload,
   UserCheck,
-  UserRound,
 } from "lucide-react";
 import {
   approveResultSnapshot,
@@ -18,39 +16,49 @@ import {
   createMeetingChoice,
   createMeeting,
   createMeetingQuestion,
-  createOwner,
   createProxyAuthorization,
-  createRoom,
-  deactivateOwner,
-  deactivateRoom,
   deactivateCommitteeMember,
   deleteMeetingChoice,
   deleteMeetingQuestion,
-  endRoomOwnerLink,
   generateResultSnapshot,
   importOwnersExcel,
   importRoomOwnersExcel,
   importRoomsExcel,
-  grantAppRole,
   importManualVoteEntry,
-  linkRoomOwner,
   publishMeeting,
   reviewProxyAuthorization,
   resolveVoteSourceConflict,
   registerDocumentReference,
-  revokeAppRole,
   saveAppSettings,
   saveCondoProfile,
-  updateProfileApproval,
 } from "@/features/admin/actions";
 import { EmailInviteControls } from "@/features/admin/components/email-invite-controls";
+import { FieldLabel, RequiredNote } from "@/features/admin/components/field-label";
+import {
+  ConfirmSubmitButton,
+  FormResetButton,
+} from "@/features/admin/components/form-controls";
+import { OwnershipManager } from "@/features/admin/components/ownership-manager";
+import { PeopleCrudPilot } from "@/features/admin/components/people-crud-pilot";
+import { PendingSubmitButton } from "@/features/debug/tracked-submit-button";
 import { getAdminDashboardData } from "@/features/admin/data";
+import type { AuditLogFilters } from "@/features/admin/data-modules/documents";
 
 function formatDateTime(value: string) {
   return new Intl.DateTimeFormat("en-GB", {
     dateStyle: "medium",
     timeStyle: "short",
   }).format(new Date(value));
+}
+
+function formatAuditDateTime(value: string) {
+  const date = new Date(value);
+  const pad = (part: number) => String(part).padStart(2, "0");
+
+  return {
+    date: `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`,
+    time: `${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`,
+  };
 }
 
 function getResultTotals(payload: unknown) {
@@ -129,6 +137,139 @@ function formatPercent(value: number | undefined) {
   return `${Number(value ?? 0).toFixed(2)}%`;
 }
 
+export function MasterDataImportForms() {
+  return (
+    <div className="grid gap-4 lg:grid-cols-3">
+      <form
+        action={importRoomsExcel}
+        className="rounded-md border border-[var(--border)] p-4"
+      >
+        <div className="mb-3 flex items-center gap-2">
+          <Upload className="text-[var(--primary)]" size={18} />
+          <h3 className="font-semibold">Import rooms</h3>
+        </div>
+        <p className="mb-3 text-sm text-[var(--muted)]">
+          Reads the `Rooms` sheet. Upsert key: `room_number`.
+        </p>
+        <div className="mb-3">
+          <RequiredNote />
+        </div>
+        <a
+          className="mb-3 inline-flex min-h-10 items-center justify-center rounded-md border border-[var(--border)] px-4 py-2 text-sm font-medium"
+          href="/templates/rooms-import-template.xlsx"
+        >
+          Download rooms template
+        </a>
+        <label className="grid gap-1 text-sm font-medium">
+          <FieldLabel required>Excel file</FieldLabel>
+          <input
+            accept=".xlsx"
+            className="block w-full rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+            name="file"
+            required
+            type="file"
+          />
+        </label>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <PendingSubmitButton
+            className="min-h-10 rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)]"
+            pendingLabel="Uploading..."
+            type="submit"
+          >
+            Upload rooms Excel
+          </PendingSubmitButton>
+          <FormResetButton label="Clear form" />
+        </div>
+      </form>
+
+      <form
+        action={importOwnersExcel}
+        className="rounded-md border border-[var(--border)] p-4"
+      >
+        <div className="mb-3 flex items-center gap-2">
+          <Upload className="text-[var(--primary)]" size={18} />
+          <h3 className="font-semibold">Import owners</h3>
+        </div>
+        <p className="mb-3 text-sm text-[var(--muted)]">
+          Reads the `Owners` sheet. Upsert key: `email`.
+        </p>
+        <div className="mb-3">
+          <RequiredNote />
+        </div>
+        <a
+          className="mb-3 inline-flex min-h-10 items-center justify-center rounded-md border border-[var(--border)] px-4 py-2 text-sm font-medium"
+          href="/templates/owners-import-template.xlsx"
+        >
+          Download owners template
+        </a>
+        <label className="grid gap-1 text-sm font-medium">
+          <FieldLabel required>Excel file</FieldLabel>
+          <input
+            accept=".xlsx"
+            className="block w-full rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+            name="file"
+            required
+            type="file"
+          />
+        </label>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <PendingSubmitButton
+            className="min-h-10 rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)]"
+            pendingLabel="Uploading..."
+            type="submit"
+          >
+            Upload owners Excel
+          </PendingSubmitButton>
+          <FormResetButton label="Clear form" />
+        </div>
+      </form>
+
+      <form
+        action={importRoomOwnersExcel}
+        className="rounded-md border border-[var(--border)] p-4"
+      >
+        <div className="mb-3 flex items-center gap-2">
+          <Upload className="text-[var(--primary)]" size={18} />
+          <h3 className="font-semibold">Import room owners</h3>
+        </div>
+        <p className="mb-3 text-sm text-[var(--muted)]">
+          Reads the `RoomOwners` sheet. Links `room_number` to `owner_email`
+          with role `owner`.
+        </p>
+        <div className="mb-3">
+          <RequiredNote />
+        </div>
+        <a
+          className="mb-3 inline-flex min-h-10 items-center justify-center rounded-md border border-[var(--border)] px-4 py-2 text-sm font-medium"
+          href="/templates/room-owners-import-template.xlsx"
+        >
+          Download room owners template
+        </a>
+        <label className="grid gap-1 text-sm font-medium">
+          <FieldLabel required>Excel file</FieldLabel>
+          <input
+            accept=".xlsx"
+            className="block w-full rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+            name="file"
+            required
+            type="file"
+          />
+        </label>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <PendingSubmitButton
+            className="min-h-10 rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)]"
+            pendingLabel="Uploading..."
+            type="submit"
+          >
+            Upload room owners Excel
+          </PendingSubmitButton>
+          <FormResetButton label="Clear form" />
+        </div>
+      </form>
+    </div>
+  );
+}
+
 export type AdminSection =
   | "setup"
   | "storage"
@@ -142,10 +283,18 @@ export type AdminSection =
   | "people"
   | "ownership"
   | "proxies"
-  | "profiles";
+  | "profiles"
+  | "rooms"
+  | "owners";
 
 type AdminWorkspaceProps = {
   activeSection?: AdminSection | string;
+  auditFilters?: AuditLogFilters;
+  drawer?: {
+    id?: string;
+    mode?: string;
+    type?: string;
+  };
   sections?: AdminSection[];
   title?: string;
   description?: string;
@@ -169,6 +318,8 @@ const allSections: AdminSection[] = [
 
 export async function AdminWorkspace({
   activeSection: requestedActiveSection,
+  auditFilters,
+  drawer,
   sections = allSections,
   title = "Admin",
   description = "Room, owner, profile, and role-controlled demo workspace.",
@@ -177,6 +328,7 @@ export async function AdminWorkspace({
     condoProfile,
     appSettings,
     auditLogs,
+    auditOptions,
     committeeMembers,
     documents,
     rooms,
@@ -194,7 +346,7 @@ export async function AdminWorkspace({
     emailLogs,
     profiles,
   } =
-    await getAdminDashboardData();
+    await getAdminDashboardData({ auditFilters });
   const approvedResultSnapshotIds = new Set(
     committeeApprovals.map((approval) => approval.result_snapshot_id),
   );
@@ -287,11 +439,67 @@ export async function AdminWorkspace({
     ["questions", "Questions"],
     ["results", "Results"],
     ["email", "Email"],
-    ["people", "People"],
+    ["people", "Rooms & Owners"],
+    ["rooms", "Rooms"],
+    ["owners", "Owners"],
     ["ownership", "Ownership"],
     ["proxies", "Proxies"],
     ["profiles", "Profiles"],
   ]);
+  const auditSortBy = auditFilters?.sortBy ?? "time";
+  const auditSortDirection = auditFilters?.sortDirection ?? "desc";
+  const auditActors = [
+    ...new Map(
+      auditOptions
+        .map((option) => option.profiles)
+        .filter((profile): profile is NonNullable<typeof profile> =>
+          Boolean(profile?.id),
+        )
+        .map((profile) => [
+          profile.id,
+          {
+            id: profile.id,
+            label: profile.full_name ?? profile.email ?? profile.id,
+          },
+        ]),
+    ).values(),
+  ].sort((left, right) => left.label.localeCompare(right.label));
+  const auditActions = [...new Set(auditOptions.map((option) => option.action))]
+    .filter(Boolean)
+    .sort();
+  const makeAuditSortHref = (sortBy: NonNullable<AuditLogFilters["sortBy"]>) => {
+    const params = new URLSearchParams();
+
+    params.set("tab", "audit");
+
+    if (auditFilters?.dateFrom) {
+      params.set("from", auditFilters.dateFrom);
+    }
+
+    if (auditFilters?.dateTo) {
+      params.set("to", auditFilters.dateTo);
+    }
+
+    if (auditFilters?.actorProfileId) {
+      params.set("actor", auditFilters.actorProfileId);
+    }
+
+    auditFilters?.actions?.forEach((action) => params.append("actions", action));
+    params.set("sort", sortBy);
+    params.set(
+      "dir",
+      auditSortBy === sortBy && auditSortDirection === "asc" ? "desc" : "asc",
+    );
+
+    return `?${params.toString()}`;
+  };
+  const auditSortLabel = (sortBy: NonNullable<AuditLogFilters["sortBy"]>) => {
+    if (auditSortBy !== sortBy) {
+      return "";
+    }
+
+    return auditSortDirection === "asc" ? " ↑" : " ↓";
+  };
 
   return (
     <main className="min-h-screen px-6 py-8">
@@ -307,27 +515,36 @@ export async function AdminWorkspace({
         </div>
 
         {sections.length > 1 ? (
-          <nav className="sticky top-0 z-10 mb-5 flex gap-2 overflow-x-auto border-b border-[var(--border)] bg-[var(--background)] py-3 text-sm">
-            {sections.map((section) => {
-              const active = section === activeSection;
+          <div className="sticky top-0 z-10 mb-5 border-b border-[var(--border)] bg-[var(--background)] py-3">
+            <div className="mb-3">
+              <h2 className="text-sm font-semibold">Workspace sections</h2>
+              <p className="mt-1 text-xs text-[var(--muted)]">
+                Use these tabs to switch between focused sections in this admin
+                workspace.
+              </p>
+            </div>
+            <nav className="flex gap-2 overflow-x-auto text-sm">
+              {sections.map((section) => {
+                const active = section === activeSection;
 
-              return (
-                <a
-                  aria-current={active ? "page" : undefined}
-                  className={[
-                    "shrink-0 rounded-md border px-3 py-2 font-medium",
-                    active
-                      ? "border-[var(--primary)] bg-[var(--primary)] text-[var(--primary-foreground)]"
-                      : "border-[var(--border)] bg-[var(--surface)]",
-                  ].join(" ")}
-                  href={`?tab=${section}`}
-                  key={section}
-                >
-                  {sectionLabels.get(section)}
-                </a>
-              );
-            })}
-          </nav>
+                return (
+                  <a
+                    aria-current={active ? "page" : undefined}
+                    className={[
+                      "shrink-0 rounded-md border px-3 py-2 font-medium",
+                      active
+                        ? "border-[var(--primary)] bg-[var(--primary)] text-[var(--primary-foreground)]"
+                        : "border-[var(--border)] bg-[var(--surface)]",
+                    ].join(" ")}
+                    href={`?tab=${section}`}
+                    key={section}
+                  >
+                    {sectionLabels.get(section)}
+                  </a>
+                );
+              })}
+            </nav>
+          </div>
         ) : null}
 
         <section
@@ -340,21 +557,28 @@ export async function AdminWorkspace({
             <h2 className="text-lg font-semibold">Juristic Person</h2>
           </div>
           <form action={saveCondoProfile} className="grid gap-3 md:grid-cols-2">
+            <div className="md:col-span-2">
+              <RequiredNote />
+            </div>
             <input name="id" type="hidden" value={condoProfile?.id ?? ""} />
-            <input
-              className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-              defaultValue={condoProfile?.juristic_name ?? ""}
-              name="juristic_name"
-              placeholder="Juristic person name"
-              required
-            />
-            <input
-              className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-              defaultValue={condoProfile?.project_name ?? ""}
-              name="project_name"
-              placeholder="Project name"
-              required
-            />
+            <label className="grid gap-1 text-sm font-medium">
+              <FieldLabel required>Juristic person name</FieldLabel>
+              <input
+                className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+                defaultValue={condoProfile?.juristic_name ?? ""}
+                name="juristic_name"
+                required
+              />
+            </label>
+            <label className="grid gap-1 text-sm font-medium">
+              <FieldLabel required>Project name</FieldLabel>
+              <input
+                className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+                defaultValue={condoProfile?.project_name ?? ""}
+                name="project_name"
+                required
+              />
+            </label>
             <input
               className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
               defaultValue={condoProfile?.registration_no ?? ""}
@@ -410,12 +634,16 @@ export async function AdminWorkspace({
               placeholder="Document footer"
               rows={2}
             />
-            <button
-              className="rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)] md:col-span-2"
-              type="submit"
-            >
-              Save juristic profile
-            </button>
+            <div className="flex flex-wrap gap-2 md:col-span-2">
+              <PendingSubmitButton
+                className="rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)]"
+                pendingLabel="Saving..."
+                type="submit"
+              >
+                Save juristic profile
+              </PendingSubmitButton>
+              <FormResetButton label="Reset changes" />
+            </div>
           </form>
         </section>
 
@@ -458,73 +686,101 @@ export async function AdminWorkspace({
                 placeholder="/secure/condovotes or private Drive folder URL"
               />
             </label>
-            <button
-              className="rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)] md:col-span-2"
-              type="submit"
-            >
-              Save document storage config
-            </button>
+            <div className="flex flex-wrap gap-2 md:col-span-2">
+              <PendingSubmitButton
+                className="rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)]"
+                pendingLabel="Saving..."
+                type="submit"
+              >
+                Save document storage config
+              </PendingSubmitButton>
+              <FormResetButton label="Reset changes" />
+            </div>
           </form>
 
           <form
             action={registerDocumentReference}
             className="mt-6 grid gap-3 border-t border-[var(--border)] pt-5 md:grid-cols-3"
           >
-            <select
-              className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-              defaultValue="local_drive"
-              name="storage_provider"
-            >
-              <option value="local_drive">Local drive</option>
-              <option value="google_drive">Google Drive</option>
-            </select>
-            <select
-              className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-              name="owner_type"
-            >
-              <option value="profile">Profile</option>
-              <option value="approval_request">Approval request</option>
-              <option value="proxy_authorization">Proxy authorization</option>
-              <option value="meeting">Meeting</option>
-              <option value="result_snapshot">Result snapshot</option>
-            </select>
-            <select
-              className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-              name="document_type"
-            >
-              <option value="owner_verification">Owner verification</option>
-              <option value="proxy_authorization">Proxy authorization</option>
-              <option value="meeting_attachment">Meeting attachment</option>
-              <option value="result_pdf">Result PDF</option>
-              <option value="other">Other</option>
-            </select>
-            <input
-              className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-              name="owner_id"
-              placeholder="Owner UUID"
-              required
-            />
-            <input
-              className="rounded-md border border-[var(--border)] px-3 py-2 text-sm md:col-span-2"
-              name="storage_path"
-              placeholder="Relative path or private Drive file link"
-              required
-            />
-            <input
-              className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-              name="document_set_key"
-              placeholder="Document set key, e.g. proxy-meeting-room"
-              required
-            />
-            <input
-              className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-              defaultValue={1}
-              min={1}
-              name="document_version"
-              placeholder="Version"
-              type="number"
-              required
-            />
+            <div className="md:col-span-3">
+              <RequiredNote />
+            </div>
+            <label className="grid gap-1 text-sm font-medium">
+              <FieldLabel required>Storage provider</FieldLabel>
+              <select
+                className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+                defaultValue="local_drive"
+                name="storage_provider"
+                required
+              >
+                <option value="local_drive">Local drive</option>
+                <option value="google_drive">Google Drive</option>
+              </select>
+            </label>
+            <label className="grid gap-1 text-sm font-medium">
+              <FieldLabel required>Owner type</FieldLabel>
+              <select
+                className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+                name="owner_type"
+                required
+              >
+                <option value="profile">Profile</option>
+                <option value="approval_request">Approval request</option>
+                <option value="proxy_authorization">Proxy authorization</option>
+                <option value="meeting">Meeting</option>
+                <option value="result_snapshot">Result snapshot</option>
+              </select>
+            </label>
+            <label className="grid gap-1 text-sm font-medium">
+              <FieldLabel required>Document type</FieldLabel>
+              <select
+                className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+                name="document_type"
+                required
+              >
+                <option value="owner_verification">Owner verification</option>
+                <option value="proxy_authorization">Proxy authorization</option>
+                <option value="meeting_attachment">Meeting attachment</option>
+                <option value="result_pdf">Result PDF</option>
+                <option value="other">Other</option>
+              </select>
+            </label>
+            <label className="grid gap-1 text-sm font-medium">
+              <FieldLabel required>Owner UUID</FieldLabel>
+              <input
+                className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+                name="owner_id"
+                required
+              />
+            </label>
+            <label className="grid gap-1 text-sm font-medium md:col-span-2">
+              <FieldLabel required>Relative path or private Drive file link</FieldLabel>
+              <input
+                className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+                name="storage_path"
+                required
+              />
+            </label>
+            <label className="grid gap-1 text-sm font-medium">
+              <FieldLabel required>Document set key</FieldLabel>
+              <input
+                className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+                name="document_set_key"
+                placeholder="proxy-meeting-room"
+                required
+              />
+            </label>
+            <label className="grid gap-1 text-sm font-medium">
+              <FieldLabel required>Version</FieldLabel>
+              <input
+                className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+                defaultValue={1}
+                min={1}
+                name="document_version"
+                type="number"
+                required
+              />
+            </label>
             <input
               className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
               name="original_filename"
@@ -547,12 +803,16 @@ export async function AdminWorkspace({
               name="checksum_sha256"
               placeholder="SHA-256 checksum, 64 hex characters"
             />
-            <button
-              className="rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)] md:col-span-3"
-              type="submit"
-            >
-              Register private document reference
-            </button>
+            <div className="flex flex-wrap gap-2 md:col-span-3">
+              <PendingSubmitButton
+                className="rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)]"
+                pendingLabel="Adding..."
+                type="submit"
+              >
+                Register private document reference
+              </PendingSubmitButton>
+              <FormResetButton label="Clear form" />
+            </div>
           </form>
 
           <div className="mt-6 overflow-x-auto">
@@ -599,31 +859,120 @@ export async function AdminWorkspace({
             <History className="text-[var(--primary)]" size={20} />
             <h2 className="text-lg font-semibold">Business Audit Log</h2>
           </div>
+          <form className="mb-4 grid gap-3 rounded-md border border-[var(--border)] bg-[var(--background)] p-3 md:grid-cols-5">
+            <input name="tab" type="hidden" value="audit" />
+            <label className="grid gap-1 text-xs font-medium text-[var(--muted)]">
+              From
+              <input
+                className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)]"
+                defaultValue={auditFilters?.dateFrom ?? ""}
+                name="from"
+                type="datetime-local"
+              />
+            </label>
+            <label className="grid gap-1 text-xs font-medium text-[var(--muted)]">
+              To
+              <input
+                className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)]"
+                defaultValue={auditFilters?.dateTo ?? ""}
+                name="to"
+                type="datetime-local"
+              />
+            </label>
+            <label className="grid gap-1 text-xs font-medium text-[var(--muted)]">
+              Actor
+              <select
+                className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)]"
+                defaultValue={auditFilters?.actorProfileId ?? ""}
+                name="actor"
+              >
+                <option value="">All actors</option>
+                {auditActors.map((actor) => (
+                  <option key={actor.id} value={actor.id}>
+                    {actor.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="grid gap-1 text-xs font-medium text-[var(--muted)]">
+              Actions
+              <select
+                className="min-h-24 rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)]"
+                defaultValue={auditFilters?.actions ?? []}
+                multiple
+                name="actions"
+              >
+                {auditActions.map((action) => (
+                  <option key={action} value={action}>
+                    {action}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <div className="flex items-end gap-2">
+              <PendingSubmitButton
+                className="min-h-10 rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)]"
+                pendingLabel="Searching..."
+                type="submit"
+              >
+                Apply filters
+              </PendingSubmitButton>
+              <a
+                className="inline-flex min-h-10 items-center rounded-md border border-[var(--border)] bg-[var(--surface)] px-4 py-2 text-sm font-medium"
+                href="?tab=audit"
+              >
+                Clear
+              </a>
+            </div>
+          </form>
           <div className="overflow-x-auto">
             <table className="w-full min-w-[760px] border-collapse text-left text-sm">
               <thead className="border-b border-[var(--border)] text-[var(--muted)]">
                 <tr>
-                  <th className="py-2 pr-3 font-medium">Time</th>
-                  <th className="py-2 pr-3 font-medium">Actor</th>
-                  <th className="py-2 pr-3 font-medium">Action</th>
-                  <th className="py-2 pr-3 font-medium">Entity</th>
+                  <th className="w-28 min-w-28 py-2 pr-4 font-medium">
+                    <a href={makeAuditSortHref("time")}>
+                      Time{auditSortLabel("time")}
+                    </a>
+                  </th>
+                  <th className="py-2 pr-3 font-medium">
+                    <a href={makeAuditSortHref("actor")}>
+                      Actor{auditSortLabel("actor")}
+                    </a>
+                  </th>
+                  <th className="py-2 pr-3 font-medium">
+                    <a href={makeAuditSortHref("action")}>
+                      Action{auditSortLabel("action")}
+                    </a>
+                  </th>
+                  <th className="py-2 pr-3 font-medium">
+                    <a href={makeAuditSortHref("entity")}>
+                      Entity{auditSortLabel("entity")}
+                    </a>
+                  </th>
                   <th className="py-2 font-medium">Details</th>
                 </tr>
               </thead>
               <tbody>
-                {auditLogs.map((log) => (
-                  <tr className="border-b border-[var(--border)]" key={log.id}>
-                    <td className="py-2 pr-3">{formatDateTime(log.created_at)}</td>
-                    <td className="py-2 pr-3">
-                      {log.profiles?.full_name ?? log.profiles?.email ?? "-"}
-                    </td>
-                    <td className="py-2 pr-3">{log.action}</td>
-                    <td className="py-2 pr-3">{log.entity_type}</td>
-                    <td className="max-w-sm truncate py-2">
-                      {JSON.stringify(log.details_json)}
-                    </td>
-                  </tr>
-                ))}
+                {auditLogs.map((log) => {
+                  const timestamp = formatAuditDateTime(log.created_at);
+
+                  return (
+                    <tr className="border-b border-[var(--border)]" key={log.id}>
+                      <td className="w-28 min-w-28 py-2 pr-4 text-xs tabular-nums">
+                        <div>{timestamp.date}</div>
+                        <div className="text-[var(--muted)]">{timestamp.time}</div>
+                      </td>
+                      <td className="py-2 pr-3">
+                        {log.profiles?.full_name ?? log.profiles?.email ?? "-"}
+                      </td>
+                      <td className="py-2 pr-3">{log.action}</td>
+                      <td className="py-2 pr-3">{log.entity_type}</td>
+                      <td className="max-w-sm truncate py-2">
+                        {JSON.stringify(log.details_json)}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -642,63 +991,78 @@ export async function AdminWorkspace({
             action={importManualVoteEntry}
             className="grid gap-3 md:grid-cols-4"
           >
-            <select
-              className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-              name="meeting_id"
-              required
-            >
-              <option value="">Meeting</option>
-              {meetings
-                .filter((meeting) => meeting.status !== "archived")
-                .map((meeting) => (
-                  <option key={meeting.id} value={meeting.id}>
-                    {meeting.title}
-                  </option>
-                ))}
-            </select>
-            <select
-              className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-              name="room_id"
-              required
-            >
-              <option value="">Room</option>
-              {rooms
-                .filter((room) => room.active)
-                .map((room) => (
-                  <option key={room.id} value={room.id}>
-                    {room.room_number}
-                  </option>
-                ))}
-            </select>
-            <select
-              className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-              name="question_id"
-              required
-            >
-              <option value="">Question</option>
-              {questions.map((question) => (
-                <option key={question.id} value={question.id}>
-                  {question.meetings?.title ?? "-"} / {question.agenda_no ?? "-"}{" "}
-                  {question.question_text}
-                </option>
-              ))}
-            </select>
-            <select
-              className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-              name="choice_id"
-              required
-            >
-              <option value="">Choice</option>
-              {questions.flatMap((question) =>
-                question.meeting_choices
-                  .sort((left, right) => left.display_order - right.display_order)
-                  .map((choice) => (
-                    <option key={choice.id} value={choice.id}>
-                      {question.question_text} / {choice.choice_text}
+            <div className="md:col-span-4">
+              <RequiredNote />
+            </div>
+            <label className="grid gap-1 text-sm font-medium">
+              <FieldLabel required>Meeting</FieldLabel>
+              <select
+                className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+                name="meeting_id"
+                required
+              >
+                <option value="">Select meeting</option>
+                {meetings
+                  .filter((meeting) => meeting.status !== "archived")
+                  .map((meeting) => (
+                    <option key={meeting.id} value={meeting.id}>
+                      {meeting.title}
                     </option>
-                  )),
-              )}
-            </select>
+                  ))}
+              </select>
+            </label>
+            <label className="grid gap-1 text-sm font-medium">
+              <FieldLabel required>Room</FieldLabel>
+              <select
+                className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+                name="room_id"
+                required
+              >
+                <option value="">Select room</option>
+                {rooms
+                  .filter((room) => room.active)
+                  .map((room) => (
+                    <option key={room.id} value={room.id}>
+                      {room.room_number}
+                    </option>
+                  ))}
+              </select>
+            </label>
+            <label className="grid gap-1 text-sm font-medium">
+              <FieldLabel required>Question</FieldLabel>
+              <select
+                className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+                name="question_id"
+                required
+              >
+                <option value="">Select question</option>
+                {questions.map((question) => (
+                  <option key={question.id} value={question.id}>
+                    {question.meetings?.title ?? "-"} /{" "}
+                    {question.agenda_no ?? "-"} {question.question_text}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="grid gap-1 text-sm font-medium">
+              <FieldLabel required>Choice</FieldLabel>
+              <select
+                className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+                name="choice_id"
+                required
+              >
+                <option value="">Select choice</option>
+                {questions.flatMap((question) =>
+                  question.meeting_choices
+                    .sort((left, right) => left.display_order - right.display_order)
+                    .map((choice) => (
+                      <option key={choice.id} value={choice.id}>
+                        {question.question_text} / {choice.choice_text}
+                      </option>
+                    )),
+                )}
+              </select>
+            </label>
             <input
               className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
               name="source_label"
@@ -709,12 +1073,16 @@ export async function AdminWorkspace({
               name="audit_note"
               placeholder="Audit note"
             />
-            <button
-              className="rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)]"
-              type="submit"
-            >
-              Import manual vote
-            </button>
+            <div className="flex flex-wrap gap-2">
+              <PendingSubmitButton
+                className="rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)]"
+                pendingLabel="Adding..."
+                type="submit"
+              >
+                Import manual vote
+              </PendingSubmitButton>
+              <FormResetButton label="Clear form" />
+            </div>
           </form>
 
           <div className="mt-5 overflow-x-auto">
@@ -817,12 +1185,14 @@ export async function AdminWorkspace({
                             name="conflict_remark"
                             placeholder="Conflict remark"
                           />
-                          <button
+                          <PendingSubmitButton
                             className="rounded-md border border-[var(--border)] px-3 py-1 text-sm font-medium"
+                            pendingLabel="Saving..."
                             type="submit"
                           >
                             Resolve source
-                          </button>
+                          </PendingSubmitButton>
+                          <FormResetButton label="Reset changes" />
                         </form>
                       </td>
                     </tr>
@@ -845,6 +1215,9 @@ export async function AdminWorkspace({
             action={createCommitteeMember}
             className="grid gap-3 md:grid-cols-4"
           >
+            <div className="md:col-span-4">
+              <RequiredNote />
+            </div>
             <select
               className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
               name="profile_id"
@@ -856,18 +1229,22 @@ export async function AdminWorkspace({
                 </option>
               ))}
             </select>
-            <input
-              className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-              name="full_name"
-              placeholder="Committee name"
-              required
-            />
-            <input
-              className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-              name="position_title"
-              placeholder="Position"
-              required
-            />
+            <label className="grid gap-1 text-sm font-medium">
+              <FieldLabel required>Committee name</FieldLabel>
+              <input
+                className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+                name="full_name"
+                required
+              />
+            </label>
+            <label className="grid gap-1 text-sm font-medium">
+              <FieldLabel required>Position</FieldLabel>
+              <input
+                className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+                name="position_title"
+                required
+              />
+            </label>
             <input
               className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
               defaultValue={0}
@@ -892,12 +1269,16 @@ export async function AdminWorkspace({
                 type="date"
               />
             </label>
-            <button
-              className="self-end rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)] md:col-span-2"
-              type="submit"
-            >
-              Add committee member
-            </button>
+            <div className="flex flex-wrap gap-2 md:col-span-2">
+              <PendingSubmitButton
+                className="self-end rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)]"
+                pendingLabel="Adding..."
+                type="submit"
+              >
+                Add committee member
+              </PendingSubmitButton>
+              <FormResetButton label="Clear form" />
+            </div>
           </form>
 
           <div className="mt-5 overflow-x-auto">
@@ -927,12 +1308,14 @@ export async function AdminWorkspace({
                       {member.active ? (
                         <form action={deactivateCommitteeMember}>
                           <input name="id" type="hidden" value={member.id} />
-                          <button
+                          <ConfirmSubmitButton
                             className="text-sm font-medium text-red-700"
+                            confirmMessage={`Deactivate committee member "${member.full_name}"? This member will no longer appear as active for formal meeting documents.`}
+                            pendingLabel="Deactivating..."
                             type="submit"
                           >
                             Deactivate
-                          </button>
+                          </ConfirmSubmitButton>
                         </form>
                       ) : null}
                     </td>
@@ -953,12 +1336,17 @@ export async function AdminWorkspace({
             <h2 className="text-lg font-semibold">Meetings</h2>
           </div>
           <form action={createMeeting} className="grid gap-3 md:grid-cols-2">
-            <input
-              className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-              name="title"
-              placeholder="Meeting title"
-              required
-            />
+            <div className="md:col-span-2">
+              <RequiredNote />
+            </div>
+            <label className="grid gap-1 text-sm font-medium">
+              <FieldLabel required>Meeting title</FieldLabel>
+              <input
+                className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+                name="title"
+                required
+              />
+            </label>
             <input
               className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
               name="video_url"
@@ -970,16 +1358,20 @@ export async function AdminWorkspace({
               name="meeting_number"
               placeholder="Meeting no."
             />
-            <select
-              className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-              defaultValue="online_vote"
-              name="meeting_type"
-            >
-              <option value="online_vote">Online vote</option>
-              <option value="agm">AGM</option>
-              <option value="egm">EGM</option>
-              <option value="committee">Committee</option>
-            </select>
+            <label className="grid gap-1 text-sm font-medium">
+              <FieldLabel required>Meeting type</FieldLabel>
+              <select
+                className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+                defaultValue="online_vote"
+                name="meeting_type"
+                required
+              >
+                <option value="online_vote">Online vote</option>
+                <option value="agm">AGM</option>
+                <option value="egm">EGM</option>
+                <option value="committee">Committee</option>
+              </select>
+            </label>
             <input
               className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
               name="fiscal_year"
@@ -995,21 +1387,25 @@ export async function AdminWorkspace({
               name="chairperson_name"
               placeholder="Chairperson"
             />
-            <select
-              className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-              defaultValue="one_fourth_total_ownership"
-              name="quorum_rule"
-            >
-              <option value="one_fourth_total_ownership">
-                Quorum: 1/4 ownership
-              </option>
-              <option value="not_required_second_call">
-                Second call: no quorum
-              </option>
-              <option value="committee_policy">Committee policy</option>
-            </select>
+            <label className="grid gap-1 text-sm font-medium">
+              <FieldLabel required>Quorum rule</FieldLabel>
+              <select
+                className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+                defaultValue="one_fourth_total_ownership"
+                name="quorum_rule"
+                required
+              >
+                <option value="one_fourth_total_ownership">
+                  Quorum: 1/4 ownership
+                </option>
+                <option value="not_required_second_call">
+                  Second call: no quorum
+                </option>
+                <option value="committee_policy">Committee policy</option>
+              </select>
+            </label>
             <label className="text-sm font-medium">
-              Starts
+              <FieldLabel required>Starts</FieldLabel>
               <input
                 className="mt-1 w-full rounded-md border border-[var(--border)] px-3 py-2 text-sm"
                 name="starts_at"
@@ -1018,7 +1414,7 @@ export async function AdminWorkspace({
               />
             </label>
             <label className="text-sm font-medium">
-              Ends
+              <FieldLabel required>Ends</FieldLabel>
               <input
                 className="mt-1 w-full rounded-md border border-[var(--border)] px-3 py-2 text-sm"
                 name="ends_at"
@@ -1032,12 +1428,16 @@ export async function AdminWorkspace({
               placeholder="Description"
               rows={3}
             />
-            <button
-              className="rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)] md:col-span-2"
-              type="submit"
-            >
-              Add meeting
-            </button>
+            <div className="flex flex-wrap gap-2 md:col-span-2">
+              <PendingSubmitButton
+                className="rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)]"
+                pendingLabel="Adding..."
+                type="submit"
+              >
+                Add meeting
+              </PendingSubmitButton>
+              <FormResetButton label="Clear form" />
+            </div>
           </form>
 
           <div className="mt-5 overflow-x-auto">
@@ -1073,23 +1473,26 @@ export async function AdminWorkspace({
                           {meeting.status === "draft" ? (
                             <form action={publishMeeting}>
                               <input name="id" type="hidden" value={meeting.id} />
-                              <button
+                              <PendingSubmitButton
                                 className="text-sm font-medium text-[var(--primary)]"
+                                pendingLabel="Publishing..."
                                 type="submit"
                               >
                                 Publish
-                              </button>
+                              </PendingSubmitButton>
                             </form>
                           ) : null}
                           {meeting.status !== "archived" ? (
                             <form action={archiveMeeting}>
                               <input name="id" type="hidden" value={meeting.id} />
-                              <button
+                              <ConfirmSubmitButton
                                 className="text-sm font-medium text-red-700"
+                                confirmMessage={`Archive meeting "${meeting.title}"? This meeting will be hidden from active meeting workflows and cannot be published again without an admin change.`}
+                                pendingLabel="Archiving..."
                                 type="submit"
                               >
                                 Archive
-                              </button>
+                              </ConfirmSubmitButton>
                             </form>
                           ) : null}
                           {(meeting.status === "published" ||
@@ -1097,12 +1500,13 @@ export async function AdminWorkspace({
                           !hasApprovedResult ? (
                             <form action={generateResultSnapshot}>
                               <input name="id" type="hidden" value={meeting.id} />
-                              <button
+                              <PendingSubmitButton
                                 className="text-sm font-medium text-[var(--primary)]"
+                                pendingLabel="Generating..."
                                 type="submit"
                               >
                                 Generate result
-                              </button>
+                              </PendingSubmitButton>
                             </form>
                           ) : null}
                           {hasApprovedResult ? (
@@ -1132,20 +1536,26 @@ export async function AdminWorkspace({
             action={createMeetingQuestion}
             className="grid gap-3 md:grid-cols-4"
           >
-            <select
-              className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-              name="meeting_id"
-              required
-            >
-              <option value="">Meeting</option>
-              {meetings
-                .filter((meeting) => meeting.status !== "archived")
-                .map((meeting) => (
-                  <option key={meeting.id} value={meeting.id}>
-                    {meeting.title}
-                  </option>
-                ))}
-            </select>
+            <div className="md:col-span-4">
+              <RequiredNote />
+            </div>
+            <label className="grid gap-1 text-sm font-medium">
+              <FieldLabel required>Meeting</FieldLabel>
+              <select
+                className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+                name="meeting_id"
+                required
+              >
+                <option value="">Select meeting</option>
+                {meetings
+                  .filter((meeting) => meeting.status !== "archived")
+                  .map((meeting) => (
+                    <option key={meeting.id} value={meeting.id}>
+                      {meeting.title}
+                    </option>
+                  ))}
+              </select>
+            </label>
             <input
               className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
               name="agenda_no"
@@ -1156,42 +1566,53 @@ export async function AdminWorkspace({
               name="agenda_title"
               placeholder="Agenda title"
             />
-            <input
-              className="rounded-md border border-[var(--border)] px-3 py-2 text-sm md:col-span-2"
-              name="question_text"
-              placeholder="Question"
-              required
-            />
-            <select
-              className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-              name="question_type"
-              required
-            >
-              <option value="single_choice">Single choice</option>
-              <option value="multiple_choice">Multiple choice</option>
-            </select>
-            <select
-              className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-              defaultValue="ordinary"
-              name="resolution_type"
-              required
-            >
-              <option value="ordinary">Ordinary</option>
-              <option value="special">Special</option>
-              <option value="informational">Informational</option>
-            </select>
-            <select
-              className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-              defaultValue="majority_submitted"
-              name="required_threshold"
-              required
-            >
-              <option value="majority_submitted">Majority submitted</option>
-              <option value="one_third_total">1/3 total ownership</option>
-              <option value="half_total">1/2 total ownership</option>
-              <option value="three_fourths_total">3/4 total ownership</option>
-              <option value="informational">Informational</option>
-            </select>
+            <label className="grid gap-1 text-sm font-medium md:col-span-2">
+              <FieldLabel required>Question</FieldLabel>
+              <input
+                className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+                name="question_text"
+                required
+              />
+            </label>
+            <label className="grid gap-1 text-sm font-medium">
+              <FieldLabel required>Question type</FieldLabel>
+              <select
+                className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+                name="question_type"
+                required
+              >
+                <option value="single_choice">Single choice</option>
+                <option value="multiple_choice">Multiple choice</option>
+              </select>
+            </label>
+            <label className="grid gap-1 text-sm font-medium">
+              <FieldLabel required>Resolution type</FieldLabel>
+              <select
+                className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+                defaultValue="ordinary"
+                name="resolution_type"
+                required
+              >
+                <option value="ordinary">Ordinary</option>
+                <option value="special">Special</option>
+                <option value="informational">Informational</option>
+              </select>
+            </label>
+            <label className="grid gap-1 text-sm font-medium">
+              <FieldLabel required>Required threshold</FieldLabel>
+              <select
+                className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+                defaultValue="majority_submitted"
+                name="required_threshold"
+                required
+              >
+                <option value="majority_submitted">Majority submitted</option>
+                <option value="one_third_total">1/3 total ownership</option>
+                <option value="half_total">1/2 total ownership</option>
+                <option value="three_fourths_total">3/4 total ownership</option>
+                <option value="informational">Informational</option>
+              </select>
+            </label>
             <input
               className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
               defaultValue={0}
@@ -1214,12 +1635,16 @@ export async function AdminWorkspace({
               placeholder="Legal / admin note"
               rows={2}
             />
-            <button
-              className="rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)] md:col-span-2"
-              type="submit"
-            >
-              Add question
-            </button>
+            <div className="flex flex-wrap gap-2 md:col-span-2">
+              <PendingSubmitButton
+                className="rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)]"
+                pendingLabel="Adding..."
+                type="submit"
+              >
+                Add question
+              </PendingSubmitButton>
+              <FormResetButton label="Clear form" />
+            </div>
           </form>
 
           <div className="mt-5 grid gap-4">
@@ -1249,12 +1674,14 @@ export async function AdminWorkspace({
                   </div>
                   <form action={deleteMeetingQuestion}>
                     <input name="id" type="hidden" value={question.id} />
-                    <button
+                    <ConfirmSubmitButton
                       className="text-sm font-medium text-red-700"
+                      confirmMessage={`Delete question "${question.question_text}"? This removes the agenda question and its configured choices from the meeting setup.`}
+                      pendingLabel="Deleting..."
                       type="submit"
                     >
                       Delete question
-                    </button>
+                    </ConfirmSubmitButton>
                   </form>
                 </div>
                 <form
@@ -1262,12 +1689,14 @@ export async function AdminWorkspace({
                   className="mt-4 grid gap-3 md:grid-cols-[1fr_120px_160px]"
                 >
                   <input name="question_id" type="hidden" value={question.id} />
-                  <input
-                    className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-                    name="choice_text"
-                    placeholder="Choice"
-                    required
-                  />
+                  <label className="grid gap-1 text-sm font-medium">
+                    <FieldLabel required>Choice</FieldLabel>
+                    <input
+                      className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+                      name="choice_text"
+                      required
+                    />
+                  </label>
                   <input
                     className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
                     defaultValue={0}
@@ -1276,12 +1705,16 @@ export async function AdminWorkspace({
                     placeholder="Order"
                     type="number"
                   />
-                  <button
-                    className="rounded-md border border-[var(--border)] px-4 py-2 text-sm font-medium"
-                    type="submit"
-                  >
-                    Add choice
-                  </button>
+                  <div className="flex flex-wrap gap-2">
+                    <PendingSubmitButton
+                      className="rounded-md border border-[var(--border)] px-4 py-2 text-sm font-medium"
+                      pendingLabel="Adding..."
+                      type="submit"
+                    >
+                      Add choice
+                    </PendingSubmitButton>
+                    <FormResetButton label="Clear form" />
+                  </div>
                 </form>
                 <div className="mt-3 flex flex-wrap gap-2">
                   {question.meeting_choices
@@ -1294,9 +1727,14 @@ export async function AdminWorkspace({
                       >
                         <span>{choice.choice_text}</span>
                         <input name="id" type="hidden" value={choice.id} />
-                        <button className="font-medium text-red-700" type="submit">
+                        <ConfirmSubmitButton
+                          className="font-medium text-red-700"
+                          confirmMessage={`Delete choice "${choice.choice_text}"? Existing ballot setup for this choice will no longer be available.`}
+                          pendingLabel="Deleting..."
+                          type="submit"
+                        >
                           Delete
-                        </button>
+                        </ConfirmSubmitButton>
                       </form>
                     ))}
                 </div>
@@ -1377,12 +1815,14 @@ export async function AdminWorkspace({
                               name="notes"
                               placeholder="Approval / conflict notes"
                             />
-                            <button
+                            <PendingSubmitButton
                               className="rounded-md border border-[var(--border)] px-3 py-1 text-sm font-medium"
+                              pendingLabel="Saving..."
                               type="submit"
                             >
                               Approve result
-                            </button>
+                            </PendingSubmitButton>
+                            <FormResetButton label="Clear form" />
                           </form>
                         ) : null}
                         {meetingApproved && !approved ? (
@@ -1705,285 +2145,37 @@ export async function AdminWorkspace({
           ) : null}
         </section>
 
-        <div
-          className="grid scroll-mt-20 gap-5 lg:grid-cols-2"
-          hidden={!visibleSections.has("people")}
-          id="people"
-        >
-          <section className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-5 lg:col-span-2">
-            <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-              <div className="flex items-start gap-2">
-                <FileSpreadsheet className="mt-1 text-[var(--primary)]" size={20} />
-                <div>
-                  <h2 className="text-lg font-semibold">
-                    Excel Import Master Data
-                  </h2>
-                  <p className="mt-1 text-sm text-[var(--muted)]">
-                    Download the locked Excel template for each master table,
-                    edit only the input rows, then upload the same .xlsx file.
-                    Imports are upserts only; deletion stays in the edit/update
-                    menus.
-                  </p>
-                </div>
-              </div>
-            </div>
+        <div hidden={!visibleSections.has("people")} id="people">
+          <PeopleCrudPilot
+            activeSection="rooms"
+            appRolesByProfile={appRolesByProfile}
+            drawer={drawer}
+            owners={owners}
+            profiles={profiles}
+            rooms={rooms}
+          />
+        </div>
 
-            <div className="grid gap-4 lg:grid-cols-3">
-              <form
-                action={importRoomsExcel}
-                className="rounded-md border border-[var(--border)] p-4"
-              >
-                <div className="mb-3 flex items-center gap-2">
-                  <Upload className="text-[var(--primary)]" size={18} />
-                  <h3 className="font-semibold">Import rooms</h3>
-                </div>
-                <p className="mb-3 text-sm text-[var(--muted)]">
-                  Reads the `Rooms` sheet. Upsert key: `room_number`.
-                </p>
-                <a
-                  className="mb-3 inline-flex min-h-10 items-center justify-center rounded-md border border-[var(--border)] px-4 py-2 text-sm font-medium"
-                  href="/templates/rooms-import-template.xlsx"
-                >
-                  Download rooms template
-                </a>
-                <input
-                  accept=".xlsx"
-                  className="block w-full rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-                  name="file"
-                  required
-                  type="file"
-                />
-                <button
-                  className="mt-3 min-h-10 rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)]"
-                  type="submit"
-                >
-                  Upload rooms Excel
-                </button>
-              </form>
+        <div hidden={!visibleSections.has("rooms")} id="rooms">
+          <PeopleCrudPilot
+            activeSection="rooms"
+            appRolesByProfile={appRolesByProfile}
+            drawer={drawer}
+            owners={owners}
+            profiles={profiles}
+            rooms={rooms}
+          />
+        </div>
 
-              <form
-                action={importOwnersExcel}
-                className="rounded-md border border-[var(--border)] p-4"
-              >
-                <div className="mb-3 flex items-center gap-2">
-                  <Upload className="text-[var(--primary)]" size={18} />
-                  <h3 className="font-semibold">Import owners</h3>
-                </div>
-                <p className="mb-3 text-sm text-[var(--muted)]">
-                  Reads the `Owners` sheet. Upsert key: `email`.
-                </p>
-                <a
-                  className="mb-3 inline-flex min-h-10 items-center justify-center rounded-md border border-[var(--border)] px-4 py-2 text-sm font-medium"
-                  href="/templates/owners-import-template.xlsx"
-                >
-                  Download owners template
-                </a>
-                <input
-                  accept=".xlsx"
-                  className="block w-full rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-                  name="file"
-                  required
-                  type="file"
-                />
-                <button
-                  className="mt-3 min-h-10 rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)]"
-                  type="submit"
-                >
-                  Upload owners Excel
-                </button>
-              </form>
-
-              <form
-                action={importRoomOwnersExcel}
-                className="rounded-md border border-[var(--border)] p-4"
-              >
-                <div className="mb-3 flex items-center gap-2">
-                  <Upload className="text-[var(--primary)]" size={18} />
-                  <h3 className="font-semibold">Import room owners</h3>
-                </div>
-                <p className="mb-3 text-sm text-[var(--muted)]">
-                  Reads the `RoomOwners` sheet. Links `room_number` to
-                  `owner_email` with role `owner`.
-                </p>
-                <a
-                  className="mb-3 inline-flex min-h-10 items-center justify-center rounded-md border border-[var(--border)] px-4 py-2 text-sm font-medium"
-                  href="/templates/room-owners-import-template.xlsx"
-                >
-                  Download room owners template
-                </a>
-                <input
-                  accept=".xlsx"
-                  className="block w-full rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-                  name="file"
-                  required
-                  type="file"
-                />
-                <button
-                  className="mt-3 min-h-10 rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)]"
-                  type="submit"
-                >
-                  Upload room owners Excel
-                </button>
-              </form>
-            </div>
-          </section>
-
-          <section className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-5">
-            <div className="mb-4 flex items-center gap-2">
-              <Building2 className="text-[var(--primary)]" size={20} />
-              <h2 className="text-lg font-semibold">Rooms</h2>
-            </div>
-            <form action={createRoom} className="grid gap-3 md:grid-cols-2">
-              <input
-                className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-                name="room_number"
-                placeholder="Room number"
-                required
-              />
-              <input
-                className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-                name="ownership_percent"
-                placeholder="Ownership %"
-                required
-                step="0.000001"
-                type="number"
-              />
-              <input
-                className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-                name="building"
-                placeholder="Building"
-              />
-              <input
-                className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-                name="floor"
-                placeholder="Floor"
-              />
-              <input
-                className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-                name="area_size"
-                placeholder="Area size"
-                step="0.01"
-                type="number"
-              />
-              <button
-                className="rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)]"
-                type="submit"
-              >
-                Add room
-              </button>
-            </form>
-
-            <div className="mt-5 overflow-x-auto">
-              <table className="w-full border-collapse text-left text-sm">
-                <thead className="border-b border-[var(--border)] text-[var(--muted)]">
-                  <tr>
-                    <th className="py-2 pr-3 font-medium">Room</th>
-                    <th className="py-2 pr-3 font-medium">Owner %</th>
-                    <th className="py-2 pr-3 font-medium">Status</th>
-                    <th className="py-2 font-medium">Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {rooms.map((room) => (
-                    <tr className="border-b border-[var(--border)]" key={room.id}>
-                      <td className="py-2 pr-3">{room.room_number}</td>
-                      <td className="py-2 pr-3">{room.ownership_percent}</td>
-                      <td className="py-2 pr-3">
-                        {room.active ? "Active" : "Inactive"}
-                      </td>
-                      <td className="py-2">
-                        {room.active ? (
-                          <form action={deactivateRoom}>
-                            <input name="id" type="hidden" value={room.id} />
-                            <button
-                              className="text-sm font-medium text-red-700"
-                              type="submit"
-                            >
-                              Deactivate
-                            </button>
-                          </form>
-                        ) : null}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </section>
-
-          <section className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-5">
-            <div className="mb-4 flex items-center gap-2">
-              <UserRound className="text-[var(--primary)]" size={20} />
-              <h2 className="text-lg font-semibold">Owners</h2>
-            </div>
-            <form action={createOwner} className="grid gap-3 md:grid-cols-2">
-              <input
-                className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-                name="full_name"
-                placeholder="Full name"
-                required
-              />
-              <input
-                className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-                name="email"
-                placeholder="Email"
-                type="email"
-              />
-              <input
-                className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-                name="phone"
-                placeholder="Phone"
-              />
-              <input
-                className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-                name="line_id"
-                placeholder="LINE ID"
-              />
-              <button
-                className="rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)] md:col-span-2"
-                type="submit"
-              >
-                Add owner
-              </button>
-            </form>
-
-            <div className="mt-5 overflow-x-auto">
-              <table className="w-full border-collapse text-left text-sm">
-                <thead className="border-b border-[var(--border)] text-[var(--muted)]">
-                  <tr>
-                    <th className="py-2 pr-3 font-medium">Name</th>
-                    <th className="py-2 pr-3 font-medium">Email</th>
-                    <th className="py-2 pr-3 font-medium">Status</th>
-                    <th className="py-2 font-medium">Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {owners.map((owner) => (
-                    <tr className="border-b border-[var(--border)]" key={owner.id}>
-                      <td className="py-2 pr-3">{owner.full_name}</td>
-                      <td className="py-2 pr-3">{owner.email ?? "-"}</td>
-                      <td className="py-2 pr-3">
-                        {owner.active ? "Active" : "Inactive"}
-                      </td>
-                      <td className="py-2">
-                        {owner.active ? (
-                          <form action={deactivateOwner}>
-                            <input name="id" type="hidden" value={owner.id} />
-                            <button
-                              className="text-sm font-medium text-red-700"
-                              type="submit"
-                            >
-                              Deactivate
-                            </button>
-                          </form>
-                        ) : null}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </section>
+        <div hidden={!visibleSections.has("owners")} id="owners">
+          <PeopleCrudPilot
+            activeSection="owners"
+            appRolesByProfile={appRolesByProfile}
+            drawer={drawer}
+            owners={owners}
+            profiles={profiles}
+            rooms={rooms}
+          />
         </div>
 
         <section
@@ -1994,110 +2186,12 @@ export async function AdminWorkspace({
             <Building2 className="text-[var(--primary)]" size={20} />
             <h2 className="text-lg font-semibold">Room Ownership</h2>
           </div>
-          <form action={linkRoomOwner} className="grid gap-3 md:grid-cols-3">
-            <select
-              className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-              name="room_id"
-              required
-            >
-              <option value="">Room</option>
-              {rooms
-                .filter((room) => room.active)
-                .map((room) => (
-                  <option key={room.id} value={room.id}>
-                    {room.room_number}
-                  </option>
-                ))}
-            </select>
-            <select
-              className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-              name="owner_id"
-              required
-            >
-              <option value="">Owner</option>
-              {owners
-                .filter((owner) => owner.active)
-                .map((owner) => (
-                  <option key={owner.id} value={owner.id}>
-                    {owner.full_name}
-                  </option>
-                ))}
-            </select>
-            <select
-              className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-              name="ownership_role"
-              required
-            >
-              <option value="owner">Owner</option>
-              <option value="co_owner">Co-owner</option>
-            </select>
-            <label className="text-sm font-medium">
-              Starts
-              <input
-                className="mt-1 w-full rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-                name="starts_at"
-                type="date"
-              />
-            </label>
-            <label className="text-sm font-medium">
-              Ends
-              <input
-                className="mt-1 w-full rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-                name="ends_at"
-                type="date"
-              />
-            </label>
-            <button
-              className="self-end rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)]"
-              type="submit"
-            >
-              Link owner to room
-            </button>
-          </form>
-
-          <div className="mt-5 overflow-x-auto">
-            <table className="w-full border-collapse text-left text-sm">
-              <thead className="border-b border-[var(--border)] text-[var(--muted)]">
-                <tr>
-                  <th className="py-2 pr-3 font-medium">Room</th>
-                  <th className="py-2 pr-3 font-medium">Owner</th>
-                  <th className="py-2 pr-3 font-medium">Role</th>
-                  <th className="py-2 pr-3 font-medium">Dates</th>
-                  <th className="py-2 font-medium">Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {roomOwners.map((link) => (
-                  <tr className="border-b border-[var(--border)]" key={link.id}>
-                    <td className="py-2 pr-3">{link.rooms?.room_number ?? "-"}</td>
-                    <td className="py-2 pr-3">{link.owners?.full_name ?? "-"}</td>
-                    <td className="py-2 pr-3">{link.ownership_role}</td>
-                    <td className="py-2 pr-3">
-                      {link.starts_at ?? "Not set"} - {link.ends_at ?? "Current"}
-                    </td>
-                    <td className="py-2">
-                      {!link.ends_at ? (
-                        <form action={endRoomOwnerLink} className="flex gap-2">
-                          <input name="id" type="hidden" value={link.id} />
-                          <input
-                            className="w-36 rounded-md border border-[var(--border)] px-2 py-1 text-sm"
-                            name="ends_at"
-                            type="date"
-                          />
-                          <button
-                            className="text-sm font-medium text-red-700"
-                            type="submit"
-                          >
-                            End
-                          </button>
-                        </form>
-                      ) : null}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <p className="mb-4 max-w-3xl text-sm text-[var(--muted)]">
+            Maintain the active owner for each room. In v1, one room can have
+            one active owner link. To transfer ownership, end the current active
+            link first, then create a new link for the new owner.
+          </p>
+          <OwnershipManager owners={owners} roomOwners={roomOwners} rooms={rooms} />
         </section>
 
         <section
@@ -2112,34 +2206,43 @@ export async function AdminWorkspace({
             action={createProxyAuthorization}
             className="grid gap-3 md:grid-cols-3"
           >
-            <select
-              className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-              name="meeting_id"
-              required
-            >
-              <option value="">Meeting</option>
-              {meetings
-                .filter((meeting) => meeting.status !== "archived")
-                .map((meeting) => (
-                  <option key={meeting.id} value={meeting.id}>
-                    {meeting.title}
-                  </option>
-                ))}
-            </select>
-            <select
-              className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-              name="room_id"
-              required
-            >
-              <option value="">Room</option>
-              {rooms
-                .filter((room) => room.active)
-                .map((room) => (
-                  <option key={room.id} value={room.id}>
-                    {room.room_number}
-                  </option>
-                ))}
-            </select>
+            <div className="md:col-span-3">
+              <RequiredNote />
+            </div>
+            <label className="grid gap-1 text-sm font-medium">
+              <FieldLabel required>Meeting</FieldLabel>
+              <select
+                className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+                name="meeting_id"
+                required
+              >
+                <option value="">Select meeting</option>
+                {meetings
+                  .filter((meeting) => meeting.status !== "archived")
+                  .map((meeting) => (
+                    <option key={meeting.id} value={meeting.id}>
+                      {meeting.title}
+                    </option>
+                  ))}
+              </select>
+            </label>
+            <label className="grid gap-1 text-sm font-medium">
+              <FieldLabel required>Room</FieldLabel>
+              <select
+                className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+                name="room_id"
+                required
+              >
+                <option value="">Select room</option>
+                {rooms
+                  .filter((room) => room.active)
+                  .map((room) => (
+                    <option key={room.id} value={room.id}>
+                      {room.room_number}
+                    </option>
+                  ))}
+              </select>
+            </label>
             <select
               className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
               name="owner_id"
@@ -2153,18 +2256,21 @@ export async function AdminWorkspace({
                   </option>
                 ))}
             </select>
-            <select
-              className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-              name="proxy_profile_id"
-              required
-            >
-              <option value="">Proxy profile</option>
-              {profiles.map((profile) => (
-                <option key={profile.id} value={profile.id}>
-                  {profile.full_name} ({profile.email})
-                </option>
-              ))}
-            </select>
+            <label className="grid gap-1 text-sm font-medium">
+              <FieldLabel required>Proxy profile</FieldLabel>
+              <select
+                className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+                name="proxy_profile_id"
+                required
+              >
+                <option value="">Select proxy profile</option>
+                {profiles.map((profile) => (
+                  <option key={profile.id} value={profile.id}>
+                    {profile.full_name} ({profile.email})
+                  </option>
+                ))}
+              </select>
+            </label>
             <label className="text-sm font-medium">
               Valid from
               <input
@@ -2181,12 +2287,16 @@ export async function AdminWorkspace({
                 type="date"
               />
             </label>
-            <button
-              className="rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)] md:col-span-3"
-              type="submit"
-            >
-              Add proxy authorization
-            </button>
+            <div className="flex flex-wrap gap-2 md:col-span-3">
+              <PendingSubmitButton
+                className="rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)]"
+                pendingLabel="Adding..."
+                type="submit"
+              >
+                Add proxy authorization
+              </PendingSubmitButton>
+              <FormResetButton label="Clear form" />
+            </div>
           </form>
 
           <div className="mt-5 overflow-x-auto">
@@ -2236,12 +2346,15 @@ export async function AdminWorkspace({
                           <option value="rejected">Rejected</option>
                           <option value="revoked">Revoked</option>
                         </select>
-                        <button
+                        <ConfirmSubmitButton
                           className="rounded-md border border-[var(--border)] px-3 py-1 text-sm font-medium"
+                          confirmMessage={`Update proxy authorization for room ${authorization.rooms?.room_number ?? "-"}? Approving, rejecting, or revoking changes who can vote for this room.`}
+                          pendingLabel="Saving..."
                           type="submit"
                         >
                           Review
-                        </button>
+                        </ConfirmSubmitButton>
+                        <FormResetButton label="Reset changes" />
                       </form>
                     </td>
                   </tr>
@@ -2251,125 +2364,16 @@ export async function AdminWorkspace({
           </div>
         </section>
 
-        <section
-          className="mt-5 rounded-lg border border-[var(--border)] bg-[var(--surface)] p-5"
-          hidden={!visibleSections.has("profiles")}
-        >
-          <h2 className="text-lg font-semibold">Registered Profiles</h2>
-          <div className="mt-4 overflow-x-auto">
-            <table className="w-full border-collapse text-left text-sm">
-              <thead className="border-b border-[var(--border)] text-[var(--muted)]">
-                <tr>
-                  <th className="py-2 pr-3 font-medium">Name</th>
-                  <th className="py-2 pr-3 font-medium">Email</th>
-                  <th className="py-2 pr-3 font-medium">Default status</th>
-                  <th className="py-2 pr-3 font-medium">Approval</th>
-                  <th className="py-2 pr-3 font-medium">Roles</th>
-                  <th className="py-2 font-medium">Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {profiles.map((profile) => {
-                  const profileRoles = appRolesByProfile.get(profile.id) ?? [];
-
-                  return (
-                    <tr className="border-b border-[var(--border)]" key={profile.id}>
-                      <td className="py-2 pr-3">{profile.full_name}</td>
-                      <td className="py-2 pr-3">{profile.email}</td>
-                      <td className="py-2 pr-3">{profile.default_status}</td>
-                      <td className="py-2 pr-3">{profile.approval_status}</td>
-                      <td className="py-2 pr-3">
-                        <div className="flex flex-wrap gap-2">
-                          {profileRoles.map((role) => (
-                            <form
-                              action={revokeAppRole}
-                              className="inline-flex items-center gap-2 rounded-md border border-[var(--border)] px-2 py-1"
-                              key={role.id}
-                            >
-                              <span>{role.role}</span>
-                              <input name="id" type="hidden" value={role.id} />
-                              <button
-                                className="text-xs font-medium text-red-700"
-                                type="submit"
-                              >
-                                Revoke
-                              </button>
-                            </form>
-                          ))}
-                          {profileRoles.length === 0 ? "-" : null}
-                        </div>
-                      </td>
-                      <td className="py-2">
-                        <div className="flex flex-col gap-2">
-                          <form
-                            action={updateProfileApproval}
-                            className="flex flex-wrap items-center gap-2"
-                          >
-                            <input name="id" type="hidden" value={profile.id} />
-                            <select
-                              className="rounded-md border border-[var(--border)] px-2 py-1 text-sm"
-                              defaultValue={profile.default_status}
-                              name="default_status"
-                            >
-                              <option value="owner">Owner</option>
-                              <option value="resident">Resident</option>
-                              <option value="proxy">Proxy</option>
-                            </select>
-                            <select
-                              className="rounded-md border border-[var(--border)] px-2 py-1 text-sm"
-                              defaultValue={profile.approval_status}
-                              name="approval_status"
-                            >
-                              <option value="pending">Pending</option>
-                              <option value="approved">Approved</option>
-                              <option value="rejected">Rejected</option>
-                            </select>
-                            <button
-                              className="rounded-md border border-[var(--border)] px-3 py-1 text-sm font-medium"
-                              type="submit"
-                            >
-                              Save
-                            </button>
-                          </form>
-                          <form
-                            action={grantAppRole}
-                            className="flex flex-wrap items-center gap-2"
-                          >
-                            <input
-                              name="profile_id"
-                              type="hidden"
-                              value={profile.id}
-                            />
-                            <select
-                              className="rounded-md border border-[var(--border)] px-2 py-1 text-sm"
-                              name="role"
-                            >
-                              <option value="admin">Admin</option>
-                              <option value="committee">Committee</option>
-                            </select>
-                            <button
-                              className="rounded-md border border-[var(--border)] px-3 py-1 text-sm font-medium"
-                              type="submit"
-                            >
-                              Grant role
-                            </button>
-                          </form>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-          <div>
-            {profiles.length === 0 ? (
-              <p className="mt-3 text-sm text-[var(--muted)]">
-                No profiles have logged in yet.
-              </p>
-            ) : null}
-          </div>
-        </section>
+        <div hidden={!visibleSections.has("profiles")}>
+          <PeopleCrudPilot
+            activeSection="profiles"
+            appRolesByProfile={appRolesByProfile}
+            drawer={drawer}
+            owners={owners}
+            profiles={profiles}
+            rooms={rooms}
+          />
+        </div>
       </section>
     </main>
   );

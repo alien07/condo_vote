@@ -16,6 +16,132 @@ import {
 } from "@/features/admin/action-modules/shared";
 import { writeAuditLog } from "@/lib/audit/business-audit";
 
+type AdminSupabaseClient = Awaited<ReturnType<typeof createClient>>;
+
+export type OwnershipActionState = {
+  error?: string;
+  success?: string;
+};
+
+export type PeopleActionState = {
+  error?: string;
+  fieldErrors?: Record<string, string>;
+  success?: string;
+  values?: Record<string, string>;
+};
+
+function formValues(formData: FormData, fields: string[]) {
+  return Object.fromEntries(
+    fields.map((field) => [field, String(formData.get(field) ?? "")]),
+  );
+}
+
+function requiredFormText(
+  formData: FormData,
+  fieldName: string,
+  label: string,
+  errors: Record<string, string>,
+) {
+  const value = optionalText(formData.get(fieldName));
+
+  if (!value) {
+    errors[fieldName] = `${label} is required.`;
+  }
+
+  return value ?? "";
+}
+
+function requiredFormNumber(
+  formData: FormData,
+  fieldName: string,
+  label: string,
+  errors: Record<string, string>,
+  options?: { max?: number },
+) {
+  const rawValue = String(formData.get(fieldName) ?? "").trim();
+  const value = Number(rawValue);
+
+  if (!rawValue) {
+    errors[fieldName] = `${label} is required.`;
+    return 0;
+  }
+
+  if (!Number.isFinite(value) || value <= 0) {
+    errors[fieldName] = `${label} must be greater than 0.`;
+    return 0;
+  }
+
+  if (options?.max !== undefined && value > options.max) {
+    errors[fieldName] = `${label} must be between 0 and ${options.max}.`;
+    return value;
+  }
+
+  return value;
+}
+
+function validationState(
+  errors: Record<string, string>,
+  values?: Record<string, string>,
+): PeopleActionState | null {
+  if (Object.keys(errors).length === 0) {
+    return null;
+  }
+
+  return {
+    error: `Please fix ${Object.keys(errors).length} field${Object.keys(errors).length === 1 ? "" : "s"} before saving.`,
+    fieldErrors: errors,
+    values,
+  };
+}
+
+function databaseErrorState(
+  error: { message: string },
+  values: Record<string, string>,
+): PeopleActionState {
+  if (error.message.includes("rooms_ownership_percent_range")) {
+    return {
+      error: "Please fix 1 field before saving.",
+      fieldErrors: {
+        ownership_percent: "Ownership percentage must be between 0 and 100.",
+      },
+      values,
+    };
+  }
+
+  return { error: error.message, values };
+}
+
+async function getActiveRoomOwnerLink(
+  supabase: AdminSupabaseClient,
+  roomId: string,
+) {
+  const { data, error } = await supabase
+    .from("room_owners")
+    .select("id, room_id, owner_id, rooms(room_number), owners(full_name, email)")
+    .eq("room_id", roomId)
+    .is("ends_at", null)
+    .limit(2);
+
+  if (error) {
+    throw error;
+  }
+
+  if ((data?.length ?? 0) > 1) {
+    throw new Error(
+      "This room has more than one active owner link. End duplicate links before creating a new ownership link.",
+    );
+  }
+
+  return data?.[0] ?? null;
+}
+
+function activeOwnerConflictMessage(
+  roomNumber: string | null | undefined,
+  ownerName: string | null | undefined,
+) {
+  return `Room ${roomNumber ?? "-"} already has active owner ${ownerName ?? "-"}. End the current active link before creating a new owner link.`;
+}
+
 export async function createRoom(formData: FormData) {
   await requireAdmin();
 
@@ -36,6 +162,127 @@ export async function createRoom(formData: FormData) {
   }
 
   revalidateAdminPaths();
+}
+
+async function createRoomFromForm(formData: FormData) {
+  await requireAdmin();
+
+  const values = formValues(formData, [
+    "room_number",
+    "ownership_percent",
+    "building",
+    "floor",
+    "area_size",
+  ]);
+  const errors: Record<string, string> = {};
+  const roomNumber = requiredFormText(
+    formData,
+    "room_number",
+    "Room number",
+    errors,
+  );
+  const ownershipPercent = requiredFormNumber(
+    formData,
+    "ownership_percent",
+    "Ownership percentage",
+    errors,
+    { max: 100 },
+  );
+  const validation = validationState(errors, values);
+
+  if (validation) {
+    return validation;
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.from("rooms").insert({
+    room_number: roomNumber,
+    floor: optionalText(formData.get("floor")),
+    building: optionalText(formData.get("building")),
+    area_size: optionalNumber(formData.get("area_size")),
+    ownership_percent: ownershipPercent,
+  });
+
+  if (error) {
+    return databaseErrorState(error, values);
+  }
+
+  revalidateAdminPaths();
+  return { success: `Room ${roomNumber} created.` };
+}
+
+export async function createRoomWithState(
+  _state: PeopleActionState,
+  formData: FormData,
+): Promise<PeopleActionState> {
+  try {
+    return await createRoomFromForm(formData);
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : "Could not create room.",
+    };
+  }
+}
+
+export async function updateRoomWithState(
+  _state: PeopleActionState,
+  formData: FormData,
+): Promise<PeopleActionState> {
+  try {
+    await requireAdmin();
+
+    const values = formValues(formData, [
+      "id",
+      "room_number",
+      "ownership_percent",
+      "building",
+      "floor",
+      "area_size",
+    ]);
+    const errors: Record<string, string> = {};
+    const id = requiredFormText(formData, "id", "Room ID", errors);
+    const roomNumber = requiredFormText(
+      formData,
+      "room_number",
+      "Room number",
+      errors,
+    );
+    const ownershipPercent = requiredFormNumber(
+      formData,
+      "ownership_percent",
+      "Ownership percentage",
+      errors,
+      { max: 100 },
+    );
+    const validation = validationState(errors, values);
+
+    if (validation) {
+      return validation;
+    }
+
+    const supabase = await createClient();
+    const { error } = await supabase
+      .from("rooms")
+      .update({
+        room_number: roomNumber,
+        floor: optionalText(formData.get("floor")),
+        building: optionalText(formData.get("building")),
+        area_size: optionalNumber(formData.get("area_size")),
+        ownership_percent: ownershipPercent,
+      })
+      .eq("id", id);
+
+    if (error) {
+      return databaseErrorState(error, values);
+    }
+
+    revalidateAdminPaths();
+    return { success: `Room ${roomNumber} updated.` };
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : "Could not update room.",
+    };
+  }
 }
 
 export async function importRoomsExcel(formData: FormData) {
@@ -109,6 +356,23 @@ export async function deactivateRoom(formData: FormData) {
   revalidateAdminPaths();
 }
 
+export async function reactivateRoom(formData: FormData) {
+  await requireAdmin();
+
+  const id = requiredText(formData.get("id"), "Room ID");
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("rooms")
+    .update({ active: true })
+    .eq("id", id);
+
+  if (error) {
+    throw error;
+  }
+
+  revalidateAdminPaths();
+}
+
 export async function createOwner(formData: FormData) {
   await requireAdmin();
 
@@ -125,6 +389,94 @@ export async function createOwner(formData: FormData) {
   }
 
   revalidateAdminPaths();
+}
+
+async function createOwnerFromForm(formData: FormData) {
+  await requireAdmin();
+
+  const values = formValues(formData, ["full_name", "email", "phone", "line_id"]);
+  const errors: Record<string, string> = {};
+  const fullName = requiredFormText(formData, "full_name", "Full name", errors);
+  const validation = validationState(errors, values);
+
+  if (validation) {
+    return validation;
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.from("owners").insert({
+    full_name: fullName,
+    email: optionalText(formData.get("email")),
+    phone: optionalText(formData.get("phone")),
+    line_id: optionalText(formData.get("line_id")),
+  });
+
+  if (error) {
+    return { error: error.message, values };
+  }
+
+  revalidateAdminPaths();
+  return { success: `Owner ${fullName} created.` };
+}
+
+export async function createOwnerWithState(
+  _state: PeopleActionState,
+  formData: FormData,
+): Promise<PeopleActionState> {
+  try {
+    return await createOwnerFromForm(formData);
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : "Could not create owner.",
+    };
+  }
+}
+
+export async function updateOwnerWithState(
+  _state: PeopleActionState,
+  formData: FormData,
+): Promise<PeopleActionState> {
+  try {
+    await requireAdmin();
+
+    const values = formValues(formData, [
+      "id",
+      "full_name",
+      "email",
+      "phone",
+      "line_id",
+    ]);
+    const errors: Record<string, string> = {};
+    const id = requiredFormText(formData, "id", "Owner ID", errors);
+    const fullName = requiredFormText(formData, "full_name", "Full name", errors);
+    const validation = validationState(errors, values);
+
+    if (validation) {
+      return validation;
+    }
+
+    const supabase = await createClient();
+    const { error } = await supabase
+      .from("owners")
+      .update({
+        full_name: fullName,
+        email: optionalText(formData.get("email")),
+        phone: optionalText(formData.get("phone")),
+        line_id: optionalText(formData.get("line_id")),
+      })
+      .eq("id", id);
+
+    if (error) {
+      return { error: error.message, values };
+    }
+
+    revalidateAdminPaths();
+    return { success: `Owner ${fullName} updated.` };
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : "Could not update owner.",
+    };
+  }
 }
 
 export async function importOwnersExcel(formData: FormData) {
@@ -209,7 +561,7 @@ export async function importRoomOwnersExcel(formData: FormData) {
 
   const supabase = await createClient();
 
-  for (const row of importedRows) {
+  for (const [rowIndex, row] of importedRows.entries()) {
     const [roomResult, ownerResult] = await Promise.all([
       supabase
         .from("rooms")
@@ -242,20 +594,7 @@ export async function importRoomOwnersExcel(formData: FormData) {
       throw new Error(`Owner email "${row.ownerEmail}" was not found.`);
     }
 
-    const { data: existingLink, error: existingLinkError } = await supabase
-      .from("room_owners")
-      .select("id")
-      .eq("room_id", roomResult.data.id)
-      .eq("owner_id", owner.id)
-      .eq("ownership_role", "owner")
-      .order("created_at", { ascending: false })
-      .limit(1);
-
-    if (existingLinkError) {
-      throw existingLinkError;
-    }
-
-    const currentLink = existingLink?.[0] ?? null;
+    const activeLink = await getActiveRoomOwnerLink(supabase, roomResult.data.id);
     const values = {
       room_id: roomResult.data.id,
       owner_id: owner.id,
@@ -263,8 +602,18 @@ export async function importRoomOwnersExcel(formData: FormData) {
       starts_at: null,
       ends_at: null,
     };
-    const { error } = currentLink
-      ? await supabase.from("room_owners").update(values).eq("id", currentLink.id)
+
+    if (activeLink && activeLink.owner_id !== owner.id) {
+      throw new Error(
+        `Row ${rowIndex + 5}: ${activeOwnerConflictMessage(
+          row.roomNumber,
+          activeLink.owners?.full_name,
+        )}`,
+      );
+    }
+
+    const { error } = activeLink
+      ? await supabase.from("room_owners").update(values).eq("id", activeLink.id)
       : await supabase.from("room_owners").insert(values);
 
     if (error) {
@@ -292,14 +641,51 @@ export async function deactivateOwner(formData: FormData) {
   revalidateAdminPaths();
 }
 
-export async function linkRoomOwner(formData: FormData) {
+export async function reactivateOwner(formData: FormData) {
   await requireAdmin();
 
+  const id = requiredText(formData.get("id"), "Owner ID");
   const supabase = await createClient();
+  const { error } = await supabase
+    .from("owners")
+    .update({ active: true })
+    .eq("id", id);
+
+  if (error) {
+    throw error;
+  }
+
+  revalidateAdminPaths();
+}
+
+async function linkRoomOwnerImpl(formData: FormData) {
+  await requireAdmin();
+
+  const roomId = requiredText(formData.get("room_id"), "Room");
+  const ownerId = requiredText(formData.get("owner_id"), "Owner");
+  const ownershipRole = requiredText(formData.get("ownership_role"), "Role");
+  const supabase = await createClient();
+  const activeLink = await getActiveRoomOwnerLink(supabase, roomId);
+
+  if (activeLink?.owner_id === ownerId) {
+    throw new Error(
+      `Room ${activeLink.rooms?.room_number ?? "-"} is already linked to ${activeLink.owners?.full_name ?? "this owner"}.`,
+    );
+  }
+
+  if (activeLink) {
+    throw new Error(
+      activeOwnerConflictMessage(
+        activeLink.rooms?.room_number,
+        activeLink.owners?.full_name,
+      ),
+    );
+  }
+
   const { error } = await supabase.from("room_owners").insert({
-    room_id: requiredText(formData.get("room_id"), "Room"),
-    owner_id: requiredText(formData.get("owner_id"), "Owner"),
-    ownership_role: requiredText(formData.get("ownership_role"), "Role"),
+    room_id: roomId,
+    owner_id: ownerId,
+    ownership_role: ownershipRole,
     starts_at: optionalDate(formData.get("starts_at")),
     ends_at: optionalDate(formData.get("ends_at")),
   });
@@ -311,7 +697,29 @@ export async function linkRoomOwner(formData: FormData) {
   revalidateAdminPaths();
 }
 
-export async function endRoomOwnerLink(formData: FormData) {
+export async function linkRoomOwner(formData: FormData) {
+  await linkRoomOwnerImpl(formData);
+}
+
+export async function linkRoomOwnerWithState(
+  _state: OwnershipActionState,
+  formData: FormData,
+): Promise<OwnershipActionState> {
+  try {
+    await linkRoomOwnerImpl(formData);
+
+    return { success: "Ownership link created." };
+  } catch (error) {
+    return {
+      error:
+        error instanceof Error
+          ? error.message
+          : "Could not create ownership link.",
+    };
+  }
+}
+
+async function endRoomOwnerLinkImpl(formData: FormData) {
   await requireAdmin();
 
   const id = requiredText(formData.get("id"), "Room owner link ID");
@@ -327,6 +735,28 @@ export async function endRoomOwnerLink(formData: FormData) {
   }
 
   revalidateAdminPaths();
+}
+
+export async function endRoomOwnerLink(formData: FormData) {
+  await endRoomOwnerLinkImpl(formData);
+}
+
+export async function endRoomOwnerLinkWithState(
+  _state: OwnershipActionState,
+  formData: FormData,
+): Promise<OwnershipActionState> {
+  try {
+    await endRoomOwnerLinkImpl(formData);
+
+    return { success: "Active ownership link ended." };
+  } catch (error) {
+    return {
+      error:
+        error instanceof Error
+          ? error.message
+          : "Could not end ownership link.",
+    };
+  }
 }
 
 export async function updateProfileApproval(formData: FormData) {
@@ -362,6 +792,84 @@ export async function updateProfileApproval(formData: FormData) {
     entityType: "profile",
   });
   revalidateAdminPaths();
+}
+
+export async function updateProfileAccessWithState(
+  _state: PeopleActionState,
+  formData: FormData,
+): Promise<PeopleActionState> {
+  try {
+    const admin = await requireAdmin();
+    const values = formValues(formData, [
+      "id",
+      "default_status",
+      "approval_status",
+      "role",
+    ]);
+    const errors: Record<string, string> = {};
+    const id = requiredFormText(formData, "id", "Profile ID", errors);
+    const defaultStatus = requiredFormText(
+      formData,
+      "default_status",
+      "Default status",
+      errors,
+    );
+    const approvalStatus = requiredFormText(
+      formData,
+      "approval_status",
+      "Approval status",
+      errors,
+    );
+    const validation = validationState(errors, values);
+
+    if (validation) {
+      return validation;
+    }
+
+    const role = optionalText(formData.get("role"));
+    const supabase = await createClient();
+    const { error } = await supabase
+      .from("profiles")
+      .update({
+        default_status: defaultStatus,
+        approval_status: approvalStatus,
+      })
+      .eq("id", id);
+
+    if (error) {
+      return { error: error.message, values };
+    }
+
+    if (role) {
+      const { error: roleError } = await supabase.from("app_roles").upsert(
+        { profile_id: id, role },
+        { onConflict: "profile_id,role" },
+      );
+
+      if (roleError) {
+        return { error: roleError.message, values };
+      }
+    }
+
+    await writeAuditLog(supabase, {
+      action: "profile.access_updated",
+      actorProfileId: admin.id,
+      details: {
+        approval_status: approvalStatus,
+        default_status: defaultStatus,
+        granted_role: role,
+      },
+      entityId: id,
+      entityType: "profile",
+    });
+    revalidateAdminPaths();
+    return { success: "Profile access updated." };
+  } catch (error) {
+    return {
+      error:
+        error instanceof Error ? error.message : "Could not update profile access.",
+    };
+  }
 }
 
 export async function grantAppRole(formData: FormData) {
