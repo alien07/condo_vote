@@ -42,6 +42,7 @@ import {
 import { AuditLogTable } from "@/features/admin/components/audit-log-table";
 import { OwnershipManager } from "@/features/admin/components/ownership-manager";
 import { PeopleCrudPilot } from "@/features/admin/components/people-crud-pilot";
+import { PerPageSelect } from "@/features/admin/components/table-controls";
 import { PendingSubmitButton } from "@/features/debug/tracked-submit-button";
 import { getAdminDashboardData } from "@/features/admin/data";
 import type { AuditLogFilters } from "@/features/admin/data-modules/documents";
@@ -287,10 +288,59 @@ type AdminWorkspaceProps = {
     mode?: string;
     type?: string;
   };
+  meetingFilters?: MeetingTableFilters;
   sections?: AdminSection[];
   title?: string;
   description?: string;
 };
+
+export type MeetingTableFilters = {
+  dir?: "asc" | "desc";
+  noType?: string;
+  page?: number;
+  perPage?: number;
+  sort?: "no_type" | "status" | "title" | "window";
+  status?: string;
+  title?: string;
+};
+
+function tablePage(value: number | undefined, fallback = 1) {
+  return Number.isInteger(value) && value && value > 0 ? value : fallback;
+}
+
+function tablePerPage(value: number | undefined, fallback = 25) {
+  const parsed =
+    Number.isInteger(value) && value && value > 0 ? value : fallback;
+
+  return Math.min(Math.max(parsed, 10), 100);
+}
+
+function meetingHref(filters: Required<MeetingTableFilters>) {
+  const params = new URLSearchParams();
+
+  params.set("tab", "meetings");
+  params.set("sort", filters.sort);
+  params.set("dir", filters.dir);
+  params.set("perPage", String(filters.perPage));
+
+  if (filters.title) {
+    params.set("title", filters.title);
+  }
+
+  if (filters.noType) {
+    params.set("noType", filters.noType);
+  }
+
+  if (filters.status && filters.status !== "all") {
+    params.set("status", filters.status);
+  }
+
+  if (filters.page > 1) {
+    params.set("page", String(filters.page));
+  }
+
+  return `/admin/meetings?${params.toString()}`;
+}
 
 const allSections: AdminSection[] = [
   "setup",
@@ -312,6 +362,7 @@ export async function AdminWorkspace({
   activeSection: requestedActiveSection,
   auditFilters,
   drawer,
+  meetingFilters,
   sections = allSections,
   title = "Admin",
   description = "Room, owner, profile, and role-controlled demo workspace.",
@@ -462,6 +513,108 @@ export async function AdminWorkspace({
   const auditActions = [...new Set(auditOptions.map((option) => option.action))]
     .filter(Boolean)
     .sort();
+  const meetingTableFilters: Required<MeetingTableFilters> = {
+    dir: meetingFilters?.dir ?? "asc",
+    noType: meetingFilters?.noType ?? "",
+    page: tablePage(meetingFilters?.page),
+    perPage: tablePerPage(meetingFilters?.perPage),
+    sort: meetingFilters?.sort ?? "title",
+    status: meetingFilters?.status ?? "all",
+    title: meetingFilters?.title ?? "",
+  };
+  const filteredMeetings = meetings.filter((meeting) => {
+    const effectiveStatus = approvedMeetingIds.has(meeting.id)
+      ? "approved"
+      : meeting.status;
+    const titleQuery = meetingTableFilters.title.trim().toLowerCase();
+    const noTypeQuery = meetingTableFilters.noType.trim().toLowerCase();
+    const matchesTitle = titleQuery
+      ? meeting.title.toLowerCase().includes(titleQuery)
+      : true;
+    const matchesNoType = noTypeQuery
+      ? [meeting.meeting_number ?? "", meeting.meeting_type ?? ""]
+          .join(" ")
+          .toLowerCase()
+          .includes(noTypeQuery)
+      : true;
+    const matchesStatus =
+      meetingTableFilters.status === "all"
+        ? true
+        : effectiveStatus === meetingTableFilters.status;
+
+    return matchesTitle && matchesNoType && matchesStatus;
+  });
+  const sortedMeetings = [...filteredMeetings].sort((left, right) => {
+    const direction = meetingTableFilters.dir === "asc" ? 1 : -1;
+    const leftStatus = approvedMeetingIds.has(left.id) ? "approved" : left.status;
+    const rightStatus = approvedMeetingIds.has(right.id)
+      ? "approved"
+      : right.status;
+    const leftValue =
+      meetingTableFilters.sort === "status"
+        ? leftStatus
+        : meetingTableFilters.sort === "window"
+          ? left.starts_at
+          : meetingTableFilters.sort === "no_type"
+            ? `${left.meeting_number ?? ""} ${left.meeting_type ?? ""}`
+            : left.title;
+    const rightValue =
+      meetingTableFilters.sort === "status"
+        ? rightStatus
+        : meetingTableFilters.sort === "window"
+          ? right.starts_at
+          : meetingTableFilters.sort === "no_type"
+            ? `${right.meeting_number ?? ""} ${right.meeting_type ?? ""}`
+            : right.title;
+
+    return leftValue.localeCompare(rightValue) * direction;
+  });
+  const meetingTotal = sortedMeetings.length;
+  const meetingTotalPages = Math.max(
+    1,
+    Math.ceil(meetingTotal / meetingTableFilters.perPage),
+  );
+  const meetingPage = Math.min(meetingTableFilters.page, meetingTotalPages);
+  const meetingPageStart =
+    meetingTotal === 0 ? 0 : (meetingPage - 1) * meetingTableFilters.perPage + 1;
+  const meetingPageEnd = Math.min(
+    meetingPage * meetingTableFilters.perPage,
+    meetingTotal,
+  );
+  const pagedMeetings = sortedMeetings.slice(
+    (meetingPage - 1) * meetingTableFilters.perPage,
+    meetingPage * meetingTableFilters.perPage,
+  );
+  const meetingPageUrls = Object.fromEntries(
+    Array.from({ length: meetingTotalPages }, (_, index) => index + 1).map(
+      (pageNumber) => [
+        String(pageNumber),
+        meetingHref({ ...meetingTableFilters, page: pageNumber }),
+      ],
+    ),
+  );
+  const meetingPerPageUrls = Object.fromEntries(
+    [10, 25, 50, 100].map((perPage) => [
+      String(perPage),
+      meetingHref({ ...meetingTableFilters, page: 1, perPage }),
+    ]),
+  );
+  const meetingSortHref = (sort: Required<MeetingTableFilters>["sort"]) =>
+    meetingHref({
+      ...meetingTableFilters,
+      dir:
+        meetingTableFilters.sort === sort && meetingTableFilters.dir === "asc"
+          ? "desc"
+          : "asc",
+      page: 1,
+      sort,
+    });
+  const meetingSortLabel = (sort: Required<MeetingTableFilters>["sort"]) =>
+    meetingTableFilters.sort === sort
+      ? meetingTableFilters.dir === "asc"
+        ? " ↑"
+        : " ↓"
+      : "";
 
   return (
     <main className="min-h-screen px-6 py-8">
@@ -1310,19 +1463,130 @@ export async function AdminWorkspace({
             </a>
           </div>
 
+          <section className="mb-5 rounded-lg border border-[var(--border)] bg-[var(--background)] p-4">
+            <div className="mb-3">
+              <h3 className="text-sm font-semibold">Search Criteria</h3>
+              <p className="mt-1 text-xs text-[var(--muted)]">
+                Filter meetings by title, meeting number/type, and status.
+              </p>
+            </div>
+            <form className="grid gap-3 md:grid-cols-12">
+              <input name="tab" type="hidden" value="meetings" />
+              <input name="sort" type="hidden" value={meetingTableFilters.sort} />
+              <input name="dir" type="hidden" value={meetingTableFilters.dir} />
+              <input
+                name="perPage"
+                type="hidden"
+                value={meetingTableFilters.perPage}
+              />
+              <label className="grid gap-1 text-xs font-medium text-[var(--muted)] md:col-span-4">
+                Title
+                <input
+                  className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)]"
+                  defaultValue={meetingTableFilters.title}
+                  name="title"
+                  placeholder="Search title"
+                />
+              </label>
+              <label className="grid gap-1 text-xs font-medium text-[var(--muted)] md:col-span-4">
+                No./Type
+                <input
+                  className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)]"
+                  defaultValue={meetingTableFilters.noType}
+                  name="noType"
+                  placeholder="Search meeting no. or type"
+                />
+              </label>
+              <label className="grid gap-1 text-xs font-medium text-[var(--muted)] md:col-span-2">
+                Status
+                <select
+                  className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)]"
+                  defaultValue={meetingTableFilters.status}
+                  name="status"
+                >
+                  <option value="all">All statuses</option>
+                  <option value="draft">Draft</option>
+                  <option value="published">Published</option>
+                  <option value="closed">Closed</option>
+                  <option value="archived">Archived</option>
+                  <option value="approved">Approved</option>
+                </select>
+              </label>
+              <div className="flex flex-wrap items-end justify-center gap-2 md:col-span-2">
+                <button
+                  className="min-h-10 rounded-md bg-[var(--primary)] px-5 py-2 text-sm font-medium text-[var(--primary-foreground)]"
+                  type="submit"
+                >
+                  Search
+                </button>
+                <a
+                  className="inline-flex min-h-10 items-center rounded-md border border-[var(--border)] bg-[var(--surface)] px-5 py-2 text-sm font-medium"
+                  href="/admin/meetings?tab=meetings"
+                >
+                  Clear
+                </a>
+              </div>
+            </form>
+          </section>
+
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h3 className="text-sm font-semibold">Results</h3>
+              <p className="mt-1 text-xs text-[var(--muted)]">
+                Showing {meetingPageStart}-{meetingPageEnd} of {meetingTotal}
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2 rounded-md border border-[var(--border)] bg-[var(--background)] px-3 py-2">
+              <PerPageSelect
+                label="Page"
+                options={Array.from(
+                  { length: meetingTotalPages },
+                  (_, index) => index + 1,
+                )}
+                urlByValue={meetingPageUrls}
+                value={meetingPage}
+              />
+              <div className="text-xs font-medium text-[var(--muted)]">
+                of {meetingTotalPages}
+              </div>
+              <div className="hidden h-6 w-px bg-[var(--border)] sm:block" />
+              <PerPageSelect
+                label="Per page"
+                urlByValue={meetingPerPageUrls}
+                value={meetingTableFilters.perPage}
+              />
+            </div>
+          </div>
+
           <div className="overflow-x-auto">
             <table className="w-full border-collapse text-left text-sm">
               <thead className="border-b border-[var(--border)] text-[var(--muted)]">
                 <tr>
-                  <th className="py-2 pr-3 font-medium">Title</th>
-                  <th className="py-2 pr-3 font-medium">No./Type</th>
-                  <th className="py-2 pr-3 font-medium">Window</th>
-                  <th className="py-2 pr-3 font-medium">Status</th>
+                  <th className="py-2 pr-3 font-medium">
+                    <a href={meetingSortHref("title")}>
+                      Title{meetingSortLabel("title")}
+                    </a>
+                  </th>
+                  <th className="py-2 pr-3 font-medium">
+                    <a href={meetingSortHref("no_type")}>
+                      No./Type{meetingSortLabel("no_type")}
+                    </a>
+                  </th>
+                  <th className="py-2 pr-3 font-medium">
+                    <a href={meetingSortHref("window")}>
+                      Window{meetingSortLabel("window")}
+                    </a>
+                  </th>
+                  <th className="py-2 pr-3 font-medium">
+                    <a href={meetingSortHref("status")}>
+                      Status{meetingSortLabel("status")}
+                    </a>
+                  </th>
                   <th className="py-2 font-medium">Action</th>
                 </tr>
               </thead>
               <tbody>
-                {meetings.map((meeting) => {
+                {pagedMeetings.map((meeting) => {
                   const hasApprovedResult = approvedMeetingIds.has(meeting.id);
 
                   return (
@@ -1391,6 +1655,44 @@ export async function AdminWorkspace({
                 })}
               </tbody>
             </table>
+          </div>
+          {pagedMeetings.length === 0 ? (
+            <p className="mt-3 text-sm text-[var(--muted)]">
+              No meetings match the selected criteria.
+            </p>
+          ) : null}
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+            <a
+              aria-disabled={meetingPage <= 1}
+              className={[
+                "inline-flex min-h-10 items-center rounded-md border border-[var(--border)] px-4 py-2 text-sm font-medium",
+                meetingPage <= 1 ? "pointer-events-none opacity-50" : "",
+              ].join(" ")}
+              href={meetingHref({
+                ...meetingTableFilters,
+                page: Math.max(1, meetingPage - 1),
+              })}
+            >
+              Previous
+            </a>
+            <div className="text-sm text-[var(--muted)]">
+              {meetingPageStart}-{meetingPageEnd} / {meetingTotal}
+            </div>
+            <a
+              aria-disabled={meetingPage >= meetingTotalPages}
+              className={[
+                "inline-flex min-h-10 items-center rounded-md border border-[var(--border)] px-4 py-2 text-sm font-medium",
+                meetingPage >= meetingTotalPages
+                  ? "pointer-events-none opacity-50"
+                  : "",
+              ].join(" ")}
+              href={meetingHref({
+                ...meetingTableFilters,
+                page: Math.min(meetingTotalPages, meetingPage + 1),
+              })}
+            >
+              Next
+            </a>
           </div>
           {meetings.length === 0 ? (
             <p className="mt-3 text-sm text-[var(--muted)]">
