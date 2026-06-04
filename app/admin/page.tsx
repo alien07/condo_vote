@@ -28,14 +28,14 @@ type MetricCardProps = {
 
 const dashboardLinks = [
   {
-    href: "/admin/setup",
+    href: "/admin/setup?tab=setup",
     title: "Setup",
     description:
       "Juristic profile, private document registry, committee members, and audit log.",
   },
   {
-    href: "/admin/people",
-    title: "People",
+    href: "/admin/people?tab=rooms",
+    title: "Rooms & Owners",
     description: "Rooms, owners, profiles, and app roles.",
   },
   {
@@ -44,7 +44,7 @@ const dashboardLinks = [
     description: "Room owner links and ownership dates.",
   },
   {
-    href: "/admin/meetings",
+    href: "/admin/meetings?tab=meetings",
     title: "Meetings",
     description: "Meeting setup, questions, choices, publish, and archive.",
   },
@@ -220,7 +220,7 @@ export default async function AdminDashboardPage() {
       description: "Room, owner, and profile readiness.",
       metrics: [
         {
-          href: "/admin/people",
+          href: "/admin/people?tab=rooms",
           icon: Building2,
           label: "Active rooms",
           value: `${activeRooms} / ${totalRooms}`,
@@ -230,7 +230,7 @@ export default async function AdminDashboardPage() {
           tone: "success" as const,
         },
         {
-          href: "/admin/people",
+          href: "/admin/people?tab=owners",
           icon: Users,
           label: "Active owners",
           value: `${activeOwners} / ${totalOwners}`,
@@ -251,7 +251,7 @@ export default async function AdminDashboardPage() {
             linkedActiveRoomIds.size < activeRooms ? ("warning" as const) : ("success" as const),
         },
         {
-          href: "/admin/people",
+          href: "/admin/people?tab=profiles",
           icon: UserCheck,
           label: "Profiles",
           value: String(profiles.length),
@@ -265,7 +265,7 @@ export default async function AdminDashboardPage() {
       description: "Meeting setup and eligible voter coverage.",
       metrics: [
         {
-          href: "/admin/meetings",
+          href: "/admin/meetings?tab=meetings",
           icon: ClipboardList,
           label: "Meetings",
           value: String(activeMeetings),
@@ -273,7 +273,7 @@ export default async function AdminDashboardPage() {
           status: "Manage meetings",
         },
         {
-          href: "/admin/meetings",
+          href: "/admin/meetings?tab=questions",
           icon: Vote,
           label: "Questions",
           value: String(questions.length),
@@ -355,7 +355,7 @@ export default async function AdminDashboardPage() {
               : ("success" as const),
         },
         {
-          href: "/admin/communications",
+          href: "/admin/voting",
           icon: Send,
           label: "Manual votes",
           value: String(manualBallots.length),
