@@ -955,6 +955,7 @@ export async function AdminWorkspace({
               <input name="tab" type="hidden" value="audit" />
               <input name="sort" type="hidden" value={auditSortBy} />
               <input name="dir" type="hidden" value={auditSortDirection} />
+              <input name="perPage" type="hidden" value={auditLogPerPage} />
               <label className="grid gap-1 text-xs font-medium text-[var(--muted)] lg:col-span-3">
                 From
                 <input
@@ -988,19 +989,6 @@ export async function AdminWorkspace({
                       {actor.label}
                     </option>
                   ))}
-                </select>
-              </label>
-              <label className="grid gap-1 text-xs font-medium text-[var(--muted)] lg:col-span-3">
-                Per page
-                <select
-                  className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)]"
-                  defaultValue={String(auditLogPerPage)}
-                  name="perPage"
-                >
-                  <option value="10">10</option>
-                  <option value="25">25</option>
-                  <option value="50">50</option>
-                  <option value="100">100</option>
                 </select>
               </label>
               <label className="grid gap-1 text-xs font-medium text-[var(--muted)] lg:col-span-8">
@@ -1044,8 +1032,51 @@ export async function AdminWorkspace({
                   Showing {auditPageStart}-{auditPageEnd} of {auditLogTotal}
                 </p>
               </div>
-              <div className="text-xs text-[var(--muted)]">
-                Page {auditLogPage} of {auditTotalPages}
+              <div className="flex flex-wrap items-center gap-3">
+                <div className="text-xs text-[var(--muted)]">
+                  Page {auditLogPage} of {auditTotalPages}
+                </div>
+                <form className="flex items-center gap-2">
+                  <input name="tab" type="hidden" value="audit" />
+                  <input name="sort" type="hidden" value={auditSortBy} />
+                  <input name="dir" type="hidden" value={auditSortDirection} />
+                  {auditFilters?.dateFrom ? (
+                    <input name="from" type="hidden" value={auditFilters.dateFrom} />
+                  ) : null}
+                  {auditFilters?.dateTo ? (
+                    <input name="to" type="hidden" value={auditFilters.dateTo} />
+                  ) : null}
+                  {auditFilters?.actorProfileId ? (
+                    <input
+                      name="actor"
+                      type="hidden"
+                      value={auditFilters.actorProfileId}
+                    />
+                  ) : null}
+                  {auditFilters?.actions?.map((action) => (
+                    <input key={action} name="actions" type="hidden" value={action} />
+                  ))}
+                  <label className="flex items-center gap-2 text-xs font-medium text-[var(--muted)]">
+                    Per page
+                    <select
+                      className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-2 py-1 text-sm text-[var(--foreground)]"
+                      defaultValue={String(auditLogPerPage)}
+                      name="perPage"
+                    >
+                      <option value="10">10</option>
+                      <option value="25">25</option>
+                      <option value="50">50</option>
+                      <option value="100">100</option>
+                    </select>
+                  </label>
+                  <PendingSubmitButton
+                    className="rounded-md border border-[var(--border)] px-3 py-1 text-xs font-medium"
+                    pendingLabel="Applying..."
+                    type="submit"
+                  >
+                    Apply
+                  </PendingSubmitButton>
+                </form>
               </div>
             </div>
             <div className="overflow-x-auto">

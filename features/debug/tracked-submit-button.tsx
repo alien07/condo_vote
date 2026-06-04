@@ -63,8 +63,10 @@ export function TrackedSubmitButton({
         onClick?.(event);
 
         if (!event.defaultPrevented && type === "submit") {
-          setClicked(true);
-          scheduleClickReset();
+          window.setTimeout(() => {
+            setClicked(true);
+            scheduleClickReset();
+          }, 0);
         }
       }}
       type={type}
