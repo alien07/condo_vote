@@ -187,12 +187,14 @@ export function AuditLogTable({
             From
             <input
               className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)]"
-              onChange={(event) =>
+              onChange={(event) => {
+                const value = event.currentTarget.value;
+
                 setCriteria((current) => ({
                   ...current,
-                  from: event.currentTarget.value,
-                }))
-              }
+                  from: value,
+                }));
+              }}
               step={600}
               type="datetime-local"
               value={criteria.from}
@@ -202,12 +204,14 @@ export function AuditLogTable({
             To
             <input
               className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)]"
-              onChange={(event) =>
+              onChange={(event) => {
+                const value = event.currentTarget.value;
+
                 setCriteria((current) => ({
                   ...current,
-                  to: event.currentTarget.value,
-                }))
-              }
+                  to: value,
+                }));
+              }}
               step={600}
               type="datetime-local"
               value={criteria.to}
@@ -217,12 +221,14 @@ export function AuditLogTable({
             Actor
             <select
               className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)]"
-              onChange={(event) =>
+              onChange={(event) => {
+                const value = event.currentTarget.value;
+
                 setCriteria((current) => ({
                   ...current,
-                  actor: event.currentTarget.value,
-                }))
-              }
+                  actor: value,
+                }));
+              }}
               value={criteria.actor}
             >
               <option value="">All actors</option>
