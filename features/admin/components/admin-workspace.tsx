@@ -290,6 +290,7 @@ type AdminWorkspaceProps = {
   };
   meetingFilters?: MeetingTableFilters;
   resultFilters?: ResultTableFilters;
+  emailFilters?: EmailTableFilters;
   sections?: AdminSection[];
   title?: string;
   description?: string;
@@ -313,6 +314,16 @@ export type ResultTableFilters = {
   page?: number;
   perPage?: number;
   sort?: "approval" | "generated" | "meeting";
+};
+
+export type EmailTableFilters = {
+  created?: string;
+  dir?: "asc" | "desc";
+  page?: number;
+  perPage?: number;
+  recipient?: string;
+  sort?: "created" | "recipient" | "status";
+  status?: string;
 };
 
 function tablePage(value: number | undefined, fallback = 1) {
@@ -379,6 +390,32 @@ function resultHref(filters: Required<ResultTableFilters>) {
   return `/admin/results?${params.toString()}`;
 }
 
+function emailHref(filters: Required<EmailTableFilters>) {
+  const params = new URLSearchParams();
+
+  params.set("sort", filters.sort);
+  params.set("dir", filters.dir);
+  params.set("perPage", String(filters.perPage));
+
+  if (filters.recipient) {
+    params.set("recipient", filters.recipient);
+  }
+
+  if (filters.status && filters.status !== "all") {
+    params.set("status", filters.status);
+  }
+
+  if (filters.created) {
+    params.set("created", filters.created);
+  }
+
+  if (filters.page > 1) {
+    params.set("page", String(filters.page));
+  }
+
+  return `/admin/communications?${params.toString()}`;
+}
+
 const allSections: AdminSection[] = [
   "setup",
   "storage",
@@ -399,6 +436,7 @@ export async function AdminWorkspace({
   activeSection: requestedActiveSection,
   auditFilters,
   drawer,
+  emailFilters,
   meetingFilters,
   resultFilters,
   sections = allSections,
@@ -747,6 +785,90 @@ export async function AdminWorkspace({
   const resultSortLabel = (sort: Required<ResultTableFilters>["sort"]) =>
     resultTableFilters.sort === sort
       ? resultTableFilters.dir === "asc"
+        ? " ↑"
+        : " ↓"
+      : "";
+  const emailTableFilters: Required<EmailTableFilters> = {
+    created: emailFilters?.created ?? "",
+    dir: emailFilters?.dir ?? "asc",
+    page: tablePage(emailFilters?.page),
+    perPage: tablePerPage(emailFilters?.perPage),
+    recipient: emailFilters?.recipient ?? "",
+    sort: emailFilters?.sort ?? "recipient",
+    status: emailFilters?.status ?? "all",
+  };
+  const filteredEmailLogs = emailLogs.filter((log) => {
+    const recipientQuery = emailTableFilters.recipient.trim().toLowerCase();
+    const matchesRecipient = recipientQuery
+      ? log.recipient_email.toLowerCase().includes(recipientQuery)
+      : true;
+    const matchesStatus =
+      emailTableFilters.status === "all"
+        ? true
+        : log.status === emailTableFilters.status;
+    const matchesCreated = emailTableFilters.created
+      ? log.created_at.slice(0, 10) === emailTableFilters.created
+      : true;
+
+    return matchesRecipient && matchesStatus && matchesCreated;
+  });
+  const sortedEmailLogs = [...filteredEmailLogs].sort((left, right) => {
+    const direction = emailTableFilters.dir === "asc" ? 1 : -1;
+    const leftValue =
+      emailTableFilters.sort === "created"
+        ? left.created_at
+        : emailTableFilters.sort === "status"
+          ? left.status
+          : left.recipient_email;
+    const rightValue =
+      emailTableFilters.sort === "created"
+        ? right.created_at
+        : emailTableFilters.sort === "status"
+          ? right.status
+          : right.recipient_email;
+
+    return leftValue.localeCompare(rightValue) * direction;
+  });
+  const emailTotal = sortedEmailLogs.length;
+  const emailTotalPages = Math.max(
+    1,
+    Math.ceil(emailTotal / emailTableFilters.perPage),
+  );
+  const emailPage = Math.min(emailTableFilters.page, emailTotalPages);
+  const emailPageStart =
+    emailTotal === 0 ? 0 : (emailPage - 1) * emailTableFilters.perPage + 1;
+  const emailPageEnd = Math.min(emailPage * emailTableFilters.perPage, emailTotal);
+  const pagedEmailLogs = sortedEmailLogs.slice(
+    (emailPage - 1) * emailTableFilters.perPage,
+    emailPage * emailTableFilters.perPage,
+  );
+  const emailPageUrls = Object.fromEntries(
+    Array.from({ length: emailTotalPages }, (_, index) => index + 1).map(
+      (pageNumber) => [
+        String(pageNumber),
+        emailHref({ ...emailTableFilters, page: pageNumber }),
+      ],
+    ),
+  );
+  const emailPerPageUrls = Object.fromEntries(
+    [10, 25, 50, 100].map((perPage) => [
+      String(perPage),
+      emailHref({ ...emailTableFilters, page: 1, perPage }),
+    ]),
+  );
+  const emailSortHref = (sort: Required<EmailTableFilters>["sort"]) =>
+    emailHref({
+      ...emailTableFilters,
+      dir:
+        emailTableFilters.sort === sort && emailTableFilters.dir === "asc"
+          ? "desc"
+          : "asc",
+      page: 1,
+      sort,
+    });
+  const emailSortLabel = (sort: Required<EmailTableFilters>["sort"]) =>
+    emailTableFilters.sort === sort
+      ? emailTableFilters.dir === "asc"
         ? " ↑"
         : " ↓"
       : "";
@@ -2748,19 +2870,123 @@ export async function AdminWorkspace({
             <h2 className="text-lg font-semibold">Email Queue</h2>
           </div>
           <EmailInviteControls meetings={meetings} />
+          <section className="mb-5 rounded-lg border border-[var(--border)] bg-[var(--background)] p-4">
+            <div className="mb-3">
+              <h3 className="text-sm font-semibold">Search Criteria</h3>
+              <p className="mt-1 text-xs text-[var(--muted)]">
+                Filter email logs by recipient, status, and created date.
+              </p>
+            </div>
+            <form className="grid gap-3 md:grid-cols-12">
+              <input name="sort" type="hidden" value={emailTableFilters.sort} />
+              <input name="dir" type="hidden" value={emailTableFilters.dir} />
+              <input
+                name="perPage"
+                type="hidden"
+                value={emailTableFilters.perPage}
+              />
+              <label className="grid gap-1 text-xs font-medium text-[var(--muted)] md:col-span-4">
+                Recipient
+                <input
+                  className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)]"
+                  defaultValue={emailTableFilters.recipient}
+                  name="recipient"
+                  placeholder="Search email"
+                />
+              </label>
+              <label className="grid gap-1 text-xs font-medium text-[var(--muted)] md:col-span-3">
+                Status
+                <select
+                  className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)]"
+                  defaultValue={emailTableFilters.status}
+                  name="status"
+                >
+                  <option value="all">All statuses</option>
+                  <option value="queued">Queued</option>
+                  <option value="sending">Sending</option>
+                  <option value="sent">Sent</option>
+                  <option value="failed">Failed</option>
+                  <option value="permanent_failed">Permanent failed</option>
+                </select>
+              </label>
+              <label className="grid gap-1 text-xs font-medium text-[var(--muted)] md:col-span-3">
+                Created
+                <input
+                  className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)]"
+                  defaultValue={emailTableFilters.created}
+                  name="created"
+                  type="date"
+                />
+              </label>
+              <div className="flex flex-wrap items-end justify-center gap-2 md:col-span-2">
+                <button
+                  className="min-h-10 rounded-md bg-[var(--primary)] px-5 py-2 text-sm font-medium text-[var(--primary-foreground)]"
+                  type="submit"
+                >
+                  Search
+                </button>
+                <a
+                  className="inline-flex min-h-10 items-center rounded-md border border-[var(--border)] bg-[var(--surface)] px-5 py-2 text-sm font-medium"
+                  href="/admin/communications"
+                >
+                  Clear
+                </a>
+              </div>
+            </form>
+          </section>
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h3 className="text-sm font-semibold">Email Delivery Logs</h3>
+              <p className="mt-1 text-xs text-[var(--muted)]">
+                Showing {emailPageStart}-{emailPageEnd} of {emailTotal}
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2 rounded-md border border-[var(--border)] bg-[var(--background)] px-3 py-2">
+              <PerPageSelect
+                label="Page"
+                options={Array.from(
+                  { length: emailTotalPages },
+                  (_, index) => index + 1,
+                )}
+                urlByValue={emailPageUrls}
+                value={emailPage}
+              />
+              <div className="text-xs font-medium text-[var(--muted)]">
+                of {emailTotalPages}
+              </div>
+              <div className="hidden h-6 w-px bg-[var(--border)] sm:block" />
+              <PerPageSelect
+                label="Per page"
+                urlByValue={emailPerPageUrls}
+                value={emailTableFilters.perPage}
+              />
+            </div>
+          </div>
           <div className="overflow-x-auto">
             <table className="w-full border-collapse text-left text-sm">
               <thead className="border-b border-[var(--border)] text-[var(--muted)]">
                 <tr>
-                  <th className="py-2 pr-3 font-medium">Recipient</th>
+                  <th className="py-2 pr-3 font-medium">
+                    <a href={emailSortHref("recipient")}>
+                      Recipient{emailSortLabel("recipient")}
+                    </a>
+                  </th>
                   <th className="py-2 pr-3 font-medium">Template</th>
-                  <th className="py-2 pr-3 font-medium">Status</th>
-                  <th className="py-2 pr-3 font-medium">Created</th>
+                  <th className="py-2 pr-3 font-medium">
+                    <a href={emailSortHref("status")}>
+                      Status{emailSortLabel("status")}
+                    </a>
+                  </th>
+                  <th className="py-2 pr-3 font-medium">
+                    <a href={emailSortHref("created")}>
+                      Created{emailSortLabel("created")}
+                    </a>
+                  </th>
                   <th className="py-2 font-medium">Error</th>
                 </tr>
               </thead>
               <tbody>
-                {emailLogs.map((log) => (
+                {pagedEmailLogs.map((log) => (
                   <tr className="border-b border-[var(--border)]" key={log.id}>
                     <td className="py-2 pr-3">{log.recipient_email}</td>
                     <td className="py-2 pr-3">{log.template_key}</td>
@@ -2772,11 +2998,44 @@ export async function AdminWorkspace({
               </tbody>
             </table>
           </div>
-          {emailLogs.length === 0 ? (
+          {pagedEmailLogs.length === 0 ? (
             <p className="mt-3 text-sm text-[var(--muted)]">
-              No email events have been queued yet.
+              No email logs match the selected criteria.
             </p>
           ) : null}
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+            <a
+              aria-disabled={emailPage <= 1}
+              className={[
+                "inline-flex min-h-10 items-center rounded-md border border-[var(--border)] px-4 py-2 text-sm font-medium",
+                emailPage <= 1 ? "pointer-events-none opacity-50" : "",
+              ].join(" ")}
+              href={emailHref({
+                ...emailTableFilters,
+                page: Math.max(1, emailPage - 1),
+              })}
+            >
+              Previous
+            </a>
+            <div className="text-sm text-[var(--muted)]">
+              {emailPageStart}-{emailPageEnd} / {emailTotal}
+            </div>
+            <a
+              aria-disabled={emailPage >= emailTotalPages}
+              className={[
+                "inline-flex min-h-10 items-center rounded-md border border-[var(--border)] px-4 py-2 text-sm font-medium",
+                emailPage >= emailTotalPages
+                  ? "pointer-events-none opacity-50"
+                  : "",
+              ].join(" ")}
+              href={emailHref({
+                ...emailTableFilters,
+                page: Math.min(emailTotalPages, emailPage + 1),
+              })}
+            >
+              Next
+            </a>
+          </div>
         </section>
 
         <div hidden={!visibleSections.has("people")} id="people">
