@@ -4,7 +4,19 @@ This document is the reference for admin create, read, update, and deactivate UX
 
 ## Current Pilot
 
-`/admin/people` is the pilot page for this pattern. Apply the same template to other admin pages only after the pilot is accepted.
+`/admin/people` is the pilot page for this pattern. The first rollout batch
+applies the same drawer/list pattern to admin workspaces:
+
+- `/admin/setup?tab=committee`: add committee member in drawer; deactivate remains an inline row action.
+- `/admin/proxies`: add proxy authorization in drawer; review proxy status opens from the target row in a drawer.
+- `/admin/setup?tab=storage`: register private document reference in drawer; storage config remains inline because it is a single settings form.
+- `/admin/voting`: import manual vote in drawer; conflict resolution remains inline on the conflict row.
+- `/admin/ownership`: create ownership link in drawer; end active link remains inline on the ownership row.
+- `/admin/meetings?tab=meetings`: add meeting in drawer; publish/archive/result generation remain inline row actions.
+- `/admin/meetings?tab=questions`: add agenda question in drawer; choices remain inline under their parent question.
+- `/admin/results`: approve result in drawer from the result row.
+
+Search/filter forms and single-record configuration forms do not need drawers.
 
 The pilot is split into focused tabs:
 

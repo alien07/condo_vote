@@ -7,9 +7,12 @@ type AdminSetupPageProps = {
     actor?: string;
     dir?: string;
     from?: string;
+    id?: string;
+    mode?: string;
     sort?: string;
     tab?: string;
     to?: string;
+    type?: string;
   }>;
 };
 
@@ -52,6 +55,11 @@ export default async function AdminSetupPage({
       activeSection={params.tab}
       auditFilters={params.tab === "audit" ? getAuditFilters(params) : undefined}
       description="Juristic profile and committee setup for formal meeting documents."
+      drawer={{
+        id: params.id,
+        mode: params.mode,
+        type: params.type,
+      }}
       sections={["setup", "storage", "committee", "audit"]}
       title="Setup"
     />
