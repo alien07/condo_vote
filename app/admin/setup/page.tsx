@@ -26,6 +26,16 @@ function getActions(value: string | string[] | undefined) {
   return value?.split(",").filter(Boolean) ?? [];
 }
 
+function getPositiveInteger(value: string | undefined, fallback: number) {
+  if (!value) {
+    return fallback;
+  }
+
+  const parsed = Number(value);
+
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
+}
+
 function getAuditFilters(
   params: Awaited<AdminSetupPageProps["searchParams"]>,
 ): AuditLogFilters {
@@ -42,10 +52,8 @@ function getAuditFilters(
     actorProfileId: params.actor,
     dateFrom: params.from,
     dateTo: params.to,
-    page: Number.isFinite(Number(params.page)) ? Number(params.page) : 1,
-    perPage: Number.isFinite(Number(params.perPage))
-      ? Number(params.perPage)
-      : 25,
+    page: getPositiveInteger(params.page, 1),
+    perPage: getPositiveInteger(params.perPage, 25),
     sortBy,
     sortDirection: params.dir === "asc" ? "asc" : "desc",
   };

@@ -16,22 +16,30 @@ function getActions(searchParams: URLSearchParams) {
   return repeated.length > 0 ? repeated : commaSeparated ?? [];
 }
 
+function getPositiveInteger(value: string | null, fallback: number) {
+  if (!value) {
+    return fallback;
+  }
+
+  const parsed = Number(value);
+
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
+}
+
 function getAuditFilters(searchParams: URLSearchParams): AuditLogFilters {
   const sort = searchParams.get("sort");
   const sortBy =
     sort === "actor" || sort === "action" || sort === "entity" || sort === "time"
       ? sort
       : "time";
-  const page = Number(searchParams.get("page"));
-  const perPage = Number(searchParams.get("perPage"));
 
   return {
     actions: getActions(searchParams),
     actorProfileId: searchParams.get("actor") ?? undefined,
     dateFrom: searchParams.get("from") ?? undefined,
     dateTo: searchParams.get("to") ?? undefined,
-    page: Number.isFinite(page) ? page : 1,
-    perPage: Number.isFinite(perPage) ? perPage : 25,
+    page: getPositiveInteger(searchParams.get("page"), 1),
+    perPage: getPositiveInteger(searchParams.get("perPage"), 25),
     sortBy,
     sortDirection: searchParams.get("dir") === "asc" ? "asc" : "desc",
   };

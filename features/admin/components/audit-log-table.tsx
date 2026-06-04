@@ -85,9 +85,7 @@ function buildParams(filters: AuditLogFilters) {
     params.set("page", String(filters.page));
   }
 
-  if (filters.perPage !== 25) {
-    params.set("perPage", String(filters.perPage));
-  }
+  params.set("perPage", String(filters.perPage));
 
   return params;
 }
