@@ -10,8 +10,12 @@ This document is the reference for admin list/table UX.
 - Use client-side filtering only for small already-loaded lookup data.
 - The primary action label is `Search`; secondary action is `Clear`.
 - If action buttons do not fit the criteria row, wrap them to a centered row.
-- Results show total count, current range, current page, and next/previous controls.
-- `Per page` belongs with result controls near page status, not in search criteria.
+- Results show total count, current range, current page selector, per-page
+  selector, and next/previous controls.
+- Page and `Per page` controls belong together in a grouped Results control
+  area, not in search criteria.
+- Changing page applies immediately on change and preserves current criteria,
+  sort, and `perPage`.
 - Changing `Per page` applies immediately on change and preserves current criteria/sort.
 - Search must preserve the current `perPage`; only `Clear` returns it to default.
 - Prefer client result updates for Search, Clear, Sort, Pagination, and `Per page`

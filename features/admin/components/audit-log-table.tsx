@@ -306,14 +306,38 @@ export function AuditLogTable({
               Showing {pageStart}-{pageEnd} of {total}
             </p>
           </div>
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="text-xs text-[var(--muted)]">
-              Page {page} of {totalPages}
-            </div>
+          <div className="flex flex-wrap items-center gap-2 rounded-md border border-[var(--border)] bg-[var(--background)] px-3 py-2">
             <label className="flex items-center gap-2 text-xs font-medium text-[var(--muted)]">
-              Per page
+              <span>Page</span>
               <select
                 className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-2 py-1 text-sm text-[var(--foreground)]"
+                disabled={loading || totalPages <= 1}
+                onChange={(event) => {
+                  const nextPage = Number(event.currentTarget.value);
+
+                  void load({
+                    ...appliedFilters,
+                    page: Number.isInteger(nextPage) && nextPage > 0 ? nextPage : 1,
+                  });
+                }}
+                value={String(page)}
+              >
+                {Array.from({ length: totalPages }, (_, index) => index + 1).map(
+                  (pageNumber) => (
+                    <option key={pageNumber} value={pageNumber}>
+                      {pageNumber}
+                    </option>
+                  ),
+                )}
+              </select>
+              <span>of {totalPages}</span>
+            </label>
+            <div className="hidden h-6 w-px bg-[var(--border)] sm:block" />
+            <label className="flex items-center gap-2 text-xs font-medium text-[var(--muted)]">
+              <span>Per page</span>
+              <select
+                className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-2 py-1 text-sm text-[var(--foreground)]"
+                disabled={loading}
                 onChange={(event) => {
                   const nextPerPage = Number(event.currentTarget.value);
 
