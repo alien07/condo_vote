@@ -291,6 +291,7 @@ type AdminWorkspaceProps = {
   meetingFilters?: MeetingTableFilters;
   resultFilters?: ResultTableFilters;
   emailFilters?: EmailTableFilters;
+  proxyFilters?: ProxyTableFilters;
   sections?: AdminSection[];
   title?: string;
   description?: string;
@@ -324,6 +325,16 @@ export type EmailTableFilters = {
   recipient?: string;
   sort?: "created" | "recipient" | "status";
   status?: string;
+};
+
+export type ProxyTableFilters = {
+  dir?: "asc" | "desc";
+  meeting?: string;
+  page?: number;
+  perPage?: number;
+  proxy?: string;
+  room?: string;
+  sort?: "meeting" | "owner" | "proxy" | "room" | "status";
 };
 
 function tablePage(value: number | undefined, fallback = 1) {
@@ -416,6 +427,32 @@ function emailHref(filters: Required<EmailTableFilters>) {
   return `/admin/communications?${params.toString()}`;
 }
 
+function proxyHref(filters: Required<ProxyTableFilters>) {
+  const params = new URLSearchParams();
+
+  params.set("sort", filters.sort);
+  params.set("dir", filters.dir);
+  params.set("perPage", String(filters.perPage));
+
+  if (filters.meeting) {
+    params.set("meeting", filters.meeting);
+  }
+
+  if (filters.room) {
+    params.set("room", filters.room);
+  }
+
+  if (filters.proxy) {
+    params.set("proxy", filters.proxy);
+  }
+
+  if (filters.page > 1) {
+    params.set("page", String(filters.page));
+  }
+
+  return `/admin/proxies?${params.toString()}`;
+}
+
 const allSections: AdminSection[] = [
   "setup",
   "storage",
@@ -438,6 +475,7 @@ export async function AdminWorkspace({
   drawer,
   emailFilters,
   meetingFilters,
+  proxyFilters,
   resultFilters,
   sections = allSections,
   title = "Admin",
@@ -869,6 +907,116 @@ export async function AdminWorkspace({
   const emailSortLabel = (sort: Required<EmailTableFilters>["sort"]) =>
     emailTableFilters.sort === sort
       ? emailTableFilters.dir === "asc"
+        ? " ↑"
+        : " ↓"
+      : "";
+  const proxyTableFilters: Required<ProxyTableFilters> = {
+    dir: proxyFilters?.dir ?? "asc",
+    meeting: proxyFilters?.meeting ?? "",
+    page: tablePage(proxyFilters?.page),
+    perPage: tablePerPage(proxyFilters?.perPage),
+    proxy: proxyFilters?.proxy ?? "",
+    room: proxyFilters?.room ?? "",
+    sort: proxyFilters?.sort ?? "meeting",
+  };
+  const filteredProxyAuthorizations = proxyAuthorizations.filter(
+    (authorization) => {
+      const meetingQuery = proxyTableFilters.meeting.trim().toLowerCase();
+      const roomQuery = proxyTableFilters.room.trim().toLowerCase();
+      const proxyQuery = proxyTableFilters.proxy.trim().toLowerCase();
+      const matchesMeeting = meetingQuery
+        ? (authorization.meetings?.title ?? "")
+            .toLowerCase()
+            .includes(meetingQuery)
+        : true;
+      const matchesRoom = roomQuery
+        ? (authorization.rooms?.room_number ?? "")
+            .toLowerCase()
+            .includes(roomQuery)
+        : true;
+      const matchesProxy = proxyQuery
+        ? [
+            authorization.profiles?.full_name ?? "",
+            authorization.profiles?.email ?? "",
+          ]
+            .join(" ")
+            .toLowerCase()
+            .includes(proxyQuery)
+        : true;
+
+      return matchesMeeting && matchesRoom && matchesProxy;
+    },
+  );
+  const sortedProxyAuthorizations = [...filteredProxyAuthorizations].sort(
+    (left, right) => {
+      const direction = proxyTableFilters.dir === "asc" ? 1 : -1;
+      const leftValue =
+        proxyTableFilters.sort === "owner"
+          ? left.owners?.full_name ?? ""
+          : proxyTableFilters.sort === "proxy"
+            ? left.profiles?.full_name ?? ""
+            : proxyTableFilters.sort === "room"
+              ? left.rooms?.room_number ?? ""
+              : proxyTableFilters.sort === "status"
+                ? left.status
+                : left.meetings?.title ?? "";
+      const rightValue =
+        proxyTableFilters.sort === "owner"
+          ? right.owners?.full_name ?? ""
+          : proxyTableFilters.sort === "proxy"
+            ? right.profiles?.full_name ?? ""
+            : proxyTableFilters.sort === "room"
+              ? right.rooms?.room_number ?? ""
+              : proxyTableFilters.sort === "status"
+                ? right.status
+                : right.meetings?.title ?? "";
+
+      return leftValue.localeCompare(rightValue) * direction;
+    },
+  );
+  const proxyTotal = sortedProxyAuthorizations.length;
+  const proxyTotalPages = Math.max(
+    1,
+    Math.ceil(proxyTotal / proxyTableFilters.perPage),
+  );
+  const proxyPage = Math.min(proxyTableFilters.page, proxyTotalPages);
+  const proxyPageStart =
+    proxyTotal === 0 ? 0 : (proxyPage - 1) * proxyTableFilters.perPage + 1;
+  const proxyPageEnd = Math.min(
+    proxyPage * proxyTableFilters.perPage,
+    proxyTotal,
+  );
+  const pagedProxyAuthorizations = sortedProxyAuthorizations.slice(
+    (proxyPage - 1) * proxyTableFilters.perPage,
+    proxyPage * proxyTableFilters.perPage,
+  );
+  const proxyPageUrls = Object.fromEntries(
+    Array.from({ length: proxyTotalPages }, (_, index) => index + 1).map(
+      (pageNumber) => [
+        String(pageNumber),
+        proxyHref({ ...proxyTableFilters, page: pageNumber }),
+      ],
+    ),
+  );
+  const proxyPerPageUrls = Object.fromEntries(
+    [10, 25, 50, 100].map((perPage) => [
+      String(perPage),
+      proxyHref({ ...proxyTableFilters, page: 1, perPage }),
+    ]),
+  );
+  const proxySortHref = (sort: Required<ProxyTableFilters>["sort"]) =>
+    proxyHref({
+      ...proxyTableFilters,
+      dir:
+        proxyTableFilters.sort === sort && proxyTableFilters.dir === "asc"
+          ? "desc"
+          : "asc",
+      page: 1,
+      sort,
+    });
+  const proxySortLabel = (sort: Required<ProxyTableFilters>["sort"]) =>
+    proxyTableFilters.sort === sort
+      ? proxyTableFilters.dir === "asc"
         ? " ↑"
         : " ↓"
       : "";
@@ -3127,20 +3275,126 @@ export async function AdminWorkspace({
             </a>
           </div>
 
+          <section className="mb-5 rounded-lg border border-[var(--border)] bg-[var(--background)] p-4">
+            <div className="mb-3">
+              <h3 className="text-sm font-semibold">Search Criteria</h3>
+              <p className="mt-1 text-xs text-[var(--muted)]">
+                Filter proxy authorizations by meeting, room, and proxy.
+              </p>
+            </div>
+            <form className="grid gap-3 md:grid-cols-12">
+              <input name="sort" type="hidden" value={proxyTableFilters.sort} />
+              <input name="dir" type="hidden" value={proxyTableFilters.dir} />
+              <input
+                name="perPage"
+                type="hidden"
+                value={proxyTableFilters.perPage}
+              />
+              <label className="grid gap-1 text-xs font-medium text-[var(--muted)] md:col-span-3">
+                Meeting
+                <input
+                  className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)]"
+                  defaultValue={proxyTableFilters.meeting}
+                  name="meeting"
+                  placeholder="Search meeting"
+                />
+              </label>
+              <label className="grid gap-1 text-xs font-medium text-[var(--muted)] md:col-span-3">
+                Room
+                <input
+                  className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)]"
+                  defaultValue={proxyTableFilters.room}
+                  name="room"
+                  placeholder="Search room"
+                />
+              </label>
+              <label className="grid gap-1 text-xs font-medium text-[var(--muted)] md:col-span-3">
+                Proxy
+                <input
+                  className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)]"
+                  defaultValue={proxyTableFilters.proxy}
+                  name="proxy"
+                  placeholder="Search proxy"
+                />
+              </label>
+              <div className="flex flex-wrap items-end justify-center gap-2 md:col-span-3">
+                <button
+                  className="min-h-10 rounded-md bg-[var(--primary)] px-5 py-2 text-sm font-medium text-[var(--primary-foreground)]"
+                  type="submit"
+                >
+                  Search
+                </button>
+                <a
+                  className="inline-flex min-h-10 items-center rounded-md border border-[var(--border)] bg-[var(--surface)] px-5 py-2 text-sm font-medium"
+                  href="/admin/proxies"
+                >
+                  Clear
+                </a>
+              </div>
+            </form>
+          </section>
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h3 className="text-sm font-semibold">Results</h3>
+              <p className="mt-1 text-xs text-[var(--muted)]">
+                Showing {proxyPageStart}-{proxyPageEnd} of {proxyTotal}
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2 rounded-md border border-[var(--border)] bg-[var(--background)] px-3 py-2">
+              <PerPageSelect
+                label="Page"
+                options={Array.from(
+                  { length: proxyTotalPages },
+                  (_, index) => index + 1,
+                )}
+                urlByValue={proxyPageUrls}
+                value={proxyPage}
+              />
+              <div className="text-xs font-medium text-[var(--muted)]">
+                of {proxyTotalPages}
+              </div>
+              <div className="hidden h-6 w-px bg-[var(--border)] sm:block" />
+              <PerPageSelect
+                label="Per page"
+                urlByValue={proxyPerPageUrls}
+                value={proxyTableFilters.perPage}
+              />
+            </div>
+          </div>
           <div className="overflow-x-auto">
             <table className="w-full border-collapse text-left text-sm">
               <thead className="border-b border-[var(--border)] text-[var(--muted)]">
                 <tr>
-                  <th className="py-2 pr-3 font-medium">Meeting</th>
-                  <th className="py-2 pr-3 font-medium">Room</th>
-                  <th className="py-2 pr-3 font-medium">Owner</th>
-                  <th className="py-2 pr-3 font-medium">Proxy</th>
-                  <th className="py-2 pr-3 font-medium">Status</th>
+                  <th className="py-2 pr-3 font-medium">
+                    <a href={proxySortHref("meeting")}>
+                      Meeting{proxySortLabel("meeting")}
+                    </a>
+                  </th>
+                  <th className="py-2 pr-3 font-medium">
+                    <a href={proxySortHref("room")}>
+                      Room{proxySortLabel("room")}
+                    </a>
+                  </th>
+                  <th className="py-2 pr-3 font-medium">
+                    <a href={proxySortHref("owner")}>
+                      Owner{proxySortLabel("owner")}
+                    </a>
+                  </th>
+                  <th className="py-2 pr-3 font-medium">
+                    <a href={proxySortHref("proxy")}>
+                      Proxy{proxySortLabel("proxy")}
+                    </a>
+                  </th>
+                  <th className="py-2 pr-3 font-medium">
+                    <a href={proxySortHref("status")}>
+                      Status{proxySortLabel("status")}
+                    </a>
+                  </th>
                   <th className="py-2 font-medium">Action</th>
                 </tr>
               </thead>
               <tbody>
-                {proxyAuthorizations.map((authorization) => {
+                {pagedProxyAuthorizations.map((authorization) => {
                   const selected =
                     drawer?.mode === "edit" &&
                     drawer.type === "proxy_authorization" &&
@@ -3172,7 +3426,10 @@ export async function AdminWorkspace({
                       <td className="py-2">
                         <a
                           className="rounded-md border border-[var(--border)] px-3 py-1 text-sm font-medium"
-                          href={`/admin/proxies?mode=edit&type=proxy_authorization&id=${authorization.id}`}
+                          href={`${proxyHref({
+                            ...proxyTableFilters,
+                            page: proxyPage,
+                          })}&mode=edit&type=proxy_authorization&id=${authorization.id}`}
                         >
                           Review
                         </a>
@@ -3183,11 +3440,44 @@ export async function AdminWorkspace({
               </tbody>
             </table>
           </div>
-          {proxyAuthorizations.length === 0 ? (
+          {pagedProxyAuthorizations.length === 0 ? (
             <p className="mt-3 text-sm text-[var(--muted)]">
-              No proxy authorizations have been created yet.
+              No proxy authorizations match the selected criteria.
             </p>
           ) : null}
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+            <a
+              aria-disabled={proxyPage <= 1}
+              className={[
+                "inline-flex min-h-10 items-center rounded-md border border-[var(--border)] px-4 py-2 text-sm font-medium",
+                proxyPage <= 1 ? "pointer-events-none opacity-50" : "",
+              ].join(" ")}
+              href={proxyHref({
+                ...proxyTableFilters,
+                page: Math.max(1, proxyPage - 1),
+              })}
+            >
+              Previous
+            </a>
+            <div className="text-sm text-[var(--muted)]">
+              {proxyPageStart}-{proxyPageEnd} / {proxyTotal}
+            </div>
+            <a
+              aria-disabled={proxyPage >= proxyTotalPages}
+              className={[
+                "inline-flex min-h-10 items-center rounded-md border border-[var(--border)] px-4 py-2 text-sm font-medium",
+                proxyPage >= proxyTotalPages
+                  ? "pointer-events-none opacity-50"
+                  : "",
+              ].join(" ")}
+              href={proxyHref({
+                ...proxyTableFilters,
+                page: Math.min(proxyTotalPages, proxyPage + 1),
+              })}
+            >
+              Next
+            </a>
+          </div>
           {drawer?.mode === "create" && drawer.type === "proxy_authorization" ? (
             <AdminCrudDrawer
               closeHref="/admin/proxies"
