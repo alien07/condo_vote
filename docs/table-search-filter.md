@@ -12,6 +12,9 @@ This document is the reference for admin list/table UX.
 - If action buttons do not fit the criteria row, wrap them to a centered row.
 - Results show total count, current range, current page, and next/previous controls.
 - `Per page` belongs with result controls near page status, not in search criteria.
+- Changing `Per page` applies immediately on change and preserves current criteria/sort.
+- Search must preserve the current `perPage`; only `Clear` returns it to default.
+- Sort and pagination should use app-router navigation, not full document reload.
 - Table header, data rows, and odd/even rows must be visually distinct.
 - Date/time display format is `dd/MM/yyyy HH:mm:ss`; date and time may be split across two lines in tight columns.
 - `datetime-local` criteria inputs use `step=600` for 10-minute picker increments. Users can still manually type other minute values.

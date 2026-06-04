@@ -1,3 +1,4 @@
+import Link from "next/link";
 import {
   Building2,
   CalendarDays,
@@ -39,6 +40,7 @@ import {
   ConfirmSubmitButton,
   FormResetButton,
 } from "@/features/admin/components/form-controls";
+import { PerPageSelect } from "@/features/admin/components/table-controls";
 import { OwnershipManager } from "@/features/admin/components/ownership-manager";
 import { PeopleCrudPilot } from "@/features/admin/components/people-crud-pilot";
 import { PendingSubmitButton } from "@/features/debug/tracked-submit-button";
@@ -553,6 +555,12 @@ export async function AdminWorkspace({
   const auditPageStart =
     auditLogTotal === 0 ? 0 : (auditLogPage - 1) * auditLogPerPage + 1;
   const auditPageEnd = Math.min(auditLogPage * auditLogPerPage, auditLogTotal);
+  const auditPerPageUrls = Object.fromEntries(
+    [10, 25, 50, 100].map((perPage) => [
+      String(perPage),
+      makeAuditHref({ page: 1, perPage }),
+    ]),
+  );
 
   return (
     <main className="min-h-screen px-6 py-8">
@@ -1036,47 +1044,11 @@ export async function AdminWorkspace({
                 <div className="text-xs text-[var(--muted)]">
                   Page {auditLogPage} of {auditTotalPages}
                 </div>
-                <form className="flex items-center gap-2">
-                  <input name="tab" type="hidden" value="audit" />
-                  <input name="sort" type="hidden" value={auditSortBy} />
-                  <input name="dir" type="hidden" value={auditSortDirection} />
-                  {auditFilters?.dateFrom ? (
-                    <input name="from" type="hidden" value={auditFilters.dateFrom} />
-                  ) : null}
-                  {auditFilters?.dateTo ? (
-                    <input name="to" type="hidden" value={auditFilters.dateTo} />
-                  ) : null}
-                  {auditFilters?.actorProfileId ? (
-                    <input
-                      name="actor"
-                      type="hidden"
-                      value={auditFilters.actorProfileId}
-                    />
-                  ) : null}
-                  {auditFilters?.actions?.map((action) => (
-                    <input key={action} name="actions" type="hidden" value={action} />
-                  ))}
-                  <label className="flex items-center gap-2 text-xs font-medium text-[var(--muted)]">
-                    Per page
-                    <select
-                      className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-2 py-1 text-sm text-[var(--foreground)]"
-                      defaultValue={String(auditLogPerPage)}
-                      name="perPage"
-                    >
-                      <option value="10">10</option>
-                      <option value="25">25</option>
-                      <option value="50">50</option>
-                      <option value="100">100</option>
-                    </select>
-                  </label>
-                  <PendingSubmitButton
-                    className="rounded-md border border-[var(--border)] px-3 py-1 text-xs font-medium"
-                    pendingLabel="Applying..."
-                    type="submit"
-                  >
-                    Apply
-                  </PendingSubmitButton>
-                </form>
+                <PerPageSelect
+                  label="Per page"
+                  urlByValue={auditPerPageUrls}
+                  value={auditLogPerPage}
+                />
               </div>
             </div>
             <div className="overflow-x-auto">
@@ -1084,24 +1056,24 @@ export async function AdminWorkspace({
                 <thead className="bg-[var(--background)] text-[var(--muted)]">
                   <tr className="border-b border-[var(--border)]">
                     <th className="w-32 min-w-32 px-4 py-3 font-medium">
-                      <a href={makeAuditSortHref("time")}>
+                      <Link href={makeAuditSortHref("time")} scroll={false}>
                         Time{auditSortLabel("time")}
-                      </a>
+                      </Link>
                     </th>
                     <th className="px-4 py-3 font-medium">
-                      <a href={makeAuditSortHref("actor")}>
+                      <Link href={makeAuditSortHref("actor")} scroll={false}>
                         Actor{auditSortLabel("actor")}
-                      </a>
+                      </Link>
                     </th>
                     <th className="px-4 py-3 font-medium">
-                      <a href={makeAuditSortHref("action")}>
+                      <Link href={makeAuditSortHref("action")} scroll={false}>
                         Action{auditSortLabel("action")}
-                      </a>
+                      </Link>
                     </th>
                     <th className="px-4 py-3 font-medium">
-                      <a href={makeAuditSortHref("entity")}>
+                      <Link href={makeAuditSortHref("entity")} scroll={false}>
                         Entity{auditSortLabel("entity")}
-                      </a>
+                      </Link>
                     </th>
                     <th className="px-4 py-3 font-medium">Details</th>
                   </tr>
@@ -1146,20 +1118,21 @@ export async function AdminWorkspace({
               </p>
             ) : null}
             <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
-              <a
+              <Link
                 aria-disabled={auditLogPage <= 1}
                 className={[
                   "inline-flex min-h-10 items-center rounded-md border border-[var(--border)] px-4 py-2 text-sm font-medium",
                   auditLogPage <= 1 ? "pointer-events-none opacity-50" : "",
                 ].join(" ")}
                 href={makeAuditHref({ page: Math.max(1, auditLogPage - 1) })}
+                scroll={false}
               >
                 Previous
-              </a>
+              </Link>
               <div className="text-sm text-[var(--muted)]">
                 {auditPageStart}-{auditPageEnd} / {auditLogTotal}
               </div>
-              <a
+              <Link
                 aria-disabled={auditLogPage >= auditTotalPages}
                 className={[
                   "inline-flex min-h-10 items-center rounded-md border border-[var(--border)] px-4 py-2 text-sm font-medium",
@@ -1170,9 +1143,10 @@ export async function AdminWorkspace({
                 href={makeAuditHref({
                   page: Math.min(auditTotalPages, auditLogPage + 1),
                 })}
+                scroll={false}
               >
                 Next
-              </a>
+              </Link>
             </div>
           </section>
         </section>
