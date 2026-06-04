@@ -7,6 +7,7 @@ This folder contains the working specification for condoVotes.
 - [Architecture](architecture.md)
 - [Admin workflows](admin-workflows.md)
 - [Admin CRUD flow](admin-crud-flow.md)
+- [Table search/filter](table-search-filter.md)
 - [Communication](communication.md)
 - [Email invite flow](email_invite_flow.md)
 - [Error codes](error_code.md)

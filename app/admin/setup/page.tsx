@@ -9,6 +9,8 @@ type AdminSetupPageProps = {
     from?: string;
     id?: string;
     mode?: string;
+    page?: string;
+    perPage?: string;
     sort?: string;
     tab?: string;
     to?: string;
@@ -40,6 +42,10 @@ function getAuditFilters(
     actorProfileId: params.actor,
     dateFrom: params.from,
     dateTo: params.to,
+    page: Number.isFinite(Number(params.page)) ? Number(params.page) : 1,
+    perPage: Number.isFinite(Number(params.perPage))
+      ? Number(params.perPage)
+      : 25,
     sortBy,
     sortDirection: params.dir === "asc" ? "asc" : "desc",
   };

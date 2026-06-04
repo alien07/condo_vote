@@ -7,6 +7,8 @@ export type AuditLogFilters = {
   actorProfileId?: string;
   dateFrom?: string;
   dateTo?: string;
+  page?: number;
+  perPage?: number;
   sortBy?: "action" | "actor" | "entity" | "time";
   sortDirection?: "asc" | "desc";
 };
@@ -24,10 +26,15 @@ export async function fetchDocumentData(
           ? "entity_type"
           : "created_at";
   const auditSortAscending = auditFilters.sortDirection === "asc";
+  const auditPage = Math.max(1, auditFilters.page ?? 1);
+  const auditPerPage = Math.min(Math.max(auditFilters.perPage ?? 25, 10), 100);
+  const auditRangeFrom = (auditPage - 1) * auditPerPage;
+  const auditRangeTo = auditRangeFrom + auditPerPage - 1;
   let auditLogsQuery = supabase
     .from("audit_logs")
     .select(
       "id, action, entity_type, entity_id, details_json, created_at, profiles!audit_logs_actor_profile_id_fkey(id, full_name, email)",
+      { count: "exact" },
     );
 
   if (auditFilters.dateFrom) {
@@ -65,7 +72,7 @@ export async function fetchDocumentData(
       .limit(50),
     auditLogsQuery
       .order(auditSortColumn, { ascending: auditSortAscending })
-      .limit(100),
+      .range(auditRangeFrom, auditRangeTo),
     supabase
       .from("audit_logs")
       .select(
@@ -94,6 +101,9 @@ export async function fetchDocumentData(
   return {
     appSettings: settingsResult.data[0] ?? null,
     auditLogs: auditLogsResult.data,
+    auditLogPage: auditPage,
+    auditLogPerPage: auditPerPage,
+    auditLogTotal: auditLogsResult.count ?? 0,
     auditOptions: auditOptionsResult.data,
     documents: documentsResult.data,
   };
