@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useActionState, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   endRoomOwnerLinkWithState,
   linkRoomOwnerWithState,
@@ -51,7 +52,70 @@ type OwnershipManagerProps = {
   rooms: Room[];
 };
 
+type OwnershipTableState = {
+  dir: "asc" | "desc";
+  owner: string;
+  page: number;
+  perPage: number;
+  room: string;
+  sort: "owner" | "room";
+};
+
 const initialState: OwnershipActionState = {};
+
+function positiveInteger(value: string | null, fallback: number) {
+  if (!value) {
+    return fallback;
+  }
+
+  const parsed = Number(value);
+
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
+}
+
+function ownershipTableStateFromParams(
+  params: URLSearchParams,
+): OwnershipTableState {
+  const sort = params.get("sort");
+
+  return {
+    dir: params.get("dir") === "desc" ? "desc" : "asc",
+    owner: params.get("owner") ?? "",
+    page: positiveInteger(params.get("page"), 1),
+    perPage: positiveInteger(params.get("perPage"), 25),
+    room: params.get("room") ?? "",
+    sort: sort === "owner" ? "owner" : "room",
+  };
+}
+
+function ownershipTableParams(state: OwnershipTableState) {
+  return {
+    dir: state.dir,
+    owner: state.owner || null,
+    page: state.page > 1 ? String(state.page) : null,
+    perPage: String(state.perPage),
+    room: state.room || null,
+    sort: state.sort,
+  };
+}
+
+function mergeParams(
+  currentParams: URLSearchParams,
+  updates: Record<string, string | null | undefined>,
+) {
+  const params = new URLSearchParams(currentParams.toString());
+
+  for (const [key, value] of Object.entries(updates)) {
+    if (value === null || value === undefined || value === "") {
+      params.delete(key);
+    } else {
+      params.set(key, value);
+    }
+  }
+
+  const query = params.toString();
+  return query ? `/admin/ownership?${query}` : "/admin/ownership";
+}
 
 function todayLocalDate() {
   const date = new Date();
@@ -86,11 +150,27 @@ export function OwnershipManager({
   roomOwners,
   rooms,
 }: OwnershipManagerProps) {
+  const searchParams = useSearchParams();
   const [createState, createAction] = useActionState(
     linkRoomOwnerWithState,
     initialState,
   );
   const [createClientError, setCreateClientError] = useState<string | null>(null);
+  const [criteria, setCriteria] = useState(() =>
+    ownershipTableStateFromParams(searchParams),
+  );
+  const [tableState, setTableState] = useState(() =>
+    ownershipTableStateFromParams(searchParams),
+  );
+  const updateTable = (nextState: OwnershipTableState) => {
+    setTableState(nextState);
+    setCriteria(nextState);
+    window.history.replaceState(
+      null,
+      "",
+      mergeParams(searchParams, ownershipTableParams(nextState)),
+    );
+  };
   const activeRoomOwnerByRoom = useMemo(
     () =>
       new Map(
@@ -103,22 +183,236 @@ export function OwnershipManager({
   const defaultEndDate = todayLocalDate();
   const showCreateDrawer =
     drawer?.mode === "create" && drawer.type === "ownership_link";
+  const filteredLinks = useMemo(() => {
+    const roomQuery = tableState.room.trim().toLowerCase();
+    const ownerQuery = tableState.owner.trim().toLowerCase();
+
+    return roomOwners.filter((link) => {
+      const roomNumber = link.rooms?.room_number ?? "";
+      const ownerName = link.owners?.full_name ?? "";
+      const matchesRoom = roomQuery
+        ? roomNumber.toLowerCase().includes(roomQuery)
+        : true;
+      const matchesOwner = ownerQuery
+        ? ownerName.toLowerCase().includes(ownerQuery)
+        : true;
+
+      return matchesRoom && matchesOwner;
+    });
+  }, [roomOwners, tableState.owner, tableState.room]);
+  const sortedLinks = useMemo(() => {
+    const direction = tableState.dir === "asc" ? 1 : -1;
+
+    return [...filteredLinks].sort((left, right) => {
+      const leftValue =
+        tableState.sort === "owner"
+          ? left.owners?.full_name ?? ""
+          : left.rooms?.room_number ?? "";
+      const rightValue =
+        tableState.sort === "owner"
+          ? right.owners?.full_name ?? ""
+          : right.rooms?.room_number ?? "";
+
+      return leftValue.localeCompare(rightValue) * direction;
+    });
+  }, [filteredLinks, tableState.dir, tableState.sort]);
+  const total = sortedLinks.length;
+  const totalPages = Math.max(1, Math.ceil(total / tableState.perPage));
+  const page = Math.min(tableState.page, totalPages);
+  const pageStart = total === 0 ? 0 : (page - 1) * tableState.perPage + 1;
+  const pageEnd = Math.min(page * tableState.perPage, total);
+  const pagedLinks = sortedLinks.slice(
+    (page - 1) * tableState.perPage,
+    page * tableState.perPage,
+  );
 
   return (
     <>
+      <section className="mb-5 rounded-lg border border-[var(--border)] bg-[var(--background)] p-5">
+        <div className="mb-3">
+          <h2 className="text-sm font-semibold">Search Criteria</h2>
+          <p className="mt-1 text-xs text-[var(--muted)]">
+            Filter ownership links by room and owner.
+          </p>
+        </div>
+        <form
+          className="grid gap-3 md:grid-cols-12"
+          onSubmit={(event) => {
+            event.preventDefault();
+            updateTable({ ...criteria, page: 1 });
+          }}
+        >
+          <label className="grid gap-1 text-xs font-medium text-[var(--muted)] md:col-span-4">
+            Room
+            <input
+              className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)]"
+              onChange={(event) => {
+                const value = event.currentTarget.value;
+
+                setCriteria((current) => ({ ...current, room: value }));
+              }}
+              placeholder="Search room number"
+              value={criteria.room}
+            />
+          </label>
+          <label className="grid gap-1 text-xs font-medium text-[var(--muted)] md:col-span-4">
+            Owner
+            <input
+              className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)]"
+              onChange={(event) => {
+                const value = event.currentTarget.value;
+
+                setCriteria((current) => ({ ...current, owner: value }));
+              }}
+              placeholder="Search owner name"
+              value={criteria.owner}
+            />
+          </label>
+          <div className="flex flex-wrap items-end justify-center gap-2 md:col-span-4">
+            <button
+              className="min-h-10 rounded-md bg-[var(--primary)] px-5 py-2 text-sm font-medium text-[var(--primary-foreground)]"
+              type="submit"
+            >
+              Search
+            </button>
+            <button
+              className="inline-flex min-h-10 items-center rounded-md border border-[var(--border)] bg-[var(--surface)] px-5 py-2 text-sm font-medium"
+              onClick={() =>
+                updateTable({
+                  dir: "asc",
+                  owner: "",
+                  page: 1,
+                  perPage: 25,
+                  room: "",
+                  sort: "room",
+                })
+              }
+              type="button"
+            >
+              Clear
+            </button>
+          </div>
+        </form>
+      </section>
       <div className="overflow-x-auto">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--border)] pb-4">
+          <div>
+            <h3 className="text-sm font-semibold">Results</h3>
+            <p className="mt-1 text-xs text-[var(--muted)]">
+              Showing {pageStart}-{pageEnd} of {total}
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2 rounded-md border border-[var(--border)] bg-[var(--background)] px-3 py-2">
+            <label className="flex items-center gap-2 text-xs font-medium text-[var(--muted)]">
+              <span>Page</span>
+              <select
+                aria-label="Page"
+                className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-2 py-1 text-sm text-[var(--foreground)]"
+                disabled={totalPages <= 1}
+                onChange={(event) => {
+                  const nextPage = Number(event.currentTarget.value);
+
+                  updateTable({
+                    ...tableState,
+                    page:
+                      Number.isInteger(nextPage) && nextPage > 0 ? nextPage : 1,
+                  });
+                }}
+                value={String(page)}
+              >
+                {Array.from({ length: totalPages }, (_, index) => index + 1).map(
+                  (pageNumber) => (
+                    <option key={pageNumber} value={pageNumber}>
+                      {pageNumber}
+                    </option>
+                  ),
+                )}
+              </select>
+              <span>of {totalPages}</span>
+            </label>
+            <div className="hidden h-6 w-px bg-[var(--border)] sm:block" />
+            <label className="flex items-center gap-2 text-xs font-medium text-[var(--muted)]">
+              <span>Per page</span>
+              <select
+                aria-label="Per page"
+                className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-2 py-1 text-sm text-[var(--foreground)]"
+                onChange={(event) => {
+                  const nextPerPage = Number(event.currentTarget.value);
+
+                  updateTable({
+                    ...tableState,
+                    page: 1,
+                    perPage: Number.isInteger(nextPerPage) ? nextPerPage : 25,
+                  });
+                }}
+                value={String(tableState.perPage)}
+              >
+                <option value="10">10</option>
+                <option value="25">25</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+              </select>
+            </label>
+          </div>
+        </div>
         <table className="w-full border-collapse text-left text-sm">
           <thead className="border-b border-[var(--border)] text-[var(--muted)]">
             <tr>
-              <th className="py-2 pr-3 font-medium">Room</th>
-              <th className="py-2 pr-3 font-medium">Owner</th>
+              <th className="py-2 pr-3 font-medium">
+                <button
+                  className="font-medium"
+                  onClick={() =>
+                    updateTable({
+                      ...tableState,
+                      dir:
+                        tableState.sort === "room" && tableState.dir === "asc"
+                          ? "desc"
+                          : "asc",
+                      page: 1,
+                      sort: "room",
+                    })
+                  }
+                  type="button"
+                >
+                  Room
+                  {tableState.sort === "room"
+                    ? tableState.dir === "asc"
+                      ? " ↑"
+                      : " ↓"
+                    : ""}
+                </button>
+              </th>
+              <th className="py-2 pr-3 font-medium">
+                <button
+                  className="font-medium"
+                  onClick={() =>
+                    updateTable({
+                      ...tableState,
+                      dir:
+                        tableState.sort === "owner" && tableState.dir === "asc"
+                          ? "desc"
+                          : "asc",
+                      page: 1,
+                      sort: "owner",
+                    })
+                  }
+                  type="button"
+                >
+                  Owner
+                  {tableState.sort === "owner"
+                    ? tableState.dir === "asc"
+                      ? " ↑"
+                      : " ↓"
+                    : ""}
+                </button>
+              </th>
               <th className="py-2 pr-3 font-medium">Role</th>
               <th className="py-2 pr-3 font-medium">Dates</th>
               <th className="py-2 font-medium">Manage link</th>
             </tr>
           </thead>
           <tbody>
-            {roomOwners.map((link) => (
+            {pagedLinks.map((link) => (
               <OwnershipRow
                 defaultEndDate={defaultEndDate}
                 key={link.id}
@@ -128,11 +422,42 @@ export function OwnershipManager({
           </tbody>
         </table>
       </div>
-      {roomOwners.length === 0 ? (
+      {pagedLinks.length === 0 ? (
         <p className="mt-3 text-sm text-[var(--muted)]">
-          No room ownership links have been created yet.
+          No room ownership links match the selected criteria.
         </p>
       ) : null}
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+        <button
+          className="inline-flex min-h-10 items-center rounded-md border border-[var(--border)] px-4 py-2 text-sm font-medium disabled:opacity-50"
+          disabled={page <= 1}
+          onClick={() =>
+            updateTable({
+              ...tableState,
+              page: Math.max(1, page - 1),
+            })
+          }
+          type="button"
+        >
+          Previous
+        </button>
+        <div className="text-sm text-[var(--muted)]">
+          {pageStart}-{pageEnd} / {total}
+        </div>
+        <button
+          className="inline-flex min-h-10 items-center rounded-md border border-[var(--border)] px-4 py-2 text-sm font-medium disabled:opacity-50"
+          disabled={page >= totalPages}
+          onClick={() =>
+            updateTable({
+              ...tableState,
+              page: Math.min(totalPages, page + 1),
+            })
+          }
+          type="button"
+        >
+          Next
+        </button>
+      </div>
       {showCreateDrawer ? (
         <AdminCrudDrawer
           closeHref="/admin/ownership"
