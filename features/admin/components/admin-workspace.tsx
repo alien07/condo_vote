@@ -1,4 +1,3 @@
-import Link from "next/link";
 import {
   Building2,
   CalendarDays,
@@ -40,7 +39,7 @@ import {
   ConfirmSubmitButton,
   FormResetButton,
 } from "@/features/admin/components/form-controls";
-import { PerPageSelect } from "@/features/admin/components/table-controls";
+import { AuditLogTable } from "@/features/admin/components/audit-log-table";
 import { OwnershipManager } from "@/features/admin/components/ownership-manager";
 import { PeopleCrudPilot } from "@/features/admin/components/people-crud-pilot";
 import { PendingSubmitButton } from "@/features/debug/tracked-submit-button";
@@ -52,16 +51,6 @@ function formatDateTime(value: string) {
     dateStyle: "medium",
     timeStyle: "short",
   }).format(new Date(value));
-}
-
-function formatAuditDateTime(value: string) {
-  const date = new Date(value);
-  const pad = (part: number) => String(part).padStart(2, "0");
-
-  return {
-    date: `${pad(date.getDate())}/${pad(date.getMonth() + 1)}/${date.getFullYear()}`,
-    time: `${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`,
-  };
 }
 
 function getResultTotals(payload: unknown) {
@@ -473,94 +462,6 @@ export async function AdminWorkspace({
   const auditActions = [...new Set(auditOptions.map((option) => option.action))]
     .filter(Boolean)
     .sort();
-  const makeAuditHref = (
-    overrides: {
-      actions?: string[] | null;
-      actor?: string | null;
-      dir?: string | null;
-      from?: string | null;
-      page?: number | null;
-      perPage?: number | null;
-      sort?: string | null;
-      to?: string | null;
-    } = {},
-  ) => {
-    const params = new URLSearchParams();
-
-    params.set("tab", "audit");
-
-    const from = overrides.from === undefined ? auditFilters?.dateFrom : overrides.from;
-    const to = overrides.to === undefined ? auditFilters?.dateTo : overrides.to;
-    const actor =
-      overrides.actor === undefined ? auditFilters?.actorProfileId : overrides.actor;
-    const actions =
-      overrides.actions === undefined ? auditFilters?.actions : overrides.actions;
-    const sort = overrides.sort === undefined ? auditSortBy : overrides.sort;
-    const dir =
-      overrides.dir === undefined ? auditSortDirection : overrides.dir;
-    const page = overrides.page === undefined ? auditLogPage : overrides.page;
-    const perPage =
-      overrides.perPage === undefined ? auditLogPerPage : overrides.perPage;
-
-    if (from) {
-      params.set("from", from);
-    }
-
-    if (to) {
-      params.set("to", to);
-    }
-
-    if (actor) {
-      params.set("actor", actor);
-    }
-
-    actions?.forEach((action) => params.append("actions", action));
-
-    if (sort) {
-      params.set("sort", sort);
-    }
-
-    if (dir) {
-      params.set("dir", dir);
-    }
-
-    if (page && page > 1) {
-      params.set("page", String(page));
-    }
-
-    if (perPage && perPage !== 25) {
-      params.set("perPage", String(perPage));
-    }
-
-    return `?${params.toString()}`;
-  };
-  const makeAuditSortHref = (sortBy: NonNullable<AuditLogFilters["sortBy"]>) =>
-    makeAuditHref({
-      dir:
-        auditSortBy === sortBy && auditSortDirection === "asc" ? "desc" : "asc",
-      page: 1,
-      sort: sortBy,
-    });
-  const auditSortLabel = (sortBy: NonNullable<AuditLogFilters["sortBy"]>) => {
-    if (auditSortBy !== sortBy) {
-      return "";
-    }
-
-    return auditSortDirection === "asc" ? " ↑" : " ↓";
-  };
-  const auditTotalPages = Math.max(
-    1,
-    Math.ceil(auditLogTotal / auditLogPerPage),
-  );
-  const auditPageStart =
-    auditLogTotal === 0 ? 0 : (auditLogPage - 1) * auditLogPerPage + 1;
-  const auditPageEnd = Math.min(auditLogPage * auditLogPerPage, auditLogTotal);
-  const auditPerPageUrls = Object.fromEntries(
-    [10, 25, 50, 100].map((perPage) => [
-      String(perPage),
-      makeAuditHref({ page: 1, perPage }),
-    ]),
-  );
 
   return (
     <main className="min-h-screen px-6 py-8">
@@ -951,204 +852,24 @@ export async function AdminWorkspace({
             <History className="text-[var(--primary)]" size={20} />
             <h2 className="text-lg font-semibold">Business Audit Log</h2>
           </div>
-          <section className="rounded-md border border-[var(--border)] bg-[var(--background)] p-4">
-            <div className="mb-3">
-              <h3 className="text-sm font-semibold">Search Criteria</h3>
-              <p className="mt-1 text-xs text-[var(--muted)]">
-                Filter audit events by time range, actor, and action. Results are
-                queried server-side.
-              </p>
-            </div>
-            <form className="grid gap-3 lg:grid-cols-12">
-              <input name="tab" type="hidden" value="audit" />
-              <input name="sort" type="hidden" value={auditSortBy} />
-              <input name="dir" type="hidden" value={auditSortDirection} />
-              <input name="perPage" type="hidden" value={auditLogPerPage} />
-              <label className="grid gap-1 text-xs font-medium text-[var(--muted)] lg:col-span-3">
-                From
-                <input
-                  className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)]"
-                  defaultValue={auditFilters?.dateFrom ?? ""}
-                  name="from"
-                  step={600}
-                  type="datetime-local"
-                />
-              </label>
-              <label className="grid gap-1 text-xs font-medium text-[var(--muted)] lg:col-span-3">
-                To
-                <input
-                  className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)]"
-                  defaultValue={auditFilters?.dateTo ?? ""}
-                  name="to"
-                  step={600}
-                  type="datetime-local"
-                />
-              </label>
-              <label className="grid gap-1 text-xs font-medium text-[var(--muted)] lg:col-span-3">
-                Actor
-                <select
-                  className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)]"
-                  defaultValue={auditFilters?.actorProfileId ?? ""}
-                  name="actor"
-                >
-                  <option value="">All actors</option>
-                  {auditActors.map((actor) => (
-                    <option key={actor.id} value={actor.id}>
-                      {actor.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="grid gap-1 text-xs font-medium text-[var(--muted)] lg:col-span-8">
-                Actions
-                <select
-                  className="min-h-24 rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)]"
-                  defaultValue={auditFilters?.actions ?? []}
-                  multiple
-                  name="actions"
-                >
-                  {auditActions.map((action) => (
-                    <option key={action} value={action}>
-                      {action}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <div className="flex flex-wrap items-end justify-center gap-2 lg:col-span-4">
-                <PendingSubmitButton
-                  className="min-h-10 rounded-md bg-[var(--primary)] px-5 py-2 text-sm font-medium text-[var(--primary-foreground)]"
-                  pendingLabel="Searching..."
-                  type="submit"
-                >
-                  Search
-                </PendingSubmitButton>
-                <a
-                  className="inline-flex min-h-10 items-center rounded-md border border-[var(--border)] bg-[var(--surface)] px-5 py-2 text-sm font-medium"
-                  href="?tab=audit"
-                >
-                  Clear
-                </a>
-              </div>
-            </form>
-          </section>
-
-          <section className="mt-5 rounded-md border border-[var(--border)] bg-[var(--surface)]">
-            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--border)] px-4 py-3">
-              <div>
-                <h3 className="text-sm font-semibold">Results</h3>
-                <p className="mt-1 text-xs text-[var(--muted)]">
-                  Showing {auditPageStart}-{auditPageEnd} of {auditLogTotal}
-                </p>
-              </div>
-              <div className="flex flex-wrap items-center gap-3">
-                <div className="text-xs text-[var(--muted)]">
-                  Page {auditLogPage} of {auditTotalPages}
-                </div>
-                <PerPageSelect
-                  label="Per page"
-                  urlByValue={auditPerPageUrls}
-                  value={auditLogPerPage}
-                />
-              </div>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[820px] border-collapse text-left text-sm">
-                <thead className="bg-[var(--background)] text-[var(--muted)]">
-                  <tr className="border-b border-[var(--border)]">
-                    <th className="w-32 min-w-32 px-4 py-3 font-medium">
-                      <Link href={makeAuditSortHref("time")} scroll={false}>
-                        Time{auditSortLabel("time")}
-                      </Link>
-                    </th>
-                    <th className="px-4 py-3 font-medium">
-                      <Link href={makeAuditSortHref("actor")} scroll={false}>
-                        Actor{auditSortLabel("actor")}
-                      </Link>
-                    </th>
-                    <th className="px-4 py-3 font-medium">
-                      <Link href={makeAuditSortHref("action")} scroll={false}>
-                        Action{auditSortLabel("action")}
-                      </Link>
-                    </th>
-                    <th className="px-4 py-3 font-medium">
-                      <Link href={makeAuditSortHref("entity")} scroll={false}>
-                        Entity{auditSortLabel("entity")}
-                      </Link>
-                    </th>
-                    <th className="px-4 py-3 font-medium">Details</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {auditLogs.map((log, index) => {
-                    const timestamp = formatAuditDateTime(log.created_at);
-
-                    return (
-                      <tr
-                        className={[
-                          "border-b border-[var(--border)] last:border-0",
-                          index % 2 === 0
-                            ? "bg-[var(--surface)]"
-                            : "bg-[var(--background)]",
-                        ].join(" ")}
-                        key={log.id}
-                      >
-                        <td className="w-32 min-w-32 px-4 py-3 text-xs tabular-nums">
-                          <div>{timestamp.date}</div>
-                          <div className="text-[var(--muted)]">
-                            {timestamp.time}
-                          </div>
-                        </td>
-                        <td className="px-4 py-3">
-                          {log.profiles?.full_name ?? log.profiles?.email ?? "-"}
-                        </td>
-                        <td className="px-4 py-3">{log.action}</td>
-                        <td className="px-4 py-3">{log.entity_type}</td>
-                        <td className="max-w-sm truncate px-4 py-3">
-                          {JSON.stringify(log.details_json)}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-            {auditLogs.length === 0 ? (
-              <p className="px-4 py-4 text-sm text-[var(--muted)]">
-                No audit log rows match the selected criteria.
-              </p>
-            ) : null}
-            <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
-              <Link
-                aria-disabled={auditLogPage <= 1}
-                className={[
-                  "inline-flex min-h-10 items-center rounded-md border border-[var(--border)] px-4 py-2 text-sm font-medium",
-                  auditLogPage <= 1 ? "pointer-events-none opacity-50" : "",
-                ].join(" ")}
-                href={makeAuditHref({ page: Math.max(1, auditLogPage - 1) })}
-                scroll={false}
-              >
-                Previous
-              </Link>
-              <div className="text-sm text-[var(--muted)]">
-                {auditPageStart}-{auditPageEnd} / {auditLogTotal}
-              </div>
-              <Link
-                aria-disabled={auditLogPage >= auditTotalPages}
-                className={[
-                  "inline-flex min-h-10 items-center rounded-md border border-[var(--border)] px-4 py-2 text-sm font-medium",
-                  auditLogPage >= auditTotalPages
-                    ? "pointer-events-none opacity-50"
-                    : "",
-                ].join(" ")}
-                href={makeAuditHref({
-                  page: Math.min(auditTotalPages, auditLogPage + 1),
-                })}
-                scroll={false}
-              >
-                Next
-              </Link>
-            </div>
-          </section>
+          <AuditLogTable
+            actions={auditActions}
+            actors={auditActors}
+            initialFilters={{
+              actions: auditFilters?.actions ?? [],
+              actor: auditFilters?.actorProfileId ?? "",
+              dir: auditSortDirection,
+              from: auditFilters?.dateFrom ?? "",
+              page: auditLogPage,
+              perPage: auditLogPerPage,
+              sort: auditSortBy,
+              to: auditFilters?.dateTo ?? "",
+            }}
+            initialPage={auditLogPage}
+            initialPerPage={auditLogPerPage}
+            initialRows={auditLogs}
+            initialTotal={auditLogTotal}
+          />
         </section>
 
         <section

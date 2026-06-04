@@ -14,7 +14,13 @@ This document is the reference for admin list/table UX.
 - `Per page` belongs with result controls near page status, not in search criteria.
 - Changing `Per page` applies immediately on change and preserves current criteria/sort.
 - Search must preserve the current `perPage`; only `Clear` returns it to default.
-- Sort and pagination should use app-router navigation, not full document reload.
+- Prefer client result updates for Search, Clear, Sort, Pagination, and `Per page`
+  when the user is staying in the same workspace. The client still calls a
+  server-side query endpoint and syncs URL params with `history.replaceState`
+  so refresh/share preserve state.
+- App Router navigation is acceptable for first-load deep links and simple
+  server-rendered tables, but should not be required for every result update
+  when it causes visible full-page re-render.
 - Table header, data rows, and odd/even rows must be visually distinct.
 - Date/time display format is `dd/MM/yyyy HH:mm:ss`; date and time may be split across two lines in tight columns.
 - `datetime-local` criteria inputs use `step=600` for 10-minute picker increments. Users can still manually type other minute values.
@@ -54,6 +60,8 @@ Phrase search behavior:
 - Sort: Time, Actor, Action, Entity. Details is not sortable.
 - Pagination: `page` and `perPage`.
 - Server-side query: `audit_logs` with exact count.
+- Result updates: client fetches `/api/admin/audit-logs` and updates only the
+  criteria/results component state while keeping query params in sync.
 
 ## Rollout List
 

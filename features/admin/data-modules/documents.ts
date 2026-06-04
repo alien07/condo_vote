@@ -13,7 +13,7 @@ export type AuditLogFilters = {
   sortDirection?: "asc" | "desc";
 };
 
-export async function fetchDocumentData(
+export async function fetchAuditLogRows(
   supabase: SupabaseServerClient,
   auditFilters: AuditLogFilters = {},
 ) {
@@ -56,6 +56,28 @@ export async function fetchDocumentData(
     auditLogsQuery = auditLogsQuery.in("action", auditFilters.actions);
   }
 
+  const auditLogsResult = await auditLogsQuery
+    .order(auditSortColumn, { ascending: auditSortAscending })
+    .range(auditRangeFrom, auditRangeTo);
+
+  if (auditLogsResult.error) {
+    throw auditLogsResult.error;
+  }
+
+  return {
+    auditLogs: auditLogsResult.data,
+    auditLogPage: auditPage,
+    auditLogPerPage: auditPerPage,
+    auditLogTotal: auditLogsResult.count ?? 0,
+  };
+}
+
+export async function fetchDocumentData(
+  supabase: SupabaseServerClient,
+  auditFilters: AuditLogFilters = {},
+) {
+  const auditRows = fetchAuditLogRows(supabase, auditFilters);
+
   const [settingsResult, documentsResult, auditLogsResult, auditOptionsResult] =
     await Promise.all([
     supabase
@@ -70,9 +92,7 @@ export async function fetchDocumentData(
       )
       .order("created_at", { ascending: false })
       .limit(50),
-    auditLogsQuery
-      .order(auditSortColumn, { ascending: auditSortAscending })
-      .range(auditRangeFrom, auditRangeTo),
+    auditRows,
     supabase
       .from("audit_logs")
       .select(
@@ -90,20 +110,16 @@ export async function fetchDocumentData(
     throw documentsResult.error;
   }
 
-  if (auditLogsResult.error) {
-    throw auditLogsResult.error;
-  }
-
   if (auditOptionsResult.error) {
     throw auditOptionsResult.error;
   }
 
   return {
     appSettings: settingsResult.data[0] ?? null,
-    auditLogs: auditLogsResult.data,
-    auditLogPage: auditPage,
-    auditLogPerPage: auditPerPage,
-    auditLogTotal: auditLogsResult.count ?? 0,
+    auditLogs: auditLogsResult.auditLogs,
+    auditLogPage: auditLogsResult.auditLogPage,
+    auditLogPerPage: auditLogsResult.auditLogPerPage,
+    auditLogTotal: auditLogsResult.auditLogTotal,
     auditOptions: auditOptionsResult.data,
     documents: documentsResult.data,
   };
