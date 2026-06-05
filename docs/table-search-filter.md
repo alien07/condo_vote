@@ -56,7 +56,7 @@ Phrase search behavior:
 - Selecting a suggestion writes the stable identifier or canonical filter value
   to the URL query.
 
-## Current Pilot
+## Implemented Scope
 
 `/admin/setup?tab=audit` is the first implemented table pilot:
 
@@ -67,20 +67,29 @@ Phrase search behavior:
 - Result updates: client fetches `/api/admin/audit-logs` and updates only the
   criteria/results component state while keeping query params in sync.
 
-## Rollout List
+The following admin tables now use the same search criteria, sortable headers,
+grouped result controls, page selector, per-page selector, and previous/next
+controls. These pages currently use server-rendered query params, which is
+acceptable for this rollout because the tables are smaller and already rendered
+inside their workspace pages:
 
-- Private Document Registry: layout cleanup and table search later.
-- Business Audit Log: pilot implemented first.
-- Committee Members: Name, Position, Status.
-- Manual Votes: Meeting, Room.
-- Meetings: Title, No./Type, Status.
-- Result Snapshots: Meeting, Generated, Approval.
-- Email Delivery Logs: Recipient, Status, Created.
 - Rooms: Room, Status.
 - Owners: Name, Status.
 - Profiles: Name, Default status.
 - Room Ownership: Room, Owner.
+- Meetings: Title, No./Type, Status.
+- Result Snapshots: Meeting, Generated, Approval.
+- Email Delivery Logs: Recipient, Status, Created.
 - Proxy Authorizations: Meeting, Room, Proxy.
+- Manual Votes: Meeting, Room.
+- Committee Members: Name, Position, Status.
+
+## Backlog
+
+- Private Document Registry: layout cleanup and table search later. Criteria and
+  sortable columns are intentionally not defined yet; confirm the registry
+  fields users need before implementation.
+- Manual/Online Conflicts: planned for a separate page before table search.
 
 ## Relationship To CRUD Flow
 
