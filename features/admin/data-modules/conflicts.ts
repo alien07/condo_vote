@@ -47,9 +47,10 @@ export async function fetchVoteConflictRows(
     supabase
       .from("manual_ballots")
       .select(
-        "id, meeting_id, room_id, source_label, audit_note, status, imported_at, meetings(id, title), rooms(id, room_number), manual_ballot_answers(question_id, choice_id, meeting_questions(agenda_no, question_text), meeting_choices(choice_text))",
+        "id, meeting_id, room_id, source_label, audit_note, identity_status, voter_profile_id, voter_identity_text, status, imported_at, meetings(id, title), rooms(id, room_number), manual_ballot_answers(question_id, choice_id, meeting_questions(agenda_no, question_text), meeting_choices(choice_text))",
       )
-      .eq("status", "submitted"),
+      .eq("status", "submitted")
+      .neq("identity_status", "pending"),
     supabase
       .from("ballots")
       .select(
@@ -104,8 +105,11 @@ export async function fetchVoteConflictRows(
           manualBallot.manual_ballot_answers as VoteAnswer[],
         ),
         manualBallotId: manualBallot.id,
+        manualIdentityStatus: manualBallot.identity_status,
         manualImportedAt: manualBallot.imported_at,
         manualSourceLabel: manualBallot.source_label,
+        manualVoterIdentityText: manualBallot.voter_identity_text,
+        manualVoterProfileId: manualBallot.voter_profile_id,
         meetingId: manualBallot.meeting_id,
         meetingTitle: manualBallot.meetings?.title ?? "-",
         onlineAnswers: normalizeAnswers(

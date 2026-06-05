@@ -113,6 +113,7 @@ export async function importManualVoteEntry(formData: FormData) {
         room_id: roomId,
         source_label: optionalText(formData.get("source_label")),
         audit_note: optionalText(formData.get("audit_note")),
+        identity_status: "legacy",
         imported_by: importer.id,
         status: "submitted",
       },
@@ -221,19 +222,19 @@ export async function submitManualBallot(formData: FormData) {
     };
   });
   const pendingIdentity = !voterProfileId;
-  const auditNote = pendingIdentity
-    ? `Pending voter identity: ${voterIdentityText}`
-    : `Manual vote entered for profile ${voterProfileId}`;
   const { data: manualBallot, error: manualBallotError } = await supabase
     .from("manual_ballots")
     .upsert(
       {
-        audit_note: auditNote,
+        audit_note: optionalText(formData.get("audit_note")),
+        identity_status: pendingIdentity ? "pending" : "linked",
         imported_by: importer.id,
         meeting_id: meetingId,
         room_id: roomId,
         source_label: pendingIdentity ? "manual_pending_identity" : "manual_on_site",
         status: pendingIdentity ? "draft" : "submitted",
+        voter_identity_text: pendingIdentity ? voterIdentityText : null,
+        voter_profile_id: voterProfileId,
       },
       { onConflict: "meeting_id,room_id" },
     )

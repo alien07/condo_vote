@@ -64,10 +64,11 @@ export async function generateResultSnapshot(formData: FormData) {
       supabase
         .from("manual_ballots")
         .select(
-          "id, room_id, source_label, audit_note, manual_ballot_answers(question_id, choice_id)",
+          "id, room_id, source_label, audit_note, identity_status, voter_profile_id, voter_identity_text, manual_ballot_answers(question_id, choice_id)",
         )
         .eq("meeting_id", meetingId)
-        .eq("status", "submitted"),
+        .eq("status", "submitted")
+        .neq("identity_status", "pending"),
       supabase
         .from("vote_source_resolutions")
         .select(

@@ -278,11 +278,15 @@ create table public.manual_ballots (
   imported_by uuid not null references public.profiles(id),
   source_label text,
   audit_note text,
+  voter_profile_id uuid references public.profiles(id),
+  voter_identity_text text,
+  identity_status text not null default 'legacy',
   status text not null default 'submitted',
   imported_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   unique (meeting_id, room_id),
-  constraint manual_ballots_status_check check (status in ('draft', 'submitted', 'voided'))
+  constraint manual_ballots_status_check check (status in ('draft', 'submitted', 'voided')),
+  constraint manual_ballots_identity_status_check check (identity_status in ('linked', 'pending', 'legacy'))
 );
 
 create table public.manual_ballot_answers (

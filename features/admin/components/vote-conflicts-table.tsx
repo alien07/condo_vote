@@ -16,8 +16,11 @@ export type VoteConflictRow = {
   key: string;
   manualAnswers: ConflictAnswer[];
   manualBallotId: string;
+  manualIdentityStatus: string;
   manualImportedAt: string;
   manualSourceLabel: string | null;
+  manualVoterIdentityText: string | null;
+  manualVoterProfileId: string | null;
   meetingId: string;
   meetingTitle: string;
   onlineAnswers: ConflictAnswer[];
@@ -484,6 +487,15 @@ export function VoteConflictsTable({
               is the default because it represents the signed vote sheet collected
               at the meeting venue.
             </p>
+            <div className="mb-4 rounded-md border border-[var(--border)] bg-[var(--background)] p-3 text-sm">
+              <p className="font-medium">Manual ballot identity</p>
+              <p className="mt-1 text-[var(--muted)]">
+                {selected.manualIdentityStatus} /{" "}
+                {selected.manualVoterIdentityText ??
+                  selected.manualVoterProfileId ??
+                  "identity not captured"}
+              </p>
+            </div>
             <div className="overflow-x-auto">
               <table className="w-full min-w-[680px] border-collapse text-left text-sm">
                 <thead className="bg-[var(--background)] text-[var(--muted)]">

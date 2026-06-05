@@ -62,7 +62,9 @@ export default async function ManualVotePage({
         .order("display_order", { ascending: true }),
       supabase
         .from("manual_ballots")
-        .select("id, status, manual_ballot_answers(question_id, choice_id)")
+        .select(
+          "id, status, identity_status, voter_profile_id, voter_identity_text, manual_ballot_answers(question_id, choice_id)",
+        )
         .eq("meeting_id", meetingId)
         .eq("room_id", roomId)
         .maybeSingle(),

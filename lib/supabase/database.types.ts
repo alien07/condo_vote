@@ -685,6 +685,7 @@ export type Database = {
         Row: {
           audit_note: string | null
           id: string
+          identity_status: string
           imported_at: string
           imported_by: string
           meeting_id: string
@@ -692,10 +693,13 @@ export type Database = {
           source_label: string | null
           status: string
           updated_at: string
+          voter_identity_text: string | null
+          voter_profile_id: string | null
         }
         Insert: {
           audit_note?: string | null
           id?: string
+          identity_status?: string
           imported_at?: string
           imported_by: string
           meeting_id: string
@@ -703,10 +707,13 @@ export type Database = {
           source_label?: string | null
           status?: string
           updated_at?: string
+          voter_identity_text?: string | null
+          voter_profile_id?: string | null
         }
         Update: {
           audit_note?: string | null
           id?: string
+          identity_status?: string
           imported_at?: string
           imported_by?: string
           meeting_id?: string
@@ -714,6 +721,8 @@ export type Database = {
           source_label?: string | null
           status?: string
           updated_at?: string
+          voter_identity_text?: string | null
+          voter_profile_id?: string | null
         }
         Relationships: [
           {
@@ -735,6 +744,13 @@ export type Database = {
             columns: ["room_id"]
             isOneToOne: false
             referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "manual_ballots_voter_profile_id_fkey"
+            columns: ["voter_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]

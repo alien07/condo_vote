@@ -1046,9 +1046,14 @@ export async function AdminWorkspace({
   };
   const manualVoteRows = manualBallots.flatMap((manualBallot) =>
     manualBallot.manual_ballot_answers.map((answer) => ({
-      auditText: `${manualBallot.source_label ?? "manual"} / ${
-        manualBallot.audit_note ?? "-"
-      }`,
+      auditText: [
+        manualBallot.source_label ?? "manual",
+        manualBallot.identity_status ?? "legacy",
+        manualBallot.voter_identity_text ??
+          manualBallot.voter_profile_id ??
+          manualBallot.audit_note ??
+          "-",
+      ].join(" / "),
       choiceText: answer.meeting_choices?.choice_text ?? "-",
       id: answer.id,
       meetingTitle: manualBallot.meetings?.title ?? "-",
