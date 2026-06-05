@@ -1,4 +1,5 @@
 import { AdminWorkspace } from "@/features/admin/components/admin-workspace";
+import type { CommitteeTableFilters } from "@/features/admin/components/admin-workspace";
 import type { AuditLogFilters } from "@/features/admin/data-modules/documents";
 
 type AdminSetupPageProps = {
@@ -8,10 +9,13 @@ type AdminSetupPageProps = {
     dir?: string;
     from?: string;
     id?: string;
+    memberName?: string;
     mode?: string;
     page?: string;
     perPage?: string;
+    position?: string;
     sort?: string;
+    status?: string;
     tab?: string;
     to?: string;
     type?: string;
@@ -59,6 +63,27 @@ function getAuditFilters(
   };
 }
 
+function getCommitteeFilters(
+  params: Awaited<AdminSetupPageProps["searchParams"]>,
+): CommitteeTableFilters {
+  const sort =
+    params.sort === "name" ||
+    params.sort === "position" ||
+    params.sort === "status"
+      ? params.sort
+      : "name";
+
+  return {
+    dir: params.dir === "desc" ? "desc" : "asc",
+    memberName: params.memberName,
+    page: getPositiveInteger(params.page, 1),
+    perPage: getPositiveInteger(params.perPage, 25),
+    position: params.position,
+    sort,
+    status: params.status,
+  };
+}
+
 export default async function AdminSetupPage({
   searchParams,
 }: AdminSetupPageProps) {
@@ -68,6 +93,9 @@ export default async function AdminSetupPage({
     <AdminWorkspace
       activeSection={params.tab}
       auditFilters={params.tab === "audit" ? getAuditFilters(params) : undefined}
+      committeeFilters={
+        params.tab === "committee" ? getCommitteeFilters(params) : undefined
+      }
       description="Juristic profile and committee setup for formal meeting documents."
       drawer={{
         id: params.id,
