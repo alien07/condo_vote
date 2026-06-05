@@ -291,6 +291,7 @@ type AdminWorkspaceProps = {
   meetingFilters?: MeetingTableFilters;
   resultFilters?: ResultTableFilters;
   emailFilters?: EmailTableFilters;
+  manualVoteFilters?: ManualVoteTableFilters;
   proxyFilters?: ProxyTableFilters;
   sections?: AdminSection[];
   title?: string;
@@ -335,6 +336,15 @@ export type ProxyTableFilters = {
   proxy?: string;
   room?: string;
   sort?: "meeting" | "owner" | "proxy" | "room" | "status";
+};
+
+export type ManualVoteTableFilters = {
+  dir?: "asc" | "desc";
+  meeting?: string;
+  page?: number;
+  perPage?: number;
+  room?: string;
+  sort?: "meeting" | "question" | "room";
 };
 
 function tablePage(value: number | undefined, fallback = 1) {
@@ -453,6 +463,28 @@ function proxyHref(filters: Required<ProxyTableFilters>) {
   return `/admin/proxies?${params.toString()}`;
 }
 
+function manualVoteHref(filters: Required<ManualVoteTableFilters>) {
+  const params = new URLSearchParams();
+
+  params.set("sort", filters.sort);
+  params.set("dir", filters.dir);
+  params.set("perPage", String(filters.perPage));
+
+  if (filters.meeting) {
+    params.set("meeting", filters.meeting);
+  }
+
+  if (filters.room) {
+    params.set("room", filters.room);
+  }
+
+  if (filters.page > 1) {
+    params.set("page", String(filters.page));
+  }
+
+  return `/admin/voting?${params.toString()}`;
+}
+
 const allSections: AdminSection[] = [
   "setup",
   "storage",
@@ -474,6 +506,7 @@ export async function AdminWorkspace({
   auditFilters,
   drawer,
   emailFilters,
+  manualVoteFilters,
   meetingFilters,
   proxyFilters,
   resultFilters,
@@ -1020,6 +1053,111 @@ export async function AdminWorkspace({
         ? " ↑"
         : " ↓"
       : "";
+  const manualVoteTableFilters: Required<ManualVoteTableFilters> = {
+    dir: manualVoteFilters?.dir ?? "asc",
+    meeting: manualVoteFilters?.meeting ?? "",
+    page: tablePage(manualVoteFilters?.page),
+    perPage: tablePerPage(manualVoteFilters?.perPage),
+    room: manualVoteFilters?.room ?? "",
+    sort: manualVoteFilters?.sort ?? "meeting",
+  };
+  const manualVoteRows = manualBallots.flatMap((manualBallot) =>
+    manualBallot.manual_ballot_answers.map((answer) => ({
+      auditText: `${manualBallot.source_label ?? "manual"} / ${
+        manualBallot.audit_note ?? "-"
+      }`,
+      choiceText: answer.meeting_choices?.choice_text ?? "-",
+      id: answer.id,
+      meetingTitle: manualBallot.meetings?.title ?? "-",
+      questionText: answer.meeting_questions?.question_text ?? "-",
+      roomNumber: manualBallot.rooms?.room_number ?? "-",
+    })),
+  );
+  const filteredManualVoteRows = manualVoteRows.filter((row) => {
+    const meetingQuery = manualVoteTableFilters.meeting.trim().toLowerCase();
+    const roomQuery = manualVoteTableFilters.room.trim().toLowerCase();
+    const matchesMeeting = meetingQuery
+      ? row.meetingTitle.toLowerCase().includes(meetingQuery)
+      : true;
+    const matchesRoom = roomQuery
+      ? row.roomNumber.toLowerCase().includes(roomQuery)
+      : true;
+
+    return matchesMeeting && matchesRoom;
+  });
+  const sortedManualVoteRows = [...filteredManualVoteRows].sort((left, right) => {
+    const direction = manualVoteTableFilters.dir === "asc" ? 1 : -1;
+    const leftValue =
+      manualVoteTableFilters.sort === "question"
+        ? left.questionText
+        : manualVoteTableFilters.sort === "room"
+          ? left.roomNumber
+          : left.meetingTitle;
+    const rightValue =
+      manualVoteTableFilters.sort === "question"
+        ? right.questionText
+        : manualVoteTableFilters.sort === "room"
+          ? right.roomNumber
+          : right.meetingTitle;
+
+    return leftValue.localeCompare(rightValue) * direction;
+  });
+  const manualVoteTotal = sortedManualVoteRows.length;
+  const manualVoteTotalPages = Math.max(
+    1,
+    Math.ceil(manualVoteTotal / manualVoteTableFilters.perPage),
+  );
+  const manualVotePage = Math.min(
+    manualVoteTableFilters.page,
+    manualVoteTotalPages,
+  );
+  const manualVotePageStart =
+    manualVoteTotal === 0
+      ? 0
+      : (manualVotePage - 1) * manualVoteTableFilters.perPage + 1;
+  const manualVotePageEnd = Math.min(
+    manualVotePage * manualVoteTableFilters.perPage,
+    manualVoteTotal,
+  );
+  const pagedManualVoteRows = sortedManualVoteRows.slice(
+    (manualVotePage - 1) * manualVoteTableFilters.perPage,
+    manualVotePage * manualVoteTableFilters.perPage,
+  );
+  const manualVotePageUrls = Object.fromEntries(
+    Array.from({ length: manualVoteTotalPages }, (_, index) => index + 1).map(
+      (pageNumber) => [
+        String(pageNumber),
+        manualVoteHref({ ...manualVoteTableFilters, page: pageNumber }),
+      ],
+    ),
+  );
+  const manualVotePerPageUrls = Object.fromEntries(
+    [10, 25, 50, 100].map((perPage) => [
+      String(perPage),
+      manualVoteHref({ ...manualVoteTableFilters, page: 1, perPage }),
+    ]),
+  );
+  const manualVoteSortHref = (
+    sort: Required<ManualVoteTableFilters>["sort"],
+  ) =>
+    manualVoteHref({
+      ...manualVoteTableFilters,
+      dir:
+        manualVoteTableFilters.sort === sort &&
+        manualVoteTableFilters.dir === "asc"
+          ? "desc"
+          : "asc",
+      page: 1,
+      sort,
+    });
+  const manualVoteSortLabel = (
+    sort: Required<ManualVoteTableFilters>["sort"],
+  ) =>
+    manualVoteTableFilters.sort === sort
+      ? manualVoteTableFilters.dir === "asc"
+        ? " ↑"
+        : " ↓"
+      : "";
 
   return (
     <main className="min-h-screen px-6 py-8">
@@ -1453,48 +1591,166 @@ export async function AdminWorkspace({
             </a>
           </div>
 
+          <section className="mb-5 rounded-lg border border-[var(--border)] bg-[var(--background)] p-4">
+            <div className="mb-3">
+              <h3 className="text-sm font-semibold">Search Criteria</h3>
+              <p className="mt-1 text-xs text-[var(--muted)]">
+                Filter manual vote rows by meeting and room.
+              </p>
+            </div>
+            <form className="grid gap-3 md:grid-cols-12">
+              <input
+                name="sort"
+                type="hidden"
+                value={manualVoteTableFilters.sort}
+              />
+              <input
+                name="dir"
+                type="hidden"
+                value={manualVoteTableFilters.dir}
+              />
+              <input
+                name="perPage"
+                type="hidden"
+                value={manualVoteTableFilters.perPage}
+              />
+              <label className="grid gap-1 text-xs font-medium text-[var(--muted)] md:col-span-4">
+                Meeting
+                <input
+                  className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)]"
+                  defaultValue={manualVoteTableFilters.meeting}
+                  name="meeting"
+                  placeholder="Search meeting"
+                />
+              </label>
+              <label className="grid gap-1 text-xs font-medium text-[var(--muted)] md:col-span-4">
+                Room
+                <input
+                  className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)]"
+                  defaultValue={manualVoteTableFilters.room}
+                  name="room"
+                  placeholder="Search room"
+                />
+              </label>
+              <div className="flex flex-wrap items-end justify-center gap-2 md:col-span-4">
+                <button
+                  className="min-h-10 rounded-md bg-[var(--primary)] px-5 py-2 text-sm font-medium text-[var(--primary-foreground)]"
+                  type="submit"
+                >
+                  Search
+                </button>
+                <a
+                  className="inline-flex min-h-10 items-center rounded-md border border-[var(--border)] bg-[var(--surface)] px-5 py-2 text-sm font-medium"
+                  href="/admin/voting"
+                >
+                  Clear
+                </a>
+              </div>
+            </form>
+          </section>
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h3 className="text-sm font-semibold">Results</h3>
+              <p className="mt-1 text-xs text-[var(--muted)]">
+                Showing {manualVotePageStart}-{manualVotePageEnd} of{" "}
+                {manualVoteTotal}
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2 rounded-md border border-[var(--border)] bg-[var(--background)] px-3 py-2">
+              <PerPageSelect
+                label="Page"
+                options={Array.from(
+                  { length: manualVoteTotalPages },
+                  (_, index) => index + 1,
+                )}
+                urlByValue={manualVotePageUrls}
+                value={manualVotePage}
+              />
+              <div className="text-xs font-medium text-[var(--muted)]">
+                of {manualVoteTotalPages}
+              </div>
+              <div className="hidden h-6 w-px bg-[var(--border)] sm:block" />
+              <PerPageSelect
+                label="Per page"
+                urlByValue={manualVotePerPageUrls}
+                value={manualVoteTableFilters.perPage}
+              />
+            </div>
+          </div>
           <div className="overflow-x-auto">
             <table className="w-full border-collapse text-left text-sm">
               <thead className="border-b border-[var(--border)] text-[var(--muted)]">
                 <tr>
-                  <th className="py-2 pr-3 font-medium">Meeting</th>
-                  <th className="py-2 pr-3 font-medium">Room</th>
-                  <th className="py-2 pr-3 font-medium">Question</th>
+                  <th className="py-2 pr-3 font-medium">
+                    <a href={manualVoteSortHref("meeting")}>
+                      Meeting{manualVoteSortLabel("meeting")}
+                    </a>
+                  </th>
+                  <th className="py-2 pr-3 font-medium">
+                    <a href={manualVoteSortHref("room")}>
+                      Room{manualVoteSortLabel("room")}
+                    </a>
+                  </th>
+                  <th className="py-2 pr-3 font-medium">
+                    <a href={manualVoteSortHref("question")}>
+                      Question{manualVoteSortLabel("question")}
+                    </a>
+                  </th>
                   <th className="py-2 pr-3 font-medium">Choice</th>
                   <th className="py-2 font-medium">Audit</th>
                 </tr>
               </thead>
               <tbody>
-                {manualBallots.flatMap((manualBallot) =>
-                  manualBallot.manual_ballot_answers.map((answer) => (
-                    <tr className="border-b border-[var(--border)]" key={answer.id}>
-                      <td className="py-2 pr-3">
-                        {manualBallot.meetings?.title ?? "-"}
-                      </td>
-                      <td className="py-2 pr-3">
-                        {manualBallot.rooms?.room_number ?? "-"}
-                      </td>
-                      <td className="py-2 pr-3">
-                        {answer.meeting_questions?.question_text ?? "-"}
-                      </td>
-                      <td className="py-2 pr-3">
-                        {answer.meeting_choices?.choice_text ?? "-"}
-                      </td>
-                      <td className="py-2">
-                        {manualBallot.source_label ?? "manual"} /{" "}
-                        {manualBallot.audit_note ?? "-"}
-                      </td>
-                    </tr>
-                  )),
-                )}
+                {pagedManualVoteRows.map((row) => (
+                  <tr className="border-b border-[var(--border)]" key={row.id}>
+                    <td className="py-2 pr-3">{row.meetingTitle}</td>
+                    <td className="py-2 pr-3">{row.roomNumber}</td>
+                    <td className="py-2 pr-3">{row.questionText}</td>
+                    <td className="py-2 pr-3">{row.choiceText}</td>
+                    <td className="py-2">{row.auditText}</td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
-          {manualBallots.length === 0 ? (
+          {pagedManualVoteRows.length === 0 ? (
             <p className="mt-3 text-sm text-[var(--muted)]">
-              No manual ballots have been imported yet.
+              No manual vote rows match the selected criteria.
             </p>
           ) : null}
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+            <a
+              aria-disabled={manualVotePage <= 1}
+              className={[
+                "inline-flex min-h-10 items-center rounded-md border border-[var(--border)] px-4 py-2 text-sm font-medium",
+                manualVotePage <= 1 ? "pointer-events-none opacity-50" : "",
+              ].join(" ")}
+              href={manualVoteHref({
+                ...manualVoteTableFilters,
+                page: Math.max(1, manualVotePage - 1),
+              })}
+            >
+              Previous
+            </a>
+            <div className="text-sm text-[var(--muted)]">
+              {manualVotePageStart}-{manualVotePageEnd} / {manualVoteTotal}
+            </div>
+            <a
+              aria-disabled={manualVotePage >= manualVoteTotalPages}
+              className={[
+                "inline-flex min-h-10 items-center rounded-md border border-[var(--border)] px-4 py-2 text-sm font-medium",
+                manualVotePage >= manualVoteTotalPages
+                  ? "pointer-events-none opacity-50"
+                  : "",
+              ].join(" ")}
+              href={manualVoteHref({
+                ...manualVoteTableFilters,
+                page: Math.min(manualVoteTotalPages, manualVotePage + 1),
+              })}
+            >
+              Next
+            </a>
+          </div>
           {drawer?.mode === "create" && drawer.type === "manual_vote" ? (
             <AdminCrudDrawer
               closeHref="/admin/voting"
