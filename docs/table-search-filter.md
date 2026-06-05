@@ -83,13 +83,10 @@ inside their workspace pages:
 - Proxy Authorizations: Meeting, Room, Proxy.
 - Manual Votes: Meeting, Room.
 - Committee Members: Name, Position, Status.
-
-## Backlog
-
-- Private Document Registry: layout cleanup and table search later. Criteria and
-  sortable columns are intentionally not defined yet; confirm the registry
-  fields users need before implementation.
-- Manual/Online Conflicts: planned for a separate page before table search.
+- Private Document Registry: Set, Type. Sort: Set, Type, Created. Uses partial
+  client result updates.
+- Manual/Online Conflicts: Meeting, Room, Status. Sort: Meeting, Room, Status,
+  Resolved at. Uses partial client result updates.
 
 ## Relationship To CRUD Flow
 

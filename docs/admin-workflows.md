@@ -47,7 +47,9 @@ These workflows define the admin-facing MVP behavior. Ask before implementing an
 ## Private Document Registry
 - Admin can choose `local_drive` or `google_drive` from `Admin > Setup`.
 - Admin stores a root path or private Google Drive folder link. Credentials remain outside the database.
+- Admin manages document references from `Admin > Documents`.
 - Admin can register a private document reference with its owner record, type, path or private link, document set key, version, filename, MIME type, file size, and SHA-256 checksum.
+- The document registry supports search by document set and type, and sorting by set, type, and created timestamp.
 - V1 registers references and verification metadata only. Direct file upload and Google Drive API sync are deferred until the credential and sharing policy is approved.
 - Use the same document set key for revisions of one logical document and increment the version.
 
@@ -66,9 +68,13 @@ These workflows define the admin-facing MVP behavior. Ask before implementing an
 - The import supports only `upsert`; deleting or deactivating master data must be done from the relevant update/edit menu.
 
 ## Result Management
-- Admin can import manual/paper votes for a meeting by room, agenda question, and choice.
+- Admin starts manual vote import from `Admin > Voting` by choosing meeting, room, and the person who used the voting right at the meeting.
+- If the voter is already registered, admin links the manual vote to that profile.
+- If the voter is not registered yet, admin can enter a free-text identity; the manual vote is saved as pending/draft and is not used for result calculation until the voter is registered and linked to a profile.
+- Manual vote entry redirects to the admin manual vote form and uses the same question/choice layout as online voting.
 - Manual votes are stored as `manual_ballots` and `manual_ballot_answers`, parallel to online `ballots` and `ballot_answers`.
-- If the same room has submitted online votes and imported manual votes, admin must choose one effective source before result generation.
+- If the same room has submitted online votes and imported manual votes, admin reviews the conflict from `Admin > Voting > Manual/Online Conflicts`.
+- Conflict review shows a read-only side-by-side diff of manual and online answers, highlights different answers, and requires choosing one whole source only. Manual is the default selected source.
 - Conflict resolution references the online ballot ID and manual ballot ID directly, and must include a remark when relevant.
 - Admin can generate a result snapshot after voting closes.
 - Admin/committee can review the result snapshot.
