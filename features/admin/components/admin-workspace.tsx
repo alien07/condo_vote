@@ -1551,12 +1551,20 @@ export async function AdminWorkspace({
                 </p>
               </div>
             </div>
-            <a
-              className="inline-flex min-h-10 items-center justify-center rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)]"
-              href="/admin/voting?mode=create&type=manual_vote"
-            >
-              Import manual vote
-            </a>
+            <div className="flex flex-wrap gap-2">
+              <a
+                className="inline-flex min-h-10 items-center justify-center rounded-md border border-[var(--border)] px-4 py-2 text-sm font-medium"
+                href="/admin/voting/conflicts"
+              >
+                Review conflicts
+              </a>
+              <a
+                className="inline-flex min-h-10 items-center justify-center rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)]"
+                href="/admin/voting?mode=create&type=manual_vote"
+              >
+                Import manual vote
+              </a>
+            </div>
           </div>
 
           <section className="mb-5 rounded-lg border border-[var(--border)] bg-[var(--background)] p-4">
