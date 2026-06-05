@@ -24,12 +24,11 @@ import {
   importOwnersExcel,
   importRoomOwnersExcel,
   importRoomsExcel,
-  importManualVoteEntry,
   publishMeeting,
   reviewProxyAuthorization,
-  resolveVoteSourceConflict,
   saveAppSettings,
   saveCondoProfile,
+  startManualVoteImport,
 } from "@/features/admin/actions";
 import { EmailInviteControls } from "@/features/admin/components/email-invite-controls";
 import { FieldLabel, RequiredNote } from "@/features/admin/components/field-label";
@@ -568,8 +567,6 @@ export async function AdminWorkspace({
     meetings,
     questions,
     manualBallots,
-    voteSourceResolutions,
-    ballots,
     proxyAuthorizations,
     resultSnapshots,
     committeeApprovals,
@@ -592,57 +589,6 @@ export async function AdminWorkspace({
       appRoles.filter((role) => role.profile_id === profile.id),
     ]),
   );
-  const submittedOnlineRoomKeys = new Set(
-    ballots.map((ballot) => `${ballot.meeting_id}:${ballot.room_id}`),
-  );
-  const onlineBallotByRoomKey = new Map(
-    ballots.map((ballot) => [
-      `${ballot.meeting_id}:${ballot.room_id}`,
-      ballot,
-    ]),
-  );
-  const manualBallotByRoomKey = new Map(
-    manualBallots.map((manualBallot) => [
-      `${manualBallot.meeting_id}:${manualBallot.room_id}`,
-      manualBallot,
-    ]),
-  );
-  const manualRoomKeys = new Set(manualBallotByRoomKey.keys());
-  const resolutionByRoomKey = new Map(
-    voteSourceResolutions.map((resolution) => [
-      `${resolution.meeting_id}:${resolution.room_id}`,
-      resolution,
-    ]),
-  );
-  const voteSourceConflicts = [...manualRoomKeys]
-    .filter((key) => submittedOnlineRoomKeys.has(key))
-    .map((key) => {
-      const [meetingId, roomId] = key.split(":");
-      const meeting = meetings.find((item) => item.id === meetingId);
-      const room = rooms.find((item) => item.id === roomId);
-      const onlineBallot = onlineBallotByRoomKey.get(key);
-      const manualBallot = manualBallotByRoomKey.get(key);
-      const resolution = resolutionByRoomKey.get(key);
-      const matchingResolution =
-        resolution &&
-        onlineBallot &&
-        manualBallot &&
-        resolution.online_ballot_id === onlineBallot.id &&
-        resolution.manual_ballot_id === manualBallot.id
-          ? resolution
-          : null;
-
-      return {
-        key,
-        meetingId,
-        roomId,
-        onlineBallotId: onlineBallot?.id ?? "",
-        manualBallotId: manualBallot?.id ?? "",
-        meetingTitle: meeting?.title ?? "-",
-        roomNumber: room?.room_number ?? "-",
-        resolution: matchingResolution,
-      };
-    });
   const pdfPreviewSnapshot =
     resultSnapshots.find((snapshot) => approvedResultSnapshotIds.has(snapshot.id)) ??
     resultSnapshots[0] ??
@@ -1730,10 +1676,10 @@ export async function AdminWorkspace({
           {drawer?.mode === "create" && drawer.type === "manual_vote" ? (
             <AdminCrudDrawer
               closeHref="/admin/voting"
-              summary={["New manual ballot answer"]}
+              summary={["Manual vote entry setup"]}
               title="Import manual vote"
             >
-              <form action={importManualVoteEntry} className="grid gap-3">
+              <form action={startManualVoteImport} className="grid gap-3">
                 <RequiredNote />
                 <label className="grid gap-1 text-sm font-medium">
                   <FieldLabel required>Meeting</FieldLabel>
@@ -1771,60 +1717,40 @@ export async function AdminWorkspace({
                   </select>
                 </label>
                 <label className="grid gap-1 text-sm font-medium">
-                  <FieldLabel required>Question</FieldLabel>
+                  Voter profile
                   <select
                     className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-                    name="question_id"
-                    required
+                    name="voter_profile_id"
                   >
-                    <option value="">Select question</option>
-                    {questions.map((question) => (
-                      <option key={question.id} value={question.id}>
-                        {question.meetings?.title ?? "-"} /{" "}
-                        {question.agenda_no ?? "-"} {question.question_text}
+                    <option value="">Use pending free-text identity</option>
+                    {profiles.map((profile) => (
+                      <option key={profile.id} value={profile.id}>
+                        {profile.full_name ?? profile.email} ({profile.email})
                       </option>
                     ))}
                   </select>
                 </label>
                 <label className="grid gap-1 text-sm font-medium">
-                  <FieldLabel required>Choice</FieldLabel>
-                  <select
+                  Pending voter identity
+                  <input
                     className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-                    name="choice_id"
-                    required
-                  >
-                    <option value="">Select choice</option>
-                    {questions.flatMap((question) =>
-                      question.meeting_choices
-                        .sort(
-                          (left, right) =>
-                            left.display_order - right.display_order,
-                        )
-                        .map((choice) => (
-                          <option key={choice.id} value={choice.id}>
-                            {question.question_text} / {choice.choice_text}
-                          </option>
-                        )),
-                    )}
-                  </select>
+                    name="voter_identity_text"
+                    placeholder="Name on paper ballot when profile is not registered yet"
+                  />
                 </label>
-                <input
-                  className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-                  name="source_label"
-                  placeholder="Source label"
-                />
-                <input
-                  className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-                  name="audit_note"
-                  placeholder="Audit note"
-                />
+                <p className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+                  If only a free-text identity is entered, the manual vote is
+                  saved as draft/pending and will not be used in result
+                  calculation until the voter is registered and linked to a
+                  profile.
+                </p>
                 <div className="flex flex-wrap gap-2 pt-2">
                   <PendingSubmitButton
                     className="rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)]"
-                    pendingLabel="Adding..."
+                    pendingLabel="Opening..."
                     type="submit"
                   >
-                    Import manual vote
+                    Continue to vote form
                   </PendingSubmitButton>
                   <FormResetButton label="Clear form" />
                   <a
@@ -1838,84 +1764,6 @@ export async function AdminWorkspace({
             </AdminCrudDrawer>
           ) : null}
 
-          {voteSourceConflicts.length > 0 ? (
-            <div className="mt-5 overflow-x-auto">
-              <table className="w-full border-collapse text-left text-sm">
-                <thead className="border-b border-[var(--border)] text-[var(--muted)]">
-                  <tr>
-                    <th className="py-2 pr-3 font-medium">Conflict</th>
-                    <th className="py-2 pr-3 font-medium">Resolution</th>
-                    <th className="py-2 font-medium">Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {voteSourceConflicts.map((conflict) => (
-                    <tr className="border-b border-[var(--border)]" key={conflict.key}>
-                      <td className="py-2 pr-3">
-                        {conflict.meetingTitle} / room {conflict.roomNumber}
-                      </td>
-                      <td className="py-2 pr-3">
-                        {conflict.resolution?.chosen_source ?? "unresolved"}
-                      </td>
-                      <td className="py-2">
-                        <form
-                          action={resolveVoteSourceConflict}
-                          className="flex flex-wrap gap-2"
-                        >
-                          <input
-                            name="meeting_id"
-                            type="hidden"
-                            value={conflict.meetingId}
-                          />
-                          <input
-                            name="room_id"
-                            type="hidden"
-                            value={conflict.roomId}
-                          />
-                          <input
-                            name="online_ballot_id"
-                            type="hidden"
-                            value={conflict.onlineBallotId}
-                          />
-                          <input
-                            name="manual_ballot_id"
-                            type="hidden"
-                            value={conflict.manualBallotId}
-                          />
-                          <select
-                            className="rounded-md border border-[var(--border)] px-2 py-1 text-sm"
-                            defaultValue={
-                              conflict.resolution?.chosen_source ?? "manual"
-                            }
-                            name="chosen_source"
-                          >
-                            <option value="manual">Manual</option>
-                            <option value="online">Online</option>
-                          </select>
-                          <input
-                            className="w-56 rounded-md border border-[var(--border)] px-2 py-1 text-sm"
-                            defaultValue={
-                              conflict.resolution?.conflict_remark ?? ""
-                            }
-                            name="conflict_remark"
-                            placeholder="Conflict remark"
-                          />
-                          <PendingSubmitButton
-                            className="rounded-md border border-[var(--border)] px-3 py-1 text-sm font-medium"
-                            pendingLabel="Saving..."
-                            type="submit"
-                          >
-                            Resolve source
-                          </PendingSubmitButton>
-                          <FormResetButton label="Reset changes" />
-                        </form>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ) : null}
         </section>
 
         <section

@@ -1,5 +1,6 @@
 "use server";
 
+import { redirect } from "next/navigation";
 import {
   createClient,
   optionalDate,
@@ -9,6 +10,10 @@ import {
   revalidateAdminPaths,
 } from "@/features/admin/action-modules/shared";
 import { writeAuditLog } from "@/lib/audit/business-audit";
+
+function encodeManualVotePart(value: string) {
+  return encodeURIComponent(value);
+}
 
 export async function createProxyAuthorization(formData: FormData) {
   const admin = await requireAdmin();
@@ -147,6 +152,127 @@ export async function importManualVoteEntry(formData: FormData) {
     entityType: "manual_ballot",
   });
   revalidateAdminPaths();
+}
+
+export async function startManualVoteImport(formData: FormData) {
+  await requireAdmin();
+
+  const meetingId = requiredText(formData.get("meeting_id"), "Meeting");
+  const roomId = requiredText(formData.get("room_id"), "Room");
+  const voterProfileId = optionalText(formData.get("voter_profile_id"));
+  const voterIdentityText = optionalText(formData.get("voter_identity_text"));
+
+  if (!voterProfileId && !voterIdentityText) {
+    throw new Error("Voter profile or pending voter identity is required.");
+  }
+
+  const params = new URLSearchParams();
+
+  if (voterProfileId) {
+    params.set("voterProfileId", voterProfileId);
+  } else if (voterIdentityText) {
+    params.set("voterName", voterIdentityText);
+  }
+
+  redirect(
+    `/admin/voting/manual/${encodeManualVotePart(meetingId)}/${encodeManualVotePart(
+      roomId,
+    )}?${params.toString()}`,
+  );
+}
+
+export async function submitManualBallot(formData: FormData) {
+  const importer = await requireAdmin();
+  const meetingId = requiredText(formData.get("meeting_id"), "Meeting");
+  const roomId = requiredText(formData.get("room_id"), "Room");
+  const voterProfileId = optionalText(formData.get("voter_profile_id"));
+  const voterIdentityText = optionalText(formData.get("voter_identity_text"));
+
+  if (!voterProfileId && !voterIdentityText) {
+    throw new Error("Voter profile or pending voter identity is required.");
+  }
+
+  const supabase = await createClient();
+  const questionsResult = await supabase
+    .from("meeting_questions")
+    .select("id, question_text, meeting_choices(id)")
+    .eq("meeting_id", meetingId);
+
+  if (questionsResult.error) {
+    throw questionsResult.error;
+  }
+
+  const answers = questionsResult.data.map((question) => {
+    const choiceId = requiredText(
+      formData.get(`choice:${question.id}`),
+      question.question_text,
+    );
+    const validChoiceIds = new Set(
+      question.meeting_choices.map((choice) => choice.id),
+    );
+
+    if (!validChoiceIds.has(choiceId)) {
+      throw new Error("Selected choice does not belong to this question.");
+    }
+
+    return {
+      choice_id: choiceId,
+      question_id: question.id,
+    };
+  });
+  const pendingIdentity = !voterProfileId;
+  const auditNote = pendingIdentity
+    ? `Pending voter identity: ${voterIdentityText}`
+    : `Manual vote entered for profile ${voterProfileId}`;
+  const { data: manualBallot, error: manualBallotError } = await supabase
+    .from("manual_ballots")
+    .upsert(
+      {
+        audit_note: auditNote,
+        imported_by: importer.id,
+        meeting_id: meetingId,
+        room_id: roomId,
+        source_label: pendingIdentity ? "manual_pending_identity" : "manual_on_site",
+        status: pendingIdentity ? "draft" : "submitted",
+      },
+      { onConflict: "meeting_id,room_id" },
+    )
+    .select("id")
+    .single();
+
+  if (manualBallotError) {
+    throw manualBallotError;
+  }
+
+  const { error: answersError } = await supabase.from("manual_ballot_answers").upsert(
+    answers.map((answer) => ({
+      manual_ballot_id: manualBallot.id,
+      ...answer,
+    })),
+    { onConflict: "manual_ballot_id,question_id" },
+  );
+
+  if (answersError) {
+    throw answersError;
+  }
+
+  await writeAuditLog(supabase, {
+    action: pendingIdentity
+      ? "manual_ballot.pending_identity_saved"
+      : "manual_ballot.submitted",
+    actorProfileId: importer.id,
+    details: {
+      meeting_id: meetingId,
+      pending_identity: pendingIdentity,
+      room_id: roomId,
+      voter_identity_text: pendingIdentity ? voterIdentityText : null,
+      voter_profile_id: voterProfileId,
+    },
+    entityId: manualBallot.id,
+    entityType: "manual_ballot",
+  });
+  revalidateAdminPaths();
+  redirect("/admin/voting");
 }
 
 export async function resolveVoteSourceConflict(formData: FormData) {
