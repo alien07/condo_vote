@@ -69,9 +69,9 @@ Phrase search behavior:
 
 The following admin tables now use the same search criteria, sortable headers,
 grouped result controls, page selector, per-page selector, and previous/next
-controls. These pages currently use server-rendered query params, which is
-acceptable for this rollout because the tables are smaller and already rendered
-inside their workspace pages:
+controls. Admin workspace links and GET search forms use client-side soft
+navigation, so these controls do not trigger a full document reload. Tables with
+dedicated API routes additionally update only their local result state.
 
 - Rooms: Room, Status.
 - Owners: Name, Status.

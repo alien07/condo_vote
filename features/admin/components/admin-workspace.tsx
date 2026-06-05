@@ -34,6 +34,7 @@ import {
 import { EmailInviteControls } from "@/features/admin/components/email-invite-controls";
 import { FieldLabel, RequiredNote } from "@/features/admin/components/field-label";
 import { AdminCrudDrawer } from "@/features/admin/components/admin-crud-drawer";
+import { AdminSoftNavigation } from "@/features/admin/components/admin-soft-navigation";
 import {
   ConfirmSubmitButton,
   FormResetButton,
@@ -1266,6 +1267,7 @@ export async function AdminWorkspace({
 
   return (
     <main className="min-h-screen px-6 py-8">
+      <AdminSoftNavigation />
       <section className="mx-auto max-w-5xl">
         <div className="mb-6 border-b border-[var(--border)] pb-5">
           <div className="flex items-center gap-3">
