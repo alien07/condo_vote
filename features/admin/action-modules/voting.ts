@@ -276,6 +276,70 @@ export async function submitManualBallot(formData: FormData) {
   redirect("/admin/voting");
 }
 
+export async function resolveManualBallotIdentity(formData: FormData) {
+  const resolver = await requireAdmin();
+
+  const id = requiredText(formData.get("id"), "Manual ballot");
+  const voterProfileId = requiredText(formData.get("voter_profile_id"), "Voter profile");
+  const supabase = await createClient();
+  const [manualBallotResult, profileResult] = await Promise.all([
+    supabase
+      .from("manual_ballots")
+      .select("id, meeting_id, room_id, identity_status, status, voter_identity_text")
+      .eq("id", id)
+      .single(),
+    supabase
+      .from("profiles")
+      .select("id")
+      .eq("id", voterProfileId)
+      .single(),
+  ]);
+
+  if (manualBallotResult.error) {
+    throw manualBallotResult.error;
+  }
+
+  if (profileResult.error) {
+    throw profileResult.error;
+  }
+
+  if (
+    manualBallotResult.data.identity_status !== "pending" &&
+    manualBallotResult.data.status !== "draft"
+  ) {
+    throw new Error("This manual vote identity is already resolved.");
+  }
+
+  const { error } = await supabase
+    .from("manual_ballots")
+    .update({
+      identity_status: "linked",
+      source_label: "manual_on_site",
+      status: "submitted",
+      voter_profile_id: voterProfileId,
+    })
+    .eq("id", id);
+
+  if (error) {
+    throw error;
+  }
+
+  await writeAuditLog(supabase, {
+    action: "manual_ballot.identity_resolved",
+    actorProfileId: resolver.id,
+    details: {
+      meeting_id: manualBallotResult.data.meeting_id,
+      previous_identity_text: manualBallotResult.data.voter_identity_text,
+      room_id: manualBallotResult.data.room_id,
+      voter_profile_id: voterProfileId,
+    },
+    entityId: id,
+    entityType: "manual_ballot",
+  });
+  revalidateAdminPaths();
+  redirect("/admin/voting");
+}
+
 export async function resolveVoteSourceConflict(formData: FormData) {
   const resolver = await requireAdmin();
 

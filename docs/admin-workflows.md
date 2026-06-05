@@ -72,6 +72,7 @@ These workflows define the admin-facing MVP behavior. Ask before implementing an
 - If the voter is already registered, admin links the manual vote to that profile.
 - If the voter is not registered yet, admin can enter a free-text identity; the manual vote is saved with `identity_status=pending` as a draft and is not used for result calculation until the voter is registered and linked to a profile.
 - Pending manual vote identity records block result generation and committee approval. Admin must resolve them from `Admin > Voting > Manual votes` before continuing the result process.
+- To resolve a pending manual vote identity, admin opens the pending manual identity row, selects the matching registered profile, and saves. The ballot is then marked `identity_status=linked` and `status=submitted`.
 - Existing manual ballots from before this identity design are marked `identity_status=legacy` to preserve dev data and result history.
 - Manual vote entry redirects to the admin manual vote form and uses the same question/choice layout as online voting.
 - Manual votes are stored as `manual_ballots` and `manual_ballot_answers`, parallel to online `ballots` and `ballot_answers`.

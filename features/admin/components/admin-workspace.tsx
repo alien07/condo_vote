@@ -26,6 +26,7 @@ import {
   importRoomsExcel,
   publishMeeting,
   reviewProxyAuthorization,
+  resolveManualBallotIdentity,
   saveAppSettings,
   saveCondoProfile,
   startManualVoteImport,
@@ -1055,6 +1056,11 @@ export async function AdminWorkspace({
     room: manualVoteFilters?.room ?? "",
     sort: manualVoteFilters?.sort ?? "meeting",
   };
+  const pendingManualVoteIdentities = manualBallots.filter(
+    (manualBallot) =>
+      manualBallot.identity_status === "pending" ||
+      manualBallot.status === "draft",
+  );
   const manualVoteRows = manualBallots.flatMap((manualBallot) =>
     manualBallot.manual_ballot_answers.map((answer) => ({
       auditText: [
@@ -1529,6 +1535,65 @@ export async function AdminWorkspace({
             </div>
           </div>
 
+          {pendingManualVoteIdentities.length > 0 ? (
+            <section className="mb-5 rounded-lg border border-amber-200 bg-amber-50 p-4">
+              <div className="mb-3">
+                <h3 className="text-sm font-semibold text-amber-950">
+                  Pending manual vote identities
+                </h3>
+                <p className="mt-1 text-xs text-amber-900">
+                  These records block result generation and committee approval.
+                  Link each pending identity to a registered profile before
+                  continuing the result process.
+                </p>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse text-left text-sm">
+                  <thead className="border-b border-amber-200 text-amber-900">
+                    <tr>
+                      <th className="py-2 pr-3 font-medium">Meeting</th>
+                      <th className="py-2 pr-3 font-medium">Room</th>
+                      <th className="py-2 pr-3 font-medium">Captured identity</th>
+                      <th className="py-2 pr-3 font-medium">Status</th>
+                      <th className="py-2 font-medium">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {pendingManualVoteIdentities.map((manualBallot) => (
+                      <tr
+                        className="border-b border-amber-200 last:border-0"
+                        key={manualBallot.id}
+                      >
+                        <td className="py-2 pr-3">
+                          {manualBallot.meetings?.title ?? "-"}
+                        </td>
+                        <td className="py-2 pr-3">
+                          {manualBallot.rooms?.room_number ?? "-"}
+                        </td>
+                        <td className="py-2 pr-3">
+                          {manualBallot.voter_identity_text ??
+                            manualBallot.audit_note ??
+                            "-"}
+                        </td>
+                        <td className="py-2 pr-3">
+                          {manualBallot.identity_status} / {manualBallot.status}
+                        </td>
+                        <td className="py-2">
+                          <a
+                            className="rounded-md border border-amber-300 bg-white px-3 py-1 text-sm font-medium text-amber-900"
+                            href={`/admin/voting?mode=edit&type=manual_vote_identity&id=${manualBallot.id}`}
+                          >
+                            Link profile
+                          </a>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          ) : null}
+
           <section className="mb-5 rounded-lg border border-[var(--border)] bg-[var(--background)] p-4">
             <div className="mb-3">
               <h3 className="text-sm font-semibold">Search Criteria</h3>
@@ -1779,6 +1844,68 @@ export async function AdminWorkspace({
               </form>
             </AdminCrudDrawer>
           ) : null}
+          {drawer?.mode === "edit" && drawer.type === "manual_vote_identity"
+            ? pendingManualVoteIdentities
+                .filter((manualBallot) => manualBallot.id === drawer.id)
+                .map((manualBallot) => (
+                  <AdminCrudDrawer
+                    closeHref="/admin/voting"
+                    key={manualBallot.id}
+                    summary={[
+                      `Meeting: ${manualBallot.meetings?.title ?? "-"}`,
+                      `Room: ${manualBallot.rooms?.room_number ?? "-"}`,
+                      `Captured: ${
+                        manualBallot.voter_identity_text ??
+                        manualBallot.audit_note ??
+                        "-"
+                      }`,
+                    ]}
+                    title="Resolve manual vote identity"
+                  >
+                    <form action={resolveManualBallotIdentity} className="grid gap-3">
+                      <RequiredNote />
+                      <input name="id" type="hidden" value={manualBallot.id} />
+                      <p className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+                        Select the registered profile that matches the paper ballot
+                        identity. After saving, this manual vote becomes submitted
+                        and can be used in result generation and committee approval.
+                      </p>
+                      <label className="grid gap-1 text-sm font-medium">
+                        <FieldLabel required>Voter profile</FieldLabel>
+                        <select
+                          autoFocus
+                          className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+                          name="voter_profile_id"
+                          required
+                        >
+                          <option value="">Select profile</option>
+                          {profiles.map((profile) => (
+                            <option key={profile.id} value={profile.id}>
+                              {profile.full_name ?? profile.email} ({profile.email})
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <div className="flex flex-wrap gap-2 pt-2">
+                        <ConfirmSubmitButton
+                          className="rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)]"
+                          confirmMessage={`Link pending manual vote identity "${manualBallot.voter_identity_text ?? manualBallot.audit_note ?? "this identity"}" to the selected profile? This makes the manual vote eligible for result calculation.`}
+                          pendingLabel="Saving..."
+                          type="submit"
+                        >
+                          Link profile
+                        </ConfirmSubmitButton>
+                        <a
+                          className="inline-flex items-center justify-center rounded-md border border-[var(--border)] px-4 py-2 text-sm font-medium"
+                          href="/admin/voting"
+                        >
+                          Cancel
+                        </a>
+                      </div>
+                    </form>
+                  </AdminCrudDrawer>
+                ))
+            : null}
 
         </section>
 
