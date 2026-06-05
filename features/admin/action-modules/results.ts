@@ -11,6 +11,27 @@ import {
 } from "@/features/admin/action-modules/shared";
 import { writeAuditLog } from "@/lib/audit/business-audit";
 
+async function assertNoPendingManualVoteIdentities(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  meetingId: string,
+) {
+  const { count, error } = await supabase
+    .from("manual_ballots")
+    .select("id", { count: "exact", head: true })
+    .eq("meeting_id", meetingId)
+    .or("identity_status.eq.pending,status.eq.draft");
+
+  if (error) {
+    throw error;
+  }
+
+  if ((count ?? 0) > 0) {
+    throw new Error(
+      `Resolve ${count} pending manual vote identity record(s) before generating or approving results. Go to Admin > Voting > Manual votes to fix them.`,
+    );
+  }
+}
+
 export async function generateResultSnapshot(formData: FormData) {
   const generator = await requireAdmin();
 
@@ -29,6 +50,8 @@ export async function generateResultSnapshot(formData: FormData) {
   if (existingApproval) {
     throw new Error("Cannot generate a new result after committee approval.");
   }
+
+  await assertNoPendingManualVoteIdentities(supabase, meetingId);
 
   const [
     meetingResult,
@@ -369,6 +392,8 @@ export async function approveResultSnapshot(formData: FormData) {
   if (existingApprovalResult.data) {
     throw new Error("This meeting already has an approved result.");
   }
+
+  await assertNoPendingManualVoteIdentities(supabase, meetingId);
 
   const { data: approval, error } = await supabase
     .from("committee_approvals")

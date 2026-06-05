@@ -570,6 +570,7 @@ export async function AdminWorkspace({
     proxyAuthorizations,
     resultSnapshots,
     committeeApprovals,
+    pendingManualBallots,
     emailLogs,
     profiles,
   } =
@@ -583,6 +584,16 @@ export async function AdminWorkspace({
   const approvedMeetingIds = new Set(
     committeeApprovals.map((approval) => approval.meeting_id),
   );
+  const pendingManualBallotsByMeetingId = new Map<
+    string,
+    typeof pendingManualBallots
+  >();
+
+  for (const ballot of pendingManualBallots) {
+    const current = pendingManualBallotsByMeetingId.get(ballot.meeting_id) ?? [];
+
+    pendingManualBallotsByMeetingId.set(ballot.meeting_id, [...current, ballot]);
+  }
   const appRolesByProfile = new Map(
     profiles.map((profile) => [
       profile.id,
@@ -2218,6 +2229,8 @@ export async function AdminWorkspace({
               <tbody>
                 {pagedMeetings.map((meeting) => {
                   const hasApprovedResult = approvedMeetingIds.has(meeting.id);
+                  const pendingManualCount =
+                    pendingManualBallotsByMeetingId.get(meeting.id)?.length ?? 0;
 
                   return (
                     <tr className="border-b border-[var(--border)]" key={meeting.id}>
@@ -2262,16 +2275,25 @@ export async function AdminWorkspace({
                           {(meeting.status === "published" ||
                             meeting.status === "closed") &&
                           !hasApprovedResult ? (
-                            <form action={generateResultSnapshot}>
-                              <input name="id" type="hidden" value={meeting.id} />
-                              <PendingSubmitButton
-                                className="text-sm font-medium text-[var(--primary)]"
-                                pendingLabel="Generating..."
-                                type="submit"
+                            pendingManualCount > 0 ? (
+                              <a
+                                className="text-sm font-medium text-amber-700"
+                                href="/admin/voting"
                               >
-                                Generate result
-                              </PendingSubmitButton>
-                            </form>
+                                Resolve {pendingManualCount} pending manual vote
+                              </a>
+                            ) : (
+                              <form action={generateResultSnapshot}>
+                                <input name="id" type="hidden" value={meeting.id} />
+                                <PendingSubmitButton
+                                  className="text-sm font-medium text-[var(--primary)]"
+                                  pendingLabel="Generating..."
+                                  type="submit"
+                                >
+                                  Generate result
+                                </PendingSubmitButton>
+                              </form>
+                            )
                           ) : null}
                           {hasApprovedResult ? (
                             <span className="text-sm text-[var(--muted)]">
@@ -2826,6 +2848,9 @@ export async function AdminWorkspace({
                   const meetingApproved = approvedMeetingIds.has(
                     snapshot.meeting_id,
                   );
+                  const pendingManualCount =
+                    pendingManualBallotsByMeetingId.get(snapshot.meeting_id)
+                      ?.length ?? 0;
                   const selected =
                     drawer?.mode === "edit" &&
                     drawer.type === "result_approval" &&
@@ -2859,12 +2884,20 @@ export async function AdminWorkspace({
                         {approved ? "approved" : "pending"}
                       </td>
                       <td className="py-2">
-                        {!meetingApproved ? (
+                        {!meetingApproved && pendingManualCount === 0 ? (
                           <a
                             className="rounded-md border border-[var(--border)] px-3 py-1 text-sm font-medium"
                             href={`/admin/results?mode=edit&type=result_approval&id=${snapshot.id}`}
                           >
                             Approve result
+                          </a>
+                        ) : null}
+                        {!meetingApproved && pendingManualCount > 0 ? (
+                          <a
+                            className="text-sm font-medium text-amber-700"
+                            href="/admin/voting"
+                          >
+                            Resolve {pendingManualCount} pending manual vote
                           </a>
                         ) : null}
                         {meetingApproved && !approved ? (
@@ -2941,6 +2974,20 @@ export async function AdminWorkspace({
                         type="hidden"
                         value={snapshot.id}
                       />
+                      {(pendingManualBallotsByMeetingId.get(snapshot.meeting_id)
+                        ?.length ?? 0) > 0 ? (
+                        <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+                          Resolve{" "}
+                          {pendingManualBallotsByMeetingId.get(snapshot.meeting_id)
+                            ?.length ?? 0}{" "}
+                          pending manual vote identity record(s) before committee
+                          approval. Go to{" "}
+                          <a className="font-medium underline" href="/admin/voting">
+                            Admin &gt; Voting &gt; Manual votes
+                          </a>{" "}
+                          to fix them.
+                        </div>
+                      ) : null}
                       <label className="grid gap-1 text-sm font-medium">
                         Approval / conflict notes
                         <textarea
@@ -2951,14 +2998,25 @@ export async function AdminWorkspace({
                         />
                       </label>
                       <div className="flex flex-wrap gap-2 pt-2">
-                        <ConfirmSubmitButton
-                          className="rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)]"
-                          confirmMessage={`Approve result for "${snapshot.meetings?.title ?? "this meeting"}"? This locks the approved result snapshot as the source of truth.`}
-                          pendingLabel="Saving..."
-                          type="submit"
-                        >
-                          Approve result
-                        </ConfirmSubmitButton>
+                        {(pendingManualBallotsByMeetingId.get(snapshot.meeting_id)
+                          ?.length ?? 0) > 0 ? (
+                          <button
+                            className="rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)] opacity-60"
+                            disabled
+                            type="button"
+                          >
+                            Approval blocked
+                          </button>
+                        ) : (
+                          <ConfirmSubmitButton
+                            className="rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)]"
+                            confirmMessage={`Approve result for "${snapshot.meetings?.title ?? "this meeting"}"? This locks the approved result snapshot as the source of truth.`}
+                            pendingLabel="Saving..."
+                            type="submit"
+                          >
+                            Approve result
+                          </ConfirmSubmitButton>
+                        )}
                         <FormResetButton label="Clear form" />
                         <a
                           className="inline-flex items-center justify-center rounded-md border border-[var(--border)] px-4 py-2 text-sm font-medium"

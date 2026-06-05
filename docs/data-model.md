@@ -163,7 +163,7 @@ Notes: Every submit/edit should create a version for audit.
 ### manual_ballots
 Purpose: Stores imported manual/offline ballot records per meeting and room.
 Key fields: meeting, room, importer, voter profile, voter identity text, identity status, source label, audit note, status, imported timestamp.
-Notes: Mirrors the online `ballots` table closely enough that result calculation can choose either source per room. `identity_status=linked` means the manual voter is tied to a profile, `pending` means admin captured a free-text identity but it is not result-ready, and `legacy` preserves older imported manual ballots created before identity columns existed.
+Notes: Mirrors the online `ballots` table closely enough that result calculation can choose either source per room. `identity_status=linked` means the manual voter is tied to a profile, `pending` means admin captured a free-text identity but it is not result-ready, and `legacy` preserves older imported manual ballots created before identity columns existed. Pending manual vote identity records block result generation and committee approval.
 
 ### manual_ballot_answers
 Purpose: Stores current effective selected choices for an imported manual ballot.
