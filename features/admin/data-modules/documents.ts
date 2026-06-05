@@ -13,6 +13,15 @@ export type AuditLogFilters = {
   sortDirection?: "asc" | "desc";
 };
 
+export type DocumentTableFilters = {
+  dir?: "asc" | "desc";
+  page?: number;
+  perPage?: number;
+  set?: string;
+  sortBy?: "created" | "set" | "type";
+  type?: string;
+};
+
 export async function fetchAuditLogRows(
   supabase: SupabaseServerClient,
   auditFilters: AuditLogFilters = {},
@@ -72,6 +81,52 @@ export async function fetchAuditLogRows(
   };
 }
 
+export async function fetchDocumentRows(
+  supabase: SupabaseServerClient,
+  documentFilters: DocumentTableFilters = {},
+) {
+  const sortColumn =
+    documentFilters.sortBy === "set"
+      ? "document_set_key"
+      : documentFilters.sortBy === "type"
+        ? "document_type"
+        : "created_at";
+  const sortAscending = documentFilters.dir === "asc";
+  const page = Math.max(1, documentFilters.page ?? 1);
+  const perPage = Math.min(Math.max(documentFilters.perPage ?? 25, 10), 100);
+  const rangeFrom = (page - 1) * perPage;
+  const rangeTo = rangeFrom + perPage - 1;
+  let query = supabase
+    .from("documents")
+    .select(
+      "id, owner_type, owner_id, document_type, storage_provider, storage_path, document_set_key, document_version, original_filename, mime_type, file_size_bytes, checksum_sha256, created_at",
+      { count: "exact" },
+    );
+
+  if (documentFilters.set) {
+    query = query.ilike("document_set_key", `%${documentFilters.set}%`);
+  }
+
+  if (documentFilters.type && documentFilters.type !== "all") {
+    query = query.eq("document_type", documentFilters.type);
+  }
+
+  const result = await query
+    .order(sortColumn, { ascending: sortAscending })
+    .range(rangeFrom, rangeTo);
+
+  if (result.error) {
+    throw result.error;
+  }
+
+  return {
+    documentPage: page,
+    documentPerPage: perPage,
+    documentTotal: result.count ?? 0,
+    documents: result.data,
+  };
+}
+
 export async function fetchDocumentData(
   supabase: SupabaseServerClient,
   auditFilters: AuditLogFilters = {},
@@ -85,13 +140,7 @@ export async function fetchDocumentData(
       .select("id, document_storage_provider, document_storage_root")
       .order("created_at", { ascending: false })
       .limit(1),
-    supabase
-      .from("documents")
-      .select(
-        "id, owner_type, owner_id, document_type, storage_provider, storage_path, document_set_key, document_version, original_filename, mime_type, file_size_bytes, checksum_sha256, created_at",
-      )
-      .order("created_at", { ascending: false })
-      .limit(50),
+    fetchDocumentRows(supabase),
     auditRows,
     supabase
       .from("audit_logs")
@@ -106,10 +155,6 @@ export async function fetchDocumentData(
     throw settingsResult.error;
   }
 
-  if (documentsResult.error) {
-    throw documentsResult.error;
-  }
-
   if (auditOptionsResult.error) {
     throw auditOptionsResult.error;
   }
@@ -121,6 +166,6 @@ export async function fetchDocumentData(
     auditLogPerPage: auditLogsResult.auditLogPerPage,
     auditLogTotal: auditLogsResult.auditLogTotal,
     auditOptions: auditOptionsResult.data,
-    documents: documentsResult.data,
+    documents: documentsResult.documents,
   };
 }

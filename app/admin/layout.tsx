@@ -5,6 +5,7 @@ import { AuthenticatedShell } from "@/features/shell/authenticated-shell";
 const adminNav = [
   ["/admin", "Overview"],
   ["/admin/setup", "Setup"],
+  ["/admin/documents", "Documents"],
   ["/admin/people", "People"],
   ["/admin/ownership", "Ownership"],
   ["/admin/meetings", "Meetings"],

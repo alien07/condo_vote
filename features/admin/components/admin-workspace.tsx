@@ -28,7 +28,6 @@ import {
   publishMeeting,
   reviewProxyAuthorization,
   resolveVoteSourceConflict,
-  registerDocumentReference,
   saveAppSettings,
   saveCondoProfile,
 } from "@/features/admin/actions";
@@ -562,7 +561,6 @@ export async function AdminWorkspace({
     auditLogTotal,
     auditOptions,
     committeeMembers,
-    documents,
     rooms,
     appRoles,
     owners,
@@ -1453,25 +1451,23 @@ export async function AdminWorkspace({
             <div className="flex items-center gap-2">
               <FolderLock className="text-[var(--primary)]" size={20} />
               <div>
-                <h2 className="text-lg font-semibold">
-                  Private Document Registry
-                </h2>
+                <h2 className="text-lg font-semibold">Document Storage</h2>
                 <p className="text-sm text-[var(--muted)]">
-                  Keep private document locations and verification metadata.
+                  Configure where private document references point to.
                 </p>
               </div>
             </div>
             <a
-              className="inline-flex min-h-10 items-center justify-center rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)]"
-              href="/admin/setup?tab=storage&mode=create&type=document_reference"
+              className="inline-flex min-h-10 items-center justify-center rounded-md border border-[var(--border)] px-4 py-2 text-sm font-medium"
+              href="/admin/documents"
             >
-              Register document
+              Open Documents
             </a>
           </div>
           <p className="mb-4 text-sm text-[var(--muted)]">
-            Store a local-drive path or private Google Drive link. Keep file
-            credentials outside the database. SHA-256 and file size verify the
-            exact file; document set key groups versions of the same document.
+            Store only the local-drive root path or private Google Drive folder
+            link here. Register individual document references and verification
+            metadata in Documents.
           </p>
 
           <form action={saveAppSettings} className="grid gap-3 md:grid-cols-2">
@@ -1509,173 +1505,6 @@ export async function AdminWorkspace({
               <FormResetButton label="Reset changes" />
             </div>
           </form>
-
-          <div className="mt-6 overflow-x-auto">
-            <table className="w-full min-w-[900px] border-collapse text-left text-sm">
-              <thead className="border-b border-[var(--border)] text-[var(--muted)]">
-                <tr>
-                  <th className="py-2 pr-3 font-medium">Set / version</th>
-                  <th className="py-2 pr-3 font-medium">Type</th>
-                  <th className="py-2 pr-3 font-medium">Provider</th>
-                  <th className="py-2 pr-3 font-medium">Path or link</th>
-                  <th className="py-2 font-medium">SHA-256</th>
-                </tr>
-              </thead>
-              <tbody>
-                {documents.map((document) => (
-                  <tr
-                    className="border-b border-[var(--border)]"
-                    key={document.id}
-                  >
-                    <td className="py-2 pr-3">
-                      {document.document_set_key} / v{document.document_version}
-                    </td>
-                    <td className="py-2 pr-3">{document.document_type}</td>
-                    <td className="py-2 pr-3">{document.storage_provider}</td>
-                    <td className="max-w-xs truncate py-2 pr-3">
-                      {document.storage_path}
-                    </td>
-                    <td className="max-w-xs truncate py-2">
-                      {document.checksum_sha256 ?? "-"}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          {documents.length === 0 ? (
-            <p className="mt-3 text-sm text-[var(--muted)]">
-              No private document references have been registered yet.
-            </p>
-          ) : null}
-          {drawer?.mode === "create" && drawer.type === "document_reference" ? (
-            <AdminCrudDrawer
-              closeHref="/admin/setup?tab=storage"
-              summary={["New private document reference"]}
-              title="Register document"
-            >
-              <form action={registerDocumentReference} className="grid gap-3">
-                <RequiredNote />
-                <label className="grid gap-1 text-sm font-medium">
-                  <FieldLabel required>Storage provider</FieldLabel>
-                  <select
-                    autoFocus
-                    className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-                    defaultValue="local_drive"
-                    name="storage_provider"
-                    required
-                  >
-                    <option value="local_drive">Local drive</option>
-                    <option value="google_drive">Google Drive</option>
-                  </select>
-                </label>
-                <label className="grid gap-1 text-sm font-medium">
-                  <FieldLabel required>Owner type</FieldLabel>
-                  <select
-                    className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-                    name="owner_type"
-                    required
-                  >
-                    <option value="profile">Profile</option>
-                    <option value="approval_request">Approval request</option>
-                    <option value="proxy_authorization">Proxy authorization</option>
-                    <option value="meeting">Meeting</option>
-                    <option value="result_snapshot">Result snapshot</option>
-                  </select>
-                </label>
-                <label className="grid gap-1 text-sm font-medium">
-                  <FieldLabel required>Document type</FieldLabel>
-                  <select
-                    className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-                    name="document_type"
-                    required
-                  >
-                    <option value="owner_verification">Owner verification</option>
-                    <option value="proxy_authorization">Proxy authorization</option>
-                    <option value="meeting_attachment">Meeting attachment</option>
-                    <option value="result_pdf">Result PDF</option>
-                    <option value="other">Other</option>
-                  </select>
-                </label>
-                <label className="grid gap-1 text-sm font-medium">
-                  <FieldLabel required>Owner UUID</FieldLabel>
-                  <input
-                    className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-                    name="owner_id"
-                    required
-                  />
-                </label>
-                <label className="grid gap-1 text-sm font-medium">
-                  <FieldLabel required>
-                    Relative path or private Drive file link
-                  </FieldLabel>
-                  <input
-                    className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-                    name="storage_path"
-                    required
-                  />
-                </label>
-                <label className="grid gap-1 text-sm font-medium">
-                  <FieldLabel required>Document set key</FieldLabel>
-                  <input
-                    className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-                    name="document_set_key"
-                    placeholder="proxy-meeting-room"
-                    required
-                  />
-                </label>
-                <label className="grid gap-1 text-sm font-medium">
-                  <FieldLabel required>Version</FieldLabel>
-                  <input
-                    className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-                    defaultValue={1}
-                    min={1}
-                    name="document_version"
-                    type="number"
-                    required
-                  />
-                </label>
-                <input
-                  className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-                  name="original_filename"
-                  placeholder="Original filename"
-                />
-                <input
-                  className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-                  name="mime_type"
-                  placeholder="MIME type"
-                />
-                <input
-                  className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-                  min={0}
-                  name="file_size_bytes"
-                  placeholder="File size bytes"
-                  type="number"
-                />
-                <input
-                  className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-                  name="checksum_sha256"
-                  placeholder="SHA-256 checksum, 64 hex characters"
-                />
-                <div className="flex flex-wrap gap-2 pt-2">
-                  <PendingSubmitButton
-                    className="rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)]"
-                    pendingLabel="Adding..."
-                    type="submit"
-                  >
-                    Register document
-                  </PendingSubmitButton>
-                  <FormResetButton label="Clear form" />
-                  <a
-                    className="inline-flex items-center justify-center rounded-md border border-[var(--border)] px-4 py-2 text-sm font-medium"
-                    href="/admin/setup?tab=storage"
-                  >
-                    Cancel
-                  </a>
-                </div>
-              </form>
-            </AdminCrudDrawer>
-          ) : null}
         </section>
 
         <section
