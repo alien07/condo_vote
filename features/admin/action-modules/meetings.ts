@@ -1,5 +1,6 @@
 "use server";
 
+import { redirect } from "next/navigation";
 import {
   createClient,
   optionalBoolean,
@@ -16,6 +17,7 @@ export async function createMeeting(formData: FormData) {
 
   const startsAt = requiredDateTime(formData.get("starts_at"), "Start time");
   const endsAt = requiredDateTime(formData.get("ends_at"), "End time");
+  const title = requiredText(formData.get("title"), "Meeting title");
 
   if (new Date(startsAt) >= new Date(endsAt)) {
     throw new Error("End time must be after start time.");
@@ -23,7 +25,7 @@ export async function createMeeting(formData: FormData) {
 
   const supabase = await createClient();
   const { error } = await supabase.from("meetings").insert({
-    title: requiredText(formData.get("title"), "Meeting title"),
+    title,
     description: optionalText(formData.get("description")),
     video_url: optionalText(formData.get("video_url")),
     starts_at: startsAt,
@@ -35,6 +37,59 @@ export async function createMeeting(formData: FormData) {
     chairperson_name: optionalText(formData.get("chairperson_name")),
     quorum_rule: requiredText(formData.get("quorum_rule"), "Quorum rule"),
   });
+
+  if (error) {
+    throw error;
+  }
+
+  revalidateAdminPaths();
+  redirect(
+    `/admin/meetings?tab=meetings&title=${encodeURIComponent(title)}&feedback=success&message=${encodeURIComponent("Meeting added")}`,
+  );
+}
+
+export async function updateDraftMeeting(formData: FormData) {
+  await requireAdmin();
+
+  const id = requiredText(formData.get("id"), "Meeting ID");
+  const startsAt = requiredDateTime(formData.get("starts_at"), "Start time");
+  const endsAt = requiredDateTime(formData.get("ends_at"), "End time");
+
+  if (new Date(startsAt) >= new Date(endsAt)) {
+    throw new Error("End time must be after start time.");
+  }
+
+  const supabase = await createClient();
+  const { data: meeting, error: meetingError } = await supabase
+    .from("meetings")
+    .select("status")
+    .eq("id", id)
+    .single();
+
+  if (meetingError) {
+    throw meetingError;
+  }
+
+  if (meeting.status !== "draft") {
+    throw new Error("Only draft meetings can be edited.");
+  }
+
+  const { error } = await supabase
+    .from("meetings")
+    .update({
+      title: requiredText(formData.get("title"), "Meeting title"),
+      description: optionalText(formData.get("description")),
+      video_url: optionalText(formData.get("video_url")),
+      starts_at: startsAt,
+      ends_at: endsAt,
+      meeting_number: optionalText(formData.get("meeting_number")),
+      meeting_type: requiredText(formData.get("meeting_type"), "Meeting type"),
+      fiscal_year: optionalText(formData.get("fiscal_year")),
+      location: optionalText(formData.get("location")),
+      chairperson_name: optionalText(formData.get("chairperson_name")),
+      quorum_rule: requiredText(formData.get("quorum_rule"), "Quorum rule"),
+    })
+    .eq("id", id);
 
   if (error) {
     throw error;
@@ -64,11 +119,12 @@ export async function createMeetingQuestion(formData: FormData) {
   await requireAdmin();
 
   const supabase = await createClient();
+  const questionText = requiredText(formData.get("question_text"), "Question");
   const { error } = await supabase.from("meeting_questions").insert({
     meeting_id: requiredText(formData.get("meeting_id"), "Meeting"),
     agenda_no: optionalText(formData.get("agenda_no")),
     agenda_title: optionalText(formData.get("agenda_title")),
-    question_text: requiredText(formData.get("question_text"), "Question"),
+    question_text: questionText,
     question_type: requiredText(formData.get("question_type"), "Question type"),
     resolution_type: requiredText(
       formData.get("resolution_type"),
@@ -91,6 +147,9 @@ export async function createMeetingQuestion(formData: FormData) {
   }
 
   revalidateAdminPaths();
+  redirect(
+    `/admin/meetings?tab=questions&feedback=success&message=${encodeURIComponent("Question added")}`,
+  );
 }
 
 export async function deleteMeetingQuestion(formData: FormData) {

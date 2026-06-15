@@ -30,6 +30,8 @@ import {
   saveAppSettings,
   saveCondoProfile,
   startManualVoteImport,
+  updateCommitteeMember,
+  updateDraftMeeting,
 } from "@/features/admin/actions";
 import { EmailInviteControls } from "@/features/admin/components/email-invite-controls";
 import { FieldLabel, RequiredNote } from "@/features/admin/components/field-label";
@@ -52,6 +54,22 @@ function formatDateTime(value: string) {
     dateStyle: "medium",
     timeStyle: "short",
   }).format(new Date(value));
+}
+
+function formatDateTimeLocal(value: string | null | undefined) {
+  if (!value) {
+    return "";
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+
+  const offsetMs = date.getTimezoneOffset() * 60_000;
+
+  return new Date(date.getTime() - offsetMs).toISOString().slice(0, 16);
 }
 
 function getResultTotals(payload: unknown) {
@@ -1264,6 +1282,18 @@ export async function AdminWorkspace({
         ? " ↑"
         : " ↓"
       : "";
+  const selectedCommitteeMember = committeeMembers.find(
+    (member) => member.id === drawer?.id,
+  );
+  const selectedMeeting = meetings.find((meeting) => meeting.id === drawer?.id);
+  const showCommitteeMemberDrawer =
+    drawer?.type === "committee_member" &&
+    (drawer.mode === "create" ||
+      (drawer.mode === "edit" && Boolean(selectedCommitteeMember)));
+  const showMeetingDrawer =
+    drawer?.type === "meeting" &&
+    (drawer.mode === "create" ||
+      (drawer.mode === "edit" && selectedMeeting?.status === "draft"));
 
   return (
     <main className="min-h-screen px-6 py-8">
@@ -2064,6 +2094,13 @@ export async function AdminWorkspace({
                       {member.active ? "Active" : "Inactive"}
                     </td>
                     <td className="py-2">
+                      <div className="flex flex-wrap gap-3">
+                        <a
+                          className="text-sm font-medium text-[var(--primary)]"
+                          href={`/admin/setup?tab=committee&mode=edit&type=committee_member&id=${member.id}`}
+                        >
+                          Edit
+                        </a>
                       {member.active ? (
                         <form action={deactivateCommitteeMember}>
                           <input name="id" type="hidden" value={member.id} />
@@ -2077,6 +2114,7 @@ export async function AdminWorkspace({
                           </ConfirmSubmitButton>
                         </form>
                       ) : null}
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -2121,21 +2159,40 @@ export async function AdminWorkspace({
               Next
             </a>
           </div>
-          {drawer?.mode === "create" && drawer.type === "committee_member" ? (
+          {showCommitteeMemberDrawer ? (
             <AdminCrudDrawer
               closeHref="/admin/setup?tab=committee"
-              summary={["New committee member"]}
-              title="Add committee member"
+              summary={
+                drawer?.mode === "edit" && selectedCommitteeMember
+                  ? [
+                      `Committee member: ${selectedCommitteeMember.full_name}`,
+                      `Position: ${selectedCommitteeMember.position_title}`,
+                    ]
+                  : ["New committee member"]
+              }
+              title={
+                drawer?.mode === "edit"
+                  ? "Edit committee member"
+                  : "Add committee member"
+              }
             >
               <form
-                action={createCommitteeMember}
+                action={
+                  drawer?.mode === "edit"
+                    ? updateCommitteeMember
+                    : createCommitteeMember
+                }
                 className="grid gap-3"
               >
                 <RequiredNote />
+                {drawer?.mode === "edit" && selectedCommitteeMember ? (
+                  <input name="id" type="hidden" value={selectedCommitteeMember.id} />
+                ) : null}
                 <label className="grid gap-1 text-sm font-medium">
                   Profile
                   <select
                     className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+                    defaultValue={selectedCommitteeMember?.profile_id ?? ""}
                     name="profile_id"
                   >
                     <option value="">Profile optional</option>
@@ -2151,6 +2208,7 @@ export async function AdminWorkspace({
                   <input
                     autoFocus
                     className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+                    defaultValue={selectedCommitteeMember?.full_name ?? ""}
                     name="full_name"
                     required
                   />
@@ -2159,6 +2217,7 @@ export async function AdminWorkspace({
                   <FieldLabel required>Position</FieldLabel>
                   <input
                     className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+                    defaultValue={selectedCommitteeMember?.position_title ?? ""}
                     name="position_title"
                     required
                   />
@@ -2167,7 +2226,7 @@ export async function AdminWorkspace({
                   Display order
                   <input
                     className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-                    defaultValue={0}
+                    defaultValue={selectedCommitteeMember?.display_order ?? 0}
                     min={0}
                     name="display_order"
                     type="number"
@@ -2177,6 +2236,7 @@ export async function AdminWorkspace({
                   Term starts
                   <input
                     className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+                    defaultValue={selectedCommitteeMember?.term_starts_at ?? ""}
                     name="term_starts_at"
                     type="date"
                   />
@@ -2185,19 +2245,34 @@ export async function AdminWorkspace({
                   Term ends
                   <input
                     className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+                    defaultValue={selectedCommitteeMember?.term_ends_at ?? ""}
                     name="term_ends_at"
                     type="date"
                   />
                 </label>
+                {drawer?.mode === "edit" ? (
+                  <label className="flex items-center gap-2 text-sm font-medium">
+                    <input
+                      defaultChecked={selectedCommitteeMember?.active ?? true}
+                      name="active"
+                      type="checkbox"
+                    />
+                    Active
+                  </label>
+                ) : null}
                 <div className="flex flex-wrap gap-2 pt-2">
                   <PendingSubmitButton
                     className="rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)]"
-                    pendingLabel="Adding..."
+                    pendingLabel={drawer?.mode === "edit" ? "Saving..." : "Adding..."}
                     type="submit"
                   >
-                    Add committee member
+                    {drawer?.mode === "edit"
+                      ? "Save committee member"
+                      : "Add committee member"}
                   </PendingSubmitButton>
-                  <FormResetButton label="Clear form" />
+                  <FormResetButton
+                    label={drawer?.mode === "edit" ? "Reset changes" : "Clear form"}
+                  />
                   <a
                     className="inline-flex items-center justify-center rounded-md border border-[var(--border)] px-4 py-2 text-sm font-medium"
                     href="/admin/setup?tab=committee"
@@ -2377,16 +2452,24 @@ export async function AdminWorkspace({
                       <td className="py-2">
                         <div className="flex flex-wrap gap-3">
                           {meeting.status === "draft" ? (
-                            <form action={publishMeeting}>
-                              <input name="id" type="hidden" value={meeting.id} />
-                              <PendingSubmitButton
+                            <>
+                              <a
                                 className="text-sm font-medium text-[var(--primary)]"
-                                pendingLabel="Publishing..."
-                                type="submit"
+                                href={`/admin/meetings?tab=meetings&mode=edit&type=meeting&id=${meeting.id}`}
                               >
-                                Publish
-                              </PendingSubmitButton>
-                            </form>
+                                Edit
+                              </a>
+                              <form action={publishMeeting}>
+                                <input name="id" type="hidden" value={meeting.id} />
+                                <PendingSubmitButton
+                                  className="text-sm font-medium text-[var(--primary)]"
+                                  pendingLabel="Publishing..."
+                                  type="submit"
+                                >
+                                  Publish
+                                </PendingSubmitButton>
+                              </form>
+                            </>
                           ) : null}
                           {meeting.status !== "archived" ? (
                             <form action={archiveMeeting}>
@@ -2480,31 +2563,47 @@ export async function AdminWorkspace({
               No meetings have been created yet.
             </p>
           ) : null}
-          {drawer?.mode === "create" && drawer.type === "meeting" ? (
+          {showMeetingDrawer ? (
             <AdminCrudDrawer
               closeHref="/admin/meetings?tab=meetings"
-              summary={["New meeting"]}
-              title="Add meeting"
+              summary={
+                drawer?.mode === "edit" && selectedMeeting
+                  ? [
+                      `Meeting: ${selectedMeeting.title}`,
+                      `Status: ${selectedMeeting.status}`,
+                    ]
+                  : ["New meeting"]
+              }
+              title={drawer?.mode === "edit" ? "Edit meeting" : "Add meeting"}
             >
-              <form action={createMeeting} className="grid gap-3">
+              <form
+                action={drawer?.mode === "edit" ? updateDraftMeeting : createMeeting}
+                className="grid gap-3"
+              >
                 <RequiredNote />
+                {drawer?.mode === "edit" && selectedMeeting ? (
+                  <input name="id" type="hidden" value={selectedMeeting.id} />
+                ) : null}
                 <label className="grid gap-1 text-sm font-medium">
                   <FieldLabel required>Meeting title</FieldLabel>
                   <input
                     autoFocus
                     className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+                    defaultValue={selectedMeeting?.title ?? ""}
                     name="title"
                     required
                   />
                 </label>
                 <input
                   className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+                  defaultValue={selectedMeeting?.video_url ?? ""}
                   name="video_url"
                   placeholder="Video URL"
                   type="url"
                 />
                 <input
                   className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+                  defaultValue={selectedMeeting?.meeting_number ?? ""}
                   name="meeting_number"
                   placeholder="Meeting no."
                 />
@@ -2512,7 +2611,7 @@ export async function AdminWorkspace({
                   <FieldLabel required>Meeting type</FieldLabel>
                   <select
                     className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-                    defaultValue="online_vote"
+                    defaultValue={selectedMeeting?.meeting_type ?? "online_vote"}
                     name="meeting_type"
                     required
                   >
@@ -2524,16 +2623,19 @@ export async function AdminWorkspace({
                 </label>
                 <input
                   className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+                  defaultValue={selectedMeeting?.fiscal_year ?? ""}
                   name="fiscal_year"
                   placeholder="Fiscal year"
                 />
                 <input
                   className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+                  defaultValue={selectedMeeting?.location ?? ""}
                   name="location"
                   placeholder="Location / platform"
                 />
                 <input
                   className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+                  defaultValue={selectedMeeting?.chairperson_name ?? ""}
                   name="chairperson_name"
                   placeholder="Chairperson"
                 />
@@ -2541,7 +2643,9 @@ export async function AdminWorkspace({
                   <FieldLabel required>Quorum rule</FieldLabel>
                   <select
                     className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-                    defaultValue="one_fourth_total_ownership"
+                    defaultValue={
+                      selectedMeeting?.quorum_rule ?? "one_fourth_total_ownership"
+                    }
                     name="quorum_rule"
                     required
                   >
@@ -2558,6 +2662,7 @@ export async function AdminWorkspace({
                   <FieldLabel required>Starts</FieldLabel>
                   <input
                     className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+                    defaultValue={formatDateTimeLocal(selectedMeeting?.starts_at)}
                     name="starts_at"
                     required
                     step={600}
@@ -2568,6 +2673,7 @@ export async function AdminWorkspace({
                   <FieldLabel required>Ends</FieldLabel>
                   <input
                     className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+                    defaultValue={formatDateTimeLocal(selectedMeeting?.ends_at)}
                     name="ends_at"
                     required
                     step={600}
@@ -2576,6 +2682,7 @@ export async function AdminWorkspace({
                 </label>
                 <textarea
                   className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+                  defaultValue={selectedMeeting?.description ?? ""}
                   name="description"
                   placeholder="Description"
                   rows={3}
@@ -2583,12 +2690,14 @@ export async function AdminWorkspace({
                 <div className="flex flex-wrap gap-2 pt-2">
                   <PendingSubmitButton
                     className="rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)]"
-                    pendingLabel="Adding..."
+                    pendingLabel={drawer?.mode === "edit" ? "Saving..." : "Adding..."}
                     type="submit"
                   >
-                    Add meeting
+                    {drawer?.mode === "edit" ? "Save meeting" : "Add meeting"}
                   </PendingSubmitButton>
-                  <FormResetButton label="Clear form" />
+                  <FormResetButton
+                    label={drawer?.mode === "edit" ? "Reset changes" : "Clear form"}
+                  />
                   <a
                     className="inline-flex items-center justify-center rounded-md border border-[var(--border)] px-4 py-2 text-sm font-medium"
                     href="/admin/meetings?tab=meetings"
@@ -3013,13 +3122,13 @@ export async function AdminWorkspace({
                         {approved ? "approved" : "pending"}
                       </td>
                       <td className="py-2">
-                        {!meetingApproved && pendingManualCount === 0 ? (
-                          <a
-                            className="rounded-md border border-[var(--border)] px-3 py-1 text-sm font-medium"
-                            href={`/admin/results?mode=edit&type=result_approval&id=${snapshot.id}`}
-                          >
-                            Approve result
-                          </a>
+	                        {!meetingApproved && pendingManualCount === 0 ? (
+	                          <a
+	                            className="rounded-md border border-[var(--border)] px-3 py-1 text-sm font-medium"
+	                            href={`${resultHref(resultTableFilters)}&mode=edit&type=result_approval&id=${snapshot.id}`}
+	                          >
+	                            Approve result
+	                          </a>
                         ) : null}
                         {!meetingApproved && pendingManualCount > 0 ? (
                           <a
@@ -3083,9 +3192,9 @@ export async function AdminWorkspace({
             ? resultSnapshots
                 .filter((snapshot) => snapshot.id === drawer.id)
                 .map((snapshot) => (
-                  <AdminCrudDrawer
-                    closeHref="/admin/results"
-                    key={snapshot.id}
+	                  <AdminCrudDrawer
+	                    closeHref={resultHref(resultTableFilters)}
+	                    key={snapshot.id}
                     summary={[
                       `Meeting: ${snapshot.meetings?.title ?? "-"}`,
                       `Generated: ${formatDateTime(snapshot.generated_at)}`,

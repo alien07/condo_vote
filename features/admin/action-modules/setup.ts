@@ -1,5 +1,6 @@
 "use server";
 
+import { redirect } from "next/navigation";
 import {
   createClient,
   optionalDate,
@@ -47,15 +48,47 @@ export async function createCommitteeMember(formData: FormData) {
   await requireAdmin();
 
   const profileId = optionalText(formData.get("profile_id"));
+  const fullName = requiredText(formData.get("full_name"), "Full name");
   const supabase = await createClient();
   const { error } = await supabase.from("committee_members").insert({
     profile_id: profileId,
-    full_name: requiredText(formData.get("full_name"), "Full name"),
+    full_name: fullName,
     position_title: requiredText(formData.get("position_title"), "Position"),
     term_starts_at: optionalDate(formData.get("term_starts_at")),
     term_ends_at: optionalDate(formData.get("term_ends_at")),
     display_order: Number(formData.get("display_order") ?? 0),
   });
+
+  if (error) {
+    throw error;
+  }
+
+  revalidateAdminPaths();
+  redirect(
+    `/admin/setup?tab=committee&memberName=${encodeURIComponent(
+      fullName,
+    )}&feedback=success&message=Committee%20member%20added`,
+  );
+}
+
+export async function updateCommitteeMember(formData: FormData) {
+  await requireAdmin();
+
+  const id = requiredText(formData.get("id"), "Committee member ID");
+  const profileId = optionalText(formData.get("profile_id"));
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("committee_members")
+    .update({
+      profile_id: profileId,
+      full_name: requiredText(formData.get("full_name"), "Full name"),
+      position_title: requiredText(formData.get("position_title"), "Position"),
+      term_starts_at: optionalDate(formData.get("term_starts_at")),
+      term_ends_at: optionalDate(formData.get("term_ends_at")),
+      display_order: Number(formData.get("display_order") ?? 0),
+      active: formData.get("active") === "on",
+    })
+    .eq("id", id);
 
   if (error) {
     throw error;

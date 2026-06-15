@@ -120,6 +120,7 @@ async function getActiveRoomOwnerLink(
     .select("id, room_id, owner_id, rooms(room_number), owners(full_name, email)")
     .eq("room_id", roomId)
     .is("ends_at", null)
+    .neq("status", "cancelled")
     .limit(2);
 
   if (error) {
@@ -140,6 +141,33 @@ function activeOwnerConflictMessage(
   ownerName: string | null | undefined,
 ) {
   return `Room ${roomNumber ?? "-"} already has active owner ${ownerName ?? "-"}. End the current active link before creating a new owner link.`;
+}
+
+function todayDate() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function ownershipStatus(startsAt: string | null, endsAt: string | null) {
+  const today = todayDate();
+
+  if (endsAt && endsAt < today) {
+    return "ended";
+  }
+
+  if (startsAt && startsAt > today) {
+    return "scheduled";
+  }
+
+  return "active";
+}
+
+function validateOwnershipDateRange(
+  startsAt: string | null,
+  endsAt: string | null,
+) {
+  if (startsAt && endsAt && startsAt > endsAt) {
+    throw new Error("Effective until must be on or after Effective from.");
+  }
 }
 
 export async function createRoom(formData: FormData) {
@@ -208,7 +236,7 @@ async function createRoomFromForm(formData: FormData) {
   }
 
   revalidateAdminPaths();
-  return { success: `Room ${roomNumber} created.` };
+  return { success: `Room ${roomNumber} created.`, values };
 }
 
 export async function createRoomWithState(
@@ -277,7 +305,7 @@ export async function updateRoomWithState(
     }
 
     revalidateAdminPaths();
-    return { success: `Room ${roomNumber} updated.` };
+    return { success: `Room ${roomNumber} updated.`, values };
   } catch (error) {
     return {
       error: error instanceof Error ? error.message : "Could not update room.",
@@ -416,7 +444,7 @@ async function createOwnerFromForm(formData: FormData) {
   }
 
   revalidateAdminPaths();
-  return { success: `Owner ${fullName} created.` };
+  return { success: `Owner ${fullName} created.`, values };
 }
 
 export async function createOwnerWithState(
@@ -471,7 +499,7 @@ export async function updateOwnerWithState(
     }
 
     revalidateAdminPaths();
-    return { success: `Owner ${fullName} updated.` };
+    return { success: `Owner ${fullName} updated.`, values };
   } catch (error) {
     return {
       error: error instanceof Error ? error.message : "Could not update owner.",
@@ -595,12 +623,15 @@ export async function importRoomOwnersExcel(formData: FormData) {
     }
 
     const activeLink = await getActiveRoomOwnerLink(supabase, roomResult.data.id);
+    const startsAt = null;
+    const endsAt = null;
     const values = {
       room_id: roomResult.data.id,
       owner_id: owner.id,
       ownership_role: "owner",
-      starts_at: null,
-      ends_at: null,
+      starts_at: startsAt,
+      ends_at: endsAt,
+      status: ownershipStatus(startsAt, endsAt),
     };
 
     if (activeLink && activeLink.owner_id !== owner.id) {
@@ -664,6 +695,11 @@ async function linkRoomOwnerImpl(formData: FormData) {
   const roomId = requiredText(formData.get("room_id"), "Room");
   const ownerId = requiredText(formData.get("owner_id"), "Owner");
   const ownershipRole = requiredText(formData.get("ownership_role"), "Role");
+  const startsAt = optionalDate(formData.get("starts_at"));
+  const endsAt = optionalDate(formData.get("ends_at"));
+
+  validateOwnershipDateRange(startsAt, endsAt);
+
   const supabase = await createClient();
   const activeLink = await getActiveRoomOwnerLink(supabase, roomId);
 
@@ -686,8 +722,9 @@ async function linkRoomOwnerImpl(formData: FormData) {
     room_id: roomId,
     owner_id: ownerId,
     ownership_role: ownershipRole,
-    starts_at: optionalDate(formData.get("starts_at")),
-    ends_at: optionalDate(formData.get("ends_at")),
+    starts_at: startsAt,
+    ends_at: endsAt,
+    status: ownershipStatus(startsAt, endsAt),
   });
 
   if (error) {
@@ -720,19 +757,47 @@ export async function linkRoomOwnerWithState(
 }
 
 async function endRoomOwnerLinkImpl(formData: FormData) {
-  await requireAdmin();
+  const admin = await requireAdmin();
 
   const id = requiredText(formData.get("id"), "Room owner link ID");
-  const endsAt = optionalDate(formData.get("ends_at")) ?? new Date().toISOString().slice(0, 10);
+  const endsAt = optionalDate(formData.get("ends_at")) ?? todayDate();
   const supabase = await createClient();
+  const { data: link, error: linkError } = await supabase
+    .from("room_owners")
+    .select("id, starts_at, status, room_id, owner_id")
+    .eq("id", id)
+    .single();
+
+  if (linkError) {
+    throw linkError;
+  }
+
+  if (link.status === "cancelled") {
+    throw new Error("Cancelled ownership links cannot be ended.");
+  }
+
+  validateOwnershipDateRange(link.starts_at, endsAt);
+
   const { error } = await supabase
     .from("room_owners")
-    .update({ ends_at: endsAt })
+    .update({ ends_at: endsAt, status: ownershipStatus(link.starts_at, endsAt) })
     .eq("id", id);
 
   if (error) {
     throw error;
   }
+
+  await writeAuditLog(supabase, {
+    action: "room_owner.ended",
+    actorProfileId: admin.id,
+    details: {
+      ends_at: endsAt,
+      owner_id: link.owner_id,
+      room_id: link.room_id,
+    },
+    entityId: id,
+    entityType: "room_owner",
+  });
 
   revalidateAdminPaths();
 }
@@ -755,6 +820,147 @@ export async function endRoomOwnerLinkWithState(
         error instanceof Error
           ? error.message
           : "Could not end ownership link.",
+    };
+  }
+}
+
+async function updateRoomOwnerDatesImpl(formData: FormData) {
+  const admin = await requireAdmin();
+
+  const id = requiredText(formData.get("id"), "Room owner link ID");
+  const startsAt = optionalDate(formData.get("starts_at"));
+  const endsAt = optionalDate(formData.get("ends_at"));
+
+  validateOwnershipDateRange(startsAt, endsAt);
+
+  const supabase = await createClient();
+  const { data: link, error: linkError } = await supabase
+    .from("room_owners")
+    .select("id, status, room_id, owner_id")
+    .eq("id", id)
+    .single();
+
+  if (linkError) {
+    throw linkError;
+  }
+
+  if (link.status === "cancelled") {
+    throw new Error("Cancelled ownership links cannot be edited.");
+  }
+
+  const { error } = await supabase
+    .from("room_owners")
+    .update({
+      starts_at: startsAt,
+      ends_at: endsAt,
+      status: ownershipStatus(startsAt, endsAt),
+    })
+    .eq("id", id);
+
+  if (error) {
+    throw error;
+  }
+
+  await writeAuditLog(supabase, {
+    action: "room_owner.dates_updated",
+    actorProfileId: admin.id,
+    details: {
+      ends_at: endsAt,
+      owner_id: link.owner_id,
+      room_id: link.room_id,
+      starts_at: startsAt,
+    },
+    entityId: id,
+    entityType: "room_owner",
+  });
+
+  revalidateAdminPaths();
+}
+
+export async function updateRoomOwnerDatesWithState(
+  _state: OwnershipActionState,
+  formData: FormData,
+): Promise<OwnershipActionState> {
+  try {
+    await updateRoomOwnerDatesImpl(formData);
+
+    return { success: "Ownership dates updated." };
+  } catch (error) {
+    return {
+      error:
+        error instanceof Error
+          ? error.message
+          : "Could not update ownership dates.",
+    };
+  }
+}
+
+async function cancelRoomOwnerLinkImpl(formData: FormData) {
+  const admin = await requireAdmin();
+
+  const id = requiredText(formData.get("id"), "Room owner link ID");
+  const supabase = await createClient();
+  const { data: link, error: linkError } = await supabase
+    .from("room_owners")
+    .select("id, starts_at, status, room_id, owner_id")
+    .eq("id", id)
+    .single();
+
+  if (linkError) {
+    throw linkError;
+  }
+
+  if (link.status === "cancelled") {
+    throw new Error("Ownership link is already cancelled.");
+  }
+
+  if (ownershipStatus(link.starts_at, null) !== "scheduled") {
+    throw new Error("Only scheduled ownership links can be cancelled.");
+  }
+
+  const cancelledAt = new Date().toISOString();
+  const { error } = await supabase
+    .from("room_owners")
+    .update({
+      cancelled_at: cancelledAt,
+      cancelled_by: admin.id,
+      status: "cancelled",
+    })
+    .eq("id", id);
+
+  if (error) {
+    throw error;
+  }
+
+  await writeAuditLog(supabase, {
+    action: "room_owner.cancelled",
+    actorProfileId: admin.id,
+    details: {
+      cancelled_at: cancelledAt,
+      owner_id: link.owner_id,
+      room_id: link.room_id,
+    },
+    entityId: id,
+    entityType: "room_owner",
+  });
+
+  revalidateAdminPaths();
+}
+
+export async function cancelRoomOwnerLinkWithState(
+  _state: OwnershipActionState,
+  formData: FormData,
+): Promise<OwnershipActionState> {
+  try {
+    await cancelRoomOwnerLinkImpl(formData);
+
+    return { success: "Scheduled ownership link cancelled." };
+  } catch (error) {
+    return {
+      error:
+        error instanceof Error
+          ? error.message
+          : "Could not cancel scheduled ownership link.",
     };
   }
 }

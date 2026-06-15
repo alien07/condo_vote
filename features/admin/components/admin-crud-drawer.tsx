@@ -35,6 +35,7 @@ export function AdminCrudDrawer({
       <aside
         aria-label={title}
         className="flex h-full w-full max-w-full flex-col border-l border-[var(--border)] bg-[var(--surface)] shadow-xl sm:max-w-xl"
+        role="complementary"
       >
         <div className="border-b border-[var(--border)] px-5 py-4">
           <div className="flex items-start justify-between gap-3">

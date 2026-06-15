@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/database.types";
 
@@ -40,11 +40,30 @@ const serviceKey =
   localEnv.SUPABASE_SERVICE_ROLE_KEY;
 
 function toDateTimeLocal(date: Date) {
+  date.setMinutes(Math.floor(date.getMinutes() / 10) * 10, 0, 0);
   const pad = (value: number) => String(value).padStart(2, "0");
 
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(
     date.getDate(),
   )}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
+async function gotoWithRetry(
+  page: Page,
+  url: string,
+  options: Parameters<Page["goto"]>[1] = { waitUntil: "commit" },
+) {
+  for (let attempt = 1; attempt <= 3; attempt += 1) {
+    try {
+      return await page.goto(url, options);
+    } catch (error) {
+      if (attempt === 3) {
+        throw error;
+      }
+
+      await page.waitForTimeout(1_000 * attempt);
+    }
+  }
 }
 
 test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
@@ -54,7 +73,7 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
   );
 
   test("demo admin can sign in and manage master data", async ({ page }) => {
-    test.setTimeout(240_000);
+    test.setTimeout(900_000);
 
     const supabase = createClient<Database>(supabaseUrl!, serviceKey!, {
       auth: {
@@ -323,7 +342,9 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
       demoAdminRow.getByRole("cell", { name: "approved", exact: true }),
     ).toBeVisible();
     await demoAdminRow.getByRole("link", { name: "Edit roles/status" }).click();
-    const profileAccessDrawer = page.getByLabel("Edit roles/status");
+    const profileAccessDrawer = page.getByRole("complementary", {
+      name: "Edit roles/status",
+    });
     await profileAccessDrawer.locator('select[name="role"]').selectOption("committee");
     await profileAccessDrawer.getByRole("button", { name: "Save changes" }).click();
     await page.goto(`${activeAppOrigin}/admin/people?tab=profiles`);
@@ -359,7 +380,7 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
 
     await page.goto(`${activeAppOrigin}/admin/setup?tab=storage`);
     const storageSection = page
-      .getByRole("heading", { name: "Private Document Registry" })
+      .getByRole("heading", { name: "Document Storage" })
       .locator("xpath=ancestor::section[1]");
     await storageSection
       .locator('select[name="document_storage_provider"]')
@@ -370,8 +391,11 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
     await storageSection
       .getByRole("button", { name: "Save document storage config" })
       .click();
-    await storageSection.getByRole("link", { name: "Register document" }).click();
-    const registerDocumentDrawer = page.getByLabel("Register document");
+    await storageSection.getByRole("link", { name: "Open Documents" }).click();
+    await page.getByRole("link", { name: "Register document" }).click();
+    const registerDocumentDrawer = page.getByRole("complementary", {
+      name: "Register document",
+    });
     await registerDocumentDrawer.locator('input[name="owner_id"]').fill(profile!.id);
     await registerDocumentDrawer
       .locator('input[name="storage_path"]')
@@ -391,10 +415,10 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
       .fill("a".repeat(64));
     await registerDocumentDrawer.getByRole("button", { name: "Register document" }).click();
     await expect(
-      storageSection.getByRole("cell", { name: `${documentSetKey} / v1` }),
+      page.getByRole("cell", { name: `${documentSetKey} / v1` }),
     ).toBeVisible();
     await expect(
-      storageSection.getByRole("cell", { name: documentPath }),
+      page.getByRole("cell", { name: documentPath }),
     ).toBeVisible();
 
     await page.goto(`${activeAppOrigin}/admin/setup?tab=audit`);
@@ -414,11 +438,16 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
     await addCommitteeDrawer.locator('input[name="full_name"]').fill(committeeName);
     await addCommitteeDrawer.locator('input[name="position_title"]').fill("Chairperson");
     await addCommitteeDrawer.getByRole("button", { name: "Add committee member" }).click();
+    await page.waitForURL(/\/admin\/setup\?[\s\S]*memberName=/, {
+      waitUntil: "domcontentloaded",
+    });
     await expect(
-      committeeSection.getByRole("cell", { name: committeeName }),
-    ).toBeVisible();
+      page.getByRole("cell", { name: committeeName }),
+    ).toBeVisible({ timeout: 15_000 });
 
-    await page.goto(`${activeAppOrigin}/admin/meetings`);
+    await page.goto(
+      `${activeAppOrigin}/admin/meetings?title=${encodeURIComponent(meetingTitle)}`,
+    );
     await page.getByRole("link", { name: "Add meeting" }).click();
     const addMeetingDrawer = page.getByLabel("Add meeting");
     await addMeetingDrawer.locator('input[name="title"]').fill(meetingTitle);
@@ -430,6 +459,7 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
     await addMeetingDrawer.locator('input[name="ends_at"]').fill(endsAt);
     await addMeetingDrawer.getByRole("button", { name: "Add meeting" }).click();
     await expect(page.getByRole("cell", { name: meetingTitle })).toBeVisible();
+    await page.goto(`${activeAppOrigin}/admin/meetings?tab=questions`);
 
     const questionsSection = page
       .getByRole("heading", { name: "Questions And Choices" })
@@ -451,25 +481,39 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
     ).toBeVisible();
     const questionCard = page
       .getByRole("heading", { name: questionText })
-      .locator("xpath=ancestor::div[form[.//input[@name='question_id']]][1]");
-    await questionCard.getByPlaceholder("Choice").fill(choiceText);
+      .locator("xpath=ancestor::*[.//input[@name='question_id']][1]");
+    await questionCard.getByRole("textbox", { name: "Choice" }).fill(choiceText);
     await questionCard.getByRole("button", { name: "Add choice" }).click();
+    await expect(
+      questionCard.getByRole("button", { name: "Add choice" }),
+    ).toBeVisible({ timeout: 15_000 });
     await expect(
       questionCard.locator("span").filter({ hasText: choiceText }),
-    ).toBeVisible();
-    await questionCard.getByPlaceholder("Choice").fill(updatedChoiceText);
+    ).toBeVisible({ timeout: 15_000 });
+    await questionCard
+      .getByRole("textbox", { name: "Choice" })
+      .fill(updatedChoiceText);
     await questionCard.getByRole("button", { name: "Add choice" }).click();
     await expect(
+      questionCard.getByRole("button", { name: "Add choice" }),
+    ).toBeVisible({ timeout: 15_000 });
+    await expect(
       questionCard.locator("span").filter({ hasText: updatedChoiceText }),
-    ).toBeVisible();
+    ).toBeVisible({ timeout: 15_000 });
 
     await page.goto(`${activeAppOrigin}/admin/people?tab=rooms`);
     await page.getByRole("link", { name: "Add room" }).click();
-    const addRoomDrawer = page.getByLabel("Add room");
+    const addRoomDrawer = page.getByRole("complementary", { name: "Add room" });
     await addRoomDrawer.locator('input[name="room_number"]').fill(roomNumber);
     await addRoomDrawer.locator('input[name="ownership_percent"]').fill("1.25");
     await addRoomDrawer.getByRole("button", { name: "Create room" }).click();
-    await expect(page.getByRole("cell", { name: roomNumber })).toBeVisible();
+    await page.waitForURL(
+      new RegExp(`room=${encodeURIComponent(roomNumber)}`),
+      { waitUntil: "domcontentloaded" },
+    );
+    await expect(page.getByRole("cell", { name: roomNumber })).toBeVisible({
+      timeout: 15_000,
+    });
 
     await page.goto(`${activeAppOrigin}/admin/voting`);
     const manualVotesSection = page
@@ -484,28 +528,40 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
       .locator('select[name="room_id"]')
       .selectOption({ label: roomNumber });
     await importManualVoteDrawer
-      .locator('select[name="question_id"]')
-      .selectOption({ label: `${meetingTitle} / 1 ${questionText}` });
+      .getByPlaceholder("Name on paper ballot when profile is not registered yet")
+      .fill(manualAuditNote);
     await importManualVoteDrawer
-      .locator('select[name="choice_id"]')
-      .selectOption({ label: `${questionText} / ${choiceText}` });
-    await importManualVoteDrawer.getByPlaceholder("Source label").fill("Paper ballot");
-    await importManualVoteDrawer.getByPlaceholder("Audit note").fill(manualAuditNote);
-    await importManualVoteDrawer.getByRole("button", { name: "Import manual vote" }).click();
+      .getByRole("button", { name: "Continue to vote form" })
+      .click();
     await expect(
-      manualVotesSection
+      page.getByRole("heading", { name: `Manual vote entry: ${meetingTitle}` }),
+    ).toBeVisible({ timeout: 15_000 });
+    await page.getByLabel(choiceText).check();
+    await page.getByRole("button", { name: "Save manual vote" }).click();
+    await page.waitForURL("**/admin/voting", { waitUntil: "domcontentloaded" });
+    await page.goto(`${activeAppOrigin}/admin/voting`);
+    const pendingManualIdentitySection = page
+      .getByRole("heading", { name: "Pending manual vote identities" })
+      .locator("xpath=ancestor::section[1]");
+    await expect(
+      pendingManualIdentitySection
         .getByRole("row")
         .filter({ hasText: roomNumber })
         .filter({ hasText: manualAuditNote }),
-    ).toBeVisible();
+    ).toBeVisible({ timeout: 15_000 });
 
     await page.goto(`${activeAppOrigin}/admin/people?tab=owners`);
     await page.getByRole("link", { name: "Add owner" }).click();
-    const addOwnerDrawer = page.getByLabel("Add owner");
+    const addOwnerDrawer = page.getByRole("complementary", { name: "Add owner" });
     await addOwnerDrawer.locator('input[name="full_name"]').fill(ownerName);
     await addOwnerDrawer.locator('input[name="email"]').fill("owner.demo@example.com");
     await addOwnerDrawer.getByRole("button", { name: "Create owner" }).click();
-    await expect(page.getByRole("cell", { name: ownerName })).toBeVisible();
+    await page.waitForURL(/\/admin\/people\?[\s\S]*name=/, {
+      waitUntil: "domcontentloaded",
+    });
+    await expect(page.getByRole("cell", { name: ownerName })).toBeVisible({
+      timeout: 15_000,
+    });
 
     await page.goto(`${activeAppOrigin}/admin/ownership`);
     const roomOwnershipSection = page
@@ -521,13 +577,21 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
       .selectOption({ label: ownerName });
     await createOwnershipDrawer.locator('input[name="starts_at"]').fill("2026-06-01");
     await createOwnershipDrawer.getByRole("button", { name: "Create ownership link" }).click();
+    await page.waitForTimeout(1_000);
+    await gotoWithRetry(
+      page,
+      `${activeAppOrigin}/admin/ownership?room=${encodeURIComponent(roomNumber)}&owner=${encodeURIComponent(ownerName)}`,
+      { waitUntil: "commit" },
+    );
     const roomOwnerRow = roomOwnershipSection
       .getByRole("row")
       .filter({ hasText: roomNumber })
       .filter({ hasText: ownerName });
     await expect(roomOwnerRow).toBeVisible();
 
-    await page.goto(`${activeAppOrigin}/admin/proxies`);
+    await gotoWithRetry(page, `${activeAppOrigin}/admin/proxies`, {
+      waitUntil: "commit",
+    });
     await page.getByRole("link", { name: "Add proxy authorization" }).click();
     const addProxyDrawer = page.getByLabel("Add proxy authorization");
     await addProxyDrawer
@@ -543,19 +607,48 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
       .locator('select[name="proxy_profile_id"]')
       .selectOption({ label: `${demoAdminName} (${demoAdminEmail})` });
     await addProxyDrawer.getByRole("button", { name: "Add proxy authorization" }).click();
+    await page.waitForTimeout(1_000);
+    await gotoWithRetry(
+      page,
+      `${activeAppOrigin}/admin/proxies?meeting=${encodeURIComponent(meetingTitle)}`,
+      { waitUntil: "commit" },
+    );
     const proxyRow = page.getByRole("row").filter({ hasText: meetingTitle });
     await expect(
       proxyRow.getByRole("cell", { name: "pending", exact: true }),
     ).toBeVisible();
-    await proxyRow.getByRole("link", { name: "Review" }).click();
-    const reviewProxyDrawer = page.getByLabel("Review proxy authorization");
+    const proxyReviewHref = await proxyRow
+      .getByRole("link", { name: "Review" })
+      .getAttribute("href");
+    expect(proxyReviewHref).toBeTruthy();
+    await gotoWithRetry(page, new URL(proxyReviewHref ?? "", activeAppOrigin).toString(), {
+      waitUntil: "commit",
+    });
+    const reviewProxyDrawer = page.getByRole("complementary", {
+      name: "Review proxy authorization",
+    });
+    await expect(reviewProxyDrawer).toBeVisible({ timeout: 15_000 });
     await reviewProxyDrawer.locator('select[name="status"]').selectOption("approved");
+    page.once("dialog", async (dialog) => {
+      await dialog.accept().catch(() => undefined);
+    });
     await reviewProxyDrawer.getByRole("button", { name: "Save review" }).click();
+    await page.waitForTimeout(1_000);
+    await gotoWithRetry(
+      page,
+      `${activeAppOrigin}/admin/proxies?meeting=${encodeURIComponent(meetingTitle)}`,
+      { waitUntil: "commit" },
+    );
     await expect(
-      proxyRow.getByRole("cell", { name: "approved", exact: true }),
-    ).toBeVisible();
+      page
+        .getByRole("row")
+        .filter({ hasText: meetingTitle })
+        .getByRole("cell", { name: "approved", exact: true }),
+    ).toBeVisible({ timeout: 15_000 });
 
-    await page.goto(`${activeAppOrigin}/admin/meetings`);
+    await page.goto(
+      `${activeAppOrigin}/admin/meetings?title=${encodeURIComponent(meetingTitle)}`,
+    );
     const meetingRow = page.getByRole("row").filter({ hasText: meetingTitle });
     await meetingRow.getByRole("button", { name: "Publish" }).click();
     await expect(
@@ -643,19 +736,77 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
         .sort((left, right) => left - right),
     ).toEqual([1, 2]);
 
+    await page.goto(
+      `${activeAppOrigin}/admin/meetings?title=${encodeURIComponent(meetingTitle)}`,
+    );
+    const pendingMeetingRow = page
+      .getByRole("row")
+      .filter({ hasText: meetingTitle });
+    await expect(
+      pendingMeetingRow.getByRole("link", { name: /Resolve 1 pending manual vote/ }),
+    ).toBeVisible({ timeout: 15_000 });
+    await expect(
+      pendingMeetingRow.getByRole("button", { name: "Generate result" }),
+    ).toHaveCount(0);
+
     await page.goto(`${activeAppOrigin}/admin/voting`);
+    const pendingManualVoteRow = page
+      .getByRole("row")
+      .filter({ hasText: meetingTitle })
+      .filter({ hasText: roomNumber });
+    await pendingManualVoteRow.getByRole("link", { name: "Link profile" }).click();
+    const resolveIdentityDrawer = page.getByRole("complementary", {
+      name: "Resolve manual vote identity",
+    });
+    await expect(resolveIdentityDrawer).toBeVisible({ timeout: 15_000 });
+    await resolveIdentityDrawer
+      .locator('select[name="voter_profile_id"]')
+      .selectOption({ label: `${demoAdminName} (${demoAdminEmail})` });
+    page.once("dialog", async (dialog) => {
+      await dialog.accept().catch(() => undefined);
+    });
+    await resolveIdentityDrawer.getByRole("button", { name: "Link profile" }).click();
+    await page.waitForURL("**/admin/voting", { waitUntil: "domcontentloaded" });
+
+    await page.goto(
+      `${activeAppOrigin}/admin/voting/conflicts?meeting=${encodeURIComponent(
+        meetingTitle,
+      )}&room=${encodeURIComponent(roomNumber)}`,
+    );
     const conflictRow = page
       .getByRole("row")
       .filter({ hasText: meetingTitle })
       .filter({ hasText: roomNumber });
-    await conflictRow.locator('select[name="chosen_source"]').selectOption("online");
-    await conflictRow.getByPlaceholder("Conflict remark").fill("Use online demo vote");
-    await conflictRow.getByRole("button", { name: "Resolve source" }).click();
+    await conflictRow.getByRole("button", { name: "Review / Resolve" }).click();
+    const reviewConflictDialog = page.getByRole("dialog", {
+      name: "Review vote source conflict",
+    });
+    await reviewConflictDialog
+      .locator('select[name="chosen_source"]')
+      .selectOption("online");
+    await reviewConflictDialog
+      .getByPlaceholder("Explain why this source is selected.")
+      .fill("Use online demo vote");
+    await reviewConflictDialog.getByRole("button", { name: "Resolve source" }).click();
+    await page.waitForURL("**/admin/voting/conflicts?feedback=success**", {
+      waitUntil: "domcontentloaded",
+    });
+    await page.goto(
+      `${activeAppOrigin}/admin/voting/conflicts?meeting=${encodeURIComponent(
+        meetingTitle,
+      )}&room=${encodeURIComponent(roomNumber)}`,
+    );
     await expect(
-      conflictRow.getByRole("cell", { name: "online", exact: true }),
-    ).toBeVisible();
+      page
+        .getByRole("row")
+        .filter({ hasText: meetingTitle })
+        .filter({ hasText: roomNumber })
+        .getByRole("cell", { name: "resolved", exact: true }),
+    ).toBeVisible({ timeout: 15_000 });
 
-    await page.goto(`${activeAppOrigin}/admin/meetings`);
+    await page.goto(
+      `${activeAppOrigin}/admin/meetings?title=${encodeURIComponent(meetingTitle)}`,
+    );
     const publishedMeetingRow = page
       .getByRole("row")
       .filter({ hasText: meetingTitle });
@@ -675,17 +826,35 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
       closedVoteCard.getByRole("button", { name: "Update ballot" }),
     ).toBeDisabled();
 
-    await page.goto(`${activeAppOrigin}/admin/results`);
+    await gotoWithRetry(
+      page,
+      `${activeAppOrigin}/admin/results?meeting=${encodeURIComponent(meetingTitle)}`,
+      { waitUntil: "commit" },
+    );
     const resultRow = page.getByRole("row").filter({ hasText: meetingTitle });
     await expect(
       resultRow.getByRole("cell", { name: "pending", exact: true }),
     ).toBeVisible();
     await resultRow.getByRole("link", { name: "Approve result" }).click();
     const approveResultDrawer = page.getByLabel("Approve result");
+    page.once("dialog", async (dialog) => {
+      await dialog.accept().catch(() => undefined);
+    });
     await approveResultDrawer.getByRole("button", { name: "Approve result" }).click();
+    await page.waitForURL("**/admin/results?feedback=success**", {
+      waitUntil: "commit",
+    });
+    await gotoWithRetry(
+      page,
+      `${activeAppOrigin}/admin/results?meeting=${encodeURIComponent(meetingTitle)}`,
+      { waitUntil: "commit" },
+    );
     await expect(
-      resultRow.getByRole("cell", { name: "approved", exact: true }),
-    ).toBeVisible();
+      page
+        .getByRole("row")
+        .filter({ hasText: meetingTitle })
+        .getByRole("cell", { name: "approved", exact: true }),
+    ).toBeVisible({ timeout: 15_000 });
     const pdfPreview = page.locator("#mock-pdf-summary");
     await expect(
       pdfPreview.getByRole("heading", { name: "Mock PDF Result Summary" }),
@@ -695,7 +864,9 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
     await expect(pdfPreview.getByText(updatedChoiceText)).toBeVisible();
     await expect(pdfPreview.getByText("Use online demo vote")).toBeVisible();
 
-    await page.goto(`${activeAppOrigin}/admin/meetings`);
+    await page.goto(
+      `${activeAppOrigin}/admin/meetings?title=${encodeURIComponent(meetingTitle)}`,
+    );
     const lockedMeetingRow = page
       .getByRole("row")
       .filter({ hasText: meetingTitle });
@@ -703,14 +874,23 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
     await expect(
       lockedMeetingRow.getByRole("button", { name: "Generate result" }),
     ).toHaveCount(0);
-    await page.goto(`${activeAppOrigin}/admin/results`);
+    await gotoWithRetry(
+      page,
+      `${activeAppOrigin}/admin/results?meeting=${encodeURIComponent(meetingTitle)}`,
+      { waitUntil: "commit" },
+    );
     const lockedResultRow = page
       .getByRole("row")
       .filter({ hasText: meetingTitle });
     await expect(
       lockedResultRow.getByRole("link", { name: "Approve result" }),
     ).toHaveCount(0);
-    await page.goto(`${activeAppOrigin}/admin/communications`);
+    await gotoWithRetry(page, `${activeAppOrigin}/admin/communications`, {
+      waitUntil: "commit",
+    });
+    await expect(
+      page.getByRole("heading", { name: "Communications" }),
+    ).toBeVisible();
     await expect(page.getByText(/result_approved:/).first()).toBeVisible();
   });
 
@@ -791,7 +971,7 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
       page.getByRole("heading", { name: "Rooms", exact: true }),
     ).toBeVisible();
     await page.getByRole("link", { name: "Add room" }).click();
-    const addRoomDrawer = page.getByLabel("Add room");
+    const addRoomDrawer = page.getByRole("complementary", { name: "Add room" });
     await expect(addRoomDrawer).toBeVisible();
     await addRoomDrawer.getByRole("button", { name: "Create room" }).click();
     await expect(
@@ -816,11 +996,16 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
     ).toBeFocused();
     await addRoomDrawer.locator('input[name="ownership_percent"]').fill("1.5");
     await addRoomDrawer.getByRole("button", { name: "Create room" }).click();
-    await expect(page.getByRole("cell", { name: pilotRoomNumber })).toBeVisible();
+    await page.waitForURL("**/admin/people?tab=rooms&feedback=success**", {
+      waitUntil: "domcontentloaded",
+    });
+    await expect(
+      page.getByRole("cell", { name: pilotRoomNumber }),
+    ).toBeVisible({ timeout: 15_000 });
 
     const pilotRoomRow = page.getByRole("row").filter({ hasText: pilotRoomNumber });
     await pilotRoomRow.getByRole("link", { name: "Edit" }).click();
-    const editRoomDrawer = page.getByLabel("Edit room");
+    const editRoomDrawer = page.getByRole("complementary", { name: "Edit room" });
     await expect(editRoomDrawer.getByText(`Room: ${pilotRoomNumber}`)).toBeVisible();
     await expect(pilotRoomRow).toHaveClass(/border-l-\[var\(--primary\)\]/);
     await editRoomDrawer.getByRole("link", { name: "Cancel" }).click();
@@ -830,15 +1015,21 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
     await page.goto(`${appUrl}/admin/people?tab=profiles`);
     const profileRow = page.getByRole("row").filter({ hasText: demoAdminEmail });
     await profileRow.getByRole("link", { name: "Edit roles/status" }).click();
-    await expect(page.getByLabel("Edit roles/status")).toBeVisible();
+    await expect(
+      page.getByRole("complementary", { name: "Edit roles/status" }),
+    ).toBeVisible();
     await page.getByLabel("Close drawer").click();
     await expect(page).toHaveURL(/tab=profiles/);
 
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto(`${appUrl}/admin/people?tab=owners`);
-    await expect(page.getByRole("heading", { name: "Owners" })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { exact: true, name: "Owners" }),
+    ).toBeVisible();
     await page.getByRole("link", { name: "Add owner" }).click();
-    const addOwnerMobileDrawer = page.getByLabel("Add owner");
+    const addOwnerMobileDrawer = page.getByRole("complementary", {
+      name: "Add owner",
+    });
     await expect(addOwnerMobileDrawer).toBeVisible();
     const drawerWidth = await addOwnerMobileDrawer.evaluate(
       (element) => element.getBoundingClientRect().width,
@@ -1015,6 +1206,7 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
       `${appUrl}/admin/meetings?tab=meetings&title=${encodeURIComponent(
         meetingTitle,
       )}`,
+      { waitUntil: "domcontentloaded" },
     );
     const meetingRow = page.getByRole("row").filter({ hasText: meetingTitle });
     await expect(

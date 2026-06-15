@@ -82,8 +82,12 @@ create table public.room_owners (
   ownership_role text not null default 'owner',
   starts_at date,
   ends_at date,
+  status text not null default 'active',
+  cancelled_at timestamptz,
+  cancelled_by uuid references public.profiles(id),
   created_at timestamptz not null default now(),
   constraint room_owners_role_check check (ownership_role in ('owner', 'co_owner')),
+  constraint room_owners_status_check check (status in ('active', 'scheduled', 'ended', 'cancelled')),
   constraint room_owners_date_range check (starts_at is null or ends_at is null or starts_at <= ends_at)
 );
 

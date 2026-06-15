@@ -1095,30 +1095,39 @@ export type Database = {
       room_owners: {
         Row: {
           created_at: string
+          cancelled_at: string | null
+          cancelled_by: string | null
           ends_at: string | null
           id: string
           owner_id: string
           ownership_role: string
           room_id: string
           starts_at: string | null
+          status: string
         }
         Insert: {
           created_at?: string
+          cancelled_at?: string | null
+          cancelled_by?: string | null
           ends_at?: string | null
           id?: string
           owner_id: string
           ownership_role?: string
           room_id: string
           starts_at?: string | null
+          status?: string
         }
         Update: {
           created_at?: string
+          cancelled_at?: string | null
+          cancelled_by?: string | null
           ends_at?: string | null
           id?: string
           owner_id?: string
           ownership_role?: string
           room_id?: string
           starts_at?: string | null
+          status?: string
         }
         Relationships: [
           {

@@ -1,5 +1,6 @@
 "use server";
 
+import { redirect } from "next/navigation";
 import {
   createClient,
   optionalText,
@@ -423,4 +424,5 @@ export async function approveResultSnapshot(formData: FormData) {
   });
 
   revalidateAdminPaths();
+  redirect("/admin/results?feedback=success&message=Result%20approved");
 }

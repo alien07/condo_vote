@@ -7,12 +7,12 @@ This document is the reference for admin create, read, update, and deactivate UX
 `/admin/people` is the pilot page for this pattern. The first rollout batch
 applies the same drawer/list pattern to admin workspaces:
 
-- `/admin/setup?tab=committee`: add committee member in drawer; deactivate remains an inline row action.
+- `/admin/setup?tab=committee`: add and edit committee member in drawer; deactivate remains an inline row action.
 - `/admin/proxies`: add proxy authorization in drawer; review proxy status opens from the target row in a drawer.
 - `/admin/setup?tab=storage`: register private document reference in drawer; storage config remains inline because it is a single settings form.
 - `/admin/voting`: import manual vote in drawer; conflict resolution remains inline on the conflict row.
-- `/admin/ownership`: create ownership link in drawer; end active link remains inline on the ownership row.
-- `/admin/meetings?tab=meetings`: add meeting in drawer; publish/archive/result generation remain inline row actions.
+- `/admin/ownership`: create ownership link, edit dates, and end link in drawers; scheduled links can be cancelled from the row with confirmation.
+- `/admin/meetings?tab=meetings`: add meeting and edit draft meeting in drawer; publish/archive/result generation remain inline row actions.
 - `/admin/meetings?tab=questions`: add agenda question in drawer; choices remain inline under their parent question.
 - `/admin/results`: approve result in drawer from the result row.
 
@@ -71,7 +71,7 @@ Closing the drawer removes `mode`, `type`, and `id`, while preserving `tab` and 
 
 ## Destructive Actions
 
-- Prefer `Deactivate`, `Reactivate`, `Archive`, `Revoke`, or `End active link` over hard delete.
+- Prefer `Deactivate`, `Reactivate`, `Archive`, `Revoke`, `End Link`, or `Cancel scheduled link` over hard delete.
 - Confirm before any destructive/status-changing action.
 - Confirm text must include target item and business effect.
 

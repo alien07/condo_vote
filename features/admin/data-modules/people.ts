@@ -22,7 +22,7 @@ export async function fetchPeopleData(supabase: SupabaseServerClient) {
       supabase
         .from("room_owners")
         .select(
-          "id, ownership_role, starts_at, ends_at, rooms(id, room_number), owners(id, full_name)",
+          "id, ownership_role, starts_at, ends_at, status, cancelled_at, cancelled_by, rooms(id, room_number), owners(id, full_name)",
         )
         .order("created_at", { ascending: false }),
       supabase

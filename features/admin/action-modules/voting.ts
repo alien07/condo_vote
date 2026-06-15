@@ -43,6 +43,9 @@ export async function createProxyAuthorization(formData: FormData) {
     entityType: "proxy_authorization",
   });
   revalidateAdminPaths();
+  redirect(
+    "/admin/proxies?feedback=success&message=Proxy%20authorization%20created",
+  );
 }
 
 export async function reviewProxyAuthorization(formData: FormData) {
@@ -72,6 +75,9 @@ export async function reviewProxyAuthorization(formData: FormData) {
     entityType: "proxy_authorization",
   });
   revalidateAdminPaths();
+  redirect(
+    "/admin/proxies?feedback=success&message=Proxy%20authorization%20reviewed",
+  );
 }
 
 export async function importManualVoteEntry(formData: FormData) {
@@ -391,4 +397,5 @@ export async function resolveVoteSourceConflict(formData: FormData) {
     entityType: "vote_source_resolution",
   });
   revalidateAdminPaths();
+  redirect("/admin/voting/conflicts?feedback=success&message=Conflict%20resolved");
 }

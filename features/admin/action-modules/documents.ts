@@ -1,5 +1,6 @@
 "use server";
 
+import { redirect } from "next/navigation";
 import {
   createClient,
   optionalText,
@@ -135,4 +136,7 @@ export async function registerDocumentReference(formData: FormData) {
     entityType: "document",
   });
   revalidateAdminPaths();
+  redirect(
+    `/admin/documents?set=${encodeURIComponent(values.document_set_key)}&feedback=success&message=${encodeURIComponent("Document registered")}`,
+  );
 }

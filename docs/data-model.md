@@ -52,7 +52,7 @@ erDiagram
 | [committee_members](#committee_members) | Real committee roster and positions for document approval/signature context. |
 | [rooms](#rooms) | Master data for condominium units. Used as the base voting right because one room equals one vote. |
 | [owners](#owners) | Master data for legal owners from juristic office records or verified admin input. |
-| [room_owners](#room_owners) | Links owners to rooms and supports ownership history or co-owner cases. |
+| [room_owners](#room_owners) | Links owners to rooms with effective dates, current/scheduled/ended/cancelled state, and ownership history. |
 | [profiles](#profiles) | Application user profile linked to Supabase Auth identity. |
 | [app_roles](#app_roles) | Assigns system roles such as admin and committee to profiles. |
 | [approval_requests](#approval_requests) | Tracks user requests to become an approved owner, resident, or proxy voter. |
@@ -102,8 +102,8 @@ Notes: Can come from juristic office records or admin import. Keep separate from
 
 ### room_owners
 Purpose: Links owners to rooms.
-Key fields: room, owner, ownership role, start/end dates.
-Notes: Supports co-owner cases and ownership changes over time.
+Key fields: room, owner, ownership role, start/end dates, status, cancelled timestamp, cancelled by.
+Notes: Date fields drive Active/Scheduled/Ended display state; `status=cancelled` is stored as business state for scheduled links that should never become active. `cancelled_at` and `cancelled_by` are kept on the row for direct reporting, while `audit_logs` keeps the full action history.
 
 ### profiles
 Purpose: Stores app-level user data linked to Supabase Auth.

@@ -14,7 +14,9 @@ These workflows define the admin-facing MVP behavior. Ask before implementing an
 - Required owner data: full name.
 - Optional owner data: email, phone, LINE ID.
 - Admin can link one or more owners to a room.
-- Admin can end an owner-room relationship when ownership changes.
+- In V1, one room can have one open non-cancelled ownership link.
+- Admin can edit ownership dates, end an active owner-room relationship, or cancel a scheduled link before it becomes active.
+- Ownership status is displayed as Active, Scheduled, Ended, or Cancelled. Cancelled state is stored on the ownership row and recorded in audit logs.
 
 ## User Approval
 - Admin can review registered profiles.

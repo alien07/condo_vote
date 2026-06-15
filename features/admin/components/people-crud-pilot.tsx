@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { useActionState, useEffect, useMemo, useRef, useState } from "react";
 import { Building2, LoaderCircle, UserRound } from "lucide-react";
 import { useFormStatus } from "react-dom";
@@ -305,7 +305,6 @@ function usePeopleFormFeedback(
   state: PeopleActionState,
   formRef: React.RefObject<HTMLFormElement | null>,
 ) {
-  const router = useRouter();
   const searchParams = useSearchParams();
 
   useEffect(() => {
@@ -326,15 +325,24 @@ function usePeopleFormFeedback(
       params.delete("mode");
       params.delete("type");
       params.delete("id");
+      params.delete("page");
       params.set("tab", activeSection);
       params.set("feedback", "success");
       params.set("message", state.success);
+
+      if (activeSection === "rooms" && state.values?.room_number) {
+        params.set("room", state.values.room_number);
+      }
+
+      if (activeSection === "owners" && state.values?.full_name) {
+        params.set("name", state.values.full_name);
+      }
+
       const query = params.toString();
 
-      router.replace(query ? `/admin/people?${query}` : "/admin/people");
-      router.refresh();
+      window.location.assign(query ? `/admin/people?${query}` : "/admin/people");
     }
-  }, [activeSection, formRef, router, searchParams, state]);
+  }, [activeSection, formRef, searchParams, state]);
 }
 
 function RoomForm({

@@ -112,6 +112,14 @@ export default async function AdminDocumentsPage({
           initialPerPage={documentRows.documentPerPage}
           initialRows={documentRows.documents as DocumentRegistryRow[]}
           initialTotal={documentRows.documentTotal}
+          key={[
+            filters.set ?? "",
+            filters.type ?? "all",
+            filters.sortBy ?? "created",
+            filters.dir ?? "desc",
+            documentRows.documentPage,
+            documentRows.documentPerPage,
+          ].join(":")}
         />
 
         {params.mode === "create" ? (
