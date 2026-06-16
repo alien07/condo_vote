@@ -4,19 +4,57 @@ This document is the reference for admin create, read, update, and deactivate UX
 
 ## Current Pilot
 
-`/admin/people` is the pilot page for this pattern. The first rollout batch
-applies the same drawer/list pattern to admin workspaces:
-
-- `/admin/setup?tab=committee`: add and edit committee member in drawer; deactivate remains an inline row action.
-- `/admin/proxies`: add proxy authorization in drawer; review proxy status opens from the target row in a drawer.
-- `/admin/setup?tab=storage`: register private document reference in drawer; storage config remains inline because it is a single settings form.
-- `/admin/voting`: import manual vote in drawer; conflict resolution remains inline on the conflict row.
-- `/admin/ownership`: create ownership link, edit dates, and end link in drawers; scheduled links can be cancelled from the row with confirmation.
-- `/admin/meetings?tab=meetings`: add meeting and edit draft meeting in drawer; publish/archive/result generation remain inline row actions.
-- `/admin/meetings?tab=questions`: add agenda question in drawer; choices remain inline under their parent question.
-- `/admin/results`: approve result in drawer from the result row.
+`/admin/people` is the pilot page for this pattern. Rollout must continue one
+page at a time. After each page is implemented, run the page-specific smoke
+test, commit the page, and wait for user confirmation before starting the next
+page.
 
 Search/filter forms and single-record configuration forms do not need drawers.
+
+## Rollout Plan
+
+1. `/admin/meetings?tab=meetings`
+   - Add meeting opens in drawer.
+   - Draft meetings can be edited in drawer.
+   - Non-draft meetings are read-only for edit; publish, archive, and result generation remain inline row actions.
+   - Success closes drawer, preserves table state, and focuses the affected row when it is still visible.
+
+2. `/admin/meetings?tab=questions`
+   - Add agenda question opens in drawer.
+   - Question edit opens from the target row.
+   - Choices remain inline under their parent question until a separate choice-management design is needed.
+
+3. `/admin/setup?tab=committee`
+   - Add committee member opens in drawer.
+   - Edit committee member opens from the target row.
+   - Deactivate/reactivate remains an inline row action with confirmation.
+
+4. `/admin/setup?tab=storage`
+   - Register private document reference opens in drawer.
+   - Storage provider settings remain inline because they are single-record app configuration.
+
+5. `/admin/proxies`
+   - Add proxy authorization opens in drawer.
+   - Review/edit status opens from the target row in drawer.
+   - Revoke/deactivate remains inline with confirmation.
+
+6. `/admin/ownership`
+   - Create ownership link opens in drawer.
+   - Edit dates opens in drawer from the target row.
+   - End Link opens a confirmation drawer with an editable effective end date.
+   - Cancel scheduled link remains inline with confirmation.
+
+7. `/admin/voting`
+   - Manual vote import opens in drawer.
+   - Manual vote edit opens from the target row.
+   - Conflict resolution stays on the conflict page because it needs a read-only manual/online comparison.
+
+8. `/admin/results`
+   - Approval action opens from the result row in drawer.
+   - Result generation remains inline on Meetings because pending manual votes must block generation before committee approval.
+
+Each rollout step must keep the current page layout stable enough for user live
+testing before the next page starts.
 
 The pilot is split into focused tabs:
 
