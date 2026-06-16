@@ -216,6 +216,14 @@ function mergeParams(
   return query ? `?${query}` : "/admin/people";
 }
 
+function escapeSelectorValue(value: string) {
+  if (typeof CSS !== "undefined" && typeof CSS.escape === "function") {
+    return CSS.escape(value);
+  }
+
+  return value.replace(/["\\]/g, "\\$&");
+}
+
 function fieldErrorId(fieldName: string) {
   return `people-${fieldName}-error`;
 }
@@ -304,6 +312,7 @@ function usePeopleFormFeedback(
   activeSection: "owners" | "profiles" | "rooms",
   state: PeopleActionState,
   formRef: React.RefObject<HTMLFormElement | null>,
+  mode?: "create" | "edit",
 ) {
   const searchParams = useSearchParams();
 
@@ -325,13 +334,28 @@ function usePeopleFormFeedback(
       params.delete("mode");
       params.delete("type");
       params.delete("id");
-      params.delete("page");
       params.set("tab", activeSection);
       params.set("feedback", "success");
       params.set("message", state.success);
 
-      if (activeSection === "rooms" && state.values?.room_number) {
+      if (activeSection !== "rooms" || mode === "create") {
+        params.delete("page");
+      }
+
+      if (
+        activeSection === "rooms" &&
+        mode === "create" &&
+        state.values?.room_number
+      ) {
         params.set("room", state.values.room_number);
+      }
+
+      if (
+        activeSection === "rooms" &&
+        mode === "edit" &&
+        state.values?.id
+      ) {
+        params.set("focusRoomId", state.values.id);
       }
 
       if (activeSection === "owners" && state.values?.full_name) {
@@ -342,7 +366,7 @@ function usePeopleFormFeedback(
 
       window.location.assign(query ? `/admin/people?${query}` : "/admin/people");
     }
-  }, [activeSection, formRef, searchParams, state]);
+  }, [activeSection, formRef, mode, searchParams, state]);
 }
 
 function RoomForm({
@@ -359,7 +383,7 @@ function RoomForm({
     mode === "create" ? createRoomWithState : updateRoomWithState,
     emptyState,
   );
-  usePeopleFormFeedback("rooms", state, formRef);
+  usePeopleFormFeedback("rooms", state, formRef, mode);
 
   return (
     <form action={formAction} className="grid gap-3" noValidate ref={formRef}>
@@ -827,6 +851,57 @@ export function PeopleCrudPilot({
     (roomPage - 1) * roomTableState.perPage,
     roomPage * roomTableState.perPage,
   );
+  const editingRoomId =
+    activeSection === "rooms" && drawer?.mode === "edit" && drawer.type === "room"
+      ? drawer.id
+      : null;
+  const focusedRoomId =
+    activeSection === "rooms" && !drawer?.mode
+      ? searchParams.get("focusRoomId")
+      : null;
+  const createdRoomNumber =
+    activeSection === "rooms" && !drawer?.mode ? searchParams.get("room") : null;
+
+  useEffect(() => {
+    if (activeSection !== "rooms") {
+      return;
+    }
+
+    const selector = editingRoomId
+      ? `[data-room-id="${escapeSelectorValue(editingRoomId)}"]`
+      : focusedRoomId
+        ? `[data-room-id="${escapeSelectorValue(focusedRoomId)}"]`
+      : createdRoomNumber
+        ? `[data-room-number="${escapeSelectorValue(createdRoomNumber)}"]`
+        : null;
+
+    if (!selector) {
+      return;
+    }
+
+    const frame = window.requestAnimationFrame(() => {
+      const row = Array.from(
+        document.querySelectorAll<HTMLElement>(selector),
+      ).find((element) => element.getClientRects().length > 0);
+
+      if (!row) {
+        return;
+      }
+
+      row.scrollIntoView({ behavior: "smooth", block: "center" });
+      row.focus({ preventScroll: true });
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [
+    activeSection,
+    createdRoomNumber,
+    editingRoomId,
+    focusedRoomId,
+    pagedRooms,
+    roomPage,
+    roomTableState.perPage,
+  ]);
   const filteredOwners = useMemo(() => {
     const nameQuery = ownerTableState.name.trim().toLowerCase();
 
@@ -1818,16 +1893,25 @@ export function PeopleCrudPilot({
                     drawer?.mode === "edit" &&
                     drawer.type === "room" &&
                     drawer.id === room.id;
+                  const created =
+                    !drawer?.mode &&
+                    searchParams.get("room") === room.room_number;
+                  const focused =
+                    !drawer?.mode &&
+                    searchParams.get("focusRoomId") === room.id;
 
                   return (
                     <tr
                       className={[
                         "border-b border-[var(--border)]",
-                        selected
+                        selected || created || focused
                           ? "border-l-4 border-l-[var(--primary)] bg-[var(--accent)]"
                           : "",
                       ].join(" ")}
+                      data-room-id={room.id}
+                      data-room-number={room.room_number}
                       key={room.id}
+                      tabIndex={-1}
                     >
                       <td className="py-2 pr-3">{room.room_number}</td>
                       <td className="py-2 pr-3">{room.ownership_percent}</td>
@@ -1854,8 +1938,8 @@ export function PeopleCrudPilot({
                             <ConfirmSubmitButton
                               className={
                                 room.active
-                                  ? "text-sm font-medium text-red-700"
-                                  : "text-sm font-medium text-[var(--primary)]"
+                                  ? "rounded-md border border-red-200 px-3 py-1 text-sm font-medium text-red-700"
+                                  : "rounded-md border border-[var(--border)] px-3 py-1 text-sm font-medium text-[var(--primary)]"
                               }
                               confirmMessage={
                                 room.active
@@ -1921,6 +2005,7 @@ export function PeopleCrudPilot({
       {drawerContent ? (
         <AdminCrudDrawer
           closeHref={closeHref}
+          lockScroll={drawer?.type !== "room"}
           summary={drawerContent.summary}
           title={drawerContent.title}
         >

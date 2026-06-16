@@ -7,6 +7,7 @@ import { X } from "lucide-react";
 type AdminCrudDrawerProps = {
   children: React.ReactNode;
   closeHref: string;
+  lockScroll?: boolean;
   summary?: string[];
   title: string;
 };
@@ -14,10 +15,15 @@ type AdminCrudDrawerProps = {
 export function AdminCrudDrawer({
   children,
   closeHref,
+  lockScroll = true,
   summary,
   title,
 }: AdminCrudDrawerProps) {
   useEffect(() => {
+    if (!lockScroll) {
+      return;
+    }
+
     const previousBodyOverflow = document.body.style.overflow;
     const previousHtmlOverflow = document.documentElement.style.overflow;
 
@@ -28,7 +34,7 @@ export function AdminCrudDrawer({
       document.body.style.overflow = previousBodyOverflow;
       document.documentElement.style.overflow = previousHtmlOverflow;
     };
-  }, []);
+  }, [lockScroll]);
 
   return (
     <div className="fixed inset-0 z-40 flex justify-end overflow-hidden bg-black/10">

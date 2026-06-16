@@ -35,6 +35,46 @@ async function getRedirectOrigin() {
   return null;
 }
 
+function getServiceRoleKey() {
+  return process.env.SUPABASE_SECRET_KEY ?? process.env.SUPABASE_SERVICE_ROLE_KEY;
+}
+
+function isPrivateHost(hostname: string) {
+  if (["localhost", "127.0.0.1", "0.0.0.0", "::1"].includes(hostname)) {
+    return true;
+  }
+
+  if (hostname.startsWith("192.168.") || hostname.startsWith("10.")) {
+    return true;
+  }
+
+  const match = hostname.match(/^172\.(\d+)\./);
+  return Boolean(match && Number(match[1]) >= 16 && Number(match[1]) <= 31);
+}
+
+async function getRequestHostname() {
+  const host = (await headers()).get("host") ?? "";
+  return host.split(":")[0] ?? "";
+}
+
+export async function isLocalAuthBypassAvailable() {
+  if (process.env.NODE_ENV === "production") {
+    return false;
+  }
+
+  if (process.env.ENABLE_LOCAL_AUTH_BYPASS === "0") {
+    return false;
+  }
+
+  const hostname = await getRequestHostname();
+
+  return Boolean(
+    process.env.NEXT_PUBLIC_SUPABASE_URL &&
+      getServiceRoleKey() &&
+      isPrivateHost(hostname),
+  );
+}
+
 export async function signInWithGoogle(formData: FormData) {
   const supabase = await createClient();
   const origin = await getRedirectOrigin();

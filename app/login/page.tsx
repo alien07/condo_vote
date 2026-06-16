@@ -1,5 +1,8 @@
 import { LogIn } from "lucide-react";
-import { signInWithGoogle } from "@/features/auth/actions";
+import {
+  isLocalAuthBypassAvailable,
+  signInWithGoogle,
+} from "@/features/auth/actions";
 import { GoogleLoginForm } from "@/features/auth/google-login-form";
 import { ERROR_CODES } from "@/lib/error-codes";
 import { APP_VERSION } from "@/lib/app-config";
@@ -35,6 +38,10 @@ function getLoginErrorMessage(error: string | undefined) {
       return "Sign-in failed: no authenticated user was returned.";
     case ERROR_CODES.AUTH_CALLBACK_PROFILE_FAILED:
       return "Sign-in failed: could not create or load your profile.";
+    case ERROR_CODES.AUTH_LOCAL_BYPASS_DISABLED:
+      return "Local demo sign-in is available only in local development.";
+    case ERROR_CODES.AUTH_LOCAL_BYPASS_FAILED:
+      return "Local demo sign-in failed. Check the local Supabase service key and auth logs.";
     default:
       return error ? `Sign-in failed: ${error}.` : null;
   }
@@ -44,6 +51,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
   const params = await searchParams;
   const next = getSafeNext(params.next);
   const errorMessage = getLoginErrorMessage(params.error);
+  const canUseLocalBypass = await isLocalAuthBypassAvailable();
 
   return (
     <main className="flex min-h-screen items-center justify-center px-6">
@@ -60,6 +68,19 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
           </p>
         ) : null}
         <GoogleLoginForm action={signInWithGoogle} next={next} />
+        {canUseLocalBypass ? (
+          <div className="mt-3">
+            <a
+              className="block w-full rounded-md border border-amber-300 bg-amber-50 px-4 py-2 text-center text-sm font-medium text-amber-900"
+              href={`/auth/local-demo?next=${encodeURIComponent(next)}`}
+            >
+              Local demo sign in
+            </a>
+            <p className="mt-2 text-xs leading-5 text-[var(--muted)]">
+              Development only. Uses the local demo admin account without Google.
+            </p>
+          </div>
+        ) : null}
       </section>
     </main>
   );
