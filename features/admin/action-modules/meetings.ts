@@ -20,6 +20,14 @@ export type MeetingActionState = {
   values?: Record<string, string>;
 };
 
+export type QuestionActionState = {
+  error?: string;
+  fieldErrors?: Record<string, string>;
+  recordId?: string;
+  success?: string;
+  values?: Record<string, string>;
+};
+
 const meetingFormFields = [
   "id",
   "title",
@@ -217,6 +225,182 @@ export async function updateDraftMeetingWithState(
     return {
       error:
         error instanceof Error ? error.message : "Could not update meeting.",
+      values,
+    };
+  }
+}
+
+const questionFormFields = [
+  "id",
+  "meeting_id",
+  "agenda_no",
+  "agenda_title",
+  "question_text",
+  "question_type",
+  "resolution_type",
+  "required_threshold",
+  "display_order",
+  "required",
+  "requires_land_office_registration",
+  "legal_note",
+];
+
+function questionFormValues(formData: FormData) {
+  return Object.fromEntries(
+    questionFormFields.map((field) => [
+      field,
+      String(formData.get(field) ?? ""),
+    ]),
+  );
+}
+
+function validateQuestionForm(
+  values: Record<string, string>,
+  requireId: boolean,
+) {
+  const fieldErrors: Record<string, string> = {};
+  const requiredFields = [
+    ["meeting_id", "Meeting"],
+    ["question_text", "Question"],
+    ["question_type", "Question type"],
+    ["resolution_type", "Resolution type"],
+    ["required_threshold", "Required threshold"],
+  ] as const;
+
+  if (requireId && !values.id.trim()) {
+    fieldErrors.id = "Question ID is required.";
+  }
+
+  for (const [field, label] of requiredFields) {
+    if (!values[field].trim()) {
+      fieldErrors[field] = `${label} is required.`;
+    }
+  }
+
+  const displayOrder = Number(values.display_order || 0);
+
+  if (!Number.isInteger(displayOrder) || displayOrder < 0) {
+    fieldErrors.display_order = "Order must be a whole number of 0 or greater.";
+  }
+
+  return fieldErrors;
+}
+
+function questionValidationState(
+  fieldErrors: Record<string, string>,
+  values: Record<string, string>,
+): QuestionActionState | null {
+  const count = Object.keys(fieldErrors).length;
+
+  if (count === 0) {
+    return null;
+  }
+
+  return {
+    error: `Please fix ${count} field${count === 1 ? "" : "s"} before saving.`,
+    fieldErrors,
+    values,
+  };
+}
+
+function questionPayload(values: Record<string, string>) {
+  return {
+    meeting_id: values.meeting_id.trim(),
+    agenda_no: optionalText(values.agenda_no),
+    agenda_title: optionalText(values.agenda_title),
+    question_text: values.question_text.trim(),
+    question_type: values.question_type.trim(),
+    resolution_type: values.resolution_type.trim(),
+    required_threshold: values.required_threshold.trim(),
+    requires_land_office_registration:
+      values.requires_land_office_registration === "on",
+    legal_note: optionalText(values.legal_note),
+    display_order: Number(values.display_order || 0),
+    required: values.required === "on",
+  };
+}
+
+export async function createMeetingQuestionWithState(
+  _state: QuestionActionState,
+  formData: FormData,
+): Promise<QuestionActionState> {
+  const values = questionFormValues(formData);
+
+  try {
+    await requireAdmin();
+    const validation = questionValidationState(
+      validateQuestionForm(values, false),
+      values,
+    );
+
+    if (validation) {
+      return validation;
+    }
+
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from("meeting_questions")
+      .insert(questionPayload(values))
+      .select("id")
+      .single();
+
+    if (error) {
+      return { error: error.message, values };
+    }
+
+    revalidateAdminPaths();
+    return {
+      recordId: data.id,
+      success: "Question added",
+      values,
+    };
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : "Could not add question.",
+      values,
+    };
+  }
+}
+
+export async function updateMeetingQuestionWithState(
+  _state: QuestionActionState,
+  formData: FormData,
+): Promise<QuestionActionState> {
+  const values = questionFormValues(formData);
+
+  try {
+    await requireAdmin();
+    const validation = questionValidationState(
+      validateQuestionForm(values, true),
+      values,
+    );
+
+    if (validation) {
+      return validation;
+    }
+
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from("meeting_questions")
+      .update(questionPayload(values))
+      .eq("id", values.id)
+      .select("id")
+      .single();
+
+    if (error) {
+      return { error: error.message, values };
+    }
+
+    revalidateAdminPaths();
+    return {
+      recordId: data.id,
+      success: "Question updated",
+      values,
+    };
+  } catch (error) {
+    return {
+      error:
+        error instanceof Error ? error.message : "Could not update question.",
       values,
     };
   }

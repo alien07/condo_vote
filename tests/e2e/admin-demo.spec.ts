@@ -1075,6 +1075,167 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
     }
   });
 
+  test("questions CRUD rollout validates and focuses saved questions", async ({
+    page,
+  }) => {
+    test.setTimeout(120_000);
+
+    const supabase = createClient<Database>(supabaseUrl!, serviceKey!, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+    });
+    let user = await findUserByEmail(supabase, demoAdminEmail);
+
+    if (!user) {
+      const { data, error } = await supabase.auth.admin.createUser({
+        email: demoAdminEmail,
+        email_confirm: true,
+        user_metadata: { full_name: demoAdminName },
+      });
+
+      expect(error).toBeNull();
+      user = data.user;
+    }
+
+    const { data: profile, error: profileError } = await supabase
+      .from("profiles")
+      .upsert(
+        {
+          auth_user_id: user!.id,
+          email: demoAdminEmail,
+          full_name: demoAdminName,
+          approval_status: "approved",
+          default_status: "owner",
+        },
+        { onConflict: "auth_user_id" },
+      )
+      .select("id")
+      .single();
+
+    expect(profileError).toBeNull();
+    const { error: roleError } = await supabase.from("app_roles").upsert(
+      { profile_id: profile!.id, role: "admin" },
+      { onConflict: "profile_id,role" },
+    );
+
+    expect(roleError).toBeNull();
+    const { data: link, error: linkError } =
+      await supabase.auth.admin.generateLink({
+        type: "magiclink",
+        email: demoAdminEmail,
+        options: { redirectTo: `${appUrl}/auth/callback` },
+      });
+
+    expect(linkError).toBeNull();
+    await page.goto(
+      `${appUrl}/auth/callback?token_hash=${encodeURIComponent(
+        link.properties!.hashed_token,
+      )}&type=${link.properties!.verification_type}`,
+    );
+
+    const stamp = Date.now();
+    const meetingTitle = `Question rollout meeting ${stamp}`;
+    const questionText = `Question rollout ${stamp}`;
+    const updatedQuestionText = `${questionText} updated`;
+    const startsAt = new Date(Date.now() + 60 * 60 * 1000);
+    const endsAt = new Date(Date.now() + 2 * 60 * 60 * 1000);
+    const { data: meeting, error: meetingError } = await supabase
+      .from("meetings")
+      .insert({
+        title: meetingTitle,
+        starts_at: startsAt.toISOString(),
+        ends_at: endsAt.toISOString(),
+      })
+      .select("id")
+      .single();
+
+    expect(meetingError).toBeNull();
+
+    try {
+      await page.goto(`${appUrl}/admin/meetings?tab=questions`);
+      await page.getByRole("link", { name: "Add question" }).click();
+      const addDrawer = page.getByRole("complementary", {
+        name: "Add question",
+      });
+
+      await addDrawer.getByRole("button", { name: "Add question" }).click();
+      await expect(addDrawer.getByText("Meeting is required.")).toBeVisible();
+      await expect(addDrawer.getByText("Question is required.")).toBeVisible();
+      await expect(addDrawer.locator('select[name="meeting_id"]')).toBeFocused();
+
+      await addDrawer.locator('input[name="question_text"]').fill(questionText);
+      await addDrawer.getByRole("button", { name: "Add question" }).click();
+      await expect(addDrawer.getByText("Meeting is required.")).toBeVisible();
+      await expect(addDrawer.locator('input[name="question_text"]')).toHaveValue(
+        questionText,
+      );
+      await expect(addDrawer.locator('select[name="meeting_id"]')).toBeFocused();
+
+      await addDrawer
+        .locator('select[name="meeting_id"]')
+        .selectOption(meeting!.id);
+      await addDrawer.locator('input[name="display_order"]').fill("1");
+      await addDrawer.getByRole("button", { name: "Add question" }).click();
+      await page.waitForURL((url) => Boolean(url.searchParams.get("focusQuestionId")));
+
+      const questionId = new URL(page.url()).searchParams.get("focusQuestionId");
+
+      expect(questionId).toBeTruthy();
+      await expect(page).toHaveURL(/tab=questions/);
+      const questionCard = page.locator(
+        `[data-question-id="${questionId}"]:visible`,
+      );
+
+      await expect(questionCard).toBeVisible();
+      await expect(questionCard).toHaveClass(/border-l-\[var\(--primary\)\]/);
+      await expect(
+        questionCard.getByRole("link", { name: "Edit" }),
+      ).toBeVisible();
+      await expect(
+        questionCard.getByRole("button", { name: "Delete question" }),
+      ).toBeVisible();
+      await expect(
+        questionCard.getByRole("button", { name: "Add choice" }),
+      ).toBeVisible();
+      await page.waitForFunction(
+        (id) => document.activeElement?.getAttribute("data-question-id") === id,
+        questionId,
+      );
+
+      await questionCard.getByRole("link", { name: "Edit" }).click();
+      const editDrawer = page.getByRole("complementary", {
+        name: "Edit question",
+      });
+
+      await expect(editDrawer).toBeVisible({ timeout: 15_000 });
+      await expect(editDrawer.locator('input[name="question_text"]')).toHaveValue(
+        questionText,
+      );
+      await editDrawer
+        .locator('input[name="question_text"]')
+        .fill(updatedQuestionText);
+      await editDrawer.getByRole("button", { name: "Save question" }).click();
+      await page.waitForURL(
+        (url) =>
+          url.searchParams.get("focusQuestionId") === questionId &&
+          !url.searchParams.has("mode"),
+      );
+      await expect(
+        questionCard.getByRole("heading", { name: updatedQuestionText }),
+      ).toBeVisible();
+      await expect(questionCard).toHaveClass(/border-l-\[var\(--primary\)\]/);
+      await page.waitForFunction(
+        (id) => document.activeElement?.getAttribute("data-question-id") === id,
+        questionId,
+      );
+    } finally {
+      await supabase.from("meeting_questions").delete().eq("meeting_id", meeting!.id);
+      await supabase.from("meetings").delete().eq("id", meeting!.id);
+    }
+  });
+
   test("people CRUD pilot uses drawer actions and validation", async ({
     page,
   }) => {

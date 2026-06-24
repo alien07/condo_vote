@@ -14,7 +14,6 @@ import {
   archiveMeeting,
   createCommitteeMember,
   createMeetingChoice,
-  createMeetingQuestion,
   createProxyAuthorization,
   deactivateCommitteeMember,
   deleteMeetingChoice,
@@ -45,6 +44,10 @@ import {
   MeetingCrudDrawer,
   MeetingRowFocus,
 } from "@/features/admin/components/meeting-crud-drawer";
+import {
+  QuestionCrudDrawer,
+  QuestionRowFocus,
+} from "@/features/admin/components/question-crud-drawer";
 import { PeopleCrudPilot } from "@/features/admin/components/people-crud-pilot";
 import { PerPageSelect } from "@/features/admin/components/table-controls";
 import { PendingSubmitButton } from "@/features/debug/tracked-submit-button";
@@ -294,6 +297,7 @@ type AdminWorkspaceProps = {
     type?: string;
   };
   focusedMeetingId?: string;
+  focusedQuestionId?: string;
   meetingFilters?: MeetingTableFilters;
   resultFilters?: ResultTableFilters;
   emailFilters?: EmailTableFilters;
@@ -568,6 +572,7 @@ export async function AdminWorkspace({
   drawer,
   emailFilters,
   focusedMeetingId,
+  focusedQuestionId,
   manualVoteFilters,
   meetingFilters,
   proxyFilters,
@@ -1296,6 +1301,7 @@ export async function AdminWorkspace({
     (member) => member.id === drawer?.id,
   );
   const selectedMeeting = meetings.find((meeting) => meeting.id === drawer?.id);
+  const selectedQuestion = questions.find((question) => question.id === drawer?.id);
   const showCommitteeMemberDrawer =
     drawer?.type === "committee_member" &&
     (drawer.mode === "create" ||
@@ -1304,6 +1310,14 @@ export async function AdminWorkspace({
     drawer?.type === "meeting" &&
     (drawer.mode === "create" ||
       (drawer.mode === "edit" && selectedMeeting?.status === "draft"));
+  const showQuestionDrawer =
+    drawer?.type === "question" &&
+    (drawer.mode === "create" ||
+      (drawer.mode === "edit" && Boolean(selectedQuestion)));
+  const questionFocusId =
+    drawer?.mode === "edit" && drawer.type === "question"
+      ? drawer.id
+      : focusedQuestionId;
 
   return (
     <main className="min-h-screen px-6 py-8">
@@ -2621,11 +2635,21 @@ export async function AdminWorkspace({
           </div>
 
           <div className="grid gap-4">
-            {questions.map((question) => (
-              <div
-                className="rounded-md border border-[var(--border)] p-4"
-                key={question.id}
-              >
+            {questions.map((question) => {
+              const focused = questionFocusId === question.id;
+
+              return (
+                <div
+                  className={[
+                    "rounded-md border border-[var(--border)] p-4",
+                    focused
+                      ? "border-l-4 border-l-[var(--primary)] bg-[var(--accent)]"
+                      : "",
+                  ].join(" ")}
+                  data-question-id={question.id}
+                  key={question.id}
+                  tabIndex={-1}
+                >
                 <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                   <div>
                     <div className="text-sm text-[var(--muted)]">
@@ -2645,17 +2669,25 @@ export async function AdminWorkspace({
                       </div>
                     ) : null}
                   </div>
-                  <form action={deleteMeetingQuestion}>
-                    <input name="id" type="hidden" value={question.id} />
-                    <ConfirmSubmitButton
-                      className="text-sm font-medium text-red-700"
-                      confirmMessage={`Delete question "${question.question_text}"? This removes the agenda question and its configured choices from the meeting setup.`}
-                      pendingLabel="Deleting..."
-                      type="submit"
+                  <div className="flex flex-wrap gap-2">
+                    <a
+                      className="rounded-md border border-[var(--border)] px-3 py-1 text-sm font-medium text-[var(--primary)]"
+                      href={`/admin/meetings?tab=questions&mode=edit&type=question&id=${question.id}`}
                     >
-                      Delete question
-                    </ConfirmSubmitButton>
-                  </form>
+                      Edit
+                    </a>
+                    <form action={deleteMeetingQuestion}>
+                      <input name="id" type="hidden" value={question.id} />
+                      <ConfirmSubmitButton
+                        className="rounded-md border border-red-200 px-3 py-1 text-sm font-medium text-red-700"
+                        confirmMessage={`Delete question "${question.question_text}"? This removes the agenda question and its configured choices from the meeting setup.`}
+                        pendingLabel="Deleting..."
+                        type="submit"
+                      >
+                        Delete question
+                      </ConfirmSubmitButton>
+                    </form>
+                  </div>
                 </div>
                 <form
                   action={createMeetingChoice}
@@ -2711,137 +2743,23 @@ export async function AdminWorkspace({
                       </form>
                     ))}
                 </div>
-              </div>
-            ))}
+                </div>
+              );
+            })}
           </div>
+          <QuestionRowFocus questionId={questionFocusId} />
           {questions.length === 0 ? (
             <p className="mt-3 text-sm text-[var(--muted)]">
               No meeting questions have been created yet.
             </p>
           ) : null}
-          {drawer?.mode === "create" && drawer.type === "question" ? (
-            <AdminCrudDrawer
+          {showQuestionDrawer ? (
+            <QuestionCrudDrawer
               closeHref="/admin/meetings?tab=questions"
-              summary={["New agenda question"]}
-              title="Add question"
-            >
-              <form action={createMeetingQuestion} className="grid gap-3">
-                <RequiredNote />
-                <label className="grid gap-1 text-sm font-medium">
-                  <FieldLabel required>Meeting</FieldLabel>
-                  <select
-                    autoFocus
-                    className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-                    name="meeting_id"
-                    required
-                  >
-                    <option value="">Select meeting</option>
-                    {meetings
-                      .filter((meeting) => meeting.status !== "archived")
-                      .map((meeting) => (
-                        <option key={meeting.id} value={meeting.id}>
-                          {meeting.title}
-                        </option>
-                      ))}
-                  </select>
-                </label>
-                <input
-                  className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-                  name="agenda_no"
-                  placeholder="Agenda no."
-                />
-                <input
-                  className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-                  name="agenda_title"
-                  placeholder="Agenda title"
-                />
-                <label className="grid gap-1 text-sm font-medium">
-                  <FieldLabel required>Question</FieldLabel>
-                  <input
-                    className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-                    name="question_text"
-                    required
-                  />
-                </label>
-                <label className="grid gap-1 text-sm font-medium">
-                  <FieldLabel required>Question type</FieldLabel>
-                  <select
-                    className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-                    name="question_type"
-                    required
-                  >
-                    <option value="single_choice">Single choice</option>
-                    <option value="multiple_choice">Multiple choice</option>
-                  </select>
-                </label>
-                <label className="grid gap-1 text-sm font-medium">
-                  <FieldLabel required>Resolution type</FieldLabel>
-                  <select
-                    className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-                    defaultValue="ordinary"
-                    name="resolution_type"
-                    required
-                  >
-                    <option value="ordinary">Ordinary</option>
-                    <option value="special">Special</option>
-                    <option value="informational">Informational</option>
-                  </select>
-                </label>
-                <label className="grid gap-1 text-sm font-medium">
-                  <FieldLabel required>Required threshold</FieldLabel>
-                  <select
-                    className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-                    defaultValue="majority_submitted"
-                    name="required_threshold"
-                    required
-                  >
-                    <option value="majority_submitted">Majority submitted</option>
-                    <option value="one_third_total">1/3 total ownership</option>
-                    <option value="half_total">1/2 total ownership</option>
-                    <option value="three_fourths_total">3/4 total ownership</option>
-                    <option value="informational">Informational</option>
-                  </select>
-                </label>
-                <input
-                  className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-                  defaultValue={0}
-                  min={0}
-                  name="display_order"
-                  placeholder="Order"
-                  type="number"
-                />
-                <label className="flex items-center gap-2 text-sm">
-                  <input defaultChecked name="required" type="checkbox" />
-                  Required
-                </label>
-                <label className="flex items-center gap-2 text-sm">
-                  <input name="requires_land_office_registration" type="checkbox" />
-                  Land office registration
-                </label>
-                <textarea
-                  className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-                  name="legal_note"
-                  placeholder="Legal / admin note"
-                  rows={2}
-                />
-                <div className="flex flex-wrap gap-2 pt-2">
-                  <PendingSubmitButton
-                    className="rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)]"
-                    pendingLabel="Adding..."
-                    type="submit"
-                  >
-                    Add question
-                  </PendingSubmitButton>
-                  <FormResetButton label="Clear form" />
-                  <a
-                    className="inline-flex items-center justify-center rounded-md border border-[var(--border)] px-4 py-2 text-sm font-medium"
-                    href="/admin/meetings?tab=questions"
-                  >
-                    Cancel
-                  </a>
-                </div>
-              </form>
-            </AdminCrudDrawer>
+              meetings={meetings}
+              mode={drawer?.mode === "edit" ? "edit" : "create"}
+              question={selectedQuestion}
+            />
           ) : null}
         </section>
 

@@ -5,6 +5,7 @@ type AdminMeetingsPageProps = {
   searchParams: Promise<{
     dir?: string;
     focusMeetingId?: string;
+    focusQuestionId?: string;
     id?: string;
     mode?: string;
     noType?: string;
@@ -65,6 +66,7 @@ export default async function AdminMeetingsPage({
         type: params.type,
       }}
       focusedMeetingId={params.focusMeetingId}
+      focusedQuestionId={params.focusQuestionId}
       meetingFilters={getMeetingFilters(params)}
       sections={["meetings", "questions"]}
       title="Meetings"

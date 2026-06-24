@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { CheckCircle2, Info, TriangleAlert, X, XCircle } from "lucide-react";
 
 type FeedbackTone = "success" | "error" | "warning" | "info";
@@ -61,7 +61,6 @@ function parseMessage(value: string | null) {
 
 export function AppFeedbackBanner() {
   const pathname = usePathname();
-  const router = useRouter();
   const searchParams = useSearchParams();
   const tone = parseTone(searchParams.get("feedback"));
   const message = parseMessage(searchParams.get("message"));
@@ -86,12 +85,20 @@ export function AppFeedbackBanner() {
     }
 
     const timeoutId = window.setTimeout(() => {
+      const currentParams = new URLSearchParams(window.location.search);
+      const currentTone = parseTone(currentParams.get("feedback"));
+      const currentMessage = parseMessage(currentParams.get("message"));
+
+      if (`${currentTone ?? ""}:${currentMessage ?? ""}` !== bannerKey) {
+        return;
+      }
+
       setDismissedKey(bannerKey);
-      router.replace(closeHref, { scroll: false });
+      window.history.replaceState(window.history.state, "", closeHref);
     }, 2000);
 
     return () => window.clearTimeout(timeoutId);
-  }, [bannerKey, closeHref, message, router, tone]);
+  }, [bannerKey, closeHref, message, tone]);
 
   if (!tone || !message || !config || !Icon || dismissedKey === bannerKey) {
     return null;
@@ -114,7 +121,7 @@ export function AppFeedbackBanner() {
           className="shrink-0 rounded p-1 hover:bg-black/5"
           onClick={() => {
             setDismissedKey(bannerKey);
-            router.replace(closeHref, { scroll: false });
+            window.history.replaceState(window.history.state, "", closeHref);
           }}
           type="button"
         >
