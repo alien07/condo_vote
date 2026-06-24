@@ -4,6 +4,7 @@ import type { MeetingTableFilters } from "@/features/admin/components/admin-work
 type AdminMeetingsPageProps = {
   searchParams: Promise<{
     dir?: string;
+    focusMeetingId?: string;
     id?: string;
     mode?: string;
     noType?: string;
@@ -63,6 +64,7 @@ export default async function AdminMeetingsPage({
         mode: params.mode,
         type: params.type,
       }}
+      focusedMeetingId={params.focusMeetingId}
       meetingFilters={getMeetingFilters(params)}
       sections={["meetings", "questions"]}
       title="Meetings"

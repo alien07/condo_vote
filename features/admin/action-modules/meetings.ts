@@ -12,6 +12,216 @@ import {
 } from "@/features/admin/action-modules/shared";
 import { writeAuditLog } from "@/lib/audit/business-audit";
 
+export type MeetingActionState = {
+  error?: string;
+  fieldErrors?: Record<string, string>;
+  recordId?: string;
+  success?: string;
+  values?: Record<string, string>;
+};
+
+const meetingFormFields = [
+  "id",
+  "title",
+  "video_url",
+  "meeting_number",
+  "meeting_type",
+  "fiscal_year",
+  "location",
+  "chairperson_name",
+  "quorum_rule",
+  "starts_at",
+  "ends_at",
+  "description",
+];
+
+function meetingFormValues(formData: FormData) {
+  return Object.fromEntries(
+    meetingFormFields.map((field) => [
+      field,
+      String(formData.get(field) ?? ""),
+    ]),
+  );
+}
+
+function validateMeetingForm(
+  values: Record<string, string>,
+  requireId: boolean,
+) {
+  const fieldErrors: Record<string, string> = {};
+  const requiredFields = [
+    ["title", "Meeting title"],
+    ["meeting_type", "Meeting type"],
+    ["quorum_rule", "Quorum rule"],
+    ["starts_at", "Start time"],
+    ["ends_at", "End time"],
+  ] as const;
+
+  if (requireId && !values.id.trim()) {
+    fieldErrors.id = "Meeting ID is required.";
+  }
+
+  for (const [field, label] of requiredFields) {
+    if (!values[field].trim()) {
+      fieldErrors[field] = `${label} is required.`;
+    }
+  }
+
+  const startsAt = values.starts_at ? new Date(values.starts_at) : null;
+  const endsAt = values.ends_at ? new Date(values.ends_at) : null;
+
+  if (startsAt && Number.isNaN(startsAt.getTime())) {
+    fieldErrors.starts_at = "Start time must be a valid date and time.";
+  }
+
+  if (endsAt && Number.isNaN(endsAt.getTime())) {
+    fieldErrors.ends_at = "End time must be a valid date and time.";
+  }
+
+  if (
+    startsAt &&
+    endsAt &&
+    !Number.isNaN(startsAt.getTime()) &&
+    !Number.isNaN(endsAt.getTime()) &&
+    startsAt >= endsAt
+  ) {
+    fieldErrors.ends_at = "End time must be after start time.";
+  }
+
+  return fieldErrors;
+}
+
+function meetingValidationState(
+  fieldErrors: Record<string, string>,
+  values: Record<string, string>,
+): MeetingActionState | null {
+  const count = Object.keys(fieldErrors).length;
+
+  if (count === 0) {
+    return null;
+  }
+
+  return {
+    error: `Please fix ${count} field${count === 1 ? "" : "s"} before saving.`,
+    fieldErrors,
+    values,
+  };
+}
+
+function meetingPayload(values: Record<string, string>) {
+  return {
+    title: values.title.trim(),
+    description: optionalText(values.description),
+    video_url: optionalText(values.video_url),
+    starts_at: new Date(values.starts_at).toISOString(),
+    ends_at: new Date(values.ends_at).toISOString(),
+    meeting_number: optionalText(values.meeting_number),
+    meeting_type: values.meeting_type.trim(),
+    fiscal_year: optionalText(values.fiscal_year),
+    location: optionalText(values.location),
+    chairperson_name: optionalText(values.chairperson_name),
+    quorum_rule: values.quorum_rule.trim(),
+  };
+}
+
+export async function createMeetingWithState(
+  _state: MeetingActionState,
+  formData: FormData,
+): Promise<MeetingActionState> {
+  const values = meetingFormValues(formData);
+
+  try {
+    await requireAdmin();
+    const validation = meetingValidationState(
+      validateMeetingForm(values, false),
+      values,
+    );
+
+    if (validation) {
+      return validation;
+    }
+
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from("meetings")
+      .insert(meetingPayload(values))
+      .select("id")
+      .single();
+
+    if (error) {
+      return { error: error.message, values };
+    }
+
+    revalidateAdminPaths();
+    return {
+      recordId: data.id,
+      success: "Meeting added",
+      values,
+    };
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : "Could not add meeting.",
+      values,
+    };
+  }
+}
+
+export async function updateDraftMeetingWithState(
+  _state: MeetingActionState,
+  formData: FormData,
+): Promise<MeetingActionState> {
+  const values = meetingFormValues(formData);
+
+  try {
+    await requireAdmin();
+    const validation = meetingValidationState(
+      validateMeetingForm(values, true),
+      values,
+    );
+
+    if (validation) {
+      return validation;
+    }
+
+    const supabase = await createClient();
+    const { data: meeting, error: meetingError } = await supabase
+      .from("meetings")
+      .select("status")
+      .eq("id", values.id)
+      .single();
+
+    if (meetingError) {
+      return { error: meetingError.message, values };
+    }
+
+    if (meeting.status !== "draft") {
+      return { error: "Only draft meetings can be edited.", values };
+    }
+
+    const { error } = await supabase
+      .from("meetings")
+      .update(meetingPayload(values))
+      .eq("id", values.id);
+
+    if (error) {
+      return { error: error.message, values };
+    }
+
+    revalidateAdminPaths();
+    return {
+      recordId: values.id,
+      success: "Meeting updated",
+      values,
+    };
+  } catch (error) {
+    return {
+      error:
+        error instanceof Error ? error.message : "Could not update meeting.",
+      values,
+    };
+  }
+}
+
 export async function createMeeting(formData: FormData) {
   await requireAdmin();
 

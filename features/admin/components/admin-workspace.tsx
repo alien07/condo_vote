@@ -14,7 +14,6 @@ import {
   archiveMeeting,
   createCommitteeMember,
   createMeetingChoice,
-  createMeeting,
   createMeetingQuestion,
   createProxyAuthorization,
   deactivateCommitteeMember,
@@ -31,7 +30,6 @@ import {
   saveCondoProfile,
   startManualVoteImport,
   updateCommitteeMember,
-  updateDraftMeeting,
 } from "@/features/admin/actions";
 import { EmailInviteControls } from "@/features/admin/components/email-invite-controls";
 import { FieldLabel, RequiredNote } from "@/features/admin/components/field-label";
@@ -43,6 +41,10 @@ import {
 } from "@/features/admin/components/form-controls";
 import { AuditLogTable } from "@/features/admin/components/audit-log-table";
 import { OwnershipManager } from "@/features/admin/components/ownership-manager";
+import {
+  MeetingCrudDrawer,
+  MeetingRowFocus,
+} from "@/features/admin/components/meeting-crud-drawer";
 import { PeopleCrudPilot } from "@/features/admin/components/people-crud-pilot";
 import { PerPageSelect } from "@/features/admin/components/table-controls";
 import { PendingSubmitButton } from "@/features/debug/tracked-submit-button";
@@ -54,22 +56,6 @@ function formatDateTime(value: string) {
     dateStyle: "medium",
     timeStyle: "short",
   }).format(new Date(value));
-}
-
-function formatDateTimeLocal(value: string | null | undefined) {
-  if (!value) {
-    return "";
-  }
-
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return "";
-  }
-
-  const offsetMs = date.getTimezoneOffset() * 60_000;
-
-  return new Date(date.getTime() - offsetMs).toISOString().slice(0, 16);
 }
 
 function getResultTotals(payload: unknown) {
@@ -307,6 +293,7 @@ type AdminWorkspaceProps = {
     mode?: string;
     type?: string;
   };
+  focusedMeetingId?: string;
   meetingFilters?: MeetingTableFilters;
   resultFilters?: ResultTableFilters;
   emailFilters?: EmailTableFilters;
@@ -412,6 +399,23 @@ function meetingHref(filters: Required<MeetingTableFilters>) {
   }
 
   return `/admin/meetings?${params.toString()}`;
+}
+
+function meetingDrawerHref(
+  listHref: string,
+  drawer: { id?: string; mode: "create" | "edit" },
+) {
+  const [pathname, query = ""] = listHref.split("?");
+  const params = new URLSearchParams(query);
+
+  params.set("mode", drawer.mode);
+  params.set("type", "meeting");
+
+  if (drawer.id) {
+    params.set("id", drawer.id);
+  }
+
+  return `${pathname}?${params.toString()}`;
 }
 
 function resultHref(filters: Required<ResultTableFilters>) {
@@ -563,6 +567,7 @@ export async function AdminWorkspace({
   committeeFilters,
   drawer,
   emailFilters,
+  focusedMeetingId,
   manualVoteFilters,
   meetingFilters,
   proxyFilters,
@@ -746,6 +751,11 @@ export async function AdminWorkspace({
     (meetingPage - 1) * meetingTableFilters.perPage,
     meetingPage * meetingTableFilters.perPage,
   );
+  const meetingListHref = meetingHref(meetingTableFilters);
+  const meetingFocusId =
+    drawer?.mode === "edit" && drawer.type === "meeting"
+      ? drawer.id
+      : focusedMeetingId;
   const meetingPageUrls = Object.fromEntries(
     Array.from({ length: meetingTotalPages }, (_, index) => index + 1).map(
       (pageNumber) => [
@@ -2302,7 +2312,7 @@ export async function AdminWorkspace({
             </div>
             <a
               className="inline-flex min-h-10 items-center justify-center rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)]"
-              href="/admin/meetings?tab=meetings&mode=create&type=meeting"
+              href={meetingDrawerHref(meetingListHref, { mode: "create" })}
             >
               Add meeting
             </a>
@@ -2436,8 +2446,20 @@ export async function AdminWorkspace({
                   const pendingManualCount =
                     pendingManualBallotsByMeetingId.get(meeting.id)?.length ?? 0;
 
+                  const focused = meetingFocusId === meeting.id;
+
                   return (
-                    <tr className="border-b border-[var(--border)]" key={meeting.id}>
+                    <tr
+                      className={[
+                        "border-b border-[var(--border)]",
+                        focused
+                          ? "border-l-4 border-l-[var(--primary)] bg-[var(--accent)]"
+                          : "",
+                      ].join(" ")}
+                      data-meeting-id={meeting.id}
+                      key={meeting.id}
+                      tabIndex={-1}
+                    >
                       <td className="py-2 pr-3">{meeting.title}</td>
                       <td className="py-2 pr-3">
                         {meeting.meeting_number ?? "-"} / {meeting.meeting_type}
@@ -2450,19 +2472,22 @@ export async function AdminWorkspace({
                         {hasApprovedResult ? "approved" : meeting.status}
                       </td>
                       <td className="py-2">
-                        <div className="flex flex-wrap gap-3">
+                        <div className="flex flex-wrap gap-2">
                           {meeting.status === "draft" ? (
                             <>
                               <a
-                                className="text-sm font-medium text-[var(--primary)]"
-                                href={`/admin/meetings?tab=meetings&mode=edit&type=meeting&id=${meeting.id}`}
+                                className="rounded-md border border-[var(--border)] px-3 py-1 text-sm font-medium text-[var(--primary)]"
+                                href={meetingDrawerHref(meetingListHref, {
+                                  id: meeting.id,
+                                  mode: "edit",
+                                })}
                               >
                                 Edit
                               </a>
                               <form action={publishMeeting}>
                                 <input name="id" type="hidden" value={meeting.id} />
                                 <PendingSubmitButton
-                                  className="text-sm font-medium text-[var(--primary)]"
+                                  className="rounded-md border border-[var(--border)] px-3 py-1 text-sm font-medium text-[var(--primary)]"
                                   pendingLabel="Publishing..."
                                   type="submit"
                                 >
@@ -2475,7 +2500,7 @@ export async function AdminWorkspace({
                             <form action={archiveMeeting}>
                               <input name="id" type="hidden" value={meeting.id} />
                               <ConfirmSubmitButton
-                                className="text-sm font-medium text-red-700"
+                                className="rounded-md border border-red-200 px-3 py-1 text-sm font-medium text-red-700"
                                 confirmMessage={`Archive meeting "${meeting.title}"? This meeting will be hidden from active meeting workflows and cannot be published again without an admin change.`}
                                 pendingLabel="Archiving..."
                                 type="submit"
@@ -2489,7 +2514,7 @@ export async function AdminWorkspace({
                           !hasApprovedResult ? (
                             pendingManualCount > 0 ? (
                               <a
-                                className="text-sm font-medium text-amber-700"
+                                className="inline-flex items-center rounded-md border border-amber-300 bg-amber-50 px-3 py-1 text-sm font-medium text-amber-800"
                                 href="/admin/voting"
                               >
                                 Resolve {pendingManualCount} pending manual vote
@@ -2498,7 +2523,7 @@ export async function AdminWorkspace({
                               <form action={generateResultSnapshot}>
                                 <input name="id" type="hidden" value={meeting.id} />
                                 <PendingSubmitButton
-                                  className="text-sm font-medium text-[var(--primary)]"
+                                  className="rounded-md border border-[var(--border)] px-3 py-1 text-sm font-medium text-[var(--primary)]"
                                   pendingLabel="Generating..."
                                   type="submit"
                                 >
@@ -2508,7 +2533,7 @@ export async function AdminWorkspace({
                             )
                           ) : null}
                           {hasApprovedResult ? (
-                            <span className="text-sm text-[var(--muted)]">
+                            <span className="inline-flex items-center rounded-full border border-[var(--border)] bg-[var(--background)] px-3 py-1 text-xs font-medium text-[var(--muted)]">
                               Result locked
                             </span>
                           ) : null}
@@ -2520,6 +2545,7 @@ export async function AdminWorkspace({
               </tbody>
             </table>
           </div>
+          <MeetingRowFocus meetingId={meetingFocusId} />
           {pagedMeetings.length === 0 ? (
             <p className="mt-3 text-sm text-[var(--muted)]">
               No meetings match the selected criteria.
@@ -2564,149 +2590,11 @@ export async function AdminWorkspace({
             </p>
           ) : null}
           {showMeetingDrawer ? (
-            <AdminCrudDrawer
-              closeHref="/admin/meetings?tab=meetings"
-              summary={
-                drawer?.mode === "edit" && selectedMeeting
-                  ? [
-                      `Meeting: ${selectedMeeting.title}`,
-                      `Status: ${selectedMeeting.status}`,
-                    ]
-                  : ["New meeting"]
-              }
-              title={drawer?.mode === "edit" ? "Edit meeting" : "Add meeting"}
-            >
-              <form
-                action={drawer?.mode === "edit" ? updateDraftMeeting : createMeeting}
-                className="grid gap-3"
-              >
-                <RequiredNote />
-                {drawer?.mode === "edit" && selectedMeeting ? (
-                  <input name="id" type="hidden" value={selectedMeeting.id} />
-                ) : null}
-                <label className="grid gap-1 text-sm font-medium">
-                  <FieldLabel required>Meeting title</FieldLabel>
-                  <input
-                    autoFocus
-                    className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-                    defaultValue={selectedMeeting?.title ?? ""}
-                    name="title"
-                    required
-                  />
-                </label>
-                <input
-                  className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-                  defaultValue={selectedMeeting?.video_url ?? ""}
-                  name="video_url"
-                  placeholder="Video URL"
-                  type="url"
-                />
-                <input
-                  className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-                  defaultValue={selectedMeeting?.meeting_number ?? ""}
-                  name="meeting_number"
-                  placeholder="Meeting no."
-                />
-                <label className="grid gap-1 text-sm font-medium">
-                  <FieldLabel required>Meeting type</FieldLabel>
-                  <select
-                    className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-                    defaultValue={selectedMeeting?.meeting_type ?? "online_vote"}
-                    name="meeting_type"
-                    required
-                  >
-                    <option value="online_vote">Online vote</option>
-                    <option value="agm">AGM</option>
-                    <option value="egm">EGM</option>
-                    <option value="committee">Committee</option>
-                  </select>
-                </label>
-                <input
-                  className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-                  defaultValue={selectedMeeting?.fiscal_year ?? ""}
-                  name="fiscal_year"
-                  placeholder="Fiscal year"
-                />
-                <input
-                  className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-                  defaultValue={selectedMeeting?.location ?? ""}
-                  name="location"
-                  placeholder="Location / platform"
-                />
-                <input
-                  className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-                  defaultValue={selectedMeeting?.chairperson_name ?? ""}
-                  name="chairperson_name"
-                  placeholder="Chairperson"
-                />
-                <label className="grid gap-1 text-sm font-medium">
-                  <FieldLabel required>Quorum rule</FieldLabel>
-                  <select
-                    className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-                    defaultValue={
-                      selectedMeeting?.quorum_rule ?? "one_fourth_total_ownership"
-                    }
-                    name="quorum_rule"
-                    required
-                  >
-                    <option value="one_fourth_total_ownership">
-                      Quorum: 1/4 ownership
-                    </option>
-                    <option value="not_required_second_call">
-                      Second call: no quorum
-                    </option>
-                    <option value="committee_policy">Committee policy</option>
-                  </select>
-                </label>
-                <label className="grid gap-1 text-sm font-medium">
-                  <FieldLabel required>Starts</FieldLabel>
-                  <input
-                    className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-                    defaultValue={formatDateTimeLocal(selectedMeeting?.starts_at)}
-                    name="starts_at"
-                    required
-                    step={600}
-                    type="datetime-local"
-                  />
-                </label>
-                <label className="grid gap-1 text-sm font-medium">
-                  <FieldLabel required>Ends</FieldLabel>
-                  <input
-                    className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-                    defaultValue={formatDateTimeLocal(selectedMeeting?.ends_at)}
-                    name="ends_at"
-                    required
-                    step={600}
-                    type="datetime-local"
-                  />
-                </label>
-                <textarea
-                  className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-                  defaultValue={selectedMeeting?.description ?? ""}
-                  name="description"
-                  placeholder="Description"
-                  rows={3}
-                />
-                <div className="flex flex-wrap gap-2 pt-2">
-                  <PendingSubmitButton
-                    className="rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)]"
-                    pendingLabel={drawer?.mode === "edit" ? "Saving..." : "Adding..."}
-                    type="submit"
-                  >
-                    {drawer?.mode === "edit" ? "Save meeting" : "Add meeting"}
-                  </PendingSubmitButton>
-                  <FormResetButton
-                    label={drawer?.mode === "edit" ? "Reset changes" : "Clear form"}
-                  />
-                  <a
-                    className="inline-flex items-center justify-center rounded-md border border-[var(--border)] px-4 py-2 text-sm font-medium"
-                    href="/admin/meetings?tab=meetings"
-                  >
-                    Cancel
-                  </a>
-                </div>
-              </form>
-            </AdminCrudDrawer>
+            <MeetingCrudDrawer
+              closeHref={meetingListHref}
+              meeting={selectedMeeting}
+              mode={drawer?.mode === "edit" ? "edit" : "create"}
+            />
           ) : null}
         </section>
 

@@ -894,6 +894,187 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
     await expect(page.getByText(/result_approved:/).first()).toBeVisible();
   });
 
+  test("meetings CRUD rollout preserves state and focuses saved rows", async ({
+    page,
+  }) => {
+    test.setTimeout(120_000);
+
+    const supabase = createClient<Database>(supabaseUrl!, serviceKey!, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+    });
+    let user = await findUserByEmail(supabase, demoAdminEmail);
+
+    if (!user) {
+      const { data, error } = await supabase.auth.admin.createUser({
+        email: demoAdminEmail,
+        email_confirm: true,
+        user_metadata: { full_name: demoAdminName },
+      });
+
+      expect(error).toBeNull();
+      user = data.user;
+    }
+
+    const { data: profile, error: profileError } = await supabase
+      .from("profiles")
+      .upsert(
+        {
+          auth_user_id: user!.id,
+          email: demoAdminEmail,
+          full_name: demoAdminName,
+          approval_status: "approved",
+          default_status: "owner",
+        },
+        { onConflict: "auth_user_id" },
+      )
+      .select("id")
+      .single();
+
+    expect(profileError).toBeNull();
+    const { error: roleError } = await supabase.from("app_roles").upsert(
+      { profile_id: profile!.id, role: "admin" },
+      { onConflict: "profile_id,role" },
+    );
+
+    expect(roleError).toBeNull();
+
+    const { data: link, error: linkError } =
+      await supabase.auth.admin.generateLink({
+        type: "magiclink",
+        email: demoAdminEmail,
+        options: { redirectTo: `${appUrl}/auth/callback` },
+      });
+
+    expect(linkError).toBeNull();
+    await page.goto(
+      `${appUrl}/auth/callback?token_hash=${encodeURIComponent(
+        link.properties!.hashed_token,
+      )}&type=${link.properties!.verification_type}`,
+    );
+
+    const stamp = Date.now();
+    const createdTitle = `Meeting rollout ${stamp}`;
+    const publishedTitle = `Published rollout ${stamp}`;
+    const startsAt = new Date(Date.now() + 60 * 60 * 1000);
+    const endsAt = new Date(Date.now() + 2 * 60 * 60 * 1000);
+    const { error: publishedError } = await supabase.from("meetings").insert({
+      title: publishedTitle,
+      starts_at: startsAt.toISOString(),
+      ends_at: endsAt.toISOString(),
+      status: "published",
+      published_at: new Date().toISOString(),
+    });
+
+    expect(publishedError).toBeNull();
+
+    try {
+      await page.goto(
+        `${appUrl}/admin/meetings?tab=meetings&sort=title&dir=desc&perPage=25`,
+      );
+      await page.getByRole("link", { name: "Add meeting" }).click();
+      const addDrawer = page.getByRole("complementary", {
+        name: "Add meeting",
+      });
+
+      await addDrawer.getByRole("button", { name: "Add meeting" }).click();
+      await expect(addDrawer.getByText("Meeting title is required.")).toBeVisible();
+      await expect(addDrawer.locator('input[name="title"]')).toBeFocused();
+
+      await addDrawer.locator('input[name="title"]').fill(createdTitle);
+      await addDrawer
+        .locator('input[name="starts_at"]')
+        .fill(toDateTimeLocal(new Date(Date.now() + 2 * 60 * 60 * 1000)));
+      await addDrawer
+        .locator('input[name="ends_at"]')
+        .fill(toDateTimeLocal(new Date(Date.now() + 60 * 60 * 1000)));
+      await addDrawer.getByRole("button", { name: "Add meeting" }).click();
+      await expect(addDrawer.getByText("End time must be after start time.")).toBeVisible();
+      await expect(addDrawer.locator('input[name="title"]')).toHaveValue(
+        createdTitle,
+      );
+      await expect(addDrawer.locator('input[name="ends_at"]')).toBeFocused();
+
+      await addDrawer
+        .locator('input[name="ends_at"]')
+        .fill(toDateTimeLocal(new Date(Date.now() + 3 * 60 * 60 * 1000)));
+      await addDrawer.getByRole("button", { name: "Add meeting" }).click();
+      await page.waitForURL((url) => Boolean(url.searchParams.get("focusMeetingId")));
+
+      const meetingId = new URL(page.url()).searchParams.get("focusMeetingId");
+
+      expect(meetingId).toBeTruthy();
+      await expect(page).toHaveURL(/sort=title/);
+      await expect(page).toHaveURL(/dir=desc/);
+      await expect(page).toHaveURL(/perPage=25/);
+
+      const createdRow = page.locator(
+        `tr[data-meeting-id="${meetingId}"]:visible`,
+      );
+
+      await expect(createdRow).toBeVisible();
+      await expect(createdRow).toHaveClass(/border-l-\[var\(--primary\)\]/);
+      await expect(
+        createdRow.getByRole("button", { name: "Publish" }),
+      ).toBeVisible();
+      await expect(
+        createdRow.getByRole("button", { name: "Archive" }),
+      ).toBeVisible();
+      await page.waitForFunction(
+        (id) => document.activeElement?.getAttribute("data-meeting-id") === id,
+        meetingId,
+      );
+
+      await createdRow.getByRole("link", { name: "Edit" }).click();
+      const editDrawer = page.getByRole("complementary", {
+        name: "Edit meeting",
+      });
+
+      await editDrawer.getByPlaceholder("Location / platform").fill("Updated");
+      await editDrawer.getByRole("button", { name: "Save meeting" }).click();
+      await page.waitForURL(
+        (url) =>
+          url.searchParams.get("focusMeetingId") === meetingId &&
+          !url.searchParams.has("mode"),
+      );
+      await expect(page).toHaveURL(/sort=title/);
+      await expect(page).toHaveURL(/dir=desc/);
+      await expect(page).toHaveURL(/perPage=25/);
+      await expect(createdRow).toHaveClass(/border-l-\[var\(--primary\)\]/);
+      await page.waitForFunction(
+        (id) => document.activeElement?.getAttribute("data-meeting-id") === id,
+        meetingId,
+      );
+
+      await page.goto(
+        `${appUrl}/admin/meetings?tab=meetings&title=${encodeURIComponent(
+          publishedTitle,
+        )}`,
+      );
+      const publishedRow = page
+        .getByRole("row")
+        .filter({ hasText: publishedTitle });
+
+      await expect(publishedRow).toBeVisible();
+      await expect(
+        publishedRow.getByRole("link", { name: "Edit" }),
+      ).toHaveCount(0);
+      await expect(
+        publishedRow.getByRole("button", { name: "Archive" }),
+      ).toBeVisible();
+      await expect(
+        publishedRow.getByRole("button", { name: "Generate result" }),
+      ).toBeVisible();
+    } finally {
+      await supabase
+        .from("meetings")
+        .delete()
+        .in("title", [createdTitle, publishedTitle]);
+    }
+  });
+
   test("people CRUD pilot uses drawer actions and validation", async ({
     page,
   }) => {
