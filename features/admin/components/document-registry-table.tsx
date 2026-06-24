@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { PendingSubmitButton } from "@/features/debug/tracked-submit-button";
 
 export type DocumentRegistryRow = {
@@ -37,6 +37,7 @@ type DocumentApiResponse = {
 
 type DocumentRegistryTableProps = {
   documentTypes: string[];
+  focusedDocumentId?: string;
   initialFilters: DocumentFilters;
   initialPage: number;
   initialPerPage: number;
@@ -85,6 +86,7 @@ function formatDateTime(value: string) {
 
 export function DocumentRegistryTable({
   documentTypes,
+  focusedDocumentId,
   initialFilters,
   initialPage,
   initialPerPage,
@@ -102,6 +104,29 @@ export function DocumentRegistryTable({
   const totalPages = Math.max(1, Math.ceil(total / perPage));
   const pageStart = total === 0 ? 0 : (page - 1) * perPage + 1;
   const pageEnd = Math.min(page * perPage, total);
+
+  useEffect(() => {
+    if (!focusedDocumentId) {
+      return;
+    }
+
+    const frame = window.requestAnimationFrame(() => {
+      const row = Array.from(
+        document.querySelectorAll<HTMLElement>(
+          `[data-document-id="${focusedDocumentId}"]`,
+        ),
+      ).find((element) => element.getClientRects().length > 0);
+
+      if (!row) {
+        return;
+      }
+
+      row.scrollIntoView({ behavior: "smooth", block: "center" });
+      row.focus({ preventScroll: true });
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [focusedDocumentId, rows]);
 
   async function load(nextFilters: DocumentFilters) {
     setLoading(true);
@@ -335,11 +360,15 @@ export function DocumentRegistryTable({
                   <tr
                     className={[
                       "border-b border-[var(--border)] last:border-0",
-                      index % 2 === 0
-                        ? "bg-[var(--surface)]"
-                        : "bg-[var(--background)]",
+                      document.id === focusedDocumentId
+                        ? "border-l-4 border-l-[var(--primary)] bg-[var(--accent)]"
+                        : index % 2 === 0
+                          ? "bg-[var(--surface)]"
+                          : "bg-[var(--background)]",
                     ].join(" ")}
+                    data-document-id={document.id}
                     key={document.id}
+                    tabIndex={-1}
                   >
                     <td className="px-4 py-3">
                       {document.document_set_key} / v{document.document_version}

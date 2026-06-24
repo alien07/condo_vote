@@ -29,9 +29,10 @@ Search/filter forms and single-record configuration forms do not need drawers.
    - Edit committee member opens from the target row.
    - Deactivate/reactivate remains an inline row action with confirmation.
 
-4. `/admin/setup?tab=storage`
-   - Register private document reference opens in drawer.
+4. `/admin/setup?tab=storage` and `/admin/documents`
    - Storage provider settings remain inline because they are single-record app configuration.
+   - `Open Documents` links to the dedicated private document registry.
+   - Register private document reference opens in a drawer on `/admin/documents`.
 
 5. `/admin/proxies`
    - Add proxy authorization opens in drawer.

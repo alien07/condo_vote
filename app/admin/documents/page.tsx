@@ -1,18 +1,14 @@
 import Link from "next/link";
 import { FolderLock } from "lucide-react";
-import { AdminCrudDrawer } from "@/features/admin/components/admin-crud-drawer";
-import { FieldLabel, RequiredNote } from "@/features/admin/components/field-label";
-import { FormResetButton } from "@/features/admin/components/form-controls";
+import { DocumentRegistrationDrawer } from "@/features/admin/components/document-registration-drawer";
 import {
   DocumentRegistryTable,
   type DocumentRegistryRow,
 } from "@/features/admin/components/document-registry-table";
-import { registerDocumentReference } from "@/features/admin/action-modules/documents";
 import {
   fetchDocumentRows,
   type DocumentTableFilters,
 } from "@/features/admin/data-modules/documents";
-import { PendingSubmitButton } from "@/features/debug/tracked-submit-button";
 import { requireAdmin } from "@/lib/auth/permissions";
 import { createClient } from "@/lib/supabase/server";
 
@@ -27,6 +23,7 @@ const documentTypes = [
 type AdminDocumentsPageProps = {
   searchParams: Promise<{
     dir?: string;
+    focusDocumentId?: string;
     mode?: string;
     page?: string;
     perPage?: string;
@@ -35,6 +32,28 @@ type AdminDocumentsPageProps = {
     type?: string;
   }>;
 };
+
+function documentListHref(filters: DocumentTableFilters) {
+  const params = new URLSearchParams();
+
+  params.set("sort", filters.sortBy ?? "created");
+  params.set("dir", filters.dir ?? "desc");
+  params.set("perPage", String(filters.perPage ?? 25));
+
+  if (filters.set) {
+    params.set("set", filters.set);
+  }
+
+  if (filters.type && filters.type !== "all") {
+    params.set("type", filters.type);
+  }
+
+  if ((filters.page ?? 1) > 1) {
+    params.set("page", String(filters.page));
+  }
+
+  return `/admin/documents?${params.toString()}`;
+}
 
 function positiveInteger(value: string | undefined, fallback: number) {
   if (!value) {
@@ -73,6 +92,12 @@ export default async function AdminDocumentsPage({
   const filters = getDocumentFilters(params);
   const supabase = await createClient();
   const documentRows = await fetchDocumentRows(supabase, filters);
+  const listHref = documentListHref({
+    ...filters,
+    page: documentRows.documentPage,
+    perPage: documentRows.documentPerPage,
+  });
+  const registerHref = `${listHref}&mode=create`;
 
   return (
     <main className="min-h-screen px-6 py-8">
@@ -91,7 +116,7 @@ export default async function AdminDocumentsPage({
             </div>
             <Link
               className="inline-flex min-h-10 items-center justify-center rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)]"
-              href="/admin/documents?mode=create"
+              href={registerHref}
             >
               Register document
             </Link>
@@ -100,6 +125,7 @@ export default async function AdminDocumentsPage({
 
         <DocumentRegistryTable
           documentTypes={documentTypes}
+          focusedDocumentId={params.focusDocumentId}
           initialFilters={{
             dir: filters.dir ?? "desc",
             page: documentRows.documentPage,
@@ -123,132 +149,10 @@ export default async function AdminDocumentsPage({
         />
 
         {params.mode === "create" ? (
-          <AdminCrudDrawer
-            closeHref="/admin/documents"
-            summary={["New private document reference"]}
-            title="Register document"
-          >
-            <form action={registerDocumentReference} className="grid gap-3">
-              <RequiredNote />
-              <label className="grid gap-1 text-sm font-medium">
-                <FieldLabel required>Storage provider</FieldLabel>
-                <select
-                  autoFocus
-                  className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-                  defaultValue="local_drive"
-                  name="storage_provider"
-                  required
-                >
-                  <option value="local_drive">Local drive</option>
-                  <option value="google_drive">Google Drive</option>
-                </select>
-              </label>
-              <label className="grid gap-1 text-sm font-medium">
-                <FieldLabel required>Owner type</FieldLabel>
-                <select
-                  className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-                  name="owner_type"
-                  required
-                >
-                  <option value="profile">Profile</option>
-                  <option value="approval_request">Approval request</option>
-                  <option value="proxy_authorization">Proxy authorization</option>
-                  <option value="meeting">Meeting</option>
-                  <option value="result_snapshot">Result snapshot</option>
-                </select>
-              </label>
-              <label className="grid gap-1 text-sm font-medium">
-                <FieldLabel required>Document type</FieldLabel>
-                <select
-                  className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-                  name="document_type"
-                  required
-                >
-                  {documentTypes.map((type) => (
-                    <option key={type} value={type}>
-                      {type}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="grid gap-1 text-sm font-medium">
-                <FieldLabel required>Owner UUID</FieldLabel>
-                <input
-                  className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-                  name="owner_id"
-                  required
-                />
-              </label>
-              <label className="grid gap-1 text-sm font-medium">
-                <FieldLabel required>
-                  Relative path or private Drive file link
-                </FieldLabel>
-                <input
-                  className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-                  name="storage_path"
-                  required
-                />
-              </label>
-              <label className="grid gap-1 text-sm font-medium">
-                <FieldLabel required>Document set key</FieldLabel>
-                <input
-                  className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-                  name="document_set_key"
-                  placeholder="proxy-meeting-room"
-                  required
-                />
-              </label>
-              <label className="grid gap-1 text-sm font-medium">
-                <FieldLabel required>Version</FieldLabel>
-                <input
-                  className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-                  defaultValue={1}
-                  min={1}
-                  name="document_version"
-                  required
-                  type="number"
-                />
-              </label>
-              <input
-                className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-                name="original_filename"
-                placeholder="Original filename"
-              />
-              <input
-                className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-                name="mime_type"
-                placeholder="MIME type"
-              />
-              <input
-                className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-                min={0}
-                name="file_size_bytes"
-                placeholder="File size bytes"
-                type="number"
-              />
-              <input
-                className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-                name="checksum_sha256"
-                placeholder="SHA-256 checksum, 64 hex characters"
-              />
-              <div className="flex flex-wrap gap-2 pt-2">
-                <PendingSubmitButton
-                  className="rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)]"
-                  pendingLabel="Adding..."
-                  type="submit"
-                >
-                  Register document
-                </PendingSubmitButton>
-                <FormResetButton label="Clear form" />
-                <Link
-                  className="inline-flex items-center justify-center rounded-md border border-[var(--border)] px-4 py-2 text-sm font-medium"
-                  href="/admin/documents"
-                >
-                  Cancel
-                </Link>
-              </div>
-            </form>
-          </AdminCrudDrawer>
+          <DocumentRegistrationDrawer
+            closeHref={listHref}
+            documentTypes={documentTypes}
+          />
         ) : null}
       </section>
     </main>
