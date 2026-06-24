@@ -1236,6 +1236,164 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
     }
   });
 
+  test("committee CRUD rollout preserves state and supports status actions", async ({
+    page,
+  }) => {
+    test.setTimeout(120_000);
+
+    const supabase = createClient<Database>(supabaseUrl!, serviceKey!, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+    });
+    let user = await findUserByEmail(supabase, demoAdminEmail);
+
+    if (!user) {
+      const { data, error } = await supabase.auth.admin.createUser({
+        email: demoAdminEmail,
+        email_confirm: true,
+        user_metadata: { full_name: demoAdminName },
+      });
+
+      expect(error).toBeNull();
+      user = data.user;
+    }
+
+    const { data: profile, error: profileError } = await supabase
+      .from("profiles")
+      .upsert(
+        {
+          auth_user_id: user!.id,
+          email: demoAdminEmail,
+          full_name: demoAdminName,
+          approval_status: "approved",
+          default_status: "owner",
+        },
+        { onConflict: "auth_user_id" },
+      )
+      .select("id")
+      .single();
+
+    expect(profileError).toBeNull();
+    const { error: roleError } = await supabase.from("app_roles").upsert(
+      { profile_id: profile!.id, role: "admin" },
+      { onConflict: "profile_id,role" },
+    );
+
+    expect(roleError).toBeNull();
+    const { data: link, error: linkError } =
+      await supabase.auth.admin.generateLink({
+        type: "magiclink",
+        email: demoAdminEmail,
+        options: { redirectTo: `${appUrl}/auth/callback` },
+      });
+
+    expect(linkError).toBeNull();
+    await page.goto(
+      `${appUrl}/auth/callback?token_hash=${encodeURIComponent(
+        link.properties!.hashed_token,
+      )}&type=${link.properties!.verification_type}`,
+    );
+
+    const stamp = Date.now();
+    const memberName = `Committee rollout ${stamp}`;
+    const updatedPosition = `Vice chair ${stamp}`;
+
+    try {
+      await page.goto(
+        `${appUrl}/admin/setup?tab=committee&sort=name&dir=desc&perPage=25`,
+      );
+      await page.getByRole("link", { name: "Add committee member" }).click();
+      const addDrawer = page.getByRole("complementary", {
+        name: "Add committee member",
+      });
+
+      await addDrawer
+        .getByRole("button", { name: "Add committee member" })
+        .click();
+      await expect(addDrawer.getByText("Committee name is required.")).toBeVisible();
+      await expect(addDrawer.getByText("Position is required.")).toBeVisible();
+      await expect(addDrawer.locator('input[name="full_name"]')).toBeFocused();
+
+      await addDrawer.locator('input[name="full_name"]').fill(memberName);
+      await addDrawer
+        .getByRole("button", { name: "Add committee member" })
+        .click();
+      await expect(addDrawer.getByText("Position is required.")).toBeVisible();
+      await expect(addDrawer.locator('input[name="full_name"]')).toHaveValue(
+        memberName,
+      );
+      await expect(
+        addDrawer.locator('input[name="position_title"]'),
+      ).toBeFocused();
+
+      await addDrawer.locator('input[name="position_title"]').fill("Chairperson");
+      await addDrawer
+        .getByRole("button", { name: "Add committee member" })
+        .click();
+      await page.waitForURL((url) => Boolean(url.searchParams.get("focusCommitteeId")));
+
+      const memberId = new URL(page.url()).searchParams.get("focusCommitteeId");
+
+      expect(memberId).toBeTruthy();
+      await expect(page).toHaveURL(/sort=name/);
+      await expect(page).toHaveURL(/dir=desc/);
+      await expect(page).toHaveURL(/perPage=25/);
+
+      const memberRow = page.locator(
+        `tr[data-committee-id="${memberId}"]:visible`,
+      );
+
+      await expect(memberRow).toBeVisible();
+      await expect(memberRow).toHaveClass(/border-l-\[var\(--primary\)\]/);
+      await expect(
+        memberRow.getByRole("button", { name: "Deactivate" }),
+      ).toBeVisible();
+      await page.waitForFunction(
+        (id) => document.activeElement?.getAttribute("data-committee-id") === id,
+        memberId,
+      );
+
+      await memberRow.getByRole("link", { name: "Edit" }).click();
+      const editDrawer = page.getByRole("complementary", {
+        name: "Edit committee member",
+      });
+
+      await expect(editDrawer).toBeVisible({ timeout: 15_000 });
+      await expect(editDrawer.locator('input[name="full_name"]')).toHaveValue(
+        memberName,
+      );
+      await editDrawer
+        .locator('input[name="position_title"]')
+        .fill(updatedPosition);
+      await editDrawer
+        .getByRole("button", { name: "Save committee member" })
+        .click();
+      await page.waitForURL(
+        (url) =>
+          url.searchParams.get("focusCommitteeId") === memberId &&
+          !url.searchParams.has("mode"),
+      );
+      await expect(memberRow.getByRole("cell", { name: updatedPosition })).toBeVisible();
+      await expect(memberRow).toHaveClass(/border-l-\[var\(--primary\)\]/);
+
+      page.once("dialog", (dialog) => dialog.accept());
+      await memberRow.getByRole("button", { name: "Deactivate" }).click();
+      await expect(
+        memberRow.getByRole("button", { name: "Reactivate" }),
+      ).toBeVisible({ timeout: 15_000 });
+
+      page.once("dialog", (dialog) => dialog.accept());
+      await memberRow.getByRole("button", { name: "Reactivate" }).click();
+      await expect(
+        memberRow.getByRole("button", { name: "Deactivate" }),
+      ).toBeVisible({ timeout: 15_000 });
+    } finally {
+      await supabase.from("committee_members").delete().eq("full_name", memberName);
+    }
+  });
+
   test("people CRUD pilot uses drawer actions and validation", async ({
     page,
   }) => {

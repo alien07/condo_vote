@@ -8,6 +8,7 @@ type AdminSetupPageProps = {
     actor?: string;
     dir?: string;
     from?: string;
+    focusCommitteeId?: string;
     id?: string;
     memberName?: string;
     mode?: string;
@@ -102,6 +103,7 @@ export default async function AdminSetupPage({
         mode: params.mode,
         type: params.type,
       }}
+      focusedCommitteeId={params.focusCommitteeId}
       sections={["setup", "storage", "committee", "audit"]}
       title="Setup"
     />

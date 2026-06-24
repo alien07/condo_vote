@@ -12,7 +12,6 @@ import {
 import {
   approveResultSnapshot,
   archiveMeeting,
-  createCommitteeMember,
   createMeetingChoice,
   createProxyAuthorization,
   deactivateCommitteeMember,
@@ -23,12 +22,12 @@ import {
   importRoomOwnersExcel,
   importRoomsExcel,
   publishMeeting,
+  reactivateCommitteeMember,
   reviewProxyAuthorization,
   resolveManualBallotIdentity,
   saveAppSettings,
   saveCondoProfile,
   startManualVoteImport,
-  updateCommitteeMember,
 } from "@/features/admin/actions";
 import { EmailInviteControls } from "@/features/admin/components/email-invite-controls";
 import { FieldLabel, RequiredNote } from "@/features/admin/components/field-label";
@@ -39,6 +38,10 @@ import {
   FormResetButton,
 } from "@/features/admin/components/form-controls";
 import { AuditLogTable } from "@/features/admin/components/audit-log-table";
+import {
+  CommitteeCrudDrawer,
+  CommitteeRowFocus,
+} from "@/features/admin/components/committee-crud-drawer";
 import { OwnershipManager } from "@/features/admin/components/ownership-manager";
 import {
   MeetingCrudDrawer,
@@ -296,6 +299,7 @@ type AdminWorkspaceProps = {
     mode?: string;
     type?: string;
   };
+  focusedCommitteeId?: string;
   focusedMeetingId?: string;
   focusedQuestionId?: string;
   meetingFilters?: MeetingTableFilters;
@@ -549,6 +553,23 @@ function committeeHref(filters: Required<CommitteeTableFilters>) {
   return `/admin/setup?${params.toString()}`;
 }
 
+function committeeDrawerHref(
+  listHref: string,
+  drawer: { id?: string; mode: "create" | "edit" },
+) {
+  const [pathname, query = ""] = listHref.split("?");
+  const params = new URLSearchParams(query);
+
+  params.set("mode", drawer.mode);
+  params.set("type", "committee_member");
+
+  if (drawer.id) {
+    params.set("id", drawer.id);
+  }
+
+  return `${pathname}?${params.toString()}`;
+}
+
 const allSections: AdminSection[] = [
   "setup",
   "storage",
@@ -571,6 +592,7 @@ export async function AdminWorkspace({
   committeeFilters,
   drawer,
   emailFilters,
+  focusedCommitteeId,
   focusedMeetingId,
   focusedQuestionId,
   manualVoteFilters,
@@ -1267,6 +1289,11 @@ export async function AdminWorkspace({
     (committeePage - 1) * committeeTableFilters.perPage,
     committeePage * committeeTableFilters.perPage,
   );
+  const committeeListHref = committeeHref(committeeTableFilters);
+  const committeeFocusId =
+    drawer?.mode === "edit" && drawer.type === "committee_member"
+      ? drawer.id
+      : focusedCommitteeId;
   const committeePageUrls = Object.fromEntries(
     Array.from({ length: committeeTotalPages }, (_, index) => index + 1).map(
       (pageNumber) => [
@@ -1981,7 +2008,7 @@ export async function AdminWorkspace({
             </div>
             <a
               className="inline-flex min-h-10 items-center justify-center rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)]"
-              href="/admin/setup?tab=committee&mode=create&type=committee_member"
+              href={committeeDrawerHref(committeeListHref, { mode: "create" })}
             >
               Add committee member
             </a>
@@ -2106,8 +2133,21 @@ export async function AdminWorkspace({
                 </tr>
               </thead>
               <tbody>
-                {pagedCommitteeMembers.map((member) => (
-                  <tr className="border-b border-[var(--border)]" key={member.id}>
+                {pagedCommitteeMembers.map((member) => {
+                  const focused = committeeFocusId === member.id;
+
+                  return (
+                  <tr
+                    className={[
+                      "border-b border-[var(--border)]",
+                      focused
+                        ? "border-l-4 border-l-[var(--primary)] bg-[var(--accent)]"
+                        : "",
+                    ].join(" ")}
+                    data-committee-id={member.id}
+                    key={member.id}
+                    tabIndex={-1}
+                  >
                     <td className="py-2 pr-3">{member.full_name}</td>
                     <td className="py-2 pr-3">{member.position_title}</td>
                     <td className="py-2 pr-3">
@@ -2118,33 +2158,52 @@ export async function AdminWorkspace({
                       {member.active ? "Active" : "Inactive"}
                     </td>
                     <td className="py-2">
-                      <div className="flex flex-wrap gap-3">
+                      <div className="flex flex-wrap gap-2">
                         <a
-                          className="text-sm font-medium text-[var(--primary)]"
-                          href={`/admin/setup?tab=committee&mode=edit&type=committee_member&id=${member.id}`}
+                          className="rounded-md border border-[var(--border)] px-3 py-1 text-sm font-medium text-[var(--primary)]"
+                          href={committeeDrawerHref(committeeListHref, {
+                            id: member.id,
+                            mode: "edit",
+                          })}
                         >
                           Edit
                         </a>
-                      {member.active ? (
-                        <form action={deactivateCommitteeMember}>
+                        <form
+                          action={
+                            member.active
+                              ? deactivateCommitteeMember
+                              : reactivateCommitteeMember
+                          }
+                        >
                           <input name="id" type="hidden" value={member.id} />
                           <ConfirmSubmitButton
-                            className="text-sm font-medium text-red-700"
-                            confirmMessage={`Deactivate committee member "${member.full_name}"? This member will no longer appear as active for formal meeting documents.`}
-                            pendingLabel="Deactivating..."
+                            className={
+                              member.active
+                                ? "rounded-md border border-red-200 px-3 py-1 text-sm font-medium text-red-700"
+                                : "rounded-md border border-[var(--border)] px-3 py-1 text-sm font-medium text-[var(--primary)]"
+                            }
+                            confirmMessage={
+                              member.active
+                                ? `Deactivate committee member "${member.full_name}"? This member will no longer appear as active for formal meeting documents.`
+                                : `Reactivate committee member "${member.full_name}"? This member will become available for formal meeting documents again.`
+                            }
+                            pendingLabel={
+                              member.active ? "Deactivating..." : "Reactivating..."
+                            }
                             type="submit"
                           >
-                            Deactivate
+                            {member.active ? "Deactivate" : "Reactivate"}
                           </ConfirmSubmitButton>
                         </form>
-                      ) : null}
                       </div>
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </div>
+          <CommitteeRowFocus memberId={committeeFocusId} />
           {pagedCommitteeMembers.length === 0 ? (
             <p className="mt-3 text-sm text-[var(--muted)]">
               No committee members match the selected criteria.
@@ -2184,128 +2243,12 @@ export async function AdminWorkspace({
             </a>
           </div>
           {showCommitteeMemberDrawer ? (
-            <AdminCrudDrawer
-              closeHref="/admin/setup?tab=committee"
-              summary={
-                drawer?.mode === "edit" && selectedCommitteeMember
-                  ? [
-                      `Committee member: ${selectedCommitteeMember.full_name}`,
-                      `Position: ${selectedCommitteeMember.position_title}`,
-                    ]
-                  : ["New committee member"]
-              }
-              title={
-                drawer?.mode === "edit"
-                  ? "Edit committee member"
-                  : "Add committee member"
-              }
-            >
-              <form
-                action={
-                  drawer?.mode === "edit"
-                    ? updateCommitteeMember
-                    : createCommitteeMember
-                }
-                className="grid gap-3"
-              >
-                <RequiredNote />
-                {drawer?.mode === "edit" && selectedCommitteeMember ? (
-                  <input name="id" type="hidden" value={selectedCommitteeMember.id} />
-                ) : null}
-                <label className="grid gap-1 text-sm font-medium">
-                  Profile
-                  <select
-                    className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-                    defaultValue={selectedCommitteeMember?.profile_id ?? ""}
-                    name="profile_id"
-                  >
-                    <option value="">Profile optional</option>
-                    {profiles.map((profile) => (
-                      <option key={profile.id} value={profile.id}>
-                        {profile.full_name} ({profile.email})
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label className="grid gap-1 text-sm font-medium">
-                  <FieldLabel required>Committee name</FieldLabel>
-                  <input
-                    autoFocus
-                    className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-                    defaultValue={selectedCommitteeMember?.full_name ?? ""}
-                    name="full_name"
-                    required
-                  />
-                </label>
-                <label className="grid gap-1 text-sm font-medium">
-                  <FieldLabel required>Position</FieldLabel>
-                  <input
-                    className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-                    defaultValue={selectedCommitteeMember?.position_title ?? ""}
-                    name="position_title"
-                    required
-                  />
-                </label>
-                <label className="grid gap-1 text-sm font-medium">
-                  Display order
-                  <input
-                    className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-                    defaultValue={selectedCommitteeMember?.display_order ?? 0}
-                    min={0}
-                    name="display_order"
-                    type="number"
-                  />
-                </label>
-                <label className="grid gap-1 text-sm font-medium">
-                  Term starts
-                  <input
-                    className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-                    defaultValue={selectedCommitteeMember?.term_starts_at ?? ""}
-                    name="term_starts_at"
-                    type="date"
-                  />
-                </label>
-                <label className="grid gap-1 text-sm font-medium">
-                  Term ends
-                  <input
-                    className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-                    defaultValue={selectedCommitteeMember?.term_ends_at ?? ""}
-                    name="term_ends_at"
-                    type="date"
-                  />
-                </label>
-                {drawer?.mode === "edit" ? (
-                  <label className="flex items-center gap-2 text-sm font-medium">
-                    <input
-                      defaultChecked={selectedCommitteeMember?.active ?? true}
-                      name="active"
-                      type="checkbox"
-                    />
-                    Active
-                  </label>
-                ) : null}
-                <div className="flex flex-wrap gap-2 pt-2">
-                  <PendingSubmitButton
-                    className="rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)]"
-                    pendingLabel={drawer?.mode === "edit" ? "Saving..." : "Adding..."}
-                    type="submit"
-                  >
-                    {drawer?.mode === "edit"
-                      ? "Save committee member"
-                      : "Add committee member"}
-                  </PendingSubmitButton>
-                  <FormResetButton
-                    label={drawer?.mode === "edit" ? "Reset changes" : "Clear form"}
-                  />
-                  <a
-                    className="inline-flex items-center justify-center rounded-md border border-[var(--border)] px-4 py-2 text-sm font-medium"
-                    href="/admin/setup?tab=committee"
-                  >
-                    Cancel
-                  </a>
-                </div>
-              </form>
-            </AdminCrudDrawer>
+            <CommitteeCrudDrawer
+              closeHref={committeeListHref}
+              member={selectedCommitteeMember}
+              mode={drawer?.mode === "edit" ? "edit" : "create"}
+              profiles={profiles}
+            />
           ) : null}
         </section>
 
