@@ -1711,6 +1711,169 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
     }
   });
 
+  test("ownership CRUD rollout validates and focuses saved rows", async ({
+    page,
+  }) => {
+    test.setTimeout(120_000);
+
+    const supabase = createClient<Database>(supabaseUrl!, serviceKey!, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+    });
+    let user = await findUserByEmail(supabase, demoAdminEmail);
+
+    if (!user) {
+      const { data, error } = await supabase.auth.admin.createUser({
+        email: demoAdminEmail,
+        email_confirm: true,
+        user_metadata: { full_name: demoAdminName },
+      });
+
+      expect(error).toBeNull();
+      user = data.user;
+    }
+
+    const { data: profile, error: profileError } = await supabase
+      .from("profiles")
+      .upsert(
+        {
+          auth_user_id: user!.id,
+          email: demoAdminEmail,
+          full_name: demoAdminName,
+          approval_status: "approved",
+          default_status: "owner",
+        },
+        { onConflict: "auth_user_id" },
+      )
+      .select("id")
+      .single();
+
+    expect(profileError).toBeNull();
+    const { error: roleError } = await supabase.from("app_roles").upsert(
+      { profile_id: profile!.id, role: "admin" },
+      { onConflict: "profile_id,role" },
+    );
+
+    expect(roleError).toBeNull();
+
+    const stamp = Date.now();
+    const roomNumber = `OWN-${stamp}`;
+    const ownerName = `Ownership Owner ${stamp}`;
+    let ownershipId: string | null = null;
+    const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000)
+      .toISOString()
+      .slice(0, 10);
+
+    const { data: room, error: roomError } = await supabase
+      .from("rooms")
+      .insert({ ownership_percent: 1, room_number: roomNumber })
+      .select("id")
+      .single();
+
+    expect(roomError).toBeNull();
+    const { data: owner, error: ownerError } = await supabase
+      .from("owners")
+      .insert({
+        active: true,
+        email: `ownership-owner-${stamp}@example.com`,
+        full_name: ownerName,
+      })
+      .select("id")
+      .single();
+
+    expect(ownerError).toBeNull();
+    const { data: link, error: linkError } =
+      await supabase.auth.admin.generateLink({
+        type: "magiclink",
+        email: demoAdminEmail,
+        options: { redirectTo: `${appUrl}/auth/callback` },
+      });
+
+    expect(linkError).toBeNull();
+    await page.goto(
+      `${appUrl}/auth/callback?token_hash=${encodeURIComponent(
+        link.properties!.hashed_token,
+      )}&type=${link.properties!.verification_type}`,
+    );
+
+    try {
+      await page.goto(
+        `${appUrl}/admin/ownership?room=${encodeURIComponent(
+          roomNumber,
+        )}&status=all&sort=room&dir=asc&perPage=25`,
+      );
+      await page.getByRole("link", { name: "Create ownership link" }).click();
+      const createDrawer = page.getByRole("complementary", {
+        name: "Create ownership link",
+      });
+
+      await createDrawer.getByRole("button", { name: "Create ownership link" }).click();
+      await expect(createDrawer.getByText("Room is required.")).toBeVisible();
+      await expect(createDrawer.getByText("Owner is required.")).toBeVisible();
+      await expect(createDrawer.locator('select[name="room_id"]')).toBeFocused();
+
+      await createDrawer
+        .locator('select[name="room_id"]')
+        .selectOption({ label: roomNumber });
+      await createDrawer
+        .locator('select[name="owner_id"]')
+        .selectOption({ label: ownerName });
+      await createDrawer.getByRole("button", { name: "Create ownership link" }).click();
+      await page.waitForURL((url) =>
+        Boolean(url.searchParams.get("focusOwnershipId")),
+      );
+
+      ownershipId = new URL(page.url()).searchParams.get("focusOwnershipId");
+      expect(ownershipId).toBeTruthy();
+      await expect(page).toHaveURL(/status=all/);
+      await expect(page).toHaveURL(/sort=room/);
+      await expect(page).toHaveURL(/perPage=25/);
+
+      const ownershipRow = page.locator(
+        `tr[data-ownership-id="${ownershipId}"]:visible`,
+      );
+
+      await expect(ownershipRow).toBeVisible();
+      await expect(ownershipRow).toContainText(roomNumber);
+      await expect(ownershipRow).toContainText(ownerName);
+      await expect(ownershipRow).toHaveClass(/border-l-\[var\(--primary\)\]/);
+
+      await ownershipRow.getByRole("link", { name: "Edit dates" }).click();
+      const editDrawer = page.getByRole("complementary", {
+        name: "Edit ownership dates",
+      });
+
+      await editDrawer.locator('input[name="starts_at"]').fill(yesterday);
+      await editDrawer.getByRole("button", { name: "Save dates" }).click();
+      await expect(ownershipRow).toContainText(yesterday, { timeout: 15_000 });
+
+      await ownershipRow.getByRole("link", { name: "End Link" }).click();
+      const endDrawer = page.getByRole("complementary", {
+        name: "End ownership link",
+      });
+
+      await endDrawer.locator('input[name="ends_at"]').fill(yesterday);
+      page.once("dialog", (dialog) => dialog.accept());
+      await endDrawer.getByRole("button", { name: "End Link" }).click();
+      await expect(ownershipRow).toContainText("Ended", { timeout: 15_000 });
+    } finally {
+      if (ownershipId) {
+        await supabase.from("audit_logs").delete().eq("entity_id", ownershipId);
+        await supabase.from("room_owners").delete().eq("id", ownershipId);
+      }
+
+      if (owner?.id) {
+        await supabase.from("owners").delete().eq("id", owner.id);
+      }
+
+      if (room?.id) {
+        await supabase.from("rooms").delete().eq("id", room.id);
+      }
+    }
+  });
+
   test("people CRUD pilot uses drawer actions and validation", async ({
     page,
   }) => {

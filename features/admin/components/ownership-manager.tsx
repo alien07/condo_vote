@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useActionState, useState } from "react";
+import { useEffect, useMemo, useActionState, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import {
   cancelRoomOwnerLinkWithState,
@@ -69,6 +69,74 @@ type OwnershipTableState = {
 };
 
 const initialState: OwnershipActionState = {};
+
+function fieldErrorId(fieldName: string) {
+  return `ownership-${fieldName}-error`;
+}
+
+function fieldProps(fieldName: string, state: OwnershipActionState) {
+  const hasError = Boolean(state.fieldErrors?.[fieldName]);
+
+  return {
+    "aria-describedby": hasError ? fieldErrorId(fieldName) : undefined,
+    "aria-invalid": hasError ? ("true" as const) : undefined,
+  };
+}
+
+function FieldError({
+  fieldName,
+  state,
+}: {
+  fieldName: string;
+  state: OwnershipActionState;
+}) {
+  const message = state.fieldErrors?.[fieldName];
+
+  return message ? (
+    <p className="text-xs font-medium text-red-700" id={fieldErrorId(fieldName)}>
+      {message}
+    </p>
+  ) : null;
+}
+
+function stateValue(
+  state: OwnershipActionState,
+  fieldName: string,
+  fallback: string | null | undefined = "",
+) {
+  return state.values?.[fieldName] ?? String(fallback ?? "");
+}
+
+function focusFirstInvalidField(
+  form: HTMLFormElement | null,
+  state: OwnershipActionState,
+) {
+  const firstInvalidField = Object.keys(state.fieldErrors ?? {})[0];
+
+  if (!firstInvalidField) {
+    return false;
+  }
+
+  const field = form?.elements.namedItem(firstInvalidField);
+  const element =
+    field instanceof RadioNodeList
+      ? field[0]
+      : field instanceof HTMLElement
+        ? field
+        : null;
+
+  element?.focus();
+  element?.scrollIntoView({ behavior: "smooth", block: "center" });
+  return true;
+}
+
+function escapeSelectorValue(value: string) {
+  if (typeof CSS !== "undefined" && typeof CSS.escape === "function") {
+    return CSS.escape(value);
+  }
+
+  return value.replace(/["\\]/g, "\\$&");
+}
 
 function positiveInteger(value: string | null, fallback: number) {
   if (!value) {
@@ -196,7 +264,7 @@ export function OwnershipManager({
     linkRoomOwnerWithState,
     initialState,
   );
-  const [createClientError, setCreateClientError] = useState<string | null>(null);
+  const createFormRef = useRef<HTMLFormElement>(null);
   const [criteria, setCriteria] = useState(() =>
     ownershipTableStateFromParams(searchParams),
   );
@@ -225,6 +293,12 @@ export function OwnershipManager({
     [roomOwners],
   );
   const defaultEndDate = todayLocalDate();
+  const listHref = mergeParams(searchParams, {
+    id: null,
+    mode: null,
+    type: null,
+  });
+  const focusedOwnershipId = searchParams.get("focusOwnershipId");
   const showCreateDrawer =
     drawer?.mode === "create" && drawer.type === "ownership_link";
   const selectedLink = roomOwners.find((link) => link.id === drawer?.id);
@@ -288,6 +362,48 @@ export function OwnershipManager({
     (page - 1) * tableState.perPage,
     page * tableState.perPage,
   );
+
+  useEffect(() => {
+    if (focusFirstInvalidField(createFormRef.current, createState)) {
+      return;
+    }
+
+    if (!createState.success || !createState.recordId) {
+      return;
+    }
+
+    window.location.assign(
+      mergeParams(searchParams, {
+        feedback: "success",
+        focusOwnershipId: createState.recordId,
+        id: null,
+        message: createState.success,
+        mode: null,
+        type: null,
+      }),
+    );
+  }, [createState, searchParams]);
+
+  useEffect(() => {
+    if (!focusedOwnershipId) {
+      return;
+    }
+
+    const frame = window.requestAnimationFrame(() => {
+      const row = document.querySelector<HTMLElement>(
+        `[data-ownership-id="${escapeSelectorValue(focusedOwnershipId)}"]`,
+      );
+
+      if (!row) {
+        return;
+      }
+
+      row.scrollIntoView({ behavior: "smooth", block: "center" });
+      row.focus({ preventScroll: true });
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [focusedOwnershipId, pagedLinks]);
 
   return (
     <>
@@ -521,8 +637,11 @@ export function OwnershipManager({
           <tbody>
             {pagedLinks.map((link) => (
               <OwnershipRow
+                actionHref={(updates) => mergeParams(searchParams, updates)}
+                focused={focusedOwnershipId === link.id}
                 key={link.id}
                 link={link}
+                selected={drawer?.id === link.id}
               />
             ))}
           </tbody>
@@ -566,7 +685,7 @@ export function OwnershipManager({
       </div>
       {showCreateDrawer ? (
         <AdminCrudDrawer
-          closeHref="/admin/ownership"
+          closeHref={listHref}
           summary={["New room-owner link"]}
           title="Create ownership link"
         >
@@ -574,34 +693,17 @@ export function OwnershipManager({
             action={createAction}
             className="grid gap-3"
             noValidate
-            onSubmit={(event) => {
-              const formData = new FormData(event.currentTarget);
-              const missingFields = [
-                formData.get("room_id") ? null : "Room",
-                formData.get("owner_id") ? null : "Owner",
-                formData.get("ownership_role") ? null : "Ownership role",
-              ].filter((field): field is string => Boolean(field));
-
-              if (missingFields.length > 0) {
-                event.preventDefault();
-                setCreateClientError(
-                  `Please complete required fields: ${missingFields.join(", ")}.`,
-                );
-                return;
-              }
-
-              setCreateClientError(null);
-            }}
+            ref={createFormRef}
           >
             <RequiredNote />
-            <ActionMessage
-              state={createClientError ? { error: createClientError } : createState}
-            />
+            <ActionMessage state={createState} />
             <label className="grid gap-1 text-sm font-medium">
               <FieldLabel required>Room</FieldLabel>
               <select
+                {...fieldProps("room_id", createState)}
                 autoFocus
                 className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+                defaultValue={stateValue(createState, "room_id")}
                 name="room_id"
                 required
               >
@@ -621,11 +723,14 @@ export function OwnershipManager({
                     );
                   })}
               </select>
+              <FieldError fieldName="room_id" state={createState} />
             </label>
             <label className="grid gap-1 text-sm font-medium">
               <FieldLabel required>Owner</FieldLabel>
               <select
+                {...fieldProps("owner_id", createState)}
                 className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+                defaultValue={stateValue(createState, "owner_id")}
                 name="owner_id"
                 required
               >
@@ -638,21 +743,26 @@ export function OwnershipManager({
                     </option>
                   ))}
               </select>
+              <FieldError fieldName="owner_id" state={createState} />
             </label>
             <label className="grid gap-1 text-sm font-medium">
               <FieldLabel required>Ownership role</FieldLabel>
               <select
+                {...fieldProps("ownership_role", createState)}
                 className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+                defaultValue={stateValue(createState, "ownership_role", "owner")}
                 name="ownership_role"
                 required
               >
                 <option value="owner">Owner</option>
               </select>
+              <FieldError fieldName="ownership_role" state={createState} />
             </label>
             <label className="grid gap-1 text-sm font-medium">
               Effective from
               <input
                 className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+                defaultValue={stateValue(createState, "starts_at")}
                 name="starts_at"
                 type="date"
               />
@@ -663,13 +773,16 @@ export function OwnershipManager({
             <label className="grid gap-1 text-sm font-medium">
               Effective until
               <input
+                {...fieldProps("ends_at", createState)}
                 className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+                defaultValue={stateValue(createState, "ends_at")}
                 name="ends_at"
                 type="date"
               />
               <span className="text-xs font-normal text-[var(--muted)]">
                   Leave blank when the ownership link has no planned end date.
               </span>
+              <FieldError fieldName="ends_at" state={createState} />
             </label>
             <div className="flex flex-wrap items-end gap-2 pt-2">
               <PendingSubmitButton
@@ -683,7 +796,7 @@ export function OwnershipManager({
               <FormResetButton label="Clear form" />
               <a
                 className="inline-flex items-center justify-center rounded-md border border-[var(--border)] px-4 py-2 text-sm font-medium"
-                href="/admin/ownership"
+                href={listHref}
               >
                 Cancel
               </a>
@@ -692,31 +805,64 @@ export function OwnershipManager({
         </AdminCrudDrawer>
       ) : null}
       {showEditDatesDrawer && selectedLink ? (
-        <EditDatesDrawer link={selectedLink} />
+        <EditDatesDrawer closeHref={listHref} link={selectedLink} />
       ) : null}
       {showEndLinkDrawer && selectedLink ? (
-        <EndLinkDrawer defaultEndDate={defaultEndDate} link={selectedLink} />
+        <EndLinkDrawer
+          closeHref={listHref}
+          defaultEndDate={defaultEndDate}
+          link={selectedLink}
+        />
       ) : null}
     </>
   );
 }
 
-function EditDatesDrawer({ link }: { link: RoomOwnerLink }) {
+function EditDatesDrawer({
+  closeHref,
+  link,
+}: {
+  closeHref: string;
+  link: RoomOwnerLink;
+}) {
   const [state, action] = useActionState(
     updateRoomOwnerDatesWithState,
     initialState,
   );
+  const formRef = useRef<HTMLFormElement>(null);
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    if (focusFirstInvalidField(formRef.current, state)) {
+      return;
+    }
+
+    if (!state.success || !state.recordId) {
+      return;
+    }
+
+    window.location.assign(
+      mergeParams(searchParams, {
+        feedback: "success",
+        focusOwnershipId: state.recordId,
+        id: null,
+        message: state.success,
+        mode: null,
+        type: null,
+      }),
+    );
+  }, [searchParams, state]);
 
   return (
     <AdminCrudDrawer
-      closeHref="/admin/ownership"
+      closeHref={closeHref}
       summary={[
         `Room: ${link.rooms?.room_number ?? "-"}`,
         `Owner: ${link.owners?.full_name ?? "-"}`,
       ]}
       title="Edit ownership dates"
     >
-      <form action={action} className="grid gap-3">
+      <form action={action} className="grid gap-3" noValidate ref={formRef}>
         <ActionMessage state={state} />
         <input name="id" type="hidden" value={link.id} />
         <label className="grid gap-1 text-sm font-medium">
@@ -724,7 +870,7 @@ function EditDatesDrawer({ link }: { link: RoomOwnerLink }) {
           <input
             autoFocus
             className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-            defaultValue={link.starts_at ?? ""}
+            defaultValue={stateValue(state, "starts_at", link.starts_at)}
             name="starts_at"
             type="date"
           />
@@ -732,14 +878,16 @@ function EditDatesDrawer({ link }: { link: RoomOwnerLink }) {
         <label className="grid gap-1 text-sm font-medium">
           Effective until
           <input
+            {...fieldProps("ends_at", state)}
             className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-            defaultValue={link.ends_at ?? ""}
+            defaultValue={stateValue(state, "ends_at", link.ends_at)}
             name="ends_at"
             type="date"
           />
           <span className="text-xs font-normal text-[var(--muted)]">
             Leave blank when the ownership link has no planned end date.
           </span>
+          <FieldError fieldName="ends_at" state={state} />
         </label>
         <div className="flex flex-wrap gap-2 pt-2">
           <PendingSubmitButton
@@ -753,7 +901,7 @@ function EditDatesDrawer({ link }: { link: RoomOwnerLink }) {
           <FormResetButton label="Reset changes" />
           <a
             className="inline-flex items-center justify-center rounded-md border border-[var(--border)] px-4 py-2 text-sm font-medium"
-            href="/admin/ownership"
+            href={closeHref}
           >
             Cancel
           </a>
@@ -764,17 +912,42 @@ function EditDatesDrawer({ link }: { link: RoomOwnerLink }) {
 }
 
 function EndLinkDrawer({
+  closeHref,
   defaultEndDate,
   link,
 }: {
+  closeHref: string;
   defaultEndDate: string;
   link: RoomOwnerLink;
 }) {
   const [state, action] = useActionState(endRoomOwnerLinkWithState, initialState);
+  const formRef = useRef<HTMLFormElement>(null);
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    if (focusFirstInvalidField(formRef.current, state)) {
+      return;
+    }
+
+    if (!state.success || !state.recordId) {
+      return;
+    }
+
+    window.location.assign(
+      mergeParams(searchParams, {
+        feedback: "success",
+        focusOwnershipId: state.recordId,
+        id: null,
+        message: state.success,
+        mode: null,
+        type: null,
+      }),
+    );
+  }, [searchParams, state]);
 
   return (
     <AdminCrudDrawer
-      closeHref="/admin/ownership"
+      closeHref={closeHref}
       summary={[
         `Room: ${link.rooms?.room_number ?? "-"}`,
         `Owner: ${link.owners?.full_name ?? "-"}`,
@@ -782,7 +955,7 @@ function EndLinkDrawer({
       ]}
       title="End ownership link"
     >
-      <form action={action} className="grid gap-3">
+      <form action={action} className="grid gap-3" noValidate ref={formRef}>
         <ActionMessage state={state} />
         <input name="id" type="hidden" value={link.id} />
         <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
@@ -792,13 +965,15 @@ function EndLinkDrawer({
         <label className="grid gap-1 text-sm font-medium">
           <FieldLabel required>End date</FieldLabel>
           <input
+            {...fieldProps("ends_at", state)}
             autoFocus
             className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-            defaultValue={defaultEndDate}
+            defaultValue={stateValue(state, "ends_at", defaultEndDate)}
             name="ends_at"
             required
             type="date"
           />
+          <FieldError fieldName="ends_at" state={state} />
         </label>
         <div className="flex flex-wrap gap-2 pt-2">
           <ConfirmSubmitButton
@@ -812,7 +987,7 @@ function EndLinkDrawer({
           </ConfirmSubmitButton>
           <a
             className="inline-flex items-center justify-center rounded-md border border-[var(--border)] px-4 py-2 text-sm font-medium"
-            href="/admin/ownership"
+            href={closeHref}
           >
             Cancel
           </a>
@@ -822,16 +997,53 @@ function EndLinkDrawer({
   );
 }
 
-function OwnershipRow({ link }: { link: RoomOwnerLink }) {
+function OwnershipRow({
+  actionHref,
+  focused,
+  link,
+  selected,
+}: {
+  actionHref: (updates: Record<string, string | null | undefined>) => string;
+  focused: boolean;
+  link: RoomOwnerLink;
+  selected: boolean;
+}) {
   const [cancelState, cancelAction] = useActionState(
     cancelRoomOwnerLinkWithState,
     initialState,
   );
+  const searchParams = useSearchParams();
   const status = ownershipDisplayStatus(link);
+
+  useEffect(() => {
+    if (!cancelState.success || !cancelState.recordId) {
+      return;
+    }
+
+    window.location.assign(
+      mergeParams(searchParams, {
+        feedback: "success",
+        focusOwnershipId: cancelState.recordId,
+        id: null,
+        message: cancelState.success,
+        mode: null,
+        type: null,
+      }),
+    );
+  }, [cancelState, searchParams]);
 
   return (
     <>
-      <tr className="border-b border-[var(--border)]">
+      <tr
+        className={[
+          "border-b border-[var(--border)]",
+          selected || focused
+            ? "border-l-4 border-l-[var(--primary)] bg-[var(--accent)]"
+            : "",
+        ].join(" ")}
+        data-ownership-id={link.id}
+        tabIndex={-1}
+      >
         <td className="py-2 pr-3">{link.rooms?.room_number ?? "-"}</td>
         <td className="py-2 pr-3">{link.owners?.full_name ?? "-"}</td>
         <td className="py-2 pr-3">{link.ownership_role}</td>
@@ -847,16 +1059,24 @@ function OwnershipRow({ link }: { link: RoomOwnerLink }) {
           <div className="flex flex-wrap gap-3">
             {status === "active" || status === "scheduled" ? (
               <a
-                className="text-sm font-medium text-[var(--primary)]"
-                href={`/admin/ownership?mode=edit&type=ownership_dates&id=${link.id}`}
+                className="inline-flex min-h-9 items-center rounded-md border border-[var(--border)] px-3 py-1 text-sm font-medium"
+                href={actionHref({
+                  id: link.id,
+                  mode: "edit",
+                  type: "ownership_dates",
+                })}
               >
                 Edit dates
               </a>
             ) : null}
             {status === "active" ? (
               <a
-                className="text-sm font-medium text-red-700"
-                href={`/admin/ownership?mode=end&type=ownership_link&id=${link.id}`}
+                className="inline-flex min-h-9 items-center rounded-md border border-red-200 px-3 py-1 text-sm font-medium text-red-700"
+                href={actionHref({
+                  id: link.id,
+                  mode: "end",
+                  type: "ownership_link",
+                })}
               >
                 End Link
               </a>
@@ -865,7 +1085,7 @@ function OwnershipRow({ link }: { link: RoomOwnerLink }) {
               <form action={cancelAction}>
                 <input name="id" type="hidden" value={link.id} />
                 <ConfirmSubmitButton
-                  className="text-sm font-medium text-red-700"
+                  className="inline-flex min-h-9 items-center rounded-md border border-red-200 px-3 py-1 text-sm font-medium text-red-700"
                   confirmMessage={`Cancel scheduled ownership link for room ${link.rooms?.room_number ?? "-"} and owner ${link.owners?.full_name ?? "-"}? This link will not become active and will not be used for voting eligibility.`}
                   debugName="admin.ownership.cancel"
                   pendingLabel="Cancelling..."

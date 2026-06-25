@@ -20,7 +20,10 @@ type AdminSupabaseClient = Awaited<ReturnType<typeof createClient>>;
 
 export type OwnershipActionState = {
   error?: string;
+  fieldErrors?: Record<string, string>;
+  recordId?: string;
   success?: string;
+  values?: Record<string, string>;
 };
 
 export type PeopleActionState = {
@@ -168,6 +171,100 @@ function validateOwnershipDateRange(
   if (startsAt && endsAt && startsAt > endsAt) {
     throw new Error("Effective until must be on or after Effective from.");
   }
+}
+
+function ownershipFormValues(formData: FormData) {
+  return formValues(formData, [
+    "id",
+    "room_id",
+    "owner_id",
+    "ownership_role",
+    "starts_at",
+    "ends_at",
+  ]);
+}
+
+function ownershipValidationState(
+  errors: Record<string, string>,
+  values: Record<string, string>,
+): OwnershipActionState | null {
+  const count = Object.keys(errors).length;
+
+  if (count === 0) {
+    return null;
+  }
+
+  return {
+    error: `Please fix ${count} field${count === 1 ? "" : "s"} before saving.`,
+    fieldErrors: errors,
+    values,
+  };
+}
+
+function validateOwnershipCreate(values: Record<string, string>) {
+  const fieldErrors: Record<string, string> = {};
+
+  (
+    [
+      ["room_id", "Room"],
+      ["owner_id", "Owner"],
+      ["ownership_role", "Ownership role"],
+    ] as const
+  ).forEach(([field, label]) => {
+    if (!values[field]?.trim()) {
+      fieldErrors[field] = `${label} is required.`;
+    }
+  });
+
+  try {
+    validateOwnershipDateRange(
+      optionalDate(values.starts_at),
+      optionalDate(values.ends_at),
+    );
+  } catch (error) {
+    fieldErrors.ends_at =
+      error instanceof Error
+        ? error.message
+        : "Effective until must be on or after Effective from.";
+  }
+
+  return fieldErrors;
+}
+
+function validateOwnershipDates(values: Record<string, string>) {
+  const fieldErrors: Record<string, string> = {};
+
+  if (!values.id?.trim()) {
+    fieldErrors.id = "Room owner link ID is required.";
+  }
+
+  try {
+    validateOwnershipDateRange(
+      optionalDate(values.starts_at),
+      optionalDate(values.ends_at),
+    );
+  } catch (error) {
+    fieldErrors.ends_at =
+      error instanceof Error
+        ? error.message
+        : "Effective until must be on or after Effective from.";
+  }
+
+  return fieldErrors;
+}
+
+function validateOwnershipEnd(values: Record<string, string>) {
+  const fieldErrors: Record<string, string> = {};
+
+  if (!values.id?.trim()) {
+    fieldErrors.id = "Room owner link ID is required.";
+  }
+
+  if (!values.ends_at?.trim()) {
+    fieldErrors.ends_at = "End date is required.";
+  }
+
+  return fieldErrors;
 }
 
 export async function createRoom(formData: FormData) {
@@ -718,20 +815,25 @@ async function linkRoomOwnerImpl(formData: FormData) {
     );
   }
 
-  const { error } = await supabase.from("room_owners").insert({
-    room_id: roomId,
-    owner_id: ownerId,
-    ownership_role: ownershipRole,
-    starts_at: startsAt,
-    ends_at: endsAt,
-    status: ownershipStatus(startsAt, endsAt),
-  });
+  const { data, error } = await supabase
+    .from("room_owners")
+    .insert({
+      room_id: roomId,
+      owner_id: ownerId,
+      ownership_role: ownershipRole,
+      starts_at: startsAt,
+      ends_at: endsAt,
+      status: ownershipStatus(startsAt, endsAt),
+    })
+    .select("id")
+    .single();
 
   if (error) {
     throw error;
   }
 
   revalidateAdminPaths();
+  return data.id;
 }
 
 export async function linkRoomOwner(formData: FormData) {
@@ -742,16 +844,28 @@ export async function linkRoomOwnerWithState(
   _state: OwnershipActionState,
   formData: FormData,
 ): Promise<OwnershipActionState> {
-  try {
-    await linkRoomOwnerImpl(formData);
+  const values = ownershipFormValues(formData);
 
-    return { success: "Ownership link created." };
+  try {
+    const validation = ownershipValidationState(
+      validateOwnershipCreate(values),
+      values,
+    );
+
+    if (validation) {
+      return validation;
+    }
+
+    const recordId = await linkRoomOwnerImpl(formData);
+
+    return { recordId, success: "Ownership link created.", values };
   } catch (error) {
     return {
       error:
         error instanceof Error
           ? error.message
           : "Could not create ownership link.",
+      values,
     };
   }
 }
@@ -800,6 +914,7 @@ async function endRoomOwnerLinkImpl(formData: FormData) {
   });
 
   revalidateAdminPaths();
+  return id;
 }
 
 export async function endRoomOwnerLink(formData: FormData) {
@@ -810,16 +925,28 @@ export async function endRoomOwnerLinkWithState(
   _state: OwnershipActionState,
   formData: FormData,
 ): Promise<OwnershipActionState> {
-  try {
-    await endRoomOwnerLinkImpl(formData);
+  const values = ownershipFormValues(formData);
 
-    return { success: "Active ownership link ended." };
+  try {
+    const validation = ownershipValidationState(
+      validateOwnershipEnd(values),
+      values,
+    );
+
+    if (validation) {
+      return validation;
+    }
+
+    const recordId = await endRoomOwnerLinkImpl(formData);
+
+    return { recordId, success: "Active ownership link ended.", values };
   } catch (error) {
     return {
       error:
         error instanceof Error
           ? error.message
           : "Could not end ownership link.",
+      values,
     };
   }
 }
@@ -875,22 +1002,35 @@ async function updateRoomOwnerDatesImpl(formData: FormData) {
   });
 
   revalidateAdminPaths();
+  return id;
 }
 
 export async function updateRoomOwnerDatesWithState(
   _state: OwnershipActionState,
   formData: FormData,
 ): Promise<OwnershipActionState> {
-  try {
-    await updateRoomOwnerDatesImpl(formData);
+  const values = ownershipFormValues(formData);
 
-    return { success: "Ownership dates updated." };
+  try {
+    const validation = ownershipValidationState(
+      validateOwnershipDates(values),
+      values,
+    );
+
+    if (validation) {
+      return validation;
+    }
+
+    const recordId = await updateRoomOwnerDatesImpl(formData);
+
+    return { recordId, success: "Ownership dates updated.", values };
   } catch (error) {
     return {
       error:
         error instanceof Error
           ? error.message
           : "Could not update ownership dates.",
+      values,
     };
   }
 }
@@ -945,22 +1085,26 @@ async function cancelRoomOwnerLinkImpl(formData: FormData) {
   });
 
   revalidateAdminPaths();
+  return id;
 }
 
 export async function cancelRoomOwnerLinkWithState(
   _state: OwnershipActionState,
   formData: FormData,
 ): Promise<OwnershipActionState> {
-  try {
-    await cancelRoomOwnerLinkImpl(formData);
+  const values = ownershipFormValues(formData);
 
-    return { success: "Scheduled ownership link cancelled." };
+  try {
+    const recordId = await cancelRoomOwnerLinkImpl(formData);
+
+    return { recordId, success: "Scheduled ownership link cancelled.", values };
   } catch (error) {
     return {
       error:
         error instanceof Error
           ? error.message
           : "Could not cancel scheduled ownership link.",
+      values,
     };
   }
 }

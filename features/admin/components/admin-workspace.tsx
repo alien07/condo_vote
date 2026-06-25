@@ -309,6 +309,7 @@ type AdminWorkspaceProps = {
   resultFilters?: ResultTableFilters;
   emailFilters?: EmailTableFilters;
   manualVoteFilters?: ManualVoteTableFilters;
+  ownershipCreateHref?: string;
   proxyFilters?: ProxyTableFilters;
   sections?: AdminSection[];
   title?: string;
@@ -601,6 +602,7 @@ export async function AdminWorkspace({
   focusedQuestionId,
   manualVoteFilters,
   meetingFilters,
+  ownershipCreateHref,
   proxyFilters,
   resultFilters,
   sections = allSections,
@@ -3513,7 +3515,10 @@ export async function AdminWorkspace({
             </div>
             <a
               className="inline-flex min-h-10 items-center justify-center rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)]"
-              href="/admin/ownership?mode=create&type=ownership_link"
+              href={
+                ownershipCreateHref ??
+                "/admin/ownership?mode=create&type=ownership_link"
+              }
             >
               Create ownership link
             </a>
