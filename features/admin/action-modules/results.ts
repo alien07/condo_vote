@@ -12,6 +12,54 @@ import {
 } from "@/features/admin/action-modules/shared";
 import { writeAuditLog } from "@/lib/audit/business-audit";
 
+export type ResultApprovalActionState = {
+  error?: string;
+  fieldErrors?: Record<string, string>;
+  recordId?: string;
+  success?: string;
+  values?: Record<string, string>;
+};
+
+function resultApprovalValues(formData: FormData) {
+  return Object.fromEntries(
+    ["meeting_id", "result_snapshot_id", "notes"].map((field) => [
+      field,
+      String(formData.get(field) ?? ""),
+    ]),
+  );
+}
+
+function resultApprovalValidationState(
+  fieldErrors: Record<string, string>,
+  values: Record<string, string>,
+): ResultApprovalActionState | null {
+  const count = Object.keys(fieldErrors).length;
+
+  if (count === 0) {
+    return null;
+  }
+
+  return {
+    error: `Please fix ${count} field${count === 1 ? "" : "s"} before saving.`,
+    fieldErrors,
+    values,
+  };
+}
+
+function validateResultApproval(values: Record<string, string>) {
+  const fieldErrors: Record<string, string> = {};
+
+  if (!values.meeting_id?.trim()) {
+    fieldErrors.meeting_id = "Meeting ID is required.";
+  }
+
+  if (!values.result_snapshot_id?.trim()) {
+    fieldErrors.result_snapshot_id = "Result snapshot ID is required.";
+  }
+
+  return fieldErrors;
+}
+
 async function assertNoPendingManualVoteIdentities(
   supabase: Awaited<ReturnType<typeof createClient>>,
   meetingId: string,
@@ -425,4 +473,103 @@ export async function approveResultSnapshot(formData: FormData) {
 
   revalidateAdminPaths();
   redirect("/admin/results?feedback=success&message=Result%20approved");
+}
+
+export async function approveResultSnapshotWithState(
+  _state: ResultApprovalActionState,
+  formData: FormData,
+): Promise<ResultApprovalActionState> {
+  const values = resultApprovalValues(formData);
+
+  try {
+    const approver = await requireAdmin();
+    const validation = resultApprovalValidationState(
+      validateResultApproval(values),
+      values,
+    );
+
+    if (validation) {
+      return validation;
+    }
+
+    const supabase = await createClient();
+    const [snapshotResult, existingApprovalResult] = await Promise.all([
+      supabase
+        .from("result_snapshots")
+        .select("id")
+        .eq("id", values.result_snapshot_id)
+        .eq("meeting_id", values.meeting_id)
+        .single(),
+      supabase
+        .from("committee_approvals")
+        .select("id")
+        .eq("meeting_id", values.meeting_id)
+        .maybeSingle(),
+    ]);
+
+    if (snapshotResult.error) {
+      return { error: snapshotResult.error.message, values };
+    }
+
+    if (existingApprovalResult.error) {
+      return { error: existingApprovalResult.error.message, values };
+    }
+
+    if (existingApprovalResult.data) {
+      return { error: "This meeting already has an approved result.", values };
+    }
+
+    try {
+      await assertNoPendingManualVoteIdentities(supabase, values.meeting_id);
+    } catch (error) {
+      return {
+        error:
+          error instanceof Error
+            ? error.message
+            : "Resolve pending manual vote identity records before approving.",
+        values,
+      };
+    }
+
+    const { data: approval, error } = await supabase
+      .from("committee_approvals")
+      .insert({
+        approved_by: approver.id,
+        meeting_id: values.meeting_id,
+        notes: optionalText(values.notes),
+        result_snapshot_id: values.result_snapshot_id,
+      })
+      .select("id")
+      .single();
+
+    if (error) {
+      return { error: error.message, values };
+    }
+
+    await queueResultApprovedEmails(values.meeting_id);
+    await writeAuditLog(supabase, {
+      action: "result_snapshot.approved",
+      actorProfileId: approver.id,
+      details: {
+        meeting_id: values.meeting_id,
+        result_snapshot_id: values.result_snapshot_id,
+      },
+      entityId: approval.id,
+      entityType: "committee_approval",
+    });
+
+    revalidateAdminPaths();
+
+    return {
+      recordId: values.result_snapshot_id,
+      success: "Result approved",
+      values,
+    };
+  } catch (error) {
+    return {
+      error:
+        error instanceof Error ? error.message : "Could not approve result.",
+      values,
+    };
+  }
 }

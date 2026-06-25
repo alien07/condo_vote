@@ -2592,6 +2592,199 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
     expect(approvedEmailRows).toHaveLength(0);
     expect(approvalBlockManualBallot).toBeTruthy();
   });
+
+  test("results CRUD rollout approves snapshots from drawer", async ({
+    page,
+  }) => {
+    test.setTimeout(140_000);
+
+    const supabase = createClient<Database>(supabaseUrl!, serviceKey!, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+    });
+    let user = await findUserByEmail(supabase, demoAdminEmail);
+
+    if (!user) {
+      const { data, error } = await supabase.auth.admin.createUser({
+        email: demoAdminEmail,
+        email_confirm: true,
+        user_metadata: {
+          full_name: demoAdminName,
+        },
+      });
+
+      expect(error).toBeNull();
+      user = data.user;
+    }
+
+    expect(user).toBeTruthy();
+
+    const { data: profile, error: profileError } = await supabase
+      .from("profiles")
+      .upsert(
+        {
+          approval_status: "approved",
+          auth_user_id: user!.id,
+          default_status: "owner",
+          email: demoAdminEmail,
+          full_name: demoAdminName,
+        },
+        { onConflict: "auth_user_id" },
+      )
+      .select("id")
+      .single();
+
+    expect(profileError).toBeNull();
+
+    const { error: roleError } = await supabase.from("app_roles").upsert(
+      {
+        profile_id: profile!.id,
+        role: "admin",
+      },
+      { onConflict: "profile_id,role" },
+    );
+
+    expect(roleError).toBeNull();
+
+    const runId = Date.now();
+    const meetingTitle = `Result rollout ${runId}`;
+    const startsAt = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+    const endsAt = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+
+    const { data: meeting, error: meetingError } = await supabase
+      .from("meetings")
+      .insert({
+        ends_at: endsAt,
+        published_at: new Date().toISOString(),
+        starts_at: startsAt,
+        status: "closed",
+        title: meetingTitle,
+      })
+      .select("id")
+      .single();
+
+    expect(meetingError).toBeNull();
+
+    const { data: snapshot, error: snapshotError } = await supabase
+      .from("result_snapshots")
+      .insert({
+        generated_by: profile!.id,
+        meeting_id: meeting!.id,
+        payload_json: {
+          generated_at: new Date().toISOString(),
+          meeting: { title: meetingTitle },
+          questions: [],
+          totals: {
+            eligible_voters: 1,
+            manual_ballots: 0,
+            online_ballots: 1,
+            source_conflicts: 0,
+            submitted_ballots: 1,
+            submitted_ownership: 1,
+            total_eligible_ownership: 1,
+          },
+        },
+      })
+      .select("id")
+      .single();
+
+    expect(snapshotError).toBeNull();
+
+    const { data: link, error: linkError } =
+      await supabase.auth.admin.generateLink({
+        email: demoAdminEmail,
+        options: {
+          redirectTo: `${appUrl}/auth/callback`,
+        },
+        type: "magiclink",
+      });
+
+    expect(linkError).toBeNull();
+    await page.goto(
+      `${appUrl}/auth/callback?token_hash=${encodeURIComponent(
+        link.properties!.hashed_token,
+      )}&type=${link.properties!.verification_type}`,
+    );
+
+    await gotoWithRetry(
+      page,
+      `${appUrl}/admin/results?meeting=${encodeURIComponent(
+        meetingTitle,
+      )}&sort=meeting&dir=asc&perPage=25`,
+      { waitUntil: "commit" },
+    );
+    const resultRow = page.getByRole("row").filter({ hasText: meetingTitle });
+
+    await expect(resultRow.getByRole("cell", { name: "pending" })).toBeVisible();
+    const approveHref = await resultRow
+      .getByRole("link", { name: "Approve result" })
+      .getAttribute("href");
+
+    expect(approveHref).toContain("mode=edit&type=result_approval");
+    await gotoWithRetry(page, new URL(approveHref!, appUrl).toString(), {
+      waitUntil: "commit",
+    });
+
+    const approvalDrawer = page.getByRole("complementary", {
+      name: "Approve result",
+    });
+
+    await expect(approvalDrawer).toBeVisible();
+    await approvalDrawer
+      .locator('textarea[name="notes"]')
+      .fill(`Approved through rollout test ${runId}`);
+    page.once("dialog", async (dialog) => {
+      expect(dialog.message()).toContain("locks the approved result snapshot");
+      await dialog.accept();
+    });
+    await approvalDrawer
+      .getByRole("button", { name: "Approve result" })
+      .click({ noWaitAfter: true });
+
+    await expect
+      .poll(async () => {
+        const { data, error } = await supabase
+          .from("committee_approvals")
+          .select("id")
+          .eq("meeting_id", meeting!.id);
+
+        expect(error).toBeNull();
+        return data?.length ?? 0;
+      })
+      .toBe(1);
+    await gotoWithRetry(
+      page,
+      `${appUrl}/admin/results?meeting=${encodeURIComponent(
+        meetingTitle,
+      )}&sort=meeting&dir=asc&perPage=25&focusResultSnapshotId=${snapshot!.id}`,
+      { waitUntil: "commit" },
+    );
+
+    await expect(approvalDrawer).toHaveCount(0);
+    await expect(
+      page.getByRole("row").filter({ hasText: meetingTitle }),
+    ).toHaveClass(/border-l-\[var\(--primary\)\]/);
+    await expect(
+      page
+        .getByRole("row")
+        .filter({ hasText: meetingTitle })
+        .getByRole("cell", { name: "approved" }),
+    ).toBeVisible();
+
+    const { data: approvals, error: approvalsError } = await supabase
+      .from("committee_approvals")
+      .select("id, notes, result_snapshot_id")
+      .eq("meeting_id", meeting!.id);
+
+    expect(approvalsError).toBeNull();
+    expect(approvals).toHaveLength(1);
+    expect(approvals?.[0]).toMatchObject({
+      notes: `Approved through rollout test ${runId}`,
+      result_snapshot_id: snapshot!.id,
+    });
+  });
 });
 
 async function findUserByEmail(

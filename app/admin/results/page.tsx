@@ -5,6 +5,7 @@ type AdminResultsPageProps = {
   searchParams: Promise<{
     approval?: string;
     dir?: string;
+    focusResultSnapshotId?: string;
     generated?: string;
     id?: string;
     meeting?: string;
@@ -60,6 +61,7 @@ export default async function AdminResultsPage({
         mode: params.mode,
         type: params.type,
       }}
+      focusedResultSnapshotId={params.focusResultSnapshotId}
       resultFilters={getResultFilters(params)}
       sections={["results"]}
       title="Results"

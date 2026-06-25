@@ -10,7 +10,6 @@ import {
   UserCheck,
 } from "lucide-react";
 import {
-  approveResultSnapshot,
   archiveMeeting,
   createMeetingChoice,
   deactivateCommitteeMember,
@@ -27,7 +26,6 @@ import {
 } from "@/features/admin/actions";
 import { EmailInviteControls } from "@/features/admin/components/email-invite-controls";
 import { FieldLabel, RequiredNote } from "@/features/admin/components/field-label";
-import { AdminCrudDrawer } from "@/features/admin/components/admin-crud-drawer";
 import { AdminSoftNavigation } from "@/features/admin/components/admin-soft-navigation";
 import {
   ConfirmSubmitButton,
@@ -58,6 +56,10 @@ import {
   ManualVoteImportDrawer,
   ManualVoteRowFocus,
 } from "@/features/admin/components/manual-vote-crud-drawer";
+import {
+  ResultApprovalDrawer,
+  ResultSnapshotRowFocus,
+} from "@/features/admin/components/result-approval-drawer";
 import { PendingSubmitButton } from "@/features/debug/tracked-submit-button";
 import { getAdminDashboardData } from "@/features/admin/data";
 import type { AuditLogFilters } from "@/features/admin/data-modules/documents";
@@ -309,6 +311,7 @@ type AdminWorkspaceProps = {
   focusedManualBallotId?: string;
   focusedProxyId?: string;
   focusedQuestionId?: string;
+  focusedResultSnapshotId?: string;
   meetingFilters?: MeetingTableFilters;
   resultFilters?: ResultTableFilters;
   emailFilters?: EmailTableFilters;
@@ -605,6 +608,7 @@ export async function AdminWorkspace({
   focusedManualBallotId,
   focusedProxyId,
   focusedQuestionId,
+  focusedResultSnapshotId,
   manualVoteFilters,
   meetingFilters,
   ownershipCreateHref,
@@ -891,6 +895,10 @@ export async function AdminWorkspace({
     (resultPage - 1) * resultTableFilters.perPage,
     resultPage * resultTableFilters.perPage,
   );
+  const resultListHref = resultHref({
+    ...resultTableFilters,
+    page: resultPage,
+  });
   const resultPageUrls = Object.fromEntries(
     Array.from({ length: resultTotalPages }, (_, index) => index + 1).map(
       (pageNumber) => [
@@ -2757,16 +2765,19 @@ export async function AdminWorkspace({
                     drawer?.mode === "edit" &&
                     drawer.type === "result_approval" &&
                     drawer.id === snapshot.id;
+                  const focused = focusedResultSnapshotId === snapshot.id;
 
                   return (
                     <tr
                       className={[
                         "border-b border-[var(--border)]",
-                        selected
+                        selected || focused
                           ? "border-l-4 border-l-[var(--primary)] bg-[var(--accent)]"
                           : "",
                       ].join(" ")}
+                      data-result-snapshot-id={snapshot.id}
                       key={snapshot.id}
+                      tabIndex={-1}
                     >
                       <td className="py-2 pr-3">
                         {snapshot.meetings?.title ?? "-"}
@@ -2786,13 +2797,13 @@ export async function AdminWorkspace({
                         {approved ? "approved" : "pending"}
                       </td>
                       <td className="py-2">
-	                        {!meetingApproved && pendingManualCount === 0 ? (
-	                          <a
-	                            className="rounded-md border border-[var(--border)] px-3 py-1 text-sm font-medium"
-	                            href={`${resultHref(resultTableFilters)}&mode=edit&type=result_approval&id=${snapshot.id}`}
-	                          >
-	                            Approve result
-	                          </a>
+                        {!meetingApproved && pendingManualCount === 0 ? (
+                          <a
+                            className="inline-flex min-h-9 items-center justify-center rounded-md border border-[var(--border)] px-3 py-1 text-sm font-medium"
+                            href={`${resultListHref}&mode=edit&type=result_approval&id=${snapshot.id}`}
+                          >
+                            Approve result
+                          </a>
                         ) : null}
                         {!meetingApproved && pendingManualCount > 0 ? (
                           <a
@@ -2819,6 +2830,7 @@ export async function AdminWorkspace({
               No result snapshots match the selected criteria.
             </p>
           ) : null}
+          <ResultSnapshotRowFocus snapshotId={focusedResultSnapshotId} />
           <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
             <a
               aria-disabled={resultPage <= 1}
@@ -2856,79 +2868,16 @@ export async function AdminWorkspace({
             ? resultSnapshots
                 .filter((snapshot) => snapshot.id === drawer.id)
                 .map((snapshot) => (
-	                  <AdminCrudDrawer
-	                    closeHref={resultHref(resultTableFilters)}
-	                    key={snapshot.id}
-                    summary={[
-                      `Meeting: ${snapshot.meetings?.title ?? "-"}`,
-                      `Generated: ${formatDateTime(snapshot.generated_at)}`,
-                    ]}
-                    title="Approve result"
-                  >
-                    <form action={approveResultSnapshot} className="grid gap-3">
-                      <input
-                        name="meeting_id"
-                        type="hidden"
-                        value={snapshot.meeting_id}
-                      />
-                      <input
-                        name="result_snapshot_id"
-                        type="hidden"
-                        value={snapshot.id}
-                      />
-                      {(pendingManualBallotsByMeetingId.get(snapshot.meeting_id)
-                        ?.length ?? 0) > 0 ? (
-                        <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
-                          Resolve{" "}
-                          {pendingManualBallotsByMeetingId.get(snapshot.meeting_id)
-                            ?.length ?? 0}{" "}
-                          pending manual vote identity record(s) before committee
-                          approval. Go to{" "}
-                          <a className="font-medium underline" href="/admin/voting">
-                            Admin &gt; Voting &gt; Manual votes
-                          </a>{" "}
-                          to fix them.
-                        </div>
-                      ) : null}
-                      <label className="grid gap-1 text-sm font-medium">
-                        Approval / conflict notes
-                        <textarea
-                          autoFocus
-                          className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-                          name="notes"
-                          rows={4}
-                        />
-                      </label>
-                      <div className="flex flex-wrap gap-2 pt-2">
-                        {(pendingManualBallotsByMeetingId.get(snapshot.meeting_id)
-                          ?.length ?? 0) > 0 ? (
-                          <button
-                            className="rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)] opacity-60"
-                            disabled
-                            type="button"
-                          >
-                            Approval blocked
-                          </button>
-                        ) : (
-                          <ConfirmSubmitButton
-                            className="rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)]"
-                            confirmMessage={`Approve result for "${snapshot.meetings?.title ?? "this meeting"}"? This locks the approved result snapshot as the source of truth.`}
-                            pendingLabel="Saving..."
-                            type="submit"
-                          >
-                            Approve result
-                          </ConfirmSubmitButton>
-                        )}
-                        <FormResetButton label="Clear form" />
-                        <a
-                          className="inline-flex items-center justify-center rounded-md border border-[var(--border)] px-4 py-2 text-sm font-medium"
-                          href="/admin/results"
-                        >
-                          Cancel
-                        </a>
-                      </div>
-                    </form>
-                  </AdminCrudDrawer>
+                  <ResultApprovalDrawer
+                    closeHref={resultListHref}
+                    generatedLabel={formatDateTime(snapshot.generated_at)}
+                    key={snapshot.id}
+                    pendingManualCount={
+                      pendingManualBallotsByMeetingId.get(snapshot.meeting_id)
+                        ?.length ?? 0
+                    }
+                    snapshot={snapshot}
+                  />
                 ))
             : null}
           {pdfPreviewSnapshot && pdfPreviewPayload ? (
