@@ -4,6 +4,7 @@ import type { ManualVoteTableFilters } from "@/features/admin/components/admin-w
 type AdminVotingPageProps = {
   searchParams: Promise<{
     dir?: string;
+    focusManualBallotId?: string;
     id?: string;
     meeting?: string;
     mode?: string;
@@ -58,6 +59,7 @@ export default async function AdminVotingPage({
         mode: params.mode,
         type: params.type,
       }}
+      focusedManualBallotId={params.focusManualBallotId}
       manualVoteFilters={getManualVoteFilters(params)}
       sections={["voting"]}
       title="Voting"

@@ -1874,6 +1874,231 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
     }
   });
 
+  test("voting CRUD rollout validates and focuses resolved manual votes", async ({
+    page,
+  }) => {
+    test.setTimeout(120_000);
+
+    const supabase = createClient<Database>(supabaseUrl!, serviceKey!, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+    });
+    let user = await findUserByEmail(supabase, demoAdminEmail);
+
+    if (!user) {
+      const { data, error } = await supabase.auth.admin.createUser({
+        email: demoAdminEmail,
+        email_confirm: true,
+        user_metadata: { full_name: demoAdminName },
+      });
+
+      expect(error).toBeNull();
+      user = data.user;
+    }
+
+    const { data: profile, error: profileError } = await supabase
+      .from("profiles")
+      .upsert(
+        {
+          auth_user_id: user!.id,
+          email: demoAdminEmail,
+          full_name: demoAdminName,
+          approval_status: "approved",
+          default_status: "owner",
+        },
+        { onConflict: "auth_user_id" },
+      )
+      .select("id")
+      .single();
+
+    expect(profileError).toBeNull();
+    const { error: roleError } = await supabase.from("app_roles").upsert(
+      { profile_id: profile!.id, role: "admin" },
+      { onConflict: "profile_id,role" },
+    );
+
+    expect(roleError).toBeNull();
+
+    const stamp = Date.now();
+    const meetingTitle = `Manual rollout ${stamp}`;
+    const roomNumber = `MANUAL-${stamp}`;
+    const questionText = `Manual rollout item ${stamp}?`;
+    const choiceText = `Approve manual ${stamp}`;
+    const pendingName = `Paper voter ${stamp}`;
+    const startsAt = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+    const endsAt = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+    let manualBallotId: string | null = null;
+
+    const { data: room, error: roomError } = await supabase
+      .from("rooms")
+      .insert({ ownership_percent: 1, room_number: roomNumber })
+      .select("id")
+      .single();
+
+    expect(roomError).toBeNull();
+    const { data: meeting, error: meetingError } = await supabase
+      .from("meetings")
+      .insert({
+        ends_at: endsAt,
+        published_at: new Date().toISOString(),
+        starts_at: startsAt,
+        status: "published",
+        title: meetingTitle,
+      })
+      .select("id")
+      .single();
+
+    expect(meetingError).toBeNull();
+    const { data: question, error: questionError } = await supabase
+      .from("meeting_questions")
+      .insert({
+        display_order: 1,
+        meeting_id: meeting!.id,
+        question_text: questionText,
+        question_type: "single_choice",
+      })
+      .select("id")
+      .single();
+
+    expect(questionError).toBeNull();
+    const { data: choice, error: choiceError } = await supabase
+      .from("meeting_choices")
+      .insert({
+        choice_text: choiceText,
+        display_order: 1,
+        question_id: question!.id,
+      })
+      .select("id")
+      .single();
+
+    expect(choiceError).toBeNull();
+    const { data: manualBallot, error: manualBallotError } = await supabase
+      .from("manual_ballots")
+      .insert({
+        identity_status: "pending",
+        imported_by: profile!.id,
+        meeting_id: meeting!.id,
+        room_id: room!.id,
+        source_label: "manual_pending_identity",
+        status: "draft",
+        voter_identity_text: pendingName,
+      })
+      .select("id")
+      .single();
+
+    expect(manualBallotError).toBeNull();
+    manualBallotId = manualBallot!.id;
+    const { error: answerError } = await supabase
+      .from("manual_ballot_answers")
+      .insert({
+        choice_id: choice!.id,
+        manual_ballot_id: manualBallotId,
+        question_id: question!.id,
+      });
+
+    expect(answerError).toBeNull();
+    const { data: link, error: linkError } =
+      await supabase.auth.admin.generateLink({
+        type: "magiclink",
+        email: demoAdminEmail,
+        options: { redirectTo: `${appUrl}/auth/callback` },
+      });
+
+    expect(linkError).toBeNull();
+    await page.goto(
+      `${appUrl}/auth/callback?token_hash=${encodeURIComponent(
+        link.properties!.hashed_token,
+      )}&type=${link.properties!.verification_type}`,
+    );
+
+    try {
+      await page.goto(
+        `${appUrl}/admin/voting?meeting=${encodeURIComponent(
+          meetingTitle,
+        )}&sort=meeting&dir=asc&perPage=25`,
+      );
+      await page.getByRole("link", { name: "Import manual vote" }).click();
+      const importDrawer = page.getByRole("complementary", {
+        name: "Import manual vote",
+      });
+
+      await importDrawer.getByRole("button", { name: "Continue to vote form" }).click();
+      await expect(importDrawer.getByText("Meeting is required.")).toBeVisible();
+      await expect(importDrawer.getByText("Room is required.")).toBeVisible();
+      await expect(importDrawer.locator('select[name="meeting_id"]')).toBeFocused();
+
+      await importDrawer
+        .locator('select[name="meeting_id"]')
+        .selectOption({ label: meetingTitle });
+      await importDrawer
+        .locator('select[name="room_id"]')
+        .selectOption({ label: roomNumber });
+      await importDrawer.locator('input[name="voter_identity_text"]').fill(pendingName);
+      await importDrawer.getByRole("button", { name: "Continue to vote form" }).click();
+      await expect(page).toHaveURL(/\/admin\/voting\/manual\//);
+
+      await page.goto(
+        `${appUrl}/admin/voting?meeting=${encodeURIComponent(
+          meetingTitle,
+        )}&sort=meeting&dir=asc&perPage=25`,
+      );
+      const pendingRow = page
+        .getByRole("row")
+        .filter({ hasText: meetingTitle })
+        .filter({ hasText: pendingName });
+
+      await pendingRow.getByRole("link", { name: "Link profile" }).click();
+      const resolveDrawer = page.getByRole("complementary", {
+        name: "Resolve manual vote identity",
+      });
+
+      page.once("dialog", (dialog) => dialog.accept());
+      await resolveDrawer.getByRole("button", { name: "Link profile" }).click();
+      await expect(resolveDrawer.getByText("Voter profile is required.")).toBeVisible();
+      await expect(resolveDrawer.locator('select[name="voter_profile_id"]')).toBeFocused();
+
+      await resolveDrawer
+        .locator('select[name="voter_profile_id"]')
+        .selectOption({ label: `${demoAdminName} (${demoAdminEmail})` });
+      page.once("dialog", (dialog) => dialog.accept());
+      await resolveDrawer.getByRole("button", { name: "Link profile" }).click();
+
+      const resultRow = page.locator(
+        `tr[data-manual-ballot-id="${manualBallotId}"]:visible`,
+      );
+
+      await expect(resultRow).toBeVisible({ timeout: 15_000 });
+      await expect(resultRow).toContainText("linked");
+    } finally {
+      if (manualBallotId) {
+        await supabase.from("audit_logs").delete().eq("entity_id", manualBallotId);
+        await supabase
+          .from("manual_ballot_answers")
+          .delete()
+          .eq("manual_ballot_id", manualBallotId);
+        await supabase.from("manual_ballots").delete().eq("id", manualBallotId);
+      }
+
+      if (choice?.id) {
+        await supabase.from("meeting_choices").delete().eq("id", choice.id);
+      }
+
+      if (question?.id) {
+        await supabase.from("meeting_questions").delete().eq("id", question.id);
+      }
+
+      if (meeting?.id) {
+        await supabase.from("meetings").delete().eq("id", meeting.id);
+      }
+
+      if (room?.id) {
+        await supabase.from("rooms").delete().eq("id", room.id);
+      }
+    }
+  });
+
   test("people CRUD pilot uses drawer actions and validation", async ({
     page,
   }) => {
