@@ -4,6 +4,7 @@ import type { ProxyTableFilters } from "@/features/admin/components/admin-worksp
 type AdminProxiesPageProps = {
   searchParams: Promise<{
     dir?: string;
+    focusProxyId?: string;
     id?: string;
     meeting?: string;
     mode?: string;
@@ -62,6 +63,7 @@ export default async function AdminProxiesPage({
         mode: params.mode,
         type: params.type,
       }}
+      focusedProxyId={params.focusProxyId}
       proxyFilters={getProxyFilters(params)}
       sections={["proxies"]}
       title="Proxies"

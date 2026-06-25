@@ -15,6 +15,192 @@ function encodeManualVotePart(value: string) {
   return encodeURIComponent(value);
 }
 
+export type ProxyActionState = {
+  error?: string;
+  fieldErrors?: Record<string, string>;
+  recordId?: string;
+  success?: string;
+  values?: Record<string, string>;
+};
+
+function proxyFormValues(formData: FormData) {
+  return Object.fromEntries(
+    [
+      "id",
+      "meeting_id",
+      "room_id",
+      "owner_id",
+      "proxy_profile_id",
+      "valid_from",
+      "valid_until",
+      "status",
+    ].map((field) => [field, String(formData.get(field) ?? "")]),
+  );
+}
+
+function validateProxyCreate(values: Record<string, string>) {
+  const fieldErrors: Record<string, string> = {};
+
+  (
+    [
+      ["meeting_id", "Meeting"],
+      ["room_id", "Room"],
+      ["proxy_profile_id", "Proxy profile"],
+    ] as const
+  ).forEach(([field, label]) => {
+    if (!values[field]?.trim()) {
+      fieldErrors[field] = `${label} is required.`;
+    }
+  });
+
+  return fieldErrors;
+}
+
+function validateProxyReview(values: Record<string, string>) {
+  const fieldErrors: Record<string, string> = {};
+  const allowedStatuses = ["pending", "approved", "rejected", "revoked"];
+
+  if (!values.id?.trim()) {
+    fieldErrors.id = "Proxy authorization ID is required.";
+  }
+
+  if (!values.status?.trim()) {
+    fieldErrors.status = "Status is required.";
+  } else if (!allowedStatuses.includes(values.status)) {
+    fieldErrors.status = "Status is not supported.";
+  }
+
+  return fieldErrors;
+}
+
+function proxyValidationState(
+  fieldErrors: Record<string, string>,
+  values: Record<string, string>,
+): ProxyActionState | null {
+  const count = Object.keys(fieldErrors).length;
+
+  if (count === 0) {
+    return null;
+  }
+
+  return {
+    error: `Please fix ${count} field${count === 1 ? "" : "s"} before saving.`,
+    fieldErrors,
+    values,
+  };
+}
+
+export async function createProxyAuthorizationWithState(
+  _state: ProxyActionState,
+  formData: FormData,
+): Promise<ProxyActionState> {
+  const values = proxyFormValues(formData);
+
+  try {
+    const admin = await requireAdmin();
+    const validation = proxyValidationState(validateProxyCreate(values), values);
+
+    if (validation) {
+      return validation;
+    }
+
+    const supabase = await createClient();
+    const { data: authorization, error } = await supabase
+      .from("proxy_authorizations")
+      .insert({
+        meeting_id: values.meeting_id,
+        room_id: values.room_id,
+        owner_id: optionalText(values.owner_id),
+        proxy_profile_id: values.proxy_profile_id,
+        valid_from: optionalDate(values.valid_from),
+        valid_until: optionalDate(values.valid_until),
+      })
+      .select("id")
+      .single();
+
+    if (error) {
+      return { error: error.message, values };
+    }
+
+    await writeAuditLog(supabase, {
+      action: "proxy_authorization.created",
+      actorProfileId: admin.id,
+      entityId: authorization.id,
+      entityType: "proxy_authorization",
+    });
+    revalidateAdminPaths();
+
+    return {
+      recordId: authorization.id,
+      success: "Proxy authorization added",
+      values,
+    };
+  } catch (error) {
+    return {
+      error:
+        error instanceof Error
+          ? error.message
+          : "Could not add proxy authorization.",
+      values,
+    };
+  }
+}
+
+export async function reviewProxyAuthorizationWithState(
+  _state: ProxyActionState,
+  formData: FormData,
+): Promise<ProxyActionState> {
+  const values = proxyFormValues(formData);
+
+  try {
+    const reviewer = await requireAdmin();
+    const validation = proxyValidationState(validateProxyReview(values), values);
+
+    if (validation) {
+      return validation;
+    }
+
+    const supabase = await createClient();
+    const { data: authorization, error } = await supabase
+      .from("proxy_authorizations")
+      .update({
+        status: values.status,
+        reviewed_by: reviewer.id,
+        reviewed_at: new Date().toISOString(),
+      })
+      .eq("id", values.id)
+      .select("id")
+      .single();
+
+    if (error) {
+      return { error: error.message, values };
+    }
+
+    await writeAuditLog(supabase, {
+      action: "proxy_authorization.reviewed",
+      actorProfileId: reviewer.id,
+      details: { status: values.status },
+      entityId: authorization.id,
+      entityType: "proxy_authorization",
+    });
+    revalidateAdminPaths();
+
+    return {
+      recordId: authorization.id,
+      success: "Proxy authorization reviewed",
+      values,
+    };
+  } catch (error) {
+    return {
+      error:
+        error instanceof Error
+          ? error.message
+          : "Could not review proxy authorization.",
+      values,
+    };
+  }
+}
+
 export async function createProxyAuthorization(formData: FormData) {
   const admin = await requireAdmin();
 

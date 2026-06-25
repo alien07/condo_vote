@@ -226,12 +226,14 @@ export function VoteConflictsTable({
             Meeting
             <input
               className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)]"
-              onChange={(event) =>
+              onChange={(event) => {
+                const value = event.currentTarget.value;
+
                 setCriteria((current) => ({
                   ...current,
-                  meeting: event.currentTarget.value,
-                }))
-              }
+                  meeting: value,
+                }));
+              }}
               placeholder="Search meeting"
               value={criteria.meeting}
             />
@@ -240,12 +242,14 @@ export function VoteConflictsTable({
             Room
             <input
               className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)]"
-              onChange={(event) =>
+              onChange={(event) => {
+                const value = event.currentTarget.value;
+
                 setCriteria((current) => ({
                   ...current,
-                  room: event.currentTarget.value,
-                }))
-              }
+                  room: value,
+                }));
+              }}
               placeholder="Search room"
               value={criteria.room}
             />
@@ -254,12 +258,14 @@ export function VoteConflictsTable({
             Status
             <select
               className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)]"
-              onChange={(event) =>
+              onChange={(event) => {
+                const value = event.currentTarget.value;
+
                 setCriteria((current) => ({
                   ...current,
-                  status: event.currentTarget.value,
-                }))
-              }
+                  status: value,
+                }));
+              }}
               value={criteria.status}
             >
               <option value="all">All statuses</option>

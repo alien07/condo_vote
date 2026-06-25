@@ -13,7 +13,6 @@ import {
   approveResultSnapshot,
   archiveMeeting,
   createMeetingChoice,
-  createProxyAuthorization,
   deactivateCommitteeMember,
   deleteMeetingChoice,
   deleteMeetingQuestion,
@@ -23,7 +22,6 @@ import {
   importRoomsExcel,
   publishMeeting,
   reactivateCommitteeMember,
-  reviewProxyAuthorization,
   resolveManualBallotIdentity,
   saveAppSettings,
   saveCondoProfile,
@@ -53,6 +51,10 @@ import {
 } from "@/features/admin/components/question-crud-drawer";
 import { PeopleCrudPilot } from "@/features/admin/components/people-crud-pilot";
 import { PerPageSelect } from "@/features/admin/components/table-controls";
+import {
+  ProxyCrudDrawer,
+  ProxyRowFocus,
+} from "@/features/admin/components/proxy-crud-drawer";
 import { PendingSubmitButton } from "@/features/debug/tracked-submit-button";
 import { getAdminDashboardData } from "@/features/admin/data";
 import type { AuditLogFilters } from "@/features/admin/data-modules/documents";
@@ -301,6 +303,7 @@ type AdminWorkspaceProps = {
   };
   focusedCommitteeId?: string;
   focusedMeetingId?: string;
+  focusedProxyId?: string;
   focusedQuestionId?: string;
   meetingFilters?: MeetingTableFilters;
   resultFilters?: ResultTableFilters;
@@ -594,6 +597,7 @@ export async function AdminWorkspace({
   emailFilters,
   focusedCommitteeId,
   focusedMeetingId,
+  focusedProxyId,
   focusedQuestionId,
   manualVoteFilters,
   meetingFilters,
@@ -1104,6 +1108,10 @@ export async function AdminWorkspace({
         ? " ↑"
         : " ↓"
       : "";
+  const proxyListHref = proxyHref({
+    ...proxyTableFilters,
+    page: proxyPage,
+  });
   const manualVoteTableFilters: Required<ManualVoteTableFilters> = {
     dir: manualVoteFilters?.dir ?? "asc",
     meeting: manualVoteFilters?.meeting ?? "",
@@ -3539,7 +3547,7 @@ export async function AdminWorkspace({
             </div>
             <a
               className="inline-flex min-h-10 items-center justify-center rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)]"
-              href="/admin/proxies?mode=create&type=proxy_authorization"
+              href={`${proxyListHref}&mode=create&type=proxy_authorization`}
             >
               Add proxy authorization
             </a>
@@ -3669,16 +3677,19 @@ export async function AdminWorkspace({
                     drawer?.mode === "edit" &&
                     drawer.type === "proxy_authorization" &&
                     drawer.id === authorization.id;
+                  const focused = focusedProxyId === authorization.id;
 
                   return (
                     <tr
                       className={[
                         "border-b border-[var(--border)]",
-                        selected
+                        selected || focused
                           ? "border-l-4 border-l-[var(--primary)] bg-[var(--accent)]"
                           : "",
                       ].join(" ")}
+                      data-proxy-id={authorization.id}
                       key={authorization.id}
+                      tabIndex={-1}
                     >
                       <td className="py-2 pr-3">
                         {authorization.meetings?.title ?? "-"}
@@ -3695,11 +3706,8 @@ export async function AdminWorkspace({
                       <td className="py-2 pr-3">{authorization.status}</td>
                       <td className="py-2">
                         <a
-                          className="rounded-md border border-[var(--border)] px-3 py-1 text-sm font-medium"
-                          href={`${proxyHref({
-                            ...proxyTableFilters,
-                            page: proxyPage,
-                          })}&mode=edit&type=proxy_authorization&id=${authorization.id}`}
+                          className="inline-flex min-h-9 items-center rounded-md border border-[var(--border)] px-3 py-1 text-sm font-medium"
+                          href={`${proxyListHref}&mode=edit&type=proxy_authorization&id=${authorization.id}`}
                         >
                           Review
                         </a>
@@ -3715,6 +3723,7 @@ export async function AdminWorkspace({
               No proxy authorizations match the selected criteria.
             </p>
           ) : null}
+          <ProxyRowFocus authorizationId={focusedProxyId} />
           <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
             <a
               aria-disabled={proxyPage <= 1}
@@ -3749,164 +3758,29 @@ export async function AdminWorkspace({
             </a>
           </div>
           {drawer?.mode === "create" && drawer.type === "proxy_authorization" ? (
-            <AdminCrudDrawer
-              closeHref="/admin/proxies"
-              summary={["New proxy authorization"]}
-              title="Add proxy authorization"
-            >
-              <form action={createProxyAuthorization} className="grid gap-3">
-                <RequiredNote />
-                <label className="grid gap-1 text-sm font-medium">
-                  <FieldLabel required>Meeting</FieldLabel>
-                  <select
-                    autoFocus
-                    className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-                    name="meeting_id"
-                    required
-                  >
-                    <option value="">Select meeting</option>
-                    {meetings
-                      .filter((meeting) => meeting.status !== "archived")
-                      .map((meeting) => (
-                        <option key={meeting.id} value={meeting.id}>
-                          {meeting.title}
-                        </option>
-                      ))}
-                  </select>
-                </label>
-                <label className="grid gap-1 text-sm font-medium">
-                  <FieldLabel required>Room</FieldLabel>
-                  <select
-                    className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-                    name="room_id"
-                    required
-                  >
-                    <option value="">Select room</option>
-                    {rooms
-                      .filter((room) => room.active)
-                      .map((room) => (
-                        <option key={room.id} value={room.id}>
-                          {room.room_number}
-                        </option>
-                      ))}
-                  </select>
-                </label>
-                <label className="grid gap-1 text-sm font-medium">
-                  Owner
-                  <select
-                    className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-                    name="owner_id"
-                  >
-                    <option value="">Owner optional</option>
-                    {owners
-                      .filter((owner) => owner.active)
-                      .map((owner) => (
-                        <option key={owner.id} value={owner.id}>
-                          {owner.full_name}
-                        </option>
-                      ))}
-                  </select>
-                </label>
-                <label className="grid gap-1 text-sm font-medium">
-                  <FieldLabel required>Proxy profile</FieldLabel>
-                  <select
-                    className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-                    name="proxy_profile_id"
-                    required
-                  >
-                    <option value="">Select proxy profile</option>
-                    {profiles.map((profile) => (
-                      <option key={profile.id} value={profile.id}>
-                        {profile.full_name} ({profile.email})
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label className="grid gap-1 text-sm font-medium">
-                  Valid from
-                  <input
-                    className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-                    name="valid_from"
-                    type="date"
-                  />
-                </label>
-                <label className="grid gap-1 text-sm font-medium">
-                  Valid until
-                  <input
-                    className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-                    name="valid_until"
-                    type="date"
-                  />
-                </label>
-                <div className="flex flex-wrap gap-2 pt-2">
-                  <PendingSubmitButton
-                    className="rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)]"
-                    pendingLabel="Adding..."
-                    type="submit"
-                  >
-                    Add proxy authorization
-                  </PendingSubmitButton>
-                  <FormResetButton label="Clear form" />
-                  <a
-                    className="inline-flex items-center justify-center rounded-md border border-[var(--border)] px-4 py-2 text-sm font-medium"
-                    href="/admin/proxies"
-                  >
-                    Cancel
-                  </a>
-                </div>
-              </form>
-            </AdminCrudDrawer>
+            <ProxyCrudDrawer
+              closeHref={proxyListHref}
+              meetings={meetings}
+              mode="create"
+              owners={owners}
+              profiles={profiles}
+              rooms={rooms}
+            />
           ) : null}
           {drawer?.mode === "edit" && drawer.type === "proxy_authorization"
             ? proxyAuthorizations
                 .filter((authorization) => authorization.id === drawer.id)
                 .map((authorization) => (
-                  <AdminCrudDrawer
-                    closeHref="/admin/proxies"
+                  <ProxyCrudDrawer
+                    authorization={authorization}
+                    closeHref={proxyListHref}
                     key={authorization.id}
-                    summary={[
-                      `Meeting: ${authorization.meetings?.title ?? "-"}`,
-                      `Room: ${authorization.rooms?.room_number ?? "-"}`,
-                      `Proxy: ${authorization.profiles?.full_name ?? "-"}`,
-                    ]}
-                    title="Review proxy authorization"
-                  >
-                    <form action={reviewProxyAuthorization} className="grid gap-3">
-                      <input name="id" type="hidden" value={authorization.id} />
-                      <label className="grid gap-1 text-sm font-medium">
-                        <FieldLabel required>Status</FieldLabel>
-                        <select
-                          autoFocus
-                          className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-                          defaultValue={authorization.status}
-                          name="status"
-                          required
-                        >
-                          <option value="pending">Pending</option>
-                          <option value="approved">Approved</option>
-                          <option value="rejected">Rejected</option>
-                          <option value="revoked">Revoked</option>
-                        </select>
-                      </label>
-                      <div className="flex flex-wrap gap-2 pt-2">
-                        <ConfirmSubmitButton
-                          className="rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)]"
-                          confirmMessage={`Update proxy authorization for room ${authorization.rooms?.room_number ?? "-"}? Approving, rejecting, or revoking changes who can vote for this room.`}
-                          pendingLabel="Saving..."
-                          type="submit"
-                        >
-                          Save review
-                        </ConfirmSubmitButton>
-                        <FormResetButton label="Reset changes" />
-                        <a
-                          className="inline-flex items-center justify-center rounded-md border border-[var(--border)] px-4 py-2 text-sm font-medium"
-                          href="/admin/proxies"
-                        >
-                          Cancel
-                        </a>
-                      </div>
-                    </form>
-                  </AdminCrudDrawer>
+                    meetings={meetings}
+                    mode="edit"
+                    owners={owners}
+                    profiles={profiles}
+                    rooms={rooms}
+                  />
                 ))
             : null}
         </section>

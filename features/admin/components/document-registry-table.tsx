@@ -196,12 +196,14 @@ export function DocumentRegistryTable({
             Set
             <input
               className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)]"
-              onChange={(event) =>
+              onChange={(event) => {
+                const value = event.currentTarget.value;
+
                 setCriteria((current) => ({
                   ...current,
-                  set: event.currentTarget.value,
-                }))
-              }
+                  set: value,
+                }));
+              }}
               placeholder="Search document set"
               value={criteria.set}
             />
@@ -210,12 +212,14 @@ export function DocumentRegistryTable({
             Type
             <select
               className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)]"
-              onChange={(event) =>
+              onChange={(event) => {
+                const value = event.currentTarget.value;
+
                 setCriteria((current) => ({
                   ...current,
-                  type: event.currentTarget.value,
-                }))
-              }
+                  type: value,
+                }));
+              }}
               value={criteria.type}
             >
               <option value="all">All types</option>
