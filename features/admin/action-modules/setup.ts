@@ -19,6 +19,94 @@ export type CommitteeActionState = {
   values?: Record<string, string>;
 };
 
+export type CondoProfileActionState = {
+  error?: string;
+  fieldErrors?: Record<string, string>;
+  recordId?: string;
+  success?: string;
+  values?: Record<string, string>;
+};
+
+const condoProfileFields = [
+  "id",
+  "juristic_name",
+  "project_name",
+  "registration_no",
+  "tax_id",
+  "address",
+  "phone",
+  "email",
+  "manager_name",
+  "document_footer",
+  "summary_history_limit",
+];
+
+function condoProfileFormValues(formData: FormData) {
+  return Object.fromEntries(
+    condoProfileFields.map((field) => [
+      field,
+      String(formData.get(field) ?? ""),
+    ]),
+  );
+}
+
+function validateCondoProfile(values: Record<string, string>) {
+  const fieldErrors: Record<string, string> = {};
+
+  if (!values.juristic_name.trim()) {
+    fieldErrors.juristic_name = "Juristic person name is required.";
+  }
+
+  if (!values.project_name.trim()) {
+    fieldErrors.project_name = "Project name is required.";
+  }
+
+  const summaryHistoryLimit = Number(values.summary_history_limit || 5);
+
+  if (
+    !Number.isInteger(summaryHistoryLimit) ||
+    summaryHistoryLimit < 1 ||
+    summaryHistoryLimit > 20
+  ) {
+    fieldErrors.summary_history_limit =
+      "Summary history limit must be a whole number from 1 to 20.";
+  }
+
+  return fieldErrors;
+}
+
+function condoProfileValidationState(
+  fieldErrors: Record<string, string>,
+  values: Record<string, string>,
+): CondoProfileActionState | null {
+  const count = Object.keys(fieldErrors).length;
+
+  if (count === 0) {
+    return null;
+  }
+
+  return {
+    error: `Please fix ${count} field${count === 1 ? "" : "s"} before saving.`,
+    fieldErrors,
+    values,
+  };
+}
+
+function condoProfilePayload(values: Record<string, string>) {
+  return {
+    juristic_name: values.juristic_name.trim(),
+    project_name: values.project_name.trim(),
+    registration_no: optionalText(values.registration_no),
+    tax_id: optionalText(values.tax_id),
+    address: optionalText(values.address),
+    phone: optionalText(values.phone),
+    email: optionalText(values.email),
+    manager_name: optionalText(values.manager_name),
+    document_footer: optionalText(values.document_footer),
+    summary_history_limit: Number(values.summary_history_limit || 5),
+  };
+}
+
 export async function saveCondoProfile(formData: FormData) {
   await requireAdmin();
 
@@ -50,6 +138,63 @@ export async function saveCondoProfile(formData: FormData) {
   }
 
   revalidateAdminPaths();
+}
+
+export async function saveCondoProfileWithState(
+  _state: CondoProfileActionState,
+  formData: FormData,
+): Promise<CondoProfileActionState> {
+  const values = condoProfileFormValues(formData);
+
+  try {
+    await requireAdmin();
+    const validation = condoProfileValidationState(
+      validateCondoProfile(values),
+      values,
+    );
+
+    if (validation) {
+      return validation;
+    }
+
+    const id = optionalText(values.id);
+    const supabase = await createClient();
+    const { data, error } = id
+      ? await supabase
+          .from("condo_profiles")
+          .update(condoProfilePayload(values))
+          .eq("id", id)
+          .select("id")
+          .single()
+      : await supabase
+          .from("condo_profiles")
+          .insert(condoProfilePayload(values))
+          .select("id")
+          .single();
+
+    if (error) {
+      return { error: error.message, values };
+    }
+
+    revalidateAdminPaths();
+
+    return {
+      recordId: data.id,
+      success: "Juristic profile saved",
+      values: {
+        ...values,
+        id: data.id,
+      },
+    };
+  } catch (error) {
+    return {
+      error:
+        error instanceof Error
+          ? error.message
+          : "Could not save juristic profile.",
+      values,
+    };
+  }
 }
 
 const committeeFormFields = [

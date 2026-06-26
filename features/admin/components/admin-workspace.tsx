@@ -21,8 +21,6 @@ import {
   importRoomsExcel,
   publishMeeting,
   reactivateCommitteeMember,
-  saveAppSettings,
-  saveCondoProfile,
 } from "@/features/admin/actions";
 import { EmailInviteControls } from "@/features/admin/components/email-invite-controls";
 import {
@@ -64,6 +62,10 @@ import {
   ResultApprovalDrawer,
   ResultSnapshotRowFocus,
 } from "@/features/admin/components/result-approval-drawer";
+import {
+  DocumentStorageSettingsForm,
+  JuristicProfileForm,
+} from "@/features/admin/components/setup-settings-forms";
 import { PendingSubmitButton } from "@/features/debug/tracked-submit-button";
 import { getAdminDashboardData } from "@/features/admin/data";
 import type { AuditLogFilters } from "@/features/admin/data-modules/documents";
@@ -1456,95 +1458,7 @@ export async function AdminWorkspace({
             <Building2 className="text-[var(--primary)]" size={20} />
             <h2 className="text-lg font-semibold">Juristic Person</h2>
           </div>
-          <form action={saveCondoProfile} className="grid gap-3 md:grid-cols-2">
-            <div className="md:col-span-2">
-              <RequiredNote />
-            </div>
-            <input name="id" type="hidden" value={condoProfile?.id ?? ""} />
-            <label className="grid gap-1 text-sm font-medium">
-              <FieldLabel required>Juristic person name</FieldLabel>
-              <input
-                className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-                defaultValue={condoProfile?.juristic_name ?? ""}
-                name="juristic_name"
-                required
-              />
-            </label>
-            <label className="grid gap-1 text-sm font-medium">
-              <FieldLabel required>Project name</FieldLabel>
-              <input
-                className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-                defaultValue={condoProfile?.project_name ?? ""}
-                name="project_name"
-                required
-              />
-            </label>
-            <input
-              className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-              defaultValue={condoProfile?.registration_no ?? ""}
-              name="registration_no"
-              placeholder="Registration no."
-            />
-            <input
-              className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-              defaultValue={condoProfile?.tax_id ?? ""}
-              name="tax_id"
-              placeholder="Tax ID"
-            />
-            <input
-              className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-              defaultValue={condoProfile?.manager_name ?? ""}
-              name="manager_name"
-              placeholder="Juristic manager"
-            />
-            <input
-              className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-              defaultValue={condoProfile?.phone ?? ""}
-              name="phone"
-              placeholder="Phone"
-            />
-            <input
-              className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-              defaultValue={condoProfile?.email ?? ""}
-              name="email"
-              placeholder="Email"
-              type="email"
-            />
-            <label className="text-sm font-medium">
-              Summary history limit
-              <input
-                className="mt-1 w-full rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-                defaultValue={condoProfile?.summary_history_limit ?? 5}
-                max={20}
-                min={1}
-                name="summary_history_limit"
-                type="number"
-              />
-            </label>
-            <input
-              className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-              defaultValue={condoProfile?.address ?? ""}
-              name="address"
-              placeholder="Address"
-            />
-            <textarea
-              className="rounded-md border border-[var(--border)] px-3 py-2 text-sm md:col-span-2"
-              defaultValue={condoProfile?.document_footer ?? ""}
-              name="document_footer"
-              placeholder="Document footer"
-              rows={2}
-            />
-            <div className="flex flex-wrap gap-2 md:col-span-2">
-              <PendingSubmitButton
-                className="rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)]"
-                pendingLabel="Saving..."
-                type="submit"
-              >
-                Save juristic profile
-              </PendingSubmitButton>
-              <FormResetButton label="Reset changes" />
-            </div>
-          </form>
+          <JuristicProfileForm condoProfile={condoProfile} />
         </section>
 
         <section
@@ -1575,41 +1489,7 @@ export async function AdminWorkspace({
             metadata in Documents.
           </p>
 
-          <form action={saveAppSettings} className="grid gap-3 md:grid-cols-2">
-            <input name="id" type="hidden" value={appSettings?.id ?? ""} />
-            <label className="text-sm font-medium">
-              Document storage provider
-              <select
-                className="mt-1 w-full rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-                defaultValue={
-                  appSettings?.document_storage_provider ?? "local_drive"
-                }
-                name="document_storage_provider"
-              >
-                <option value="local_drive">Local drive</option>
-                <option value="google_drive">Google Drive</option>
-              </select>
-            </label>
-            <label className="text-sm font-medium">
-              Root path or private folder link
-              <input
-                className="mt-1 w-full rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-                defaultValue={appSettings?.document_storage_root ?? ""}
-                name="document_storage_root"
-                placeholder="/secure/condovotes or private Drive folder URL"
-              />
-            </label>
-            <div className="flex flex-wrap gap-2 md:col-span-2">
-              <PendingSubmitButton
-                className="rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)]"
-                pendingLabel="Saving..."
-                type="submit"
-              >
-                Save document storage config
-              </PendingSubmitButton>
-              <FormResetButton label="Reset changes" />
-            </div>
-          </form>
+          <DocumentStorageSettingsForm appSettings={appSettings} />
         </section>
 
         <section

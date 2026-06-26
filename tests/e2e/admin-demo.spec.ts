@@ -2918,6 +2918,131 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
     await expect(page.getByRole("row").filter({ hasText: recipientEmail }))
       .toHaveClass(/border-l-\[var\(--primary\)\]/);
   });
+
+  test("setup settings rollout validates and saves inline forms", async ({
+    page,
+  }) => {
+    test.setTimeout(120_000);
+
+    const supabase = createClient<Database>(supabaseUrl!, serviceKey!, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+    });
+    let user = await findUserByEmail(supabase, demoAdminEmail);
+
+    if (!user) {
+      const { data, error } = await supabase.auth.admin.createUser({
+        email: demoAdminEmail,
+        email_confirm: true,
+        user_metadata: {
+          full_name: demoAdminName,
+        },
+      });
+
+      expect(error).toBeNull();
+      user = data.user;
+    }
+
+    expect(user).toBeTruthy();
+
+    const { data: profile, error: profileError } = await supabase
+      .from("profiles")
+      .upsert(
+        {
+          approval_status: "approved",
+          auth_user_id: user!.id,
+          default_status: "owner",
+          email: demoAdminEmail,
+          full_name: demoAdminName,
+        },
+        { onConflict: "auth_user_id" },
+      )
+      .select("id")
+      .single();
+
+    expect(profileError).toBeNull();
+
+    const { error: roleError } = await supabase.from("app_roles").upsert(
+      {
+        profile_id: profile!.id,
+        role: "admin",
+      },
+      { onConflict: "profile_id,role" },
+    );
+
+    expect(roleError).toBeNull();
+
+    const { data: link, error: linkError } =
+      await supabase.auth.admin.generateLink({
+        email: demoAdminEmail,
+        options: {
+          redirectTo: `${appUrl}/auth/callback`,
+        },
+        type: "magiclink",
+      });
+
+    expect(linkError).toBeNull();
+    await page.goto(
+      `${appUrl}/auth/callback?token_hash=${encodeURIComponent(
+        link.properties!.hashed_token,
+      )}&type=${link.properties!.verification_type}`,
+    );
+
+    await gotoWithRetry(page, `${appUrl}/admin/setup`, {
+      waitUntil: "commit",
+    });
+
+    const stamp = Date.now();
+    const juristicSection = page
+      .getByRole("heading", { name: "Juristic Person" })
+      .locator("xpath=ancestor::section[1]");
+    const juristicName = juristicSection.locator('input[name="juristic_name"]');
+    const projectName = juristicSection.locator('input[name="project_name"]');
+
+    await juristicName.fill("");
+    await projectName.fill(`Rollout Condo ${stamp}`);
+    await juristicSection
+      .getByRole("button", { name: "Save juristic profile" })
+      .click();
+
+    await expect(
+      juristicSection.getByText("Juristic person name is required."),
+    ).toBeVisible();
+    await expect(juristicName).toBeFocused();
+    await expect(projectName).toHaveValue(`Rollout Condo ${stamp}`);
+
+    await juristicName.fill(`Rollout Juristic ${stamp}`);
+    await juristicSection.locator('input[name="summary_history_limit"]').fill("6");
+    await juristicSection
+      .getByRole("button", { name: "Save juristic profile" })
+      .click();
+    await expect(
+      juristicSection.getByText("Juristic profile saved"),
+    ).toBeVisible();
+
+    await gotoWithRetry(page, `${appUrl}/admin/setup?tab=storage`, {
+      waitUntil: "commit",
+    });
+
+    const storageSection = page
+      .getByRole("heading", { name: "Document Storage" })
+      .locator("xpath=ancestor::section[1]");
+
+    await storageSection
+      .locator('select[name="document_storage_provider"]')
+      .selectOption("local_drive");
+    await storageSection
+      .locator('input[name="document_storage_root"]')
+      .fill(`/private/condovotes-rollout-${stamp}`);
+    await storageSection
+      .getByRole("button", { name: "Save document storage config" })
+      .click();
+    await expect(
+      storageSection.getByText("Document storage config saved"),
+    ).toBeVisible();
+  });
 });
 
 async function findUserByEmail(

@@ -18,6 +18,57 @@ export type DocumentActionState = {
   values?: Record<string, string>;
 };
 
+export type AppSettingsActionState = {
+  error?: string;
+  fieldErrors?: Record<string, string>;
+  recordId?: string;
+  success?: string;
+  values?: Record<string, string>;
+};
+
+const appSettingsFields = [
+  "id",
+  "document_storage_provider",
+  "document_storage_root",
+];
+
+function appSettingsFormValues(formData: FormData) {
+  return Object.fromEntries(
+    appSettingsFields.map((field) => [
+      field,
+      String(formData.get(field) ?? ""),
+    ]),
+  );
+}
+
+function validateAppSettings(values: Record<string, string>) {
+  const fieldErrors: Record<string, string> = {};
+
+  if (!["local_drive", "google_drive"].includes(values.document_storage_provider)) {
+    fieldErrors.document_storage_provider =
+      "Document storage provider is required.";
+  }
+
+  return fieldErrors;
+}
+
+function appSettingsValidationState(
+  fieldErrors: Record<string, string>,
+  values: Record<string, string>,
+): AppSettingsActionState | null {
+  const count = Object.keys(fieldErrors).length;
+
+  if (count === 0) {
+    return null;
+  }
+
+  return {
+    error: `Please fix ${count} field${count === 1 ? "" : "s"} before saving.`,
+    fieldErrors,
+    values,
+  };
+}
+
 function optionalInteger(value: FormDataEntryValue | null, fieldName: string) {
   const text = optionalText(value);
 
@@ -257,6 +308,73 @@ export async function saveAppSettings(formData: FormData) {
     entityType: "app_settings",
   });
   revalidateAdminPaths();
+}
+
+export async function saveAppSettingsWithState(
+  _state: AppSettingsActionState,
+  formData: FormData,
+): Promise<AppSettingsActionState> {
+  const values = appSettingsFormValues(formData);
+
+  try {
+    const admin = await requireAdmin();
+    const validation = appSettingsValidationState(
+      validateAppSettings(values),
+      values,
+    );
+
+    if (validation) {
+      return validation;
+    }
+
+    const id = optionalText(values.id);
+    const documentStorageProvider = values.document_storage_provider;
+    const payload = {
+      document_storage_provider: documentStorageProvider,
+      document_storage_root: optionalText(values.document_storage_root),
+    };
+    const supabase = await createClient();
+    const { data: settings, error } = id
+      ? await supabase
+          .from("app_settings")
+          .update(payload)
+          .eq("id", id)
+          .select("id")
+          .single()
+      : await supabase.from("app_settings").insert(payload).select("id").single();
+
+    if (error) {
+      return { error: error.message, values };
+    }
+
+    await writeAuditLog(supabase, {
+      action: id ? "app_settings.updated" : "app_settings.created",
+      actorProfileId: admin.id,
+      details: {
+        document_storage_provider: documentStorageProvider,
+      },
+      entityId: settings.id,
+      entityType: "app_settings",
+    });
+    revalidateAdminPaths();
+
+    return {
+      recordId: settings.id,
+      success: "Document storage config saved",
+      values: {
+        ...values,
+        id: settings.id,
+      },
+    };
+  } catch (error) {
+    return {
+      error:
+        error instanceof Error
+          ? error.message
+          : "Could not save document storage config.",
+      values,
+    };
+  }
 }
 
 export async function registerDocumentReference(formData: FormData) {
