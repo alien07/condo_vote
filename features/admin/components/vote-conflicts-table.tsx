@@ -1,7 +1,10 @@
 "use client";
 
-import { useState } from "react";
-import { resolveVoteSourceConflict } from "@/features/admin/actions";
+import { useActionState, useEffect, useRef, useState } from "react";
+import {
+  resolveVoteSourceConflictWithState,
+  type VoteSourceConflictActionState,
+} from "@/features/admin/actions";
 import { FormResetButton } from "@/features/admin/components/form-controls";
 import { PendingSubmitButton } from "@/features/debug/tracked-submit-button";
 
@@ -109,6 +112,14 @@ function formatDateTime(value: string | null | undefined) {
   return `${pad(date.getDate())}/${pad(date.getMonth() + 1)}/${date.getFullYear()} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
 }
 
+function escapeSelectorValue(value: string) {
+  if (typeof CSS !== "undefined" && typeof CSS.escape === "function") {
+    return CSS.escape(value);
+  }
+
+  return value.replaceAll('"', '\\"');
+}
+
 function answerByQuestion(answers: ConflictAnswer[]) {
   return new Map(answers.map((answer) => [answer.questionId, answer]));
 }
@@ -137,6 +148,113 @@ function conflictQuestionRows(conflict: VoteConflictRow) {
   });
 }
 
+const emptyConflictState: VoteSourceConflictActionState = {};
+
+function ResolveConflictForm({
+  conflict,
+  onResolved,
+}: {
+  conflict: VoteConflictRow;
+  onResolved: (recordKey: string) => void;
+}) {
+  const formRef = useRef<HTMLFormElement>(null);
+  const [state, formAction] = useActionState(
+    resolveVoteSourceConflictWithState,
+    emptyConflictState,
+  );
+
+  useEffect(() => {
+    const firstInvalidField = Object.keys(state.fieldErrors ?? {})[0];
+
+    if (firstInvalidField) {
+      const field = formRef.current?.elements.namedItem(firstInvalidField);
+      const element =
+        field instanceof RadioNodeList
+          ? field[0]
+          : field instanceof HTMLElement
+            ? field
+            : null;
+
+      element?.focus();
+      element?.scrollIntoView({ behavior: "smooth", block: "center" });
+      return;
+    }
+
+    if (state.success && state.recordKey) {
+      onResolved(state.recordKey);
+    }
+  }, [onResolved, state]);
+
+  return (
+    <form action={formAction} className="mt-5 grid gap-3" noValidate ref={formRef}>
+      {state.error ? (
+        <div
+          className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-800"
+          role="alert"
+        >
+          {state.error}
+        </div>
+      ) : null}
+      <input name="meeting_id" type="hidden" value={conflict.meetingId} />
+      <input name="room_id" type="hidden" value={conflict.roomId} />
+      <input
+        name="online_ballot_id"
+        type="hidden"
+        value={conflict.onlineBallotId}
+      />
+      <input
+        name="manual_ballot_id"
+        type="hidden"
+        value={conflict.manualBallotId}
+      />
+      <label className="grid gap-1 text-sm font-medium">
+        Chosen source
+        <select
+          aria-invalid={state.fieldErrors?.chosen_source ? "true" : undefined}
+          className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+          defaultValue={
+            state.values?.chosen_source ??
+            conflict.resolution?.chosen_source ??
+            "manual"
+          }
+          name="chosen_source"
+        >
+          <option value="manual">Manual</option>
+          <option value="online">Online</option>
+        </select>
+        {state.fieldErrors?.chosen_source ? (
+          <p className="text-xs font-medium text-red-700">
+            {state.fieldErrors.chosen_source}
+          </p>
+        ) : null}
+      </label>
+      <label className="grid gap-1 text-sm font-medium">
+        Conflict remark
+        <textarea
+          className="min-h-24 rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+          defaultValue={
+            state.values?.conflict_remark ??
+            conflict.resolution?.conflict_remark ??
+            ""
+          }
+          name="conflict_remark"
+          placeholder="Explain why this source is selected."
+        />
+      </label>
+      <div className="flex flex-wrap gap-2">
+        <PendingSubmitButton
+          className="rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)]"
+          pendingLabel="Saving..."
+          type="submit"
+        >
+          Resolve source
+        </PendingSubmitButton>
+        <FormResetButton label="Reset changes" />
+      </div>
+    </form>
+  );
+}
+
 export function VoteConflictsTable({
   initialFilters,
   initialPage,
@@ -151,11 +269,14 @@ export function VoteConflictsTable({
   const [perPage, setPerPage] = useState(initialPerPage);
   const [total, setTotal] = useState(initialTotal);
   const [selected, setSelected] = useState<VoteConflictRow | null>(null);
+  const [focusedKey, setFocusedKey] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const totalPages = Math.max(1, Math.ceil(total / perPage));
   const pageStart = total === 0 ? 0 : (page - 1) * perPage + 1;
   const pageEnd = Math.min(page * perPage, total);
+  const selectedRowKey = selected?.key ?? null;
 
   async function load(nextFilters: ConflictFilters) {
     setLoading(true);
@@ -205,6 +326,30 @@ export function VoteConflictsTable({
 
     void load({ ...appliedFilters, dir, page: 1, sort });
   }
+
+  async function handleResolved(recordKey: string) {
+    setFocusedKey(recordKey);
+    setMessage("Conflict resolved.");
+    setSelected(null);
+    await load(appliedFilters);
+  }
+
+  useEffect(() => {
+    if (!focusedKey) {
+      return;
+    }
+
+    const frame = requestAnimationFrame(() => {
+      const row = document.querySelector<HTMLElement>(
+        `[data-conflict-key="${escapeSelectorValue(focusedKey)}"]`,
+      );
+
+      row?.scrollIntoView({ behavior: "smooth", block: "center" });
+      row?.focus({ preventScroll: true });
+    });
+
+    return () => cancelAnimationFrame(frame);
+  }, [focusedKey, rows]);
 
   return (
     <div>
@@ -374,6 +519,11 @@ export function VoteConflictsTable({
             {error}
           </p>
         ) : null}
+        {message ? (
+          <div className="border-b border-green-200 bg-green-50 px-4 py-3 text-sm font-medium text-green-800">
+            {message}
+          </div>
+        ) : null}
         <div className="overflow-x-auto">
           <table className="w-full min-w-[820px] border-collapse text-left text-sm">
             <thead className="bg-[var(--background)] text-[var(--muted)]">
@@ -403,33 +553,42 @@ export function VoteConflictsTable({
               </tr>
             </thead>
             <tbody>
-              {rows.map((conflict, index) => (
-                <tr
-                  className={[
-                    "border-b border-[var(--border)] last:border-0",
-                    index % 2 === 0
-                      ? "bg-[var(--surface)]"
-                      : "bg-[var(--background)]",
-                  ].join(" ")}
-                  key={conflict.key}
-                >
-                  <td className="px-4 py-3">{conflict.meetingTitle}</td>
-                  <td className="px-4 py-3">{conflict.roomNumber}</td>
-                  <td className="px-4 py-3">{conflict.status}</td>
-                  <td className="px-4 py-3">
-                    {formatDateTime(conflict.resolution?.resolved_at)}
-                  </td>
-                  <td className="px-4 py-3">
-                    <button
-                      className="rounded-md border border-[var(--border)] px-3 py-1 text-sm font-medium"
-                      onClick={() => setSelected(conflict)}
-                      type="button"
-                    >
-                      Review / Resolve
-                    </button>
-                  </td>
-                </tr>
-              ))}
+              {rows.map((conflict, index) => {
+                const highlighted =
+                  selectedRowKey === conflict.key || focusedKey === conflict.key;
+
+                return (
+                  <tr
+                    className={[
+                      "border-b border-[var(--border)] outline-none last:border-0 focus-visible:ring-2 focus-visible:ring-[var(--primary)]",
+                      highlighted
+                        ? "border-l-4 border-l-[var(--primary)] bg-[var(--accent)]"
+                        : index % 2 === 0
+                          ? "bg-[var(--surface)]"
+                          : "bg-[var(--background)]",
+                    ].join(" ")}
+                    data-conflict-key={conflict.key}
+                    key={conflict.key}
+                    tabIndex={-1}
+                  >
+                    <td className="px-4 py-3">{conflict.meetingTitle}</td>
+                    <td className="px-4 py-3">{conflict.roomNumber}</td>
+                    <td className="px-4 py-3">{conflict.status}</td>
+                    <td className="px-4 py-3">
+                      {formatDateTime(conflict.resolution?.resolved_at)}
+                    </td>
+                    <td className="px-4 py-3">
+                      <button
+                        className="rounded-md border border-[var(--border)] px-3 py-1 text-sm font-medium"
+                        onClick={() => setSelected(conflict)}
+                        type="button"
+                      >
+                        Review / Resolve
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -539,50 +698,7 @@ export function VoteConflictsTable({
                 </tbody>
               </table>
             </div>
-            <form action={resolveVoteSourceConflict} className="mt-5 grid gap-3">
-              <input name="meeting_id" type="hidden" value={selected.meetingId} />
-              <input name="room_id" type="hidden" value={selected.roomId} />
-              <input
-                name="online_ballot_id"
-                type="hidden"
-                value={selected.onlineBallotId}
-              />
-              <input
-                name="manual_ballot_id"
-                type="hidden"
-                value={selected.manualBallotId}
-              />
-              <label className="grid gap-1 text-sm font-medium">
-                Chosen source
-                <select
-                  className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-                  defaultValue={selected.resolution?.chosen_source ?? "manual"}
-                  name="chosen_source"
-                >
-                  <option value="manual">Manual</option>
-                  <option value="online">Online</option>
-                </select>
-              </label>
-              <label className="grid gap-1 text-sm font-medium">
-                Conflict remark
-                <textarea
-                  className="min-h-24 rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-                  defaultValue={selected.resolution?.conflict_remark ?? ""}
-                  name="conflict_remark"
-                  placeholder="Explain why this source is selected."
-                />
-              </label>
-              <div className="flex flex-wrap gap-2">
-                <PendingSubmitButton
-                  className="rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)]"
-                  pendingLabel="Saving..."
-                  type="submit"
-                >
-                  Resolve source
-                </PendingSubmitButton>
-                <FormResetButton label="Reset changes" />
-              </div>
-            </form>
+            <ResolveConflictForm conflict={selected} onResolved={handleResolved} />
           </aside>
         </div>
       ) : null}

@@ -32,6 +32,14 @@ export type ManualVoteActionState = {
   values?: Record<string, string>;
 };
 
+export type VoteSourceConflictActionState = {
+  error?: string;
+  fieldErrors?: Record<string, string>;
+  recordKey?: string;
+  success?: string;
+  values?: Record<string, string>;
+};
+
 function proxyFormValues(formData: FormData) {
   return Object.fromEntries(
     [
@@ -790,4 +798,128 @@ export async function resolveVoteSourceConflict(formData: FormData) {
   });
   revalidateAdminPaths();
   redirect("/admin/voting/conflicts?feedback=success&message=Conflict%20resolved");
+}
+
+function voteSourceConflictValues(formData: FormData) {
+  return Object.fromEntries(
+    [
+      "meeting_id",
+      "room_id",
+      "online_ballot_id",
+      "manual_ballot_id",
+      "chosen_source",
+      "conflict_remark",
+    ].map((field) => [field, String(formData.get(field) ?? "")]),
+  );
+}
+
+function validateVoteSourceConflict(values: Record<string, string>) {
+  const fieldErrors: Record<string, string> = {};
+
+  for (const [field, label] of [
+    ["meeting_id", "Meeting"],
+    ["room_id", "Room"],
+    ["online_ballot_id", "Online ballot"],
+    ["manual_ballot_id", "Manual ballot"],
+  ] as const) {
+    if (!values[field]?.trim()) {
+      fieldErrors[field] = `${label} is required.`;
+    }
+  }
+
+  if (!["manual", "online"].includes(values.chosen_source)) {
+    fieldErrors.chosen_source = "Chosen source is required.";
+  }
+
+  return fieldErrors;
+}
+
+function voteSourceConflictValidationState(
+  fieldErrors: Record<string, string>,
+  values: Record<string, string>,
+): VoteSourceConflictActionState | null {
+  const count = Object.keys(fieldErrors).length;
+
+  if (count === 0) {
+    return null;
+  }
+
+  return {
+    error: `Please fix ${count} field${count === 1 ? "" : "s"} before saving.`,
+    fieldErrors,
+    values,
+  };
+}
+
+export async function resolveVoteSourceConflictWithState(
+  _state: VoteSourceConflictActionState,
+  formData: FormData,
+): Promise<VoteSourceConflictActionState> {
+  const values = voteSourceConflictValues(formData);
+
+  try {
+    const resolver = await requireAdmin();
+    const validation = voteSourceConflictValidationState(
+      validateVoteSourceConflict(values),
+      values,
+    );
+
+    if (validation) {
+      return validation;
+    }
+
+    const chosenBallotId =
+      values.chosen_source === "online"
+        ? values.online_ballot_id
+        : values.manual_ballot_id;
+    const supabase = await createClient();
+    const { data: resolution, error } = await supabase
+      .from("vote_source_resolutions")
+      .upsert(
+        {
+          meeting_id: values.meeting_id,
+          room_id: values.room_id,
+          online_ballot_id: values.online_ballot_id,
+          manual_ballot_id: values.manual_ballot_id,
+          chosen_source: values.chosen_source,
+          chosen_ballot_id: chosenBallotId,
+          conflict_remark: optionalText(values.conflict_remark),
+          resolved_by: resolver.id,
+          resolved_at: new Date().toISOString(),
+        },
+        { onConflict: "meeting_id,room_id" },
+      )
+      .select("id")
+      .single();
+
+    if (error) {
+      return { error: error.message, values };
+    }
+
+    await writeAuditLog(supabase, {
+      action: "vote_source_conflict.resolved",
+      actorProfileId: resolver.id,
+      details: {
+        chosen_ballot_id: chosenBallotId,
+        chosen_source: values.chosen_source,
+        meeting_id: values.meeting_id,
+        room_id: values.room_id,
+      },
+      entityId: resolution.id,
+      entityType: "vote_source_resolution",
+    });
+    revalidateAdminPaths();
+
+    return {
+      recordKey: `${values.meeting_id}:${values.room_id}`,
+      success: "Conflict resolved",
+      values,
+    };
+  } catch (error) {
+    return {
+      error:
+        error instanceof Error ? error.message : "Could not resolve conflict.",
+      values,
+    };
+  }
 }
