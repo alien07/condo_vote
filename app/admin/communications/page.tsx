@@ -5,11 +5,15 @@ type AdminCommunicationsPageProps = {
   searchParams: Promise<{
     created?: string;
     dir?: string;
+    focusEmailLogId?: string;
+    id?: string;
+    mode?: string;
     page?: string;
     perPage?: string;
     recipient?: string;
     sort?: string;
     status?: string;
+    type?: string;
   }>;
 };
 
@@ -52,7 +56,13 @@ export default async function AdminCommunicationsPage({
   return (
     <AdminWorkspace
       description="Review mock email queue and delivery logs."
+      drawer={{
+        id: params.id,
+        mode: params.mode,
+        type: params.type,
+      }}
       emailFilters={getEmailFilters(params)}
+      focusedEmailLogId={params.focusEmailLogId}
       sections={["email"]}
       title="Communications"
     />

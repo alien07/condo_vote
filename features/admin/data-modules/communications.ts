@@ -9,7 +9,7 @@ export async function fetchCommunicationsData(supabase: SupabaseServerClient) {
       "id, recipient_email, template_key, status, sent_at, error_message, created_at",
     )
     .order("created_at", { ascending: false })
-    .limit(25);
+    .limit(500);
 
   if (emailLogsResult.error) {
     throw emailLogsResult.error;

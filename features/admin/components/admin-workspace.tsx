@@ -25,6 +25,10 @@ import {
   saveCondoProfile,
 } from "@/features/admin/actions";
 import { EmailInviteControls } from "@/features/admin/components/email-invite-controls";
+import {
+  EmailLogDetailDrawer,
+  EmailLogRowFocus,
+} from "@/features/admin/components/email-log-detail-drawer";
 import { FieldLabel, RequiredNote } from "@/features/admin/components/field-label";
 import { AdminSoftNavigation } from "@/features/admin/components/admin-soft-navigation";
 import {
@@ -307,6 +311,7 @@ type AdminWorkspaceProps = {
     type?: string;
   };
   focusedCommitteeId?: string;
+  focusedEmailLogId?: string;
   focusedMeetingId?: string;
   focusedManualBallotId?: string;
   focusedProxyId?: string;
@@ -603,6 +608,7 @@ export async function AdminWorkspace({
   committeeFilters,
   drawer,
   emailFilters,
+  focusedEmailLogId,
   focusedCommitteeId,
   focusedMeetingId,
   focusedManualBallotId,
@@ -983,6 +989,10 @@ export async function AdminWorkspace({
     (emailPage - 1) * emailTableFilters.perPage,
     emailPage * emailTableFilters.perPage,
   );
+  const emailListHref = emailHref({
+    ...emailTableFilters,
+    page: emailPage,
+  });
   const emailPageUrls = Object.fromEntries(
     Array.from({ length: emailTotalPages }, (_, index) => index + 1).map(
       (pageNumber) => [
@@ -3264,19 +3274,48 @@ export async function AdminWorkspace({
                       Created{emailSortLabel("created")}
                     </a>
                   </th>
-                  <th className="py-2 font-medium">Error</th>
+                  <th className="py-2 pr-3 font-medium">Error</th>
+                  <th className="py-2 font-medium">Action</th>
                 </tr>
               </thead>
               <tbody>
-                {pagedEmailLogs.map((log) => (
-                  <tr className="border-b border-[var(--border)]" key={log.id}>
-                    <td className="py-2 pr-3">{log.recipient_email}</td>
-                    <td className="py-2 pr-3">{log.template_key}</td>
-                    <td className="py-2 pr-3">{log.status}</td>
-                    <td className="py-2 pr-3">{formatDateTime(log.created_at)}</td>
-                    <td className="py-2">{log.error_message ?? "-"}</td>
-                  </tr>
-                ))}
+                {pagedEmailLogs.map((log) => {
+                  const selected =
+                    drawer?.mode === "view" &&
+                    drawer.type === "email_log" &&
+                    drawer.id === log.id;
+                  const focused = focusedEmailLogId === log.id;
+
+                  return (
+                    <tr
+                      className={[
+                        "border-b border-[var(--border)]",
+                        selected || focused
+                          ? "border-l-4 border-l-[var(--primary)] bg-[var(--accent)]"
+                          : "",
+                      ].join(" ")}
+                      data-email-log-id={log.id}
+                      key={log.id}
+                      tabIndex={-1}
+                    >
+                      <td className="py-2 pr-3">{log.recipient_email}</td>
+                      <td className="py-2 pr-3">{log.template_key}</td>
+                      <td className="py-2 pr-3">{log.status}</td>
+                      <td className="py-2 pr-3">
+                        {formatDateTime(log.created_at)}
+                      </td>
+                      <td className="py-2 pr-3">{log.error_message ?? "-"}</td>
+                      <td className="py-2">
+                        <a
+                          className="inline-flex min-h-9 items-center justify-center rounded-md border border-[var(--border)] px-3 py-1 text-sm font-medium"
+                          href={`${emailListHref}&mode=view&type=email_log&id=${log.id}`}
+                        >
+                          View details
+                        </a>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -3285,6 +3324,7 @@ export async function AdminWorkspace({
               No email logs match the selected criteria.
             </p>
           ) : null}
+          <EmailLogRowFocus logId={focusedEmailLogId} />
           <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
             <a
               aria-disabled={emailPage <= 1}
@@ -3318,6 +3358,19 @@ export async function AdminWorkspace({
               Next
             </a>
           </div>
+          {drawer?.mode === "view" && drawer.type === "email_log"
+            ? emailLogs
+                .filter((log) => log.id === drawer.id)
+                .map((log) => (
+                  <EmailLogDetailDrawer
+                    closeHref={emailListHref}
+                    createdLabel={formatDateTime(log.created_at)}
+                    key={log.id}
+                    log={log}
+                    sentLabel={log.sent_at ? formatDateTime(log.sent_at) : "-"}
+                  />
+                ))
+            : null}
         </section>
 
         <div hidden={!visibleSections.has("people")} id="people">
