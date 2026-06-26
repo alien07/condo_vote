@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { FileSpreadsheet } from "lucide-react";
-import { MasterDataImportForms } from "@/features/admin/components/admin-workspace";
+import { MasterDataImportForms } from "@/features/admin/components/master-data-import-forms";
 
 export default function AdminPeopleImportPage() {
   return (

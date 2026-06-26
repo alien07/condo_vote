@@ -33,6 +33,12 @@ export type PeopleActionState = {
   values?: Record<string, string>;
 };
 
+export type ExcelImportActionState = {
+  error?: string;
+  fieldErrors?: Record<string, string>;
+  success?: string;
+};
+
 function formValues(formData: FormData, fields: string[]) {
   return Object.fromEntries(
     fields.map((field) => [field, String(formData.get(field) ?? "")]),
@@ -464,6 +470,50 @@ export async function importRoomsExcel(formData: FormData) {
   revalidateAdminPaths();
 }
 
+function validateExcelUpload(formData: FormData) {
+  const file = formData.get("file");
+
+  if (!(file instanceof File) || file.size === 0) {
+    return {
+      error: "Please choose an Excel file before uploading.",
+      fieldErrors: {
+        file: "Excel file is required.",
+      },
+    };
+  }
+
+  return null;
+}
+
+async function importExcelWithState(
+  formData: FormData,
+  importAction: (formData: FormData) => Promise<void>,
+  success: string,
+): Promise<ExcelImportActionState> {
+  const validation = validateExcelUpload(formData);
+
+  if (validation) {
+    return validation;
+  }
+
+  try {
+    await importAction(formData);
+    return { success };
+  } catch (error) {
+    return {
+      error:
+        error instanceof Error ? error.message : "Could not import Excel file.",
+    };
+  }
+}
+
+export async function importRoomsExcelWithState(
+  _state: ExcelImportActionState,
+  formData: FormData,
+): Promise<ExcelImportActionState> {
+  return importExcelWithState(formData, importRoomsExcel, "Rooms import completed.");
+}
+
 export async function deactivateRoom(formData: FormData) {
   await requireAdmin();
 
@@ -659,6 +709,17 @@ export async function importOwnersExcel(formData: FormData) {
   revalidateAdminPaths();
 }
 
+export async function importOwnersExcelWithState(
+  _state: ExcelImportActionState,
+  formData: FormData,
+): Promise<ExcelImportActionState> {
+  return importExcelWithState(
+    formData,
+    importOwnersExcel,
+    "Owners import completed.",
+  );
+}
+
 export async function importRoomOwnersExcel(formData: FormData) {
   await requireAdmin();
 
@@ -750,6 +811,17 @@ export async function importRoomOwnersExcel(formData: FormData) {
   }
 
   revalidateAdminPaths();
+}
+
+export async function importRoomOwnersExcelWithState(
+  _state: ExcelImportActionState,
+  formData: FormData,
+): Promise<ExcelImportActionState> {
+  return importExcelWithState(
+    formData,
+    importRoomOwnersExcel,
+    "Room owners import completed.",
+  );
 }
 
 export async function deactivateOwner(formData: FormData) {

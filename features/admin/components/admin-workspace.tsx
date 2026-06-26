@@ -6,7 +6,6 @@ import {
   History,
   ListChecks,
   ShieldCheck,
-  Upload,
   UserCheck,
 } from "lucide-react";
 import {
@@ -16,9 +15,6 @@ import {
   deleteMeetingChoice,
   deleteMeetingQuestion,
   generateResultSnapshot,
-  importOwnersExcel,
-  importRoomOwnersExcel,
-  importRoomsExcel,
   publishMeeting,
   reactivateCommitteeMember,
 } from "@/features/admin/actions";
@@ -27,7 +23,7 @@ import {
   EmailLogDetailDrawer,
   EmailLogRowFocus,
 } from "@/features/admin/components/email-log-detail-drawer";
-import { FieldLabel, RequiredNote } from "@/features/admin/components/field-label";
+import { FieldLabel } from "@/features/admin/components/field-label";
 import { AdminSoftNavigation } from "@/features/admin/components/admin-soft-navigation";
 import {
   ConfirmSubmitButton,
@@ -151,139 +147,6 @@ function getResultPayload(payload: unknown) {
 
 function formatPercent(value: number | undefined) {
   return `${Number(value ?? 0).toFixed(2)}%`;
-}
-
-export function MasterDataImportForms() {
-  return (
-    <div className="grid gap-4 lg:grid-cols-3">
-      <form
-        action={importRoomsExcel}
-        className="rounded-md border border-[var(--border)] p-4"
-      >
-        <div className="mb-3 flex items-center gap-2">
-          <Upload className="text-[var(--primary)]" size={18} />
-          <h3 className="font-semibold">Import rooms</h3>
-        </div>
-        <p className="mb-3 text-sm text-[var(--muted)]">
-          Reads the `Rooms` sheet. Upsert key: `room_number`.
-        </p>
-        <div className="mb-3">
-          <RequiredNote />
-        </div>
-        <a
-          className="mb-3 inline-flex min-h-10 items-center justify-center rounded-md border border-[var(--border)] px-4 py-2 text-sm font-medium"
-          href="/templates/rooms-import-template.xlsx"
-        >
-          Download rooms template
-        </a>
-        <label className="grid gap-1 text-sm font-medium">
-          <FieldLabel required>Excel file</FieldLabel>
-          <input
-            accept=".xlsx"
-            className="block w-full rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-            name="file"
-            required
-            type="file"
-          />
-        </label>
-        <div className="mt-3 flex flex-wrap gap-2">
-          <PendingSubmitButton
-            className="min-h-10 rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)]"
-            pendingLabel="Uploading..."
-            type="submit"
-          >
-            Upload rooms Excel
-          </PendingSubmitButton>
-          <FormResetButton label="Clear form" />
-        </div>
-      </form>
-
-      <form
-        action={importOwnersExcel}
-        className="rounded-md border border-[var(--border)] p-4"
-      >
-        <div className="mb-3 flex items-center gap-2">
-          <Upload className="text-[var(--primary)]" size={18} />
-          <h3 className="font-semibold">Import owners</h3>
-        </div>
-        <p className="mb-3 text-sm text-[var(--muted)]">
-          Reads the `Owners` sheet. Upsert key: `email`.
-        </p>
-        <div className="mb-3">
-          <RequiredNote />
-        </div>
-        <a
-          className="mb-3 inline-flex min-h-10 items-center justify-center rounded-md border border-[var(--border)] px-4 py-2 text-sm font-medium"
-          href="/templates/owners-import-template.xlsx"
-        >
-          Download owners template
-        </a>
-        <label className="grid gap-1 text-sm font-medium">
-          <FieldLabel required>Excel file</FieldLabel>
-          <input
-            accept=".xlsx"
-            className="block w-full rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-            name="file"
-            required
-            type="file"
-          />
-        </label>
-        <div className="mt-3 flex flex-wrap gap-2">
-          <PendingSubmitButton
-            className="min-h-10 rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)]"
-            pendingLabel="Uploading..."
-            type="submit"
-          >
-            Upload owners Excel
-          </PendingSubmitButton>
-          <FormResetButton label="Clear form" />
-        </div>
-      </form>
-
-      <form
-        action={importRoomOwnersExcel}
-        className="rounded-md border border-[var(--border)] p-4"
-      >
-        <div className="mb-3 flex items-center gap-2">
-          <Upload className="text-[var(--primary)]" size={18} />
-          <h3 className="font-semibold">Import room owners</h3>
-        </div>
-        <p className="mb-3 text-sm text-[var(--muted)]">
-          Reads the `RoomOwners` sheet. Links `room_number` to `owner_email`
-          with role `owner`.
-        </p>
-        <div className="mb-3">
-          <RequiredNote />
-        </div>
-        <a
-          className="mb-3 inline-flex min-h-10 items-center justify-center rounded-md border border-[var(--border)] px-4 py-2 text-sm font-medium"
-          href="/templates/room-owners-import-template.xlsx"
-        >
-          Download room owners template
-        </a>
-        <label className="grid gap-1 text-sm font-medium">
-          <FieldLabel required>Excel file</FieldLabel>
-          <input
-            accept=".xlsx"
-            className="block w-full rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-            name="file"
-            required
-            type="file"
-          />
-        </label>
-        <div className="mt-3 flex flex-wrap gap-2">
-          <PendingSubmitButton
-            className="min-h-10 rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)]"
-            pendingLabel="Uploading..."
-            type="submit"
-          >
-            Upload room owners Excel
-          </PendingSubmitButton>
-          <FormResetButton label="Clear form" />
-        </div>
-      </form>
-    </div>
-  );
 }
 
 export type AdminSection =
