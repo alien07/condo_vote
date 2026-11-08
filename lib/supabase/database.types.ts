@@ -790,6 +790,42 @@ export type Database = {
           },
         ]
       }
+      meeting_close_approvals: {
+        Row: {
+          approved_at: string
+          approved_by: string
+          id: string
+          meeting_id: string
+        }
+        Insert: {
+          approved_at?: string
+          approved_by: string
+          id?: string
+          meeting_id: string
+        }
+        Update: {
+          approved_at?: string
+          approved_by?: string
+          id?: string
+          meeting_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meeting_close_approvals_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meeting_close_approvals_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       meeting_questions: {
         Row: {
           agenda_no: string | null
@@ -861,6 +897,7 @@ export type Database = {
       meetings: {
         Row: {
           chairperson_name: string | null
+          closed_at: string | null
           created_at: string
           description: string | null
           ends_at: string
@@ -871,6 +908,7 @@ export type Database = {
           meeting_type: string
           published_at: string | null
           quorum_rule: string
+          required_approvals: number
           starts_at: string
           status: string
           title: string
@@ -880,6 +918,7 @@ export type Database = {
         }
         Insert: {
           chairperson_name?: string | null
+          closed_at?: string | null
           created_at?: string
           description?: string | null
           ends_at: string
@@ -890,6 +929,7 @@ export type Database = {
           meeting_type?: string
           published_at?: string | null
           quorum_rule?: string
+          required_approvals?: number
           starts_at: string
           status?: string
           title: string
@@ -899,6 +939,7 @@ export type Database = {
         }
         Update: {
           chairperson_name?: string | null
+          closed_at?: string | null
           created_at?: string
           description?: string | null
           ends_at?: string
@@ -909,6 +950,7 @@ export type Database = {
           meeting_type?: string
           published_at?: string | null
           quorum_rule?: string
+          required_approvals?: number
           starts_at?: string
           status?: string
           title?: string
@@ -1064,6 +1106,45 @@ export type Database = {
             columns: ["room_id"]
             isOneToOne: false
             referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      result_publications: {
+        Row: {
+          approvals_count: number
+          id: string
+          meeting_id: string
+          published_at: string
+          result_snapshot_id: string
+        }
+        Insert: {
+          approvals_count: number
+          id?: string
+          meeting_id: string
+          published_at?: string
+          result_snapshot_id: string
+        }
+        Update: {
+          approvals_count?: number
+          id?: string
+          meeting_id?: string
+          published_at?: string
+          result_snapshot_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "result_publications_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: true
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "result_publications_result_snapshot_id_fkey"
+            columns: ["result_snapshot_id"]
+            isOneToOne: true
+            referencedRelation: "result_snapshots"
             referencedColumns: ["id"]
           },
         ]
@@ -1287,8 +1368,19 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      approve_close_voting: { Args: { p_meeting_id: string }; Returns: Json }
+      approve_result_snapshot: {
+        Args: { p_notes: string; p_result_snapshot_id: string }
+        Returns: Json
+      }
+      can_approve_as_committee: { Args: never; Returns: boolean }
+      committee_overview: { Args: never; Returns: Json }
       current_profile_id: { Args: never; Returns: string }
       has_app_role: { Args: { required_role: string }; Returns: boolean }
+      queue_result_approved_emails: {
+        Args: { p_meeting_id: string }
+        Returns: number
+      }
       resolve_vote_source_conflict: {
         Args: {
           p_chosen_source: string

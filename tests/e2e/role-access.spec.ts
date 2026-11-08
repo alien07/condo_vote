@@ -163,6 +163,17 @@ test.describe("@test:e2e @test:auth @test:role role access", () => {
     await page.goto("/vote");
     await expect(page.getByRole("heading", { name: "Vote" })).toBeVisible();
 
+    await page.goto("/committee");
+    await expect(
+      page.getByRole("heading", { exact: true, name: "Committee" }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Results Awaiting Approval" }),
+    ).toBeVisible();
+    await expect(
+      primaryNav.getByRole("link", { name: "Committee" }),
+    ).toBeVisible();
+
     await page.goto("/summary");
     await expect(
       page.getByRole("heading", { exact: true, name: "Result Summary" }),
@@ -207,7 +218,13 @@ test.describe("@test:e2e @test:auth @test:role role access", () => {
       name: "Primary navigation",
     });
     await expect(primaryNav.getByRole("link", { name: "Admin" })).toHaveCount(0);
+    await expect(
+      primaryNav.getByRole("link", { name: "Committee" }),
+    ).toHaveCount(0);
     await expect(primaryNav.getByRole("link", { name: "Vote" })).toBeVisible();
+
+    await page.goto("/committee");
+    await expect(page).toHaveURL(/\/summary$/);
     await expect(
       primaryNav.getByRole("link", { name: "Summary" }),
     ).toBeVisible();

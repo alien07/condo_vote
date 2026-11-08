@@ -65,7 +65,9 @@ in `supabase/tests/`. CI runs them after starting Supabase.
 
 Current coverage: `voting_core.test.sql` (voting core service, room lock,
 answer validation, proxy limit, proxy snapshot sync) and
-`question_choices.test.sql` (default Abstain, multiple choice limits).
+`question_choices.test.sql` (default Abstain, multiple choice limits), and
+`committee_approvals.test.sql` (approval minimum, publishing, result visibility,
+closing voting early).
 
 Scope:
 - Local Docker Supabase starts.

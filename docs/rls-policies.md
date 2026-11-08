@@ -54,8 +54,15 @@ themselves: `submit_ballot` (eligible voter, open window, room lock),
 Proxy triggers enforce the three-room limit and sync the snapshot after
 publishing. Database tests: `supabase/tests/voting_core.test.sql`.
 
+## Committee Approval Functions
+Migration 0023 adds `approve_result_snapshot`, `approve_close_voting`, and
+`committee_overview` (admin or committee only, checked by
+`can_approve_as_committee()`). Authenticated users can read
+`result_publications`; `result_snapshots` are readable by viewers only when
+published. Admin and committee can read `meeting_close_approvals`.
+Database tests: `supabase/tests/committee_approvals.test.sql`.
+
 ## Still Needed
-- Committee policies: today only admins can insert `committee_approvals`. Committee members need to approve results and close voting (D014).
 - `approval_requests` has no policies yet.
 - `system_admin` role policies for technical settings (D016).
 - Secret ballot: admins see totals only (D015).

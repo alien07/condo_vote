@@ -116,12 +116,14 @@ export async function getSummaryData(meetingId?: string) {
     1,
     Math.min(Number(condoProfile?.summary_history_limit ?? 5), 20),
   );
+  // D014: a result is visible once approvals reach the minimum, which is
+  // recorded in result_publications.
   let query = supabase
-    .from("committee_approvals")
+    .from("result_publications")
     .select(
-      "id, meeting_id, approved_at, notes, result_snapshots(id, generated_at, payload_json)",
+      "id, meeting_id, approved_at:published_at, result_snapshots(id, generated_at, payload_json)",
     )
-    .order("approved_at", { ascending: false })
+    .order("published_at", { ascending: false })
     .limit(historyLimit);
 
   if (meetingId) {
@@ -135,7 +137,7 @@ export async function getSummaryData(meetingId?: string) {
   }
 
   const summaries = data
-    .map((row) => normalizeApproval(row))
+    .map((row) => normalizeApproval({ ...row, notes: null }))
     .filter((summary): summary is ApprovedSummary => Boolean(summary));
 
   return {

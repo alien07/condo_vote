@@ -95,7 +95,8 @@ These workflows define the admin-facing MVP behavior. Ask before implementing an
 - Admin can generate a result snapshot after voting closes.
 - Admin/committee can review the result snapshot.
 - Committee approval notes should mention material manual/online conflict handling before approving the result.
-- `committee_approvals` is the source of truth for publication approval.
+- `result_publications` is the source of truth for publication; each approver's record stays in `committee_approvals`.
+- Committee members approve on the Committee page (`/committee`).
 - Admin sets the minimum number of committee approvals. A result is published when its snapshot reaches the minimum (D014).
 - After committee approval, the approved result snapshot and approval record are immutable.
 - After committee approval, generating another result snapshot for the same meeting is blocked.

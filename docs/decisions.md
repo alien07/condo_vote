@@ -111,7 +111,7 @@ may be offered. Abstain is reported as its own group and counts as voting
 "at least", because legal rules use both (more than half; at least 3/4).
 
 ### D014 - Committee Approval And Vote Closing
-Status: accepted, not implemented
+Status: implemented (migration 0023, `/committee` page)
 
 - Admin sets a minimum number of committee approvals.
 - A result is published when its snapshot reaches that minimum. Each

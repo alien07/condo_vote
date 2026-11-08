@@ -40,6 +40,22 @@ and mapped to `VoteError` in `features/voting/core/ballot-service.ts`.
 | `VOTE_PROXY_LIMIT` | The proxy already holds three rooms in this meeting (D012). | Admin adds a fourth room for the same proxy. |
 | `VOTE_ROOM_ALREADY_VOTED` | The room already voted, so its proxy cannot change (D011). | Approving or revoking a proxy after the room voted. |
 
+## Committee Approvals
+
+Raised by `approve_result_snapshot` and `approve_close_voting` in
+`supabase/migrations/0023_committee_approvals.sql` as `RESULT_<CODE>: message`
+and mapped to `ResultError` in `features/results/committee-service.ts`.
+
+| Code | Meaning | Common scenario |
+| --- | --- | --- |
+| `RESULT_FORBIDDEN` | The caller is not an admin or committee member. | Owner opens the committee page directly. |
+| `RESULT_NOT_FOUND` | The snapshot or meeting does not exist. | Stale form after a reset. |
+| `RESULT_ALREADY_PUBLISHED` | The meeting result is already published. | A third approver submits after the minimum was reached. |
+| `RESULT_OTHER_SNAPSHOT` | Another snapshot of the meeting already has approvals. | Approving an older snapshot. |
+| `RESULT_PENDING_MANUAL_IDENTITY` | Manual ballots still need voter identity. | Approving before the manual import is complete. |
+| `RESULT_ALREADY_APPROVED` | This person already approved this snapshot or closing. | Double submit. |
+| `RESULT_VOTING_NOT_OPEN` | Voting is not open, so it cannot be closed early. | Approving close on a draft or closed meeting. |
+
 ## Demo Debug Notes
 
 - For local Google OAuth on laptop, use `http://localhost:3000/login` or

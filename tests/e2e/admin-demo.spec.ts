@@ -841,7 +841,10 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
     );
     const resultRow = page.getByRole("row").filter({ hasText: meetingTitle });
     await expect(
-      resultRow.getByRole("cell", { name: "pending", exact: true }),
+      resultRow.getByRole("cell", {
+        name: "pending (0/1 approvals)",
+        exact: true,
+      }),
     ).toBeVisible();
     await resultRow.getByRole("link", { name: "Approve result" }).click();
     const approveResultDrawer = page.getByLabel("Approve result");
