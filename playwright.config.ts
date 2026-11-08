@@ -16,6 +16,8 @@ export default defineConfig({
       NODE_OPTIONS: "--max-old-space-size=8192",
     },
     url: "http://127.0.0.1:3000",
+    // First `next dev` compile on CI runners can take longer than the 60s default.
+    timeout: 180_000,
     reuseExistingServer: !process.env.CI,
     stdout: "pipe",
     stderr: "pipe",
