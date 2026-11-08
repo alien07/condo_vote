@@ -443,7 +443,10 @@ export function ManualVotesSection({
         />
       ) : null}
       {drawer?.mode === "edit" && drawer.type === "manual_vote_identity"
-        ? pendingManualVoteIdentities
+        ? // Look up all manual ballots, not only pending ones: after a
+          // successful save the ballot is no longer pending, and the drawer
+          // must stay mounted to redirect with the success feedback.
+          manualBallots
             .filter((manualBallot) => manualBallot.id === drawer.id)
             .map((manualBallot) => (
               <ManualVoteIdentityDrawer
