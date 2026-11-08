@@ -76,11 +76,18 @@ All checks must pass before merge:
 | Lint | in CI |
 | Typecheck | in CI |
 | Build | in CI |
-| E2E against local Supabase | in CI, currently failing (to fix) |
+| E2E smoke test for changed features, against local Supabase | in CI as a full run, currently failing (to fix: run only changed domains) |
 | Unit tests (Vitest) | to set up |
 | Migration check (`db reset` and generated types diff) | to set up |
 | Secret scan (gitleaks) | to set up |
 | Dependency audit | to set up |
+
+E2E in the CI gate is a smoke test of the features the PR changes, not the
+full suite:
+- Tag each e2e test with its domain, for example `@voting`, `@results`,
+  `@people` **(to set up)**.
+- CI maps changed paths to domains and runs only the matching tags, plus the
+  app shell smoke test (`tests/e2e/app-shell.spec.ts`) **(to set up)**.
 
 ## 8. Review
 - Self-review the diff first.
@@ -126,7 +133,8 @@ These apply on top of the steps above.
 
 ## Setup Backlog
 Set up in this order (highest value first):
-1. Fix CI e2e (pin `ubuntu-24.04`, start Supabase in CI) and enable branch
+1. Fix CI e2e smoke tests (pin `ubuntu-24.04`, start Supabase in CI, tag
+   tests by domain, select tags from changed paths) and enable branch
    protection on `dev`.
 2. Prettier, husky + lint-staged, and Conventional Commits check.
 3. Vitest, starting with result calculation.
