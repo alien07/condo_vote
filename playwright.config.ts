@@ -10,7 +10,11 @@ export default defineConfig({
     trace: "on-first-retry",
   },
   webServer: {
-    command: "NODE_OPTIONS=--max-old-space-size=8192 npm run dev",
+    // Cross-platform: set NODE_OPTIONS through env, not POSIX shell syntax.
+    command: "npm run dev",
+    env: {
+      NODE_OPTIONS: "--max-old-space-size=8192",
+    },
     url: "http://127.0.0.1:3000",
     reuseExistingServer: !process.env.CI,
     stdout: "pipe",

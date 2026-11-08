@@ -19,6 +19,7 @@
     "db:push:dev": "supabase db push",
     "db:push:dev:dry": "supabase db push --dry-run",
     "demo:configure:local": "node scripts/configure-local-demo.mjs",
+    "env:test": "node scripts/write-test-env.mjs",
     "admin:grant:local": "node --env-file=.env.local scripts/grant-local-admin.mjs"
   },
   "dependencies": {

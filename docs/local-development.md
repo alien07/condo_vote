@@ -121,7 +121,7 @@ DEMO_LAN_IP=192.168.1.79 npm run demo:configure:local
 Grant a local demo admin:
 
 ```bash
-npm run admin:grant:local -- prajak.ma@gmail.com "Demo Admin"
+npm run admin:grant:local -- you@example.com "Demo Admin"
 ```
 
 Local demo URLs:
