@@ -6,6 +6,7 @@ Project: condoVotes - online condominium meeting survey/voting system.
 - No guessing. If a requirement, schema, or legal rule is unclear, document the assumption or ask before implementing.
 - Protect sensitive data. Do not commit secrets, real resident data, private keys, production tokens, or personal documents.
 - Prefer free/open tooling first, but propose a better paid option when it materially reduces risk or effort.
+- Follow the standard development flow: [docs/development-workflow.md](docs/development-workflow.md).
 - Keep this file compact. Put long-lived details in `docs/` and link them here.
 - Organize code by domain and keep files small. Follow [docs/code-organization.md](docs/code-organization.md).
 
@@ -23,6 +24,7 @@ condoVotes lets condominium admins create online meetings, questions, and choice
 - SQL draft: [docs/schema-draft.sql](docs/schema-draft.sql)
 - Security and privacy: [docs/security-privacy.md](docs/security-privacy.md)
 - Testing: [docs/testing.md](docs/testing.md)
+- Development workflow: [docs/development-workflow.md](docs/development-workflow.md)
 - Roadmap: [docs/roadmap.md](docs/roadmap.md)
 - Decisions: [docs/decisions.md](docs/decisions.md)
 
