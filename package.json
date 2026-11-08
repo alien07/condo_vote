@@ -12,6 +12,7 @@
     "test:e2e": "playwright test",
     "test:e2e:smoke": "playwright test --grep-invert @full",
     "typecheck": "tsc --noEmit",
+    "test:db": "supabase test db",
     "types:supabase": "supabase gen types typescript --local > lib/supabase/database.types.ts",
     "supabase:start": "supabase start",
     "supabase:stop": "supabase stop",

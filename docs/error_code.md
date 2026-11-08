@@ -22,6 +22,24 @@ displayed to users or committed to docs.
 | --- | --- | --- | --- |
 | `AUTH_ROUTE_TO_SUMMARY` | The user is authenticated but cannot go to the requested vote page. | Meeting is closed, user is resident, user is not in `eligible_voters_snapshot`, or room/meeting target is invalid. | Redirect to `/summary` or `/summary/{meetingId}`. |
 
+## Voting Core Service
+
+Raised by the voting core service functions in
+`supabase/migrations/0020_voting_core_service.sql` as `VOTE_<CODE>: message`
+and mapped to `VoteError` in `features/voting/core/ballot-service.ts`.
+
+| Code | Meaning | Common scenario |
+| --- | --- | --- |
+| `VOTE_NOT_SIGNED_IN` | No signed-in profile. | Session expired before submit. |
+| `VOTE_NOT_ELIGIBLE` | The profile is not the room's voter in `eligible_voters_snapshot`. | Resident or a voter for another room opens a ballot URL. |
+| `VOTE_CLOSED` | The meeting is not published or is outside its voting window. | Submit after `ends_at` or before `starts_at`. |
+| `VOTE_ROOM_LOCKED` | Another voter already submitted this room's ballot (D011). | The room voter changed after the first vote. |
+| `VOTE_INVALID_ANSWERS` | Answers fail validation. | Missing required question, two choices on single choice, or a choice from another question. |
+| `VOTE_FORBIDDEN` | The action needs the admin role. | Non-admin calls a manual ballot or conflict function. |
+| `VOTE_INVALID_CONFLICT` | Conflict input does not match the meeting and room. | Stale conflict form after data changed. |
+| `VOTE_PROXY_LIMIT` | The proxy already holds three rooms in this meeting (D012). | Admin adds a fourth room for the same proxy. |
+| `VOTE_ROOM_ALREADY_VOTED` | The room already voted, so its proxy cannot change (D011). | Approving or revoking a proxy after the room voted. |
+
 ## Demo Debug Notes
 
 - For local Google OAuth on laptop, use `http://localhost:3000/login` or

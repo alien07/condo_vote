@@ -71,6 +71,9 @@ jobs:
       - name: Start Supabase
         run: npx supabase start -x studio,postgres-meta,imgproxy,vector,logflare,edge-runtime
 
+      - name: Database tests
+        run: npm run test:db
+
       - name: Write test env
         run: npm run env:test
 

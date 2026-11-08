@@ -47,10 +47,16 @@ Both functions are `security definer` so policies can check profile and role dat
 | 0015 | approved results and summary access for authenticated users |
 | 0016 | app_settings, audit_logs, documents |
 
+## Voting Core Service Functions
+Migration 0020 adds `security definer` functions that check permissions
+themselves: `submit_ballot` (eligible voter, open window, room lock),
+`submit_manual_ballot` and `resolve_vote_source_conflict` (admin only).
+Proxy triggers enforce the three-room limit and sync the snapshot after
+publishing. Database tests: `supabase/tests/voting_core.test.sql`.
+
 ## Still Needed
 - Committee policies: today only admins can insert `committee_approvals`. Committee members need to approve results and close voting (D014).
 - `approval_requests` has no policies yet.
 - `system_admin` role policies for technical settings (D016).
 - Secret ballot: admins see totals only (D015).
-- Room lock and proxy limit rules, enforced in the voting core service RPC (D010, D011, D012).
 - Provider-specific file access policies after direct upload adapters are selected.
