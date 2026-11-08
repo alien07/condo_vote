@@ -92,7 +92,7 @@ These workflows define the admin-facing MVP behavior. Ask before implementing an
 - If the same room has submitted online votes and imported manual votes, admin reviews the conflict from `Admin > Voting > Manual/Online Conflicts`.
 - Conflict review shows a read-only side-by-side diff of manual and online answers, highlights different answers, and requires choosing one whole source only. Manual is the default selected source.
 - Conflict resolution references the online ballot ID and manual ballot ID directly, and must include a remark when relevant.
-- Admin can generate a result snapshot after voting closes.
+- Admin can generate a result snapshot only after voting closes: after `ends_at`, or after committee approvals to close reach the minimum. While voting is open the meeting list shows "Voting open" instead of "Generate result" (D014).
 - Admin/committee can review the result snapshot.
 - Committee approval notes should mention material manual/online conflict handling before approving the result.
 - `result_publications` is the source of truth for publication; each approver's record stays in `committee_approvals`.

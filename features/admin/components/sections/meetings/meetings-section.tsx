@@ -31,6 +31,10 @@ type MeetingsSectionProps = Pick<AdminDashboardData, "meetings"> &
   hidden: boolean;
 };
 
+function isVotingOpen(status: string, endsAt: string) {
+  return status === "published" && Date.parse(endsAt) > Date.now();
+}
+
 export function MeetingsSection({
   approvedMeetingIds,
   lockedMeetingIds,
@@ -305,6 +309,9 @@ export function MeetingsSection({
               const hasApprovedResult = approvedMeetingIds.has(meeting.id);
               // Any committee approval locks results (no new snapshots).
               const resultLocked = lockedMeetingIds.has(meeting.id);
+              // Voting closes at ends_at or by committee approvals (D014),
+              // so results wait until then.
+              const votingOpen = isVotingOpen(meeting.status, meeting.ends_at);
               const pendingManualCount =
                 pendingManualBallotsByMeetingId.get(meeting.id)?.length ?? 0;
 
@@ -371,9 +378,15 @@ export function MeetingsSection({
                           </ConfirmSubmitButton>
                         </form>
                       ) : null}
+                      {votingOpen ? (
+                        <span className="inline-flex items-center rounded-full border border-[var(--border)] bg-[var(--background)] px-3 py-1 text-xs font-medium text-[var(--muted)]">
+                          Voting open
+                        </span>
+                      ) : null}
                       {(meeting.status === "published" ||
                         meeting.status === "closed") &&
-                      !resultLocked ? (
+                      !resultLocked &&
+                      (pendingManualCount > 0 || !votingOpen) ? (
                         pendingManualCount > 0 ? (
                           <a
                             className="inline-flex items-center rounded-md border border-amber-300 bg-amber-50 px-3 py-1 text-sm font-medium text-amber-800"

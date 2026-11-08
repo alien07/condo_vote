@@ -813,6 +813,25 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
         .getByRole("cell", { name: "resolved", exact: true }),
     ).toBeVisible({ timeout: 15_000 });
 
+    // Voting is still open, so close it on the committee page first (D014).
+    await page.goto(
+      `${activeAppOrigin}/admin/meetings?title=${encodeURIComponent(meetingTitle)}`,
+    );
+    await expect(
+      page
+        .getByRole("row")
+        .filter({ hasText: meetingTitle })
+        .getByText("Voting open"),
+    ).toBeVisible();
+    await page.goto(`${activeAppOrigin}/committee`);
+    await page
+      .locator("div[data-meeting-id]")
+      .filter({ hasText: meetingTitle })
+      .getByRole("button", { name: "Approve closing voting" })
+      .click();
+    await page.waitForURL(/\/committee\?[\s\S]*feedback=success/);
+    await expect(page.getByText("Voting closed", { exact: true })).toBeVisible();
+
     await page.goto(
       `${activeAppOrigin}/admin/meetings?title=${encodeURIComponent(meetingTitle)}`,
     );
@@ -1084,9 +1103,11 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
       await expect(
         publishedRow.getByRole("button", { name: "Archive" }),
       ).toBeVisible();
+      // Voting has not ended, so results wait (D014).
+      await expect(publishedRow.getByText("Voting open")).toBeVisible();
       await expect(
         publishedRow.getByRole("button", { name: "Generate result" }),
-      ).toBeVisible();
+      ).toHaveCount(0);
     } finally {
       await supabase
         .from("meetings")
@@ -2786,6 +2807,14 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
     expect(identityAuditError).toBeNull();
     expect(identityAuditLogs).toHaveLength(1);
 
+    // Results wait until voting closes (D014).
+    const { error: closeError } = await supabase
+      .from("meetings")
+      .update({ status: "closed" })
+      .eq("id", meeting!.id);
+
+    expect(closeError).toBeNull();
+
     await page.goto(
       `${appUrl}/admin/meetings?tab=meetings&title=${encodeURIComponent(
         meetingTitle,
@@ -2801,15 +2830,20 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
       resolvedMeetingRow.getByRole("cell", { name: "closed", exact: true }),
     ).toBeVisible();
 
-    const { data: generatedSnapshot, error: generatedSnapshotError } =
-      await supabase
-        .from("result_snapshots")
-        .select("id")
-        .eq("meeting_id", meeting!.id)
-        .single();
+    // The meeting was already closed, so wait for the snapshot itself.
+    await expect
+      .poll(
+        async () => {
+          const { data } = await supabase
+            .from("result_snapshots")
+            .select("id")
+            .eq("meeting_id", meeting!.id);
 
-    expect(generatedSnapshotError).toBeNull();
-    expect(generatedSnapshot?.id).toBeTruthy();
+          return data?.length ?? 0;
+        },
+        { timeout: 15_000 },
+      )
+      .toBe(1);
 
     const approvalBlockTitle = `Approval Block Meeting ${runId}`;
     const approvalBlockRoomNumber = `APPROVAL-BLOCK-${runId}`;
