@@ -40,7 +40,7 @@ These workflows define the admin-facing MVP behavior. Ask before implementing an
 - Admin can create, edit, delete, and reorder questions.
 - Admin can define agenda number/title, resolution type, approval threshold, legal note, and land-office registration flag per question.
 - Admin can create, edit, delete, and reorder choices.
-- Admin chooses open or secret ballot when creating the meeting (D015).
+- Admin chooses open or secret ballot when creating the meeting (D015). It cannot change after publishing. For a secret ballot, the conflict review hides online answers; admin chooses the source from ballot times and the paper record.
 - Admin chooses single or multiple choice per question (D017).
 - New questions get an "Abstain" choice by default; admin can remove it (D017).
 - Admin sets each question's pass rule: basis (voting ownership or total ownership) and percentage (D013).

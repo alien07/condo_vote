@@ -44,6 +44,7 @@ const meetingFormFields = [
   "chairperson_name",
   "quorum_rule",
   "required_approvals",
+  "ballot_secrecy",
   "starts_at",
   "ends_at",
   "description",
@@ -85,6 +86,10 @@ function validateMeetingForm(
 
   if (!Number.isInteger(requiredApprovals) || requiredApprovals < 1 || requiredApprovals > 20) {
     fieldErrors.required_approvals = "Committee approvals must be a whole number from 1 to 20.";
+  }
+
+  if (values.ballot_secrecy && !["open", "secret"].includes(values.ballot_secrecy)) {
+    fieldErrors.ballot_secrecy = "Choose open or secret ballot.";
   }
 
   const startsAt = values.starts_at ? new Date(values.starts_at) : null;
@@ -142,6 +147,8 @@ function meetingPayload(values: Record<string, string>) {
     chairperson_name: optionalText(values.chairperson_name),
     quorum_rule: values.quorum_rule.trim(),
     required_approvals: Number(values.required_approvals || 1),
+    // The field is disabled after publishing (D015), so it is only sent while draft.
+    ...(values.ballot_secrecy ? { ballot_secrecy: values.ballot_secrecy } : {}),
   };
 }
 

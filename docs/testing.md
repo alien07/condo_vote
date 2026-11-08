@@ -64,10 +64,11 @@ Tool: pgTAP through `npm run test:db` (`supabase test db`). Test files live
 in `supabase/tests/`. CI runs them after starting Supabase.
 
 Current coverage: `voting_core.test.sql` (voting core service, room lock,
-answer validation, proxy limit, proxy snapshot sync) and
-`question_choices.test.sql` (default Abstain, multiple choice limits), and
+answer validation, proxy limit, proxy snapshot sync),
+`question_choices.test.sql` (default Abstain, multiple choice limits),
 `committee_approvals.test.sql` (approval minimum, publishing, result visibility,
-closing voting early).
+closing voting early), and `secret_ballot.test.sql` (secret answers hidden
+from admins, online totals, secrecy lock).
 
 Scope:
 - Local Docker Supabase starts.

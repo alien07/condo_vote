@@ -354,4 +354,42 @@ test.describe("@test:e2e @test:voting owner/proxy vote flow", () => {
       [fixture.approveChoiceId, fixture.rejectChoiceId].sort(),
     );
   });
+
+  test("owner sees the secret ballot notice and can vote", async ({ page }) => {
+    test.setTimeout(120_000);
+
+    const supabase = createClient<Database>(supabaseUrl!, serviceKey!, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+    });
+    const profile = await createProfile(supabase, "owner");
+    const fixture = await createVotingFixture(supabase, "owner", profile.profileId);
+
+    // Secrecy is fixed after publishing (D015), so switch it while draft.
+    for (const update of [
+      { status: "draft" },
+      { status: "published", ballot_secrecy: "secret" },
+    ]) {
+      const { error } = await supabase
+        .from("meetings")
+        .update(update)
+        .eq("id", fixture.meetingId);
+
+      expect(error).toBeNull();
+    }
+
+    await signInByGeneratedLink(page, supabase, profile.email);
+    await page.goto(`/vote/${fixture.meetingId}/${fixture.roomId}`);
+    await expect(
+      page.getByText("Secret ballot: admins see totals only, not your answers."),
+    ).toBeVisible();
+    await page
+      .locator(`input[name="choice:${fixture.questionId}"]`)
+      .and(page.locator(`input[value="${fixture.approveChoiceId}"]`))
+      .check();
+    await page.getByRole("button", { name: "Submit ballot" }).click();
+    await expect(page.getByText("Version v1")).toBeVisible();
+  });
 });

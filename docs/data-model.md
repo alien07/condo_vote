@@ -237,7 +237,7 @@ Decided on 2026-11-08; see [decisions.md](decisions.md). Not migrated yet.
 | ✅ Proxy limit of three rooms per proxy per meeting (0020) | D012 |
 | ✅ Per-question pass rule: `pass_basis`, `pass_operator`, `pass_percent`; `required_threshold` is now a preset or `custom` (0022) | D013 |
 | ✅ `meetings.required_approvals`, `closed_at`; several approvals per snapshot; `result_publications`; `meeting_close_approvals` (0023) | D014 |
-| Meeting-level ballot secrecy setting and matching RLS | D015 |
+| ✅ `meetings.ballot_secrecy` (`open`/`secret`, fixed after publishing); admin reads online answers only for open ballots; `meeting_online_tally()` (0024) | D015 |
 | `system_admin` role; PDPA consent on profiles; retention settings | D016 |
 | ✅ Multiple answers per question in `ballot_answers` and `manual_ballot_answers`; `is_abstain` flag on choices; `max_choices` on questions (0020, 0021) | D017 |
 
