@@ -800,6 +800,9 @@ export type Database = {
           legal_note: string | null
           max_choices: number | null
           meeting_id: string
+          pass_basis: string
+          pass_operator: string
+          pass_percent: number
           question_text: string
           question_type: string
           required: boolean
@@ -816,6 +819,9 @@ export type Database = {
           legal_note?: string | null
           max_choices?: number | null
           meeting_id: string
+          pass_basis?: string
+          pass_operator?: string
+          pass_percent?: number
           question_text: string
           question_type?: string
           required?: boolean
@@ -832,6 +838,9 @@ export type Database = {
           legal_note?: string | null
           max_choices?: number | null
           meeting_id?: string
+          pass_basis?: string
+          pass_operator?: string
+          pass_percent?: number
           question_text?: string
           question_type?: string
           required?: boolean

@@ -13,6 +13,7 @@ This folder contains the working specification for condoVotes.
 - [Email invite flow](email_invite_flow.md)
 - [Error codes](error_code.md)
 - [Data model](data-model.md)
+- [Resolution rules](resolution-rules.md)
 - [Local development](local-development.md)
 - [Demo manual steps](demo-manual-steps.md)
 - [SQL schema draft](schema-draft.sql)

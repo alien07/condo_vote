@@ -223,7 +223,7 @@ Decided on 2026-11-08; see [decisions.md](decisions.md). Not migrated yet.
 | ✅ Ballot writes through one transactional RPC for online, manual, and conflict resolution (0020) | D010 |
 | ✅ Room voting-right lock: approved proxy first, otherwise first voter (0020) | D011 |
 | ✅ Proxy limit of three rooms per proxy per meeting (0020) | D012 |
-| Per-question pass rule: basis and percentage instead of a fixed `required_threshold` enum | D013 |
+| ✅ Per-question pass rule: `pass_basis`, `pass_operator`, `pass_percent`; `required_threshold` is now a preset or `custom` (0022) | D013 |
 | Minimum committee approvals setting; several approvals per snapshot; close-voting approvals | D014 |
 | Meeting-level ballot secrecy setting and matching RLS | D015 |
 | `system_admin` role; PDPA consent on profiles; retention settings | D016 |

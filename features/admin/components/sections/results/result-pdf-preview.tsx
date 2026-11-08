@@ -1,4 +1,5 @@
 import { FileText } from "lucide-react";
+import { QuestionOutcomeLine } from "@/features/results/question-outcome";
 import { formatDateTime, formatPercent, getResultPayload } from "@/features/admin/components/sections/shared/format";
 import type {
   AdminDashboardData,
@@ -159,6 +160,19 @@ id="mock-pdf-summary"
               )}
             </td>
           </tr>
+          {pdfPreviewPayload.totals?.quorum?.label ? (
+            <tr>
+              <th className="py-2 pr-3 font-medium">Quorum</th>
+              <td className="py-2">
+                {pdfPreviewPayload.totals.quorum.label}:{" "}
+                {pdfPreviewPayload.totals.quorum.met === null
+                  ? "not evaluated"
+                  : pdfPreviewPayload.totals.quorum.met
+                    ? "met"
+                    : "not met"}
+              </td>
+            </tr>
+          ) : null}
         </tbody>
       </table>
     </div>
@@ -178,15 +192,11 @@ id="mock-pdf-summary"
           </div>
           <div className="text-[var(--muted)]">
             Resolution: {question.resolution_type ?? "-"}
-            {question.required_threshold
-              ? `, threshold ${formatPercent(
-                  question.required_threshold,
-                )}`
-              : ""}
             {question.requires_land_office_registration
               ? ", land office registration required"
               : ""}
           </div>
+          <QuestionOutcomeLine question={question} />
           <table className="mt-2 w-full border-collapse text-left">
             <thead className="border-b border-[var(--border)] text-[var(--muted)]">
               <tr>

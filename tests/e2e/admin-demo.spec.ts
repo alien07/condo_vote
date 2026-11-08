@@ -869,7 +869,12 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
     ).toBeVisible();
     await expect(pdfPreview.getByText(meetingTitle)).toBeVisible();
     await expect(pdfPreview.getByText("Agenda Results")).toBeVisible();
-    await expect(pdfPreview.getByText(updatedChoiceText)).toBeVisible();
+    await expect(pdfPreview.getByText(updatedChoiceText).first()).toBeVisible();
+    // D013: the only voting room chose this option, so it decides the question.
+    await expect(
+      pdfPreview.getByText("Pass rule: More than 50% of ownership of rooms that voted."),
+    ).toBeVisible();
+    await expect(pdfPreview.getByText(`Decided: ${updatedChoiceText}`)).toBeVisible();
     await expect(pdfPreview.getByText("Use online demo vote")).toBeVisible();
 
     await page.goto(

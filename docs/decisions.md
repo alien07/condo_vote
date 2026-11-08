@@ -101,13 +101,14 @@ One proxy can hold at most three rooms per meeting (Condominium Act
 section 47). Enforce it when creating and approving proxy authorizations.
 
 ### D013 - Configurable Pass Thresholds
-Status: accepted, not implemented
+Status: implemented (migration 0022, [resolution-rules.md](resolution-rules.md))
 
 Admin sets the pass rule per question: a basis and a percentage. Bases:
 ownership of rooms that voted, or total project ownership. Example: 50% of
 voting ownership, or 50% of total ownership. Presets for common legal rules
 may be offered. Abstain is reported as its own group and counts as voting
-(it is in the "rooms that voted" denominator).
+(it is in the "rooms that voted" denominator). Comparison is "more than" or
+"at least", because legal rules use both (more than half; at least 3/4).
 
 ### D014 - Committee Approval And Vote Closing
 Status: accepted, not implemented
