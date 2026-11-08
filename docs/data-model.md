@@ -227,7 +227,7 @@ Decided on 2026-11-08; see [decisions.md](decisions.md). Not migrated yet.
 | Minimum committee approvals setting; several approvals per snapshot; close-voting approvals | D014 |
 | Meeting-level ballot secrecy setting and matching RLS | D015 |
 | `system_admin` role; PDPA consent on profiles; retention settings | D016 |
-| Multiple answers per question in `ballot_answers` and `manual_ballot_answers`; `is_abstain` flag on choices | D017 |
+| ✅ Multiple answers per question in `ballot_answers` and `manual_ballot_answers`; `is_abstain` flag on choices; `max_choices` on questions (0020, 0021) | D017 |
 
 ## Open Questions
 - Whether co-owner consent needs a separate table.

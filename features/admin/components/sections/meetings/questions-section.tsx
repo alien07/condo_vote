@@ -150,7 +150,14 @@ export function QuestionsSection({
                     className="inline-flex items-center gap-2 rounded-md border border-[var(--border)] px-3 py-1 text-sm"
                     key={choice.id}
                   >
-                    <span>{choice.choice_text}</span>
+                    <span>
+                      {choice.choice_text}
+                      {choice.is_abstain ? (
+                        <span className="ml-1 text-xs text-[var(--muted)]">
+                          (default, removable)
+                        </span>
+                      ) : null}
+                    </span>
                     <input name="id" type="hidden" value={choice.id} />
                     <ConfirmSubmitButton
                       className="font-medium text-red-700"

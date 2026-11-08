@@ -1,4 +1,8 @@
 import Link from "next/link";
+import {
+  BallotChoiceInputs,
+  selectedChoicesByQuestion,
+} from "@/features/voting/components/ballot-choice-inputs";
 import { notFound } from "next/navigation";
 import { Vote } from "lucide-react";
 import { RequiredMark, RequiredNote } from "@/features/admin/components/field-label";
@@ -59,12 +63,7 @@ export default async function VoteDetailPage({ params }: VoteDetailPageProps) {
 
   const meeting = eligible.meetings;
   const room = eligible.rooms;
-  const answerByQuestion = new Map(
-    ballot?.ballot_answers.map((answer) => [
-      answer.question_id,
-      answer.choice_id,
-    ]) ?? [],
-  );
+  const answerByQuestion = selectedChoicesByQuestion(ballot?.ballot_answers);
   const votingStatus = getVotingWindowStatus(meeting);
   const choiceTextById = new Map(
     questions.flatMap((question) =>
@@ -154,30 +153,14 @@ export default async function VoteDetailPage({ params }: VoteDetailPageProps) {
                       {question.agenda_title}
                     </p>
                   ) : null}
-                  <div className="mt-3 grid gap-2">
-                    {question.meeting_choices
-                      .sort(
-                        (left, right) => left.display_order - right.display_order,
-                      )
-                      .map((choice) => (
-                        <label
-                          className="flex items-center gap-2 rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-                          key={choice.id}
-                        >
-                          <input
-                            defaultChecked={
-                              answerByQuestion.get(question.id) === choice.id
-                            }
-                            disabled={!votingStatus.canSubmit}
-                            name={`choice:${question.id}`}
-                            required={question.required}
-                            type="radio"
-                            value={choice.id}
-                          />
-                          {choice.choice_text}
-                        </label>
-                      ))}
-                  </div>
+                  <BallotChoiceInputs
+                    choices={question.meeting_choices}
+                    disabled={!votingStatus.canSubmit}
+                    question={question}
+                    selectedChoiceIds={
+                      answerByQuestion.get(question.id) ?? new Set<string>()
+                    }
+                  />
                 </fieldset>
               ))}
               <section className="rounded-md border border-[var(--border)] bg-[var(--background)] p-4">

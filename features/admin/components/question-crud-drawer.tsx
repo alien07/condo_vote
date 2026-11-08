@@ -27,6 +27,7 @@ type QuestionRecord = {
   meeting_id: string;
   question_text: string;
   question_type: string;
+  max_choices?: number | null;
   required: boolean;
   required_threshold: string;
   requires_land_office_registration: boolean;
@@ -264,6 +265,23 @@ export function QuestionCrudDrawer({
             <option value="multiple_choice">Multiple choice</option>
           </select>
           <FieldError fieldName="question_type" state={state} />
+        </label>
+        <label className="grid gap-1 text-sm font-medium">
+          <FieldLabel>Max choices (multiple choice only)</FieldLabel>
+          <input
+            {...fieldProps("max_choices", state)}
+            className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+            defaultValue={stateValue(
+              state,
+              "max_choices",
+              question?.max_choices ?? "",
+            )}
+            min={1}
+            name="max_choices"
+            placeholder="No limit"
+            type="number"
+          />
+          <FieldError fieldName="max_choices" state={state} />
         </label>
         <label className="grid gap-1 text-sm font-medium">
           <FieldLabel required>Resolution type</FieldLabel>

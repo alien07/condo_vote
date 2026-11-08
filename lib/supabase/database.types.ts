@@ -761,6 +761,7 @@ export type Database = {
           created_at: string
           display_order: number
           id: string
+          is_abstain: boolean
           question_id: string
         }
         Insert: {
@@ -768,6 +769,7 @@ export type Database = {
           created_at?: string
           display_order?: number
           id?: string
+          is_abstain?: boolean
           question_id: string
         }
         Update: {
@@ -775,6 +777,7 @@ export type Database = {
           created_at?: string
           display_order?: number
           id?: string
+          is_abstain?: boolean
           question_id?: string
         }
         Relationships: [
@@ -795,6 +798,7 @@ export type Database = {
           display_order: number
           id: string
           legal_note: string | null
+          max_choices: number | null
           meeting_id: string
           question_text: string
           question_type: string
@@ -810,6 +814,7 @@ export type Database = {
           display_order?: number
           id?: string
           legal_note?: string | null
+          max_choices?: number | null
           meeting_id: string
           question_text: string
           question_type?: string
@@ -825,6 +830,7 @@ export type Database = {
           display_order?: number
           id?: string
           legal_note?: string | null
+          max_choices?: number | null
           meeting_id?: string
           question_text?: string
           question_type?: string
