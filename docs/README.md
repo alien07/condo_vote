@@ -18,6 +18,7 @@ This folder contains the working specification for condoVotes.
 - [Security and privacy](security-privacy.md)
 - [RLS policies](rls-policies.md)
 - [Testing](testing.md)
+- [Development workflow](development-workflow.md)
 - [Roadmap](roadmap.md)
 - [Decisions](decisions.md)
 
