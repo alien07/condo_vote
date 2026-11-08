@@ -73,7 +73,11 @@ The summary should include:
 - Manual/online vote source conflict count and conflict remarks when applicable.
 - Notes that results are based on the latest valid ballot per room.
 
+## Provider
+Google SMTP (P002). Google applies a daily send limit, so every send goes
+through the queue above.
+
 ## Open Questions
 - Should result emails include the PDF as an attachment or a signed download link?
-- What is the daily email limit of the selected provider?
+- What is the exact daily send limit of the Google account that will send?
 - What field should define recipient active date/time if several exist?

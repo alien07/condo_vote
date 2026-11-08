@@ -8,7 +8,7 @@
 - Auth: Supabase Auth with Google login.
 - Authorization: Supabase Row Level Security.
 - Files: provider-agnostic private document registry with local-drive or Google Drive references for V1.
-- Email: Resend, Brevo, or existing Google Workspace SMTP depending on cost and deliverability.
+- Email: Google SMTP with queued delivery (P002).
 - Video: external URL such as YouTube unlisted, Google Drive, or Vimeo.
 
 ## High-Level Flow
@@ -73,7 +73,7 @@ Invitation, resend, login redirect, and summary routing details are defined in
 - Preview: branch deploy with non-production Supabase project.
 - Production: separate Supabase project and separately secured document storage.
 
-## Open Questions
-- Next.js App Router vs React SPA.
-- Supabase local-first development or hosted dev project first.
-- Exact email provider.
+## Resolved Questions
+- Framework: Next.js App Router (P001).
+- Development database: local-first with the Supabase CLI and Docker; a hosted dev project for shared testing.
+- Email provider: Google SMTP (P002).

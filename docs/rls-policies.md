@@ -31,8 +31,26 @@ Both functions are `security definer` so policies can check profile and role dat
 - Admins can read, insert, and update private document references.
 - Document storage credentials are intentionally outside PostgreSQL.
 
+## Implemented Coverage
+| Migration | Tables |
+| --- | --- |
+| 0003 | rooms, owners, room_owners |
+| 0004 | meetings |
+| 0005 | proxy_authorizations |
+| 0006 | meeting_questions, meeting_choices |
+| 0007 | eligible_voters_snapshot |
+| 0008 | result_snapshots, committee_approvals (admin) |
+| 0009 | email_logs |
+| 0010 | condo_profiles, committee_members |
+| 0011, 0012 | manual_ballots, manual_ballot_answers, vote_source_resolutions |
+| 0014 | voter policies: ballots, ballot_answers, ballot_versions, eligible meetings and rooms |
+| 0015 | approved results and summary access for authenticated users |
+| 0016 | app_settings, audit_logs, documents |
+
 ## Still Needed
-- Admin policies for questions, choices, approvals, and result snapshots.
-- Owner/proxy policies for eligible meetings and ballots.
-- Committee policies for result approval.
+- Committee policies: today only admins can insert `committee_approvals`. Committee members need to approve results and close voting (D014).
+- `approval_requests` has no policies yet.
+- `system_admin` role policies for technical settings (D016).
+- Secret ballot: admins see totals only (D015).
+- Room lock and proxy limit rules, enforced in the voting core service RPC (D010, D011, D012).
 - Provider-specific file access policies after direct upload adapters are selected.

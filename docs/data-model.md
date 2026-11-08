@@ -6,6 +6,7 @@ This is the initial relational model. Names may change during implementation, bu
 
 | Role | Purpose | Vote Permission |
 | --- | --- | --- |
+| System admin | Manages technical, service, and maintenance settings, including PDPA notice and retention (D016). Planned role. | Same as normal user unless separately eligible. |
 | Admin | Manages master data, meetings, questions, choices, approvals, and result publication. | Can manage votes but should not vote unless also eligible as owner/proxy. |
 | Committee | Reviews calculated results and approves publication. | Same as normal user unless separately eligible. |
 | Owner | Verified room owner. | Can vote for owned room. |
@@ -183,7 +184,7 @@ Notes: Payload should include count, percentage against total project ownership,
 ### committee_approvals
 Purpose: Stores approval that allows result publication.
 Key fields: meeting, result snapshot, approver, approved timestamp, notes.
-Notes: This is the source of truth for approved results. Results stay hidden until a related approval record exists. A meeting can have only one approved result, and approval records are immutable.
+Notes: This is the source of truth for approved results. Results stay hidden until a related approval record exists. A meeting can have only one approved result, and approval records are immutable. Planned (D014): one snapshot collects one approval per committee member, and the result is published when approvals reach the configured minimum.
 
 ### documents
 Purpose: Stores provider-agnostic private document references.
@@ -213,6 +214,20 @@ Notes: Used for invitations, reminders, and result notifications.
 - `committee_approvals` is the source of truth for result publication approval.
 - Approved result snapshots and committee approval records are immutable.
 - Supporting documents are private by default.
+
+## Planned Schema Changes (V1)
+Decided on 2026-11-08; see [decisions.md](decisions.md). Not migrated yet.
+
+| Change | Decision |
+| --- | --- |
+| Ballot writes through one transactional RPC for online, manual, and conflict resolution | D010 |
+| Room voting-right lock: approved proxy first, otherwise first voter | D011 |
+| Proxy limit of three rooms per proxy per meeting | D012 |
+| Per-question pass rule: basis and percentage instead of a fixed `required_threshold` enum | D013 |
+| Minimum committee approvals setting; several approvals per snapshot; close-voting approvals | D014 |
+| Meeting-level ballot secrecy setting and matching RLS | D015 |
+| `system_admin` role; PDPA consent on profiles; retention settings | D016 |
+| Multiple answers per question in `ballot_answers` and `manual_ballot_answers`; `is_abstain` flag on choices | D017 |
 
 ## Open Questions
 - Whether co-owner consent needs a separate table.

@@ -27,6 +27,8 @@ These workflows define the admin-facing MVP behavior. Ask before implementing an
 
 ## Proxy Approval
 - Proxy approval is scoped to one meeting and one room.
+- One proxy can hold at most three rooms per meeting (D012).
+- An approved proxy is the only voter for that room in that meeting (D011).
 - Admin can approve, reject, or revoke proxy authorization.
 - Proxy authorization should reference the owner, proxy profile, room, meeting, validity window, and supporting document if provided.
 
@@ -38,6 +40,10 @@ These workflows define the admin-facing MVP behavior. Ask before implementing an
 - Admin can create, edit, delete, and reorder questions.
 - Admin can define agenda number/title, resolution type, approval threshold, legal note, and land-office registration flag per question.
 - Admin can create, edit, delete, and reorder choices.
+- Admin chooses open or secret ballot when creating the meeting (D015).
+- Admin chooses single or multiple choice per question (D017).
+- New questions get an "Abstain" choice by default; admin can remove it (D017).
+- Admin sets each question's pass rule: basis (voting ownership or total ownership) and percentage (D013).
 - Admin can preview a meeting before publication.
 - Admin can publish a meeting when the setup is complete.
 
@@ -45,6 +51,11 @@ These workflows define the admin-facing MVP behavior. Ask before implementing an
 - Publishing should freeze or refresh the meeting's `eligible_voters_snapshot`.
 - After publication, invitation emails can be queued for eligible voters.
 - Editing published meetings should be restricted. If allowed, it must be audited.
+
+## Closing Voting
+- Voting closes automatically at `ends_at`.
+- Committee members can approve closing early. Voting closes when these approvals reach the configured minimum (D014).
+- Every close approval is audited.
 
 ## Private Document Registry
 - Admin can choose `local_drive` or `google_drive` from `Admin > Setup`.
@@ -85,12 +96,15 @@ These workflows define the admin-facing MVP behavior. Ask before implementing an
 - Admin/committee can review the result snapshot.
 - Committee approval notes should mention material manual/online conflict handling before approving the result.
 - `committee_approvals` is the source of truth for publication approval.
+- Admin sets the minimum number of committee approvals. A result is published when its snapshot reaches the minimum (D014).
 - After committee approval, the approved result snapshot and approval record are immutable.
 - After committee approval, generating another result snapshot for the same meeting is blocked.
 - Approved results can be viewed, exported to PDF, and sent by email.
 
+## Resolved Questions (2026-11-08)
+- Result approval: multiple committee members, minimum set by admin (D014).
+- Closing before `ends_at`: by committee approvals reaching the minimum, not by a single admin (D014).
+
 ## Open Questions
 - Should published questions/choices be locked completely after the first vote?
-- Should result approval require one committee member or multiple committee members?
-- Should admin be allowed to manually close a vote before `ends_at`?
 - Should room/owner deletion be blocked entirely once linked to voting history?

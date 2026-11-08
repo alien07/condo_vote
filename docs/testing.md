@@ -146,13 +146,30 @@ Run unit tests when any of these paths change:
 - `lib/**`
 - `features/**`
 
+## Running E2E Locally
+
+```bash
+npm run supabase:start
+npm run env:test   # writes .env.local from `supabase status`
+npm run test:e2e
+```
+
+CI (`.github/workflows/ci.yml`) starts local Supabase on `ubuntu-24.04` and
+runs a smoke test of the changed domains; `scripts/select-e2e-specs.mjs`
+picks the spec files. Changes to shared code run the full suite.
+
+Quarantined: `admin-demo.spec.ts` "demo admin can sign in and manage master
+data" (`test.fixme`), tracked in issue #4.
+
 ## Implementation Order
 
-1. Expand Playwright coverage for closed-meeting summary redirects.
-2. Add Vitest when pure domain logic is split out of server actions.
-3. Add database smoke checks for RLS policy coverage.
-4. Add GitHub Actions once local scripts are stable.
+1. Split `admin-demo.spec.ts` by flow and remove the quarantine (issue #4).
+2. Add Vitest, starting with result calculation and pass rules (D013).
+3. Expand Playwright coverage for closed-meeting summary redirects.
+4. Add database smoke checks for RLS policy coverage.
+
+## Resolved Questions
+- E2E runs against local Supabase in Docker, both locally and in CI.
 
 ## Open Questions
-- Should E2E tests run against local Supabase Docker by default or a mocked auth state first?
 - Should migration smoke tests be required before every push or only before pull requests?
