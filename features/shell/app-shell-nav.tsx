@@ -1,12 +1,13 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { BarChart3, CheckSquare, Gavel, Settings } from "lucide-react";
+import { BarChart3, CheckSquare, Gavel, Settings, Wrench } from "lucide-react";
 import { TrackedLink } from "@/features/debug/tracked-link";
 
 type AppShellNavProps = {
   isAdmin: boolean;
   isCommittee?: boolean;
+  isSystemAdmin?: boolean;
 };
 
 const navItems = [
@@ -22,6 +23,13 @@ const navItems = [
     icon: Gavel,
     adminOnly: false,
     committeeOnly: true,
+  },
+  {
+    href: "/system",
+    label: "System",
+    icon: Wrench,
+    adminOnly: false,
+    systemAdminOnly: true,
   },
   {
     href: "/vote",
@@ -89,7 +97,11 @@ function getBackHref(pathname: string) {
   return null;
 }
 
-export function AppShellNav({ isAdmin, isCommittee = false }: AppShellNavProps) {
+export function AppShellNav({
+  isAdmin,
+  isCommittee = false,
+  isSystemAdmin = false,
+}: AppShellNavProps) {
   const pathname = usePathname();
   const breadcrumbs = getBreadcrumbs(pathname);
   const backHref = getBackHref(pathname);
@@ -104,6 +116,7 @@ export function AppShellNav({ isAdmin, isCommittee = false }: AppShellNavProps) 
           {navItems
             .filter((item) => !item.adminOnly || isAdmin)
             .filter((item) => !("committeeOnly" in item) || isAdmin || isCommittee)
+            .filter((item) => !("systemAdminOnly" in item) || isSystemAdmin)
             .map((item) => {
               const Icon = item.icon;
               const active =

@@ -143,10 +143,11 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
     expect(profileError).toBeNull();
 
     const { error: roleError } = await supabase.from("app_roles").upsert(
-      {
-        profile_id: profile!.id,
-        role: "admin",
-      },
+      [
+        { profile_id: profile!.id, role: "admin" },
+        // Storage settings need the system admin role (D016).
+        { profile_id: profile!.id, role: "system_admin" },
+      ],
       { onConflict: "profile_id,role" },
     );
 
@@ -951,7 +952,10 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
 
     expect(profileError).toBeNull();
     const { error: roleError } = await supabase.from("app_roles").upsert(
-      { profile_id: profile!.id, role: "admin" },
+      [
+        { profile_id: profile!.id, role: "admin" },
+        { profile_id: profile!.id, role: "system_admin" },
+      ],
       { onConflict: "profile_id,role" },
     );
 
@@ -1132,7 +1136,10 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
 
     expect(profileError).toBeNull();
     const { error: roleError } = await supabase.from("app_roles").upsert(
-      { profile_id: profile!.id, role: "admin" },
+      [
+        { profile_id: profile!.id, role: "admin" },
+        { profile_id: profile!.id, role: "system_admin" },
+      ],
       { onConflict: "profile_id,role" },
     );
 
@@ -1293,7 +1300,10 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
 
     expect(profileError).toBeNull();
     const { error: roleError } = await supabase.from("app_roles").upsert(
-      { profile_id: profile!.id, role: "admin" },
+      [
+        { profile_id: profile!.id, role: "admin" },
+        { profile_id: profile!.id, role: "system_admin" },
+      ],
       { onConflict: "profile_id,role" },
     );
 
@@ -1451,7 +1461,10 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
 
     expect(profileError).toBeNull();
     const { error: roleError } = await supabase.from("app_roles").upsert(
-      { profile_id: profile!.id, role: "admin" },
+      [
+        { profile_id: profile!.id, role: "admin" },
+        { profile_id: profile!.id, role: "system_admin" },
+      ],
       { onConflict: "profile_id,role" },
     );
 
@@ -1589,7 +1602,10 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
 
     expect(profileError).toBeNull();
     const { error: roleError } = await supabase.from("app_roles").upsert(
-      { profile_id: profile!.id, role: "admin" },
+      [
+        { profile_id: profile!.id, role: "admin" },
+        { profile_id: profile!.id, role: "system_admin" },
+      ],
       { onConflict: "profile_id,role" },
     );
 
@@ -1765,7 +1781,10 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
 
     expect(profileError).toBeNull();
     const { error: roleError } = await supabase.from("app_roles").upsert(
-      { profile_id: profile!.id, role: "admin" },
+      [
+        { profile_id: profile!.id, role: "admin" },
+        { profile_id: profile!.id, role: "system_admin" },
+      ],
       { onConflict: "profile_id,role" },
     );
 
@@ -1928,7 +1947,10 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
 
     expect(profileError).toBeNull();
     const { error: roleError } = await supabase.from("app_roles").upsert(
-      { profile_id: profile!.id, role: "admin" },
+      [
+        { profile_id: profile!.id, role: "admin" },
+        { profile_id: profile!.id, role: "system_admin" },
+      ],
       { onConflict: "profile_id,role" },
     );
 
@@ -2151,7 +2173,10 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
 
     expect(profileError).toBeNull();
     const { error: roleError } = await supabase.from("app_roles").upsert(
-      { profile_id: profile!.id, role: "admin" },
+      [
+        { profile_id: profile!.id, role: "admin" },
+        { profile_id: profile!.id, role: "system_admin" },
+      ],
       { onConflict: "profile_id,role" },
     );
 
@@ -2439,10 +2464,11 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
 
     expect(profileError).toBeNull();
     const { error: roleError } = await supabase.from("app_roles").upsert(
-      {
-        profile_id: profile!.id,
-        role: "admin",
-      },
+      [
+        { profile_id: profile!.id, role: "admin" },
+        // Storage settings need the system admin role (D016).
+        { profile_id: profile!.id, role: "system_admin" },
+      ],
       { onConflict: "profile_id,role" },
     );
 
@@ -2584,10 +2610,11 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
     expect(profileError).toBeNull();
 
     const { error: roleError } = await supabase.from("app_roles").upsert(
-      {
-        profile_id: profile!.id,
-        role: "admin",
-      },
+      [
+        { profile_id: profile!.id, role: "admin" },
+        // Storage settings need the system admin role (D016).
+        { profile_id: profile!.id, role: "system_admin" },
+      ],
       { onConflict: "profile_id,role" },
     );
 
@@ -2934,10 +2961,11 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
     expect(profileError).toBeNull();
 
     const { error: roleError } = await supabase.from("app_roles").upsert(
-      {
-        profile_id: profile!.id,
-        role: "admin",
-      },
+      [
+        { profile_id: profile!.id, role: "admin" },
+        // Storage settings need the system admin role (D016).
+        { profile_id: profile!.id, role: "system_admin" },
+      ],
       { onConflict: "profile_id,role" },
     );
 
@@ -3127,10 +3155,11 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
     expect(profileError).toBeNull();
 
     const { error: roleError } = await supabase.from("app_roles").upsert(
-      {
-        profile_id: profile!.id,
-        role: "admin",
-      },
+      [
+        { profile_id: profile!.id, role: "admin" },
+        // Storage settings need the system admin role (D016).
+        { profile_id: profile!.id, role: "system_admin" },
+      ],
       { onConflict: "profile_id,role" },
     );
 
@@ -3260,10 +3289,11 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
     expect(profileError).toBeNull();
 
     const { error: roleError } = await supabase.from("app_roles").upsert(
-      {
-        profile_id: profile!.id,
-        role: "admin",
-      },
+      [
+        { profile_id: profile!.id, role: "admin" },
+        // Storage settings need the system admin role (D016).
+        { profile_id: profile!.id, role: "system_admin" },
+      ],
       { onConflict: "profile_id,role" },
     );
 
@@ -3385,10 +3415,11 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
     expect(profileError).toBeNull();
 
     const { error: roleError } = await supabase.from("app_roles").upsert(
-      {
-        profile_id: profile!.id,
-        role: "admin",
-      },
+      [
+        { profile_id: profile!.id, role: "admin" },
+        // Storage settings need the system admin role (D016).
+        { profile_id: profile!.id, role: "system_admin" },
+      ],
       { onConflict: "profile_id,role" },
     );
 

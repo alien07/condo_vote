@@ -15,6 +15,7 @@ import {
   revalidateAdminPaths,
 } from "@/features/admin/action-modules/shared";
 import { writeAuditLog } from "@/lib/audit/business-audit";
+import { isSystemAdmin } from "@/lib/auth/permissions";
 
 type AdminSupabaseClient = Awaited<ReturnType<typeof createClient>>;
 
@@ -1249,6 +1250,14 @@ export async function updateProfileAccessWithState(
     }
 
     const role = optionalText(formData.get("role"));
+
+    if (role === "system_admin" && !(await isSystemAdmin())) {
+      return {
+        error: "Only a system admin can grant the System admin role.",
+        values,
+      };
+    }
+
     const supabase = await createClient();
     const { error } = await supabase
       .from("profiles")

@@ -5,11 +5,13 @@ import type {
 } from "@/features/admin/components/sections/types";
 
 type DocumentStorageSectionProps = Pick<AdminDashboardData, "appSettings"> & {
+  canEdit: boolean;
   hidden: boolean;
 };
 
 export function DocumentStorageSection({
   appSettings,
+  canEdit,
   hidden,
 }: DocumentStorageSectionProps) {
 
@@ -42,7 +44,29 @@ export function DocumentStorageSection({
         metadata in Documents.
       </p>
 
-      <DocumentStorageSettingsForm appSettings={appSettings} />
+      {canEdit ? (
+        <DocumentStorageSettingsForm appSettings={appSettings} />
+      ) : (
+        <dl className="grid gap-3 text-sm md:grid-cols-2">
+          <div>
+            <dt className="text-[var(--muted)]">Document storage provider</dt>
+            <dd className="font-medium">
+              {appSettings?.document_storage_provider === "google_drive"
+                ? "Google Drive"
+                : "Local drive"}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-[var(--muted)]">Root path or private folder link</dt>
+            <dd className="font-medium break-all">
+              {appSettings?.document_storage_root ?? "-"}
+            </dd>
+          </div>
+          <p className="text-[var(--muted)] md:col-span-2">
+            Only a system admin can change technical settings.
+          </p>
+        </dl>
+      )}
     </section>
   );
 }

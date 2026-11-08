@@ -71,7 +71,16 @@ result. Voters always see their own answers. Before 0024 admins could not
 read online ballots at all, so results only counted manual votes.
 Database tests: `supabase/tests/secret_ballot.test.sql`.
 
+## System Admin And PDPA (D016)
+Migration 0025 adds the `system_admin` role. Admins can grant `admin` and
+`committee`, but only a system admin can grant or remove `system_admin`.
+`app_settings` and `privacy_settings` can be changed only by a system admin;
+admins can still read `app_settings`, and every signed-in user can read
+`privacy_settings`. Users read their own `profile_consents`; admins and
+system admins read all. `needs_privacy_consent()` and
+`accept_privacy_notice(version)` run as security definer.
+Database tests: `supabase/tests/privacy.test.sql`.
+
 ## Still Needed
 - `approval_requests` has no policies yet.
-- `system_admin` role policies for technical settings (D016).
 - Provider-specific file access policies after direct upload adapters are selected.

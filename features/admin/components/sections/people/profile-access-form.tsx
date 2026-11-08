@@ -83,6 +83,7 @@ export function ProfileAccessForm({
             <option value="">No new role</option>
             <option value="admin">Admin</option>
             <option value="committee">Committee</option>
+            <option value="system_admin">System admin</option>
           </select>
         </label>
         <div className="mt-2 flex flex-wrap gap-2">

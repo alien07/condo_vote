@@ -67,8 +67,13 @@ Current coverage: `voting_core.test.sql` (voting core service, room lock,
 answer validation, proxy limit, proxy snapshot sync),
 `question_choices.test.sql` (default Abstain, multiple choice limits),
 `committee_approvals.test.sql` (approval minimum, publishing, result visibility,
-closing voting early), and `secret_ballot.test.sql` (secret answers hidden
-from admins, online totals, secrecy lock).
+closing voting early), `secret_ballot.test.sql` (secret answers hidden
+from admins, online totals, secrecy lock), and `privacy.test.sql`
+(system_admin permissions, PDPA consent and notice versions).
+
+The local and CI seed turn PDPA consent off so e2e users can sign in
+directly. `tests/e2e/privacy.spec.ts` turns it on for its own test and back
+off afterwards (tests run with one worker).
 
 Scope:
 - Local Docker Supabase starts.
