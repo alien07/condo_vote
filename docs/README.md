@@ -17,6 +17,8 @@ This folder contains the working specification for condoVotes.
 - [Demo manual steps](demo-manual-steps.md)
 - [SQL schema draft](schema-draft.sql)
 - [Security and privacy](security-privacy.md)
+- [Compliance](compliance.md)
+- [Operations](operations.md)
 - [RLS policies](rls-policies.md)
 - [Testing](testing.md)
 - [Development workflow](development-workflow.md)

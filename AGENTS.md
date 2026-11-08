@@ -23,6 +23,8 @@ condoVotes lets condominium admins create online meetings, questions, and choice
 - Local development: [docs/local-development.md](docs/local-development.md)
 - SQL draft: [docs/schema-draft.sql](docs/schema-draft.sql)
 - Security and privacy: [docs/security-privacy.md](docs/security-privacy.md)
+- Compliance: [docs/compliance.md](docs/compliance.md)
+- Operations: [docs/operations.md](docs/operations.md)
 - Testing: [docs/testing.md](docs/testing.md)
 - Development workflow: [docs/development-workflow.md](docs/development-workflow.md)
 - Roadmap: [docs/roadmap.md](docs/roadmap.md)
@@ -41,6 +43,7 @@ condoVotes lets condominium admins create online meetings, questions, and choice
 - Latest ballot version before voting close is the effective vote.
 - Results support two denominators: total project ownership and submitted-vote ownership.
 - Public result visibility requires committee approval.
+- V1 rules for room voting rights, proxy limits, pass rules, approvals, and choices: [docs/decisions.md](docs/decisions.md) D010-D018.
 
 ## Data Handling
 - Use synthetic seed data only.

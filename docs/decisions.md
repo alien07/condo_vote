@@ -57,14 +57,90 @@ Implementation is deferred to the Later phase. Until then:
 - Planned shape: a `projects` table, a `project_id` foreign key on
   condominium-scoped tables, and RLS based on project membership.
 
-## Proposed
-
 ### P001 - Framework Choice
-Status: proposed
+Status: accepted
 
-Use Next.js if server-rendered routes, API routes, and Vercel deployment are preferred. Use React SPA if the app should stay simpler and Supabase handles all backend work directly.
+Use Next.js App Router (Next.js 16). The app uses server components, server
+actions, and route handlers, deployed as one app (see D008).
 
 ### P002 - Email Provider
-Status: proposed
+Status: accepted
 
-Evaluate Resend, Brevo, or Google Workspace SMTP based on free tier, Thai language deliverability, and sender-domain requirements.
+Use Google SMTP. Google applies daily send limits, so all email goes through
+the queued delivery described in [communication.md](communication.md).
+
+## Accepted, Not Yet Implemented
+These decisions were made on 2026-11-08 for V1. Implementation is pending.
+
+### D010 - Voting Core Service
+Status: accepted, not implemented
+
+Every ballot write goes through one voting core service: online votes,
+admin-imported manual ballots, and online/manual conflict resolution. The
+service runs in one database transaction (Postgres RPC) and is the single
+place for the rules in D011, D012, D017, and the voting window. This is a
+module inside the app (D008), not a separate deployment.
+
+### D011 - One Voting Right Per Room
+Status: accepted, not implemented
+
+- If a meeting has an approved proxy for a room, only that proxy can vote
+  for the room in that meeting.
+- Otherwise, the first eligible voter who submits locks the room. Other
+  eligible voters for the room cannot change that ballot. The voter who
+  locked it can edit it until voting closes.
+- Co-owner consent is not required.
+
+### D012 - Proxy Limit
+Status: accepted, not implemented
+
+One proxy can hold at most three rooms per meeting (Condominium Act
+section 47). Enforce it when creating and approving proxy authorizations.
+
+### D013 - Configurable Pass Thresholds
+Status: accepted, not implemented
+
+Admin sets the pass rule per question: a basis and a percentage. Bases:
+ownership of rooms that voted, or total project ownership. Example: 50% of
+voting ownership, or 50% of total ownership. Presets for common legal rules
+may be offered. Abstain is reported as its own group and counts as voting
+(it is in the "rooms that voted" denominator).
+
+### D014 - Committee Approval And Vote Closing
+Status: accepted, not implemented
+
+- Admin sets a minimum number of committee approvals.
+- A result is published when its snapshot reaches that minimum. Each
+  approval is a separate, immutable record.
+- Voting closes automatically at `ends_at`, or earlier when committee
+  approvals to close reach the same minimum.
+- Store times in UTC; display in Asia/Bangkok.
+
+### D015 - Ballot Secrecy Per Meeting
+Status: accepted, not implemented
+
+Admin chooses open or secret ballot when creating a meeting. For a secret
+ballot, admins see totals only, not which room chose what.
+
+### D016 - System Admin Role And PDPA Settings
+Status: accepted, not implemented
+
+- Add a `system_admin` role for technical, service, and maintenance
+  settings. Admins who run meetings are not expected to be technical.
+- Collect PDPA consent at registration. System admin configures the
+  privacy notice text and data retention periods.
+
+### D017 - Question Choices
+Status: accepted, not implemented
+
+- Multiple-choice questions are supported in V1.
+- Every question gets an "Abstain" choice by default. Admin can remove it
+  while setting up choices. The choice carries an abstain flag so results
+  can count it as its own group.
+
+### D018 - Electronic Meeting Compliance In V1
+Status: accepted
+
+V1 handles the electronic meeting decree requirements (identity check,
+meeting recording, evidence keeping) manually, outside the system. See
+[compliance.md](compliance.md).
