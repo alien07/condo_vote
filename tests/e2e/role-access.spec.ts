@@ -135,7 +135,9 @@ test.describe("@test:e2e @test:auth @test:role role access", () => {
     await signInByGeneratedLink(page, supabase, admin.email);
 
     await page.goto("/admin");
-    await expect(page.getByRole("heading", { name: "Admin" })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Admin", exact: true }),
+    ).toBeVisible();
     await expect(page.getByText(admin.email)).toBeVisible();
     await expect(page.getByText(/owner \/ admin/)).toBeVisible();
     const primaryNav = page.getByRole("navigation", {

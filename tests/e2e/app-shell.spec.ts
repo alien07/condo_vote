@@ -43,8 +43,11 @@ test.describe("@test:e2e app shell", () => {
       maxRedirects: 0,
     });
 
-    expect(response.status()).toBe(307);
-    expect(response.headers().location).toBe("http://127.0.0.1:3000/login");
+    // proxy.ts uses a Refresh header, because Next.js relativizes the
+    // Location header of same-host redirects.
+    expect(response.status()).toBe(200);
+    expect(response.headers().refresh).toBe("0; url=http://127.0.0.1:3000/login");
+    expect(await response.text()).toContain('content="0;url=http://127.0.0.1:3000/login"');
   });
 
   test("@test:auth protected routes redirect signed-out users", async ({

@@ -4,7 +4,7 @@ import { expect, test } from "@playwright/test";
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/database.types";
 
-const demoAdminEmail = "prajak.ma@gmail.com";
+const demoAdminEmail = "demo.admin@example.test";
 const demoAdminName = "Demo Admin";
 const appUrl = "http://localhost:3000";
 
