@@ -5,6 +5,7 @@ This folder contains the working specification for condoVotes.
 ## Index
 - [Requirements](requirements.md)
 - [Architecture](architecture.md)
+- [Code organization](code-organization.md)
 - [Admin workflows](admin-workflows.md)
 - [Admin CRUD flow](admin-crud-flow.md)
 - [Table search/filter](table-search-filter.md)

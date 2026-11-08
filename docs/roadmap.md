@@ -50,10 +50,11 @@
 - Add a language switcher, dictionary files, locale-aware date/number
   formatting, and admin-configurable default language.
 - Translate admin pages after owner-facing Vote and Summary flows are stable.
+- Split remaining oversized files by domain sub-feature (see code-organization.md backlog).
 
 ## Later
 - Direct private document upload adapters and Google Drive API synchronization after credential and sharing policy approval.
 - LINE login or LINE notification.
-- Multi-condo tenancy.
+- Multi-condo tenancy (D009).
 - Legal-grade signing flow.
 - Realtime result/admin dashboard.

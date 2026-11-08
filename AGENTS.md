@@ -7,6 +7,7 @@ Project: condoVotes - online condominium meeting survey/voting system.
 - Protect sensitive data. Do not commit secrets, real resident data, private keys, production tokens, or personal documents.
 - Prefer free/open tooling first, but propose a better paid option when it materially reduces risk or effort.
 - Keep this file compact. Put long-lived details in `docs/` and link them here.
+- Organize code by domain and keep files small. Follow [docs/code-organization.md](docs/code-organization.md).
 
 ## Product Summary
 condoVotes lets condominium admins create online meetings, questions, and choices. Eligible owners or approved proxies vote during an open voting window. Results are weighted by room ownership percentage and become visible only after committee approval.
@@ -14,6 +15,7 @@ condoVotes lets condominium admins create online meetings, questions, and choice
 ## Core Docs
 - Requirements: [docs/requirements.md](docs/requirements.md)
 - Architecture: [docs/architecture.md](docs/architecture.md)
+- Code organization: [docs/code-organization.md](docs/code-organization.md)
 - Admin workflows: [docs/admin-workflows.md](docs/admin-workflows.md)
 - Communication: [docs/communication.md](docs/communication.md)
 - Data model: [docs/data-model.md](docs/data-model.md)
