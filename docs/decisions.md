@@ -37,6 +37,26 @@ Status: accepted
 
 Keep the MVP within low-cost/free-tier limits by storing video externally, keeping email provider integration swappable, limiting initial scope to one condominium/project, and avoiding production personal data in development.
 
+### D008 - Modular Monolith Organized By Domain
+Status: accepted
+
+Keep one Next.js app, one Supabase project, and one deployment. Split code into
+modules by business domain, and split a domain into sub-features when a file
+grows too large. Do not split into microservices for MVP or V1: they add
+hosting cost and make transactional voting writes harder. Policy:
+[code-organization.md](code-organization.md).
+
+### D009 - Prepare For Multi-Condo Tenancy
+Status: accepted
+
+The system should be able to serve more than one condominium in the future.
+Implementation is deferred to the Later phase. Until then:
+- Do not add new code that assumes a single condominium, such as global
+  singleton settings without a scope.
+- Design new tables so a `project_id` (condominium) column can be added later.
+- Planned shape: a `projects` table, a `project_id` foreign key on
+  condominium-scoped tables, and RLS based on project membership.
+
 ## Proposed
 
 ### P001 - Framework Choice
