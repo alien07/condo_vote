@@ -46,11 +46,17 @@ export function getResultPayload(payload: unknown) {
       agenda_title?: string | null;
       text?: string;
       resolution_type?: string;
-      required_threshold?: number | null;
+      required_threshold?: string | null;
+      pass_rule?: { label?: string } | null;
+      outcome?: "decided" | "not_decided" | "informational" | null;
+      passed_choice_ids?: string[] | null;
       requires_land_office_registration?: boolean;
       legal_note?: string | null;
       choices?: {
+        id?: string;
         text?: string;
+        is_abstain?: boolean;
+        meets_rule?: boolean;
         vote_count?: number;
         ownership?: number;
         percent_of_total_ownership?: number;
@@ -58,6 +64,7 @@ export function getResultPayload(payload: unknown) {
       }[];
     }[];
     totals?: {
+      quorum?: { label?: string; met?: boolean | null } | null;
       eligible_voters?: number;
       submitted_ballots?: number;
       online_ballots?: number;

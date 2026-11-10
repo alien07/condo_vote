@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { FileText } from "lucide-react";
+import { QuestionOutcomeLine } from "@/features/results/question-outcome";
 import type { ApprovedSummary } from "@/features/summary/data";
 
 type SummaryPageProps = {
@@ -142,6 +143,18 @@ export function SummaryPage({
                   </div>
                 </div>
               </section>
+              {payload.totals?.quorum?.label ? (
+                <p className="mt-3 text-sm">
+                  Quorum: {payload.totals.quorum.label}:{" "}
+                  <span className="font-medium">
+                    {payload.totals.quorum.met === null
+                      ? "not evaluated"
+                      : payload.totals.quorum.met
+                        ? "met"
+                        : "not met"}
+                  </span>
+                </p>
+              ) : null}
 
               <section className="mt-5">
                 <h3 className="font-semibold">Agenda Results</h3>
@@ -158,6 +171,7 @@ export function SummaryPage({
                       <p className="mt-1 text-sm text-[var(--muted)]">
                         Resolution: {question.resolution_type ?? "-"}
                       </p>
+                      <QuestionOutcomeLine question={question} />
                       <div className="mt-3 overflow-x-auto">
                         <table className="w-full border-collapse text-left text-sm">
                           <thead className="border-b border-[var(--border)] text-[var(--muted)]">

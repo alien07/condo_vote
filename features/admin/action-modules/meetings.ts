@@ -11,6 +11,11 @@ import {
   revalidateAdminPaths,
 } from "@/features/admin/action-modules/shared";
 import { writeAuditLog } from "@/lib/audit/business-audit";
+import {
+  isPassBasis,
+  isPassOperator,
+  passRuleForPreset,
+} from "@/features/results/pass-rules";
 
 export type MeetingActionState = {
   error?: string;
@@ -240,6 +245,9 @@ const questionFormFields = [
   "max_choices",
   "resolution_type",
   "required_threshold",
+  "pass_basis",
+  "pass_operator",
+  "pass_percent",
   "display_order",
   "required",
   "requires_land_office_registration",
@@ -284,6 +292,24 @@ function validateQuestionForm(
     fieldErrors.display_order = "Order must be a whole number of 0 or greater.";
   }
 
+  if (values.required_threshold === "custom") {
+    const percent = Number(values.pass_percent);
+
+    if (!isPassBasis(values.pass_basis ?? "") || values.pass_basis === "none") {
+      fieldErrors.pass_basis = "Choose a basis for the custom pass rule.";
+    }
+
+    if (!isPassOperator(values.pass_operator ?? "")) {
+      fieldErrors.pass_operator = "Choose a comparison for the custom pass rule.";
+    }
+
+    if (!values.pass_percent?.trim() || !Number.isFinite(percent) || percent < 0 || percent > 100) {
+      fieldErrors.pass_percent = "Percent must be between 0 and 100.";
+    }
+  } else if (values.required_threshold && !passRuleForPreset(values.required_threshold)) {
+    fieldErrors.required_threshold = "Choose a pass rule.";
+  }
+
   const maxChoices = values.max_choices?.trim();
 
   if (maxChoices) {
@@ -316,6 +342,25 @@ function questionValidationState(
   };
 }
 
+/** Stores the preset's rule, or the custom rule the admin entered (D013). */
+function questionPassRule(values: Record<string, string>) {
+  const preset = passRuleForPreset(values.required_threshold.trim());
+
+  if (preset) {
+    return {
+      pass_basis: preset.basis,
+      pass_operator: preset.operator,
+      pass_percent: preset.percent,
+    };
+  }
+
+  return {
+    pass_basis: values.pass_basis,
+    pass_operator: values.pass_operator,
+    pass_percent: Number(values.pass_percent),
+  };
+}
+
 function questionPayload(values: Record<string, string>) {
   return {
     meeting_id: values.meeting_id.trim(),
@@ -329,6 +374,7 @@ function questionPayload(values: Record<string, string>) {
         : null,
     resolution_type: values.resolution_type.trim(),
     required_threshold: values.required_threshold.trim(),
+    ...questionPassRule(values),
     requires_land_office_registration:
       values.requires_land_office_registration === "on",
     legal_note: optionalText(values.legal_note),
@@ -531,7 +577,9 @@ export async function createMeetingQuestion(formData: FormData) {
 
   const supabase = await createClient();
   const questionText = requiredText(formData.get("question_text"), "Question");
+  const values = questionFormValues(formData);
   const { error } = await supabase.from("meeting_questions").insert({
+    ...questionPassRule(values),
     meeting_id: requiredText(formData.get("meeting_id"), "Meeting"),
     agenda_no: optionalText(formData.get("agenda_no")),
     agenda_title: optionalText(formData.get("agenda_title")),

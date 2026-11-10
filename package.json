@@ -9,6 +9,7 @@
     "start": "next start",
     "lint": "eslint .",
     "test": "npm run test:e2e",
+    "test:unit": "vitest run",
     "test:e2e": "playwright test",
     "test:e2e:smoke": "playwright test --grep-invert @full",
     "typecheck": "tsc --noEmit",
@@ -44,6 +45,7 @@
     "eslint-config-next": "16.2.6",
     "supabase": "2.101.0",
     "tailwindcss": "4.3.0",
-    "typescript": "6.0.3"
+    "typescript": "6.0.3",
+    "vitest": "^3.2.7"
   }
 }

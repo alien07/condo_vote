@@ -23,7 +23,8 @@ Current verification:
 ## Test Layers
 
 ### Unit Tests
-Recommended tool: Vitest.
+Tool: Vitest (`npm run test:unit`, `vitest.config.ts`). CI runs it before the
+build. Current coverage: `features/results/pass-rules.test.ts`.
 
 Scope:
 - Pure helpers.

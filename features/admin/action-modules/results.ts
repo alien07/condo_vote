@@ -11,6 +11,14 @@ import {
   toNumber,
 } from "@/features/admin/action-modules/shared";
 import { writeAuditLog } from "@/lib/audit/business-audit";
+import {
+  describePassRule,
+  evaluateQuestion,
+  evaluateQuorum,
+  isPassBasis,
+  isPassOperator,
+  type PassRule,
+} from "@/features/results/pass-rules";
 
 export type ResultApprovalActionState = {
   error?: string;
@@ -120,7 +128,7 @@ export async function generateResultSnapshot(formData: FormData) {
       supabase
         .from("meeting_questions")
         .select(
-          "id, agenda_no, agenda_title, question_text, question_type, resolution_type, required_threshold, requires_land_office_registration, legal_note, display_order, meeting_choices(id, choice_text, display_order)",
+          "id, agenda_no, agenda_title, question_text, question_type, resolution_type, required_threshold, pass_basis, pass_operator, pass_percent, requires_land_office_registration, legal_note, display_order, meeting_choices(id, choice_text, display_order, is_abstain)",
         )
         .eq("meeting_id", meetingId)
         .order("display_order", { ascending: true }),
@@ -300,10 +308,16 @@ export async function generateResultSnapshot(formData: FormData) {
     }
   }
 
+  const quorum = evaluateQuorum(
+    meetingResult.data.quorum_rule,
+    submittedOwnership,
+    totalEligibleOwnership,
+  );
   const payload = {
     meeting: meetingResult.data,
     generated_at: new Date().toISOString(),
     totals: {
+      quorum,
       eligible_voters: eligibleResult.data.length,
       submitted_ballots: submittedRoomIds.size,
       online_ballots: ballotsResult.data.length,
@@ -332,7 +346,31 @@ export async function generateResultSnapshot(formData: FormData) {
         resolved_at: conflict.resolution?.resolved_at ?? null,
       })),
     },
-    questions: questionsResult.data.map((question) => ({
+    questions: questionsResult.data.map((question) => {
+      const passRule: PassRule = {
+        basis: isPassBasis(question.pass_basis) ? question.pass_basis : "voting_ownership",
+        operator: isPassOperator(question.pass_operator) ? question.pass_operator : "gt",
+        percent: toNumber(question.pass_percent),
+      };
+      const sortedChoices = [...question.meeting_choices].sort(
+        (left, right) => left.display_order - right.display_order,
+      );
+      const evaluation = evaluateQuestion({
+        rule: passRule,
+        questionType: question.question_type,
+        choices: sortedChoices.map((choice) => ({
+          id: choice.id,
+          isAbstain: choice.is_abstain,
+          ownership: countsByChoice.get(choice.id)?.ownership ?? 0,
+        })),
+        votingOwnership: submittedOwnership,
+        totalOwnership: totalEligibleOwnership,
+      });
+      const evaluationByChoice = new Map(
+        evaluation.choices.map((choice) => [choice.id, choice]),
+      );
+
+      return {
       id: question.id,
       agenda_no: question.agenda_no,
       agenda_title: question.agenda_title,
@@ -343,8 +381,12 @@ export async function generateResultSnapshot(formData: FormData) {
       requires_land_office_registration:
         question.requires_land_office_registration,
       legal_note: question.legal_note,
-      choices: question.meeting_choices
-        .sort((left, right) => left.display_order - right.display_order)
+      pass_rule: { ...passRule, label: describePassRule(passRule) },
+      outcome: evaluation.outcome,
+      basis_ownership: evaluation.basis_ownership,
+      passed_choice_ids: evaluation.passed_choice_ids,
+      decided_choice_id: evaluation.decided_choice_id,
+      choices: sortedChoices
         .map((choice) => {
           const count = countsByChoice.get(choice.id) ?? {
             voteCount: 0,
@@ -354,6 +396,9 @@ export async function generateResultSnapshot(formData: FormData) {
           return {
             id: choice.id,
             text: choice.choice_text,
+            is_abstain: choice.is_abstain,
+            meets_rule: evaluationByChoice.get(choice.id)?.meets_rule ?? false,
+            percent_of_basis: evaluationByChoice.get(choice.id)?.percent_of_basis ?? null,
             vote_count: count.voteCount,
             ownership: count.ownership,
             percent_of_total_ownership:
@@ -366,7 +411,8 @@ export async function generateResultSnapshot(formData: FormData) {
                 : 0,
           };
         }),
-    })),
+      };
+    }),
   };
 
   const { data: snapshot, error: insertError } = await supabase

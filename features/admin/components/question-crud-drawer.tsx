@@ -30,6 +30,9 @@ type QuestionRecord = {
   max_choices?: number | null;
   required: boolean;
   required_threshold: string;
+  pass_basis?: string;
+  pass_operator?: string;
+  pass_percent?: number | string;
   requires_land_office_registration: boolean;
   resolution_type: string;
 };
@@ -302,7 +305,7 @@ export function QuestionCrudDrawer({
           <FieldError fieldName="resolution_type" state={state} />
         </label>
         <label className="grid gap-1 text-sm font-medium">
-          <FieldLabel required>Required threshold</FieldLabel>
+          <FieldLabel required>Pass rule</FieldLabel>
           <select
             {...fieldProps("required_threshold", state)}
             className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
@@ -313,14 +316,77 @@ export function QuestionCrudDrawer({
             )}
             name="required_threshold"
           >
-            <option value="majority_submitted">Majority submitted</option>
-            <option value="one_third_total">1/3 total ownership</option>
-            <option value="half_total">1/2 total ownership</option>
-            <option value="three_fourths_total">3/4 total ownership</option>
-            <option value="informational">Informational</option>
+            <option value="majority_submitted">
+              More than 50% of voting ownership
+            </option>
+            <option value="half_total">More than 50% of total ownership</option>
+            <option value="one_third_total">At least 1/3 of total ownership</option>
+            <option value="three_fourths_total">
+              At least 3/4 of total ownership
+            </option>
+            <option value="informational">Informational, no pass rule</option>
+            <option value="custom">Custom (set below)</option>
           </select>
           <FieldError fieldName="required_threshold" state={state} />
         </label>
+        <fieldset className="grid gap-2 rounded-md border border-[var(--border)] p-3 text-sm">
+          <legend className="px-1 font-medium">Custom pass rule</legend>
+          <p className="text-xs text-[var(--muted)]">
+            Used only when the pass rule is Custom. Abstain counts as voting.
+          </p>
+          <div className="grid gap-2 md:grid-cols-[1fr_140px_120px]">
+            <label className="grid gap-1">
+              <span>Basis</span>
+              <select
+                {...fieldProps("pass_basis", state)}
+                className="rounded-md border border-[var(--border)] px-3 py-2"
+                defaultValue={stateValue(
+                  state,
+                  "pass_basis",
+                  question?.pass_basis ?? "voting_ownership",
+                )}
+                name="pass_basis"
+              >
+                <option value="voting_ownership">Ownership of rooms that voted</option>
+                <option value="total_ownership">Total project ownership</option>
+              </select>
+            </label>
+            <label className="grid gap-1">
+              <span>Comparison</span>
+              <select
+                {...fieldProps("pass_operator", state)}
+                className="rounded-md border border-[var(--border)] px-3 py-2"
+                defaultValue={stateValue(
+                  state,
+                  "pass_operator",
+                  question?.pass_operator ?? "gt",
+                )}
+                name="pass_operator"
+              >
+                <option value="gt">More than</option>
+                <option value="gte">At least</option>
+              </select>
+            </label>
+            <label className="grid gap-1">
+              <span>Percent</span>
+              <input
+                {...fieldProps("pass_percent", state)}
+                className="rounded-md border border-[var(--border)] px-3 py-2"
+                defaultValue={stateValue(
+                  state,
+                  "pass_percent",
+                  question?.pass_percent ?? 50,
+                )}
+                max={100}
+                min={0}
+                name="pass_percent"
+                step="0.01"
+                type="number"
+              />
+            </label>
+          </div>
+          <FieldError fieldName="pass_percent" state={state} />
+        </fieldset>
         <label className="grid gap-1 text-sm font-medium">
           Order
           <input

@@ -17,7 +17,11 @@ export type SummaryPayload = {
     agenda_title?: string | null;
     text?: string;
     resolution_type?: string;
+    pass_rule?: { label?: string } | null;
+    outcome?: "decided" | "not_decided" | "informational" | null;
+    passed_choice_ids?: string[] | null;
     choices?: {
+      id?: string;
       text?: string;
       vote_count?: number;
       ownership?: number;
@@ -26,6 +30,7 @@ export type SummaryPayload = {
     }[];
   }[];
   totals?: {
+    quorum?: { label?: string; met?: boolean | null } | null;
     eligible_voters?: number;
     submitted_ballots?: number;
     total_eligible_ownership?: number;

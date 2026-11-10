@@ -13,7 +13,7 @@ export async function fetchMeetingsData(supabase: SupabaseServerClient) {
     supabase
       .from("meeting_questions")
       .select(
-        "id, meeting_id, agenda_no, agenda_title, question_text, question_type, max_choices, resolution_type, required_threshold, requires_land_office_registration, legal_note, display_order, required, meetings(id, title), meeting_choices(id, choice_text, display_order, is_abstain)",
+        "id, meeting_id, agenda_no, agenda_title, question_text, question_type, max_choices, resolution_type, required_threshold, pass_basis, pass_operator, pass_percent, requires_land_office_registration, legal_note, display_order, required, meetings(id, title), meeting_choices(id, choice_text, display_order, is_abstain)",
       )
       .order("display_order", { ascending: true }),
   ]);
