@@ -23,8 +23,10 @@ type ResultsSectionProps = Pick<
   Pick<
     SharedAdminState,
     "approvalBySnapshotId"
+    | "approvalCountBySnapshotId"
     | "approvedMeetingIds"
     | "approvedResultSnapshotIds"
+    | "lockedMeetingIds"
     | "pendingManualBallotsByMeetingId"
   > &
   Pick<
@@ -38,8 +40,10 @@ type ResultsSectionProps = Pick<
 
 export function ResultsSection({
   approvalBySnapshotId,
+  approvalCountBySnapshotId,
   approvedMeetingIds,
   approvedResultSnapshotIds,
+  lockedMeetingIds,
   committeeMembers,
   condoProfile,
   drawer,
@@ -281,6 +285,11 @@ export function ResultsSection({
               const meetingApproved = approvedMeetingIds.has(
                 snapshot.meeting_id,
               );
+              const approvalCount = approvalCountBySnapshotId.get(snapshot.id) ?? 0;
+              const requiredApprovals = snapshot.meetings?.required_approvals ?? 1;
+              // Another snapshot of this meeting already collects approvals.
+              const lockedByOther =
+                lockedMeetingIds.has(snapshot.meeting_id) && approvalCount === 0;
               const pendingManualCount =
                 pendingManualBallotsByMeetingId.get(snapshot.meeting_id)
                   ?.length ?? 0;
@@ -317,10 +326,12 @@ export function ResultsSection({
                     {formatPercent(totals?.total_eligible_ownership)}
                   </td>
                   <td className="py-2 pr-3">
-                    {approved ? "approved" : "pending"}
+                    {approved
+                      ? "approved"
+                      : `pending (${approvalCount}/${requiredApprovals} approvals)`}
                   </td>
                   <td className="py-2">
-                    {!meetingApproved && pendingManualCount === 0 ? (
+                    {!meetingApproved && !lockedByOther && pendingManualCount === 0 ? (
                       <a
                         className="inline-flex min-h-9 items-center justify-center rounded-md border border-[var(--border)] px-3 py-1 text-sm font-medium"
                         href={`${resultListHref}&mode=edit&type=result_approval&id=${snapshot.id}`}
@@ -336,7 +347,7 @@ export function ResultsSection({
                         Resolve {pendingManualCount} pending manual vote
                       </a>
                     ) : null}
-                    {meetingApproved && !approved ? (
+                    {(meetingApproved && !approved) || lockedByOther ? (
                       <span className="text-sm text-[var(--muted)]">
                         Locked by approved result
                       </span>

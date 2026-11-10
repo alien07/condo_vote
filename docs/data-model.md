@@ -69,7 +69,9 @@ erDiagram
 | [manual_ballot_answers](#manual_ballot_answers) | Current effective answers for an imported manual ballot. |
 | [vote_source_resolutions](#vote_source_resolutions) | Admin decision record when the same room has both online and manual votes. |
 | [result_snapshots](#result_snapshots) | Calculated result payloads for a meeting before/after approval. |
-| [committee_approvals](#committee_approvals) | Approval record that makes a result visible to viewers. |
+| [committee_approvals](#committee_approvals) | One committee member's approval of a result snapshot. |
+| [result_publications](#result_publications) | Published result per meeting, written when approvals reach the minimum. |
+| [meeting_close_approvals](#meeting_close_approvals) | Committee approvals to close voting before `ends_at`. |
 | [documents](#documents) | Private file references for owner/proxy approval and generated PDFs. |
 | [app_settings](#app_settings) | App-level operational settings such as the selected private document storage provider. |
 | [audit_logs](#audit_logs) | Append-only business action records for traceability and troubleshooting. |
@@ -184,7 +186,17 @@ Notes: Payload should include count, percentage against total project ownership,
 ### committee_approvals
 Purpose: Stores approval that allows result publication.
 Key fields: meeting, result snapshot, approver, approved timestamp, notes.
-Notes: This is the source of truth for approved results. Results stay hidden until a related approval record exists. A meeting can have only one approved result, and approval records are immutable. Planned (D014): one snapshot collects one approval per committee member, and the result is published when approvals reach the configured minimum.
+Notes: One row per approver per snapshot (unique snapshot + approver). Approval records are immutable. Approvals go through `approve_result_snapshot` (0023), which publishes when approvals reach `meetings.required_approvals` (D014).
+
+### result_publications
+Purpose: Marks a meeting result as published.
+Key fields: meeting (unique), result snapshot (unique), approvals count, published timestamp.
+Notes: Source of truth for result visibility. Written only by `approve_result_snapshot`. Viewers can read a snapshot only when it has a publication row.
+
+### meeting_close_approvals
+Purpose: Records committee approvals to close voting early.
+Key fields: meeting, approver, approved timestamp.
+Notes: `approve_close_voting` sets the meeting to `closed` and `closed_at` when approvals reach `meetings.required_approvals`. Otherwise voting closes at `ends_at`.
 
 ### documents
 Purpose: Stores provider-agnostic private document references.
@@ -211,7 +223,7 @@ Notes: Used for invitations, reminders, and result notifications.
 - Ballot edits create new versions.
 - Result calculations use the latest valid ballot per room.
 - Manual votes can be combined with online votes, but one room can have only one effective source after conflict resolution.
-- `committee_approvals` is the source of truth for result publication approval.
+- `result_publications` is the source of truth for result visibility; `committee_approvals` holds each approver's record.
 - Approved result snapshots and committee approval records are immutable.
 - Supporting documents are private by default.
 
@@ -224,7 +236,7 @@ Decided on 2026-11-08; see [decisions.md](decisions.md). Not migrated yet.
 | ✅ Room voting-right lock: approved proxy first, otherwise first voter (0020) | D011 |
 | ✅ Proxy limit of three rooms per proxy per meeting (0020) | D012 |
 | ✅ Per-question pass rule: `pass_basis`, `pass_operator`, `pass_percent`; `required_threshold` is now a preset or `custom` (0022) | D013 |
-| Minimum committee approvals setting; several approvals per snapshot; close-voting approvals | D014 |
+| ✅ `meetings.required_approvals`, `closed_at`; several approvals per snapshot; `result_publications`; `meeting_close_approvals` (0023) | D014 |
 | Meeting-level ballot secrecy setting and matching RLS | D015 |
 | `system_admin` role; PDPA consent on profiles; retention settings | D016 |
 | ✅ Multiple answers per question in `ballot_answers` and `manual_ballot_answers`; `is_abstain` flag on choices; `max_choices` on questions (0020, 0021) | D017 |

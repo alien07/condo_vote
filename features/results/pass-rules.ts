@@ -155,6 +155,7 @@ export function evaluateQuestion(input: {
 export const QUORUM_RULES: Record<string, { label: string; percent: number }> = {
   one_fourth_total_ownership: { label: "At least 1/4 of total ownership", percent: 25 },
   one_third_total_ownership: { label: "At least 1/3 of total ownership", percent: 100 / 3 },
+  not_required_second_call: { label: "Second call, no quorum required", percent: 0 },
 };
 
 export function evaluateQuorum(rule: string, votingOwnership: number, totalOwnership: number) {

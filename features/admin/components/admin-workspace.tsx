@@ -89,19 +89,23 @@ export async function AdminWorkspace({
     pendingManualBallots,
     emailLogs,
     profiles,
+    resultPublications,
   } =
     await getAdminDashboardData({ auditFilters });
   const {
     appRolesByProfile,
+    approvalCountBySnapshotId,
     approvalBySnapshotId,
     approvedMeetingIds,
     approvedResultSnapshotIds,
+    lockedMeetingIds,
     pendingManualBallotsByMeetingId,
   } = deriveSharedAdminState({
     appRoles,
     committeeApprovals,
     pendingManualBallots,
     profiles,
+    resultPublications,
   });
   const activeSection =
     requestedActiveSection &&
@@ -216,6 +220,7 @@ export async function AdminWorkspace({
 
         <MeetingsSection
           approvedMeetingIds={approvedMeetingIds}
+          lockedMeetingIds={lockedMeetingIds}
           drawer={drawer}
           focusedMeetingId={focusedMeetingId}
           hidden={!visibleSections.has("meetings")}
@@ -234,8 +239,10 @@ export async function AdminWorkspace({
 
         <ResultsSection
           approvalBySnapshotId={approvalBySnapshotId}
+          approvalCountBySnapshotId={approvalCountBySnapshotId}
           approvedMeetingIds={approvedMeetingIds}
           approvedResultSnapshotIds={approvedResultSnapshotIds}
+          lockedMeetingIds={lockedMeetingIds}
           committeeMembers={committeeMembers}
           condoProfile={condoProfile}
           drawer={drawer}

@@ -4,13 +4,16 @@ import { redirect } from "next/navigation";
 import {
   createClient,
   optionalText,
-  queueResultApprovedEmails,
   requiredText,
   requireAdmin,
   revalidateAdminPaths,
   toNumber,
 } from "@/features/admin/action-modules/shared";
 import { writeAuditLog } from "@/lib/audit/business-audit";
+import {
+  approvalMessage,
+  approveResult,
+} from "@/features/results/committee-service";
 import {
   describePassRule,
   evaluateQuestion,
@@ -454,69 +457,13 @@ export async function generateResultSnapshot(formData: FormData) {
 }
 
 export async function approveResultSnapshot(formData: FormData) {
-  const approver = await requireAdmin();
-
-  const meetingId = requiredText(formData.get("meeting_id"), "Meeting ID");
-  const resultSnapshotId = requiredText(
-    formData.get("result_snapshot_id"),
-    "Result snapshot ID",
-  );
+  await requireAdmin();
   const supabase = await createClient();
-  const [snapshotResult, existingApprovalResult] = await Promise.all([
-    supabase
-      .from("result_snapshots")
-      .select("id")
-      .eq("id", resultSnapshotId)
-      .eq("meeting_id", meetingId)
-      .single(),
-    supabase
-      .from("committee_approvals")
-      .select("id")
-      .eq("meeting_id", meetingId)
-      .maybeSingle(),
-  ]);
 
-  if (snapshotResult.error) {
-    throw snapshotResult.error;
-  }
-
-  if (existingApprovalResult.error) {
-    throw existingApprovalResult.error;
-  }
-
-  if (existingApprovalResult.data) {
-    throw new Error("This meeting already has an approved result.");
-  }
-
-  await assertNoPendingManualVoteIdentities(supabase, meetingId);
-
-  const { data: approval, error } = await supabase
-    .from("committee_approvals")
-    .insert({
-      meeting_id: meetingId,
-      result_snapshot_id: resultSnapshotId,
-      approved_by: approver.id,
-      notes: optionalText(formData.get("notes")),
-    })
-    .select("id")
-    .single();
-
-  if (error) {
-    throw error;
-  }
-
-  await queueResultApprovedEmails(meetingId);
-  await writeAuditLog(supabase, {
-    action: "result_snapshot.approved",
-    actorProfileId: approver.id,
-    details: {
-      meeting_id: meetingId,
-      result_snapshot_id: resultSnapshotId,
-    },
-    entityId: approval.id,
-    entityType: "committee_approval",
+  await approveResult(supabase, {
+    notes: optionalText(formData.get("notes")),
+    resultSnapshotId: requiredText(formData.get("result_snapshot_id"), "Result snapshot"),
   });
-
   revalidateAdminPaths();
   redirect("/admin/results?feedback=success&message=Result%20approved");
 }
@@ -528,7 +475,7 @@ export async function approveResultSnapshotWithState(
   const values = resultApprovalValues(formData);
 
   try {
-    const approver = await requireAdmin();
+    await requireAdmin();
     const validation = resultApprovalValidationState(
       validateResultApproval(values),
       values,
@@ -539,76 +486,27 @@ export async function approveResultSnapshotWithState(
     }
 
     const supabase = await createClient();
-    const [snapshotResult, existingApprovalResult] = await Promise.all([
-      supabase
-        .from("result_snapshots")
-        .select("id")
-        .eq("id", values.result_snapshot_id)
-        .eq("meeting_id", values.meeting_id)
-        .single(),
-      supabase
-        .from("committee_approvals")
-        .select("id")
-        .eq("meeting_id", values.meeting_id)
-        .maybeSingle(),
-    ]);
-
-    if (snapshotResult.error) {
-      return { error: snapshotResult.error.message, values };
-    }
-
-    if (existingApprovalResult.error) {
-      return { error: existingApprovalResult.error.message, values };
-    }
-
-    if (existingApprovalResult.data) {
-      return { error: "This meeting already has an approved result.", values };
-    }
+    // Approval, publication at the minimum, email queue, and audit run in
+    // one transaction (D014).
+    let approval;
 
     try {
-      await assertNoPendingManualVoteIdentities(supabase, values.meeting_id);
+      approval = await approveResult(supabase, {
+        notes: optionalText(values.notes),
+        resultSnapshotId: values.result_snapshot_id,
+      });
     } catch (error) {
       return {
-        error:
-          error instanceof Error
-            ? error.message
-            : "Resolve pending manual vote identity records before approving.",
+        error: error instanceof Error ? error.message : "Could not approve result.",
         values,
       };
     }
-
-    const { data: approval, error } = await supabase
-      .from("committee_approvals")
-      .insert({
-        approved_by: approver.id,
-        meeting_id: values.meeting_id,
-        notes: optionalText(values.notes),
-        result_snapshot_id: values.result_snapshot_id,
-      })
-      .select("id")
-      .single();
-
-    if (error) {
-      return { error: error.message, values };
-    }
-
-    await queueResultApprovedEmails(values.meeting_id);
-    await writeAuditLog(supabase, {
-      action: "result_snapshot.approved",
-      actorProfileId: approver.id,
-      details: {
-        meeting_id: values.meeting_id,
-        result_snapshot_id: values.result_snapshot_id,
-      },
-      entityId: approval.id,
-      entityType: "committee_approval",
-    });
 
     revalidateAdminPaths();
 
     return {
       recordId: values.result_snapshot_id,
-      success: "Result approved",
+      success: approvalMessage(approval),
       values,
     };
   } catch (error) {

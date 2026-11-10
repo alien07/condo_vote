@@ -7,10 +7,11 @@ export async function fetchResultsData(supabase: SupabaseServerClient) {
     resultSnapshotsResult,
     committeeApprovalsResult,
     pendingManualBallotsResult,
+    resultPublicationsResult,
   ] = await Promise.all([
     supabase
       .from("result_snapshots")
-      .select("id, meeting_id, generated_at, payload_json, meetings(id, title)")
+      .select("id, meeting_id, generated_at, payload_json, meetings(id, title, required_approvals)")
       .order("generated_at", { ascending: false }),
     supabase
       .from("committee_approvals")
@@ -23,6 +24,9 @@ export async function fetchResultsData(supabase: SupabaseServerClient) {
       .select("id, meeting_id, room_id, identity_status, status, rooms(id, room_number)")
       .or("identity_status.eq.pending,status.eq.draft")
       .order("imported_at", { ascending: false }),
+    supabase
+      .from("result_publications")
+      .select("meeting_id, result_snapshot_id, approvals_count, published_at"),
   ]);
 
   if (resultSnapshotsResult.error) {
@@ -37,9 +41,14 @@ export async function fetchResultsData(supabase: SupabaseServerClient) {
     throw pendingManualBallotsResult.error;
   }
 
+  if (resultPublicationsResult.error) {
+    throw resultPublicationsResult.error;
+  }
+
   return {
     resultSnapshots: resultSnapshotsResult.data,
     committeeApprovals: committeeApprovalsResult.data,
     pendingManualBallots: pendingManualBallotsResult.data,
+    resultPublications: resultPublicationsResult.data,
   };
 }

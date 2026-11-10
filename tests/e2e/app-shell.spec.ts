@@ -66,6 +66,7 @@ test.describe("@test:e2e app shell", () => {
       "/admin/ownership",
       "/admin/proxies",
       "/vote",
+      "/committee",
       "/summary",
     ]) {
       await page.goto(path);

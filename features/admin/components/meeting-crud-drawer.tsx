@@ -22,6 +22,7 @@ type MeetingRecord = {
   meeting_number: string | null;
   meeting_type: string;
   quorum_rule: string;
+  required_approvals?: number;
   starts_at: string;
   status: string;
   title: string;
@@ -289,6 +290,26 @@ export function MeetingCrudDrawer({
             <option value="committee_policy">Committee policy</option>
           </select>
           <FieldError fieldName="quorum_rule" state={state} />
+        </label>
+        <label className="grid gap-1 text-sm font-medium">
+          <FieldLabel required>Committee approvals needed</FieldLabel>
+          <input
+            {...fieldProps("required_approvals", state)}
+            className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+            defaultValue={stateValue(
+              state,
+              "required_approvals",
+              String(meeting?.required_approvals ?? 1),
+            )}
+            max={20}
+            min={1}
+            name="required_approvals"
+            type="number"
+          />
+          <span className="text-xs font-normal text-[var(--muted)]">
+            Approvals needed to publish the result or to close voting early.
+          </span>
+          <FieldError fieldName="required_approvals" state={state} />
         </label>
         <label className="grid gap-1 text-sm font-medium">
           <FieldLabel required>Starts</FieldLabel>

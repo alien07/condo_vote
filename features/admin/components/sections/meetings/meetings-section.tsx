@@ -19,7 +19,7 @@ import type {
 type MeetingsSectionProps = Pick<AdminDashboardData, "meetings"> &
   Pick<
     SharedAdminState,
-    "approvedMeetingIds"
+    "approvedMeetingIds" | "lockedMeetingIds"
     | "pendingManualBallotsByMeetingId"
   > &
   Pick<
@@ -33,6 +33,7 @@ type MeetingsSectionProps = Pick<AdminDashboardData, "meetings"> &
 
 export function MeetingsSection({
   approvedMeetingIds,
+  lockedMeetingIds,
   drawer,
   focusedMeetingId,
   meetingFilters,
@@ -302,6 +303,8 @@ export function MeetingsSection({
           <tbody>
             {pagedMeetings.map((meeting) => {
               const hasApprovedResult = approvedMeetingIds.has(meeting.id);
+              // Any committee approval locks results (no new snapshots).
+              const resultLocked = lockedMeetingIds.has(meeting.id);
               const pendingManualCount =
                 pendingManualBallotsByMeetingId.get(meeting.id)?.length ?? 0;
 
@@ -370,7 +373,7 @@ export function MeetingsSection({
                       ) : null}
                       {(meeting.status === "published" ||
                         meeting.status === "closed") &&
-                      !hasApprovedResult ? (
+                      !resultLocked ? (
                         pendingManualCount > 0 ? (
                           <a
                             className="inline-flex items-center rounded-md border border-amber-300 bg-amber-50 px-3 py-1 text-sm font-medium text-amber-800"
@@ -391,7 +394,7 @@ export function MeetingsSection({
                           </form>
                         )
                       ) : null}
-                      {hasApprovedResult ? (
+                      {resultLocked ? (
                         <span className="inline-flex items-center rounded-full border border-[var(--border)] bg-[var(--background)] px-3 py-1 text-xs font-medium text-[var(--muted)]">
                           Result locked
                         </span>

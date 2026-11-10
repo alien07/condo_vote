@@ -43,6 +43,7 @@ const meetingFormFields = [
   "location",
   "chairperson_name",
   "quorum_rule",
+  "required_approvals",
   "starts_at",
   "ends_at",
   "description",
@@ -78,6 +79,12 @@ function validateMeetingForm(
     if (!values[field].trim()) {
       fieldErrors[field] = `${label} is required.`;
     }
+  }
+
+  const requiredApprovals = Number(values.required_approvals || 1);
+
+  if (!Number.isInteger(requiredApprovals) || requiredApprovals < 1 || requiredApprovals > 20) {
+    fieldErrors.required_approvals = "Committee approvals must be a whole number from 1 to 20.";
   }
 
   const startsAt = values.starts_at ? new Date(values.starts_at) : null;
@@ -134,6 +141,7 @@ function meetingPayload(values: Record<string, string>) {
     location: optionalText(values.location),
     chairperson_name: optionalText(values.chairperson_name),
     quorum_rule: values.quorum_rule.trim(),
+    required_approvals: Number(values.required_approvals || 1),
   };
 }
 

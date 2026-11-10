@@ -50,7 +50,7 @@ export async function AuthenticatedShell({ children }: AuthenticatedShellProps) 
             </form>
           </div>
         </div>
-        <AppShellNav isAdmin={isAdmin} />
+        <AppShellNav isAdmin={isAdmin} isCommittee={roles.includes("committee")} />
       </header>
       <AppFeedbackBanner />
       {children}
