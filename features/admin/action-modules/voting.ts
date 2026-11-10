@@ -10,6 +10,12 @@ import {
   revalidateAdminPaths,
 } from "@/features/admin/action-modules/shared";
 import { writeAuditLog } from "@/lib/audit/business-audit";
+import {
+  answersFromFormData,
+  resolveVoteConflict,
+  submitManualBallotRecord,
+  toVoteError,
+} from "@/features/voting/core/ballot-service";
 
 function encodeManualVotePart(value: string) {
   return encodeURIComponent(value);
@@ -205,7 +211,7 @@ export async function createProxyAuthorizationWithState(
       .single();
 
     if (error) {
-      return { error: error.message, values };
+      return { error: toVoteError(error).message, values };
     }
 
     await writeAuditLog(supabase, {
@@ -259,7 +265,7 @@ export async function reviewProxyAuthorizationWithState(
       .single();
 
     if (error) {
-      return { error: error.message, values };
+      return { error: toVoteError(error).message, values };
     }
 
     await writeAuditLog(supabase, {
@@ -305,7 +311,7 @@ export async function createProxyAuthorization(formData: FormData) {
     .single();
 
   if (error) {
-    throw error;
+    throw toVoteError(error);
   }
 
   await writeAuditLog(supabase, {
@@ -336,7 +342,7 @@ export async function reviewProxyAuthorization(formData: FormData) {
     .eq("id", id);
 
   if (error) {
-    throw error;
+    throw toVoteError(error);
   }
 
   await writeAuditLog(supabase, {
@@ -503,7 +509,7 @@ export async function startManualVoteImportWithState(
 }
 
 export async function submitManualBallot(formData: FormData) {
-  const importer = await requireAdmin();
+  await requireAdmin();
   const meetingId = requiredText(formData.get("meeting_id"), "Meeting");
   const roomId = requiredText(formData.get("room_id"), "Room");
   const voterProfileId = optionalText(formData.get("voter_profile_id"));
@@ -514,83 +520,16 @@ export async function submitManualBallot(formData: FormData) {
   }
 
   const supabase = await createClient();
-  const questionsResult = await supabase
-    .from("meeting_questions")
-    .select("id, question_text, meeting_choices(id)")
-    .eq("meeting_id", meetingId);
 
-  if (questionsResult.error) {
-    throw questionsResult.error;
-  }
-
-  const answers = questionsResult.data.map((question) => {
-    const choiceId = requiredText(
-      formData.get(`choice:${question.id}`),
-      question.question_text,
-    );
-    const validChoiceIds = new Set(
-      question.meeting_choices.map((choice) => choice.id),
-    );
-
-    if (!validChoiceIds.has(choiceId)) {
-      throw new Error("Selected choice does not belong to this question.");
-    }
-
-    return {
-      choice_id: choiceId,
-      question_id: question.id,
-    };
-  });
-  const pendingIdentity = !voterProfileId;
-  const { data: manualBallot, error: manualBallotError } = await supabase
-    .from("manual_ballots")
-    .upsert(
-      {
-        audit_note: optionalText(formData.get("audit_note")),
-        identity_status: pendingIdentity ? "pending" : "linked",
-        imported_by: importer.id,
-        meeting_id: meetingId,
-        room_id: roomId,
-        source_label: pendingIdentity ? "manual_pending_identity" : "manual_on_site",
-        status: pendingIdentity ? "draft" : "submitted",
-        voter_identity_text: pendingIdentity ? voterIdentityText : null,
-        voter_profile_id: voterProfileId,
-      },
-      { onConflict: "meeting_id,room_id" },
-    )
-    .select("id")
-    .single();
-
-  if (manualBallotError) {
-    throw manualBallotError;
-  }
-
-  const { error: answersError } = await supabase.from("manual_ballot_answers").upsert(
-    answers.map((answer) => ({
-      manual_ballot_id: manualBallot.id,
-      ...answer,
-    })),
-    { onConflict: "manual_ballot_id,question_id" },
-  );
-
-  if (answersError) {
-    throw answersError;
-  }
-
-  await writeAuditLog(supabase, {
-    action: pendingIdentity
-      ? "manual_ballot.pending_identity_saved"
-      : "manual_ballot.submitted",
-    actorProfileId: importer.id,
-    details: {
-      meeting_id: meetingId,
-      pending_identity: pendingIdentity,
-      room_id: roomId,
-      voter_identity_text: pendingIdentity ? voterIdentityText : null,
-      voter_profile_id: voterProfileId,
-    },
-    entityId: manualBallot.id,
-    entityType: "manual_ballot",
+  // Answer validation, upsert, answers, and audit run in one transaction in
+  // the voting core service.
+  await submitManualBallotRecord(supabase, {
+    meetingId,
+    roomId,
+    voterProfileId,
+    voterIdentityText,
+    auditNote: optionalText(formData.get("audit_note")),
+    answers: answersFromFormData(formData),
   });
   revalidateAdminPaths();
   redirect("/admin/voting");
@@ -747,54 +686,16 @@ export async function resolveManualBallotIdentityWithState(
 }
 
 export async function resolveVoteSourceConflict(formData: FormData) {
-  const resolver = await requireAdmin();
-
-  const chosenSource = requiredText(formData.get("chosen_source"), "Chosen source");
-  const onlineBallotId = requiredText(
-    formData.get("online_ballot_id"),
-    "Online ballot",
-  );
-  const manualBallotId = requiredText(
-    formData.get("manual_ballot_id"),
-    "Manual ballot",
-  );
-  const chosenBallotId =
-    chosenSource === "online" ? onlineBallotId : manualBallotId;
-  const meetingId = requiredText(formData.get("meeting_id"), "Meeting");
-  const roomId = requiredText(formData.get("room_id"), "Room");
+  await requireAdmin();
   const supabase = await createClient();
-  const { data: resolution, error } = await supabase.from("vote_source_resolutions").upsert(
-    {
-      meeting_id: meetingId,
-      room_id: roomId,
-      online_ballot_id: onlineBallotId,
-      manual_ballot_id: manualBallotId,
-      chosen_source: chosenSource,
-      chosen_ballot_id: chosenBallotId,
-      conflict_remark: optionalText(formData.get("conflict_remark")),
-      resolved_by: resolver.id,
-      resolved_at: new Date().toISOString(),
-    },
-    { onConflict: "meeting_id,room_id" },
-  )
-    .select("id")
-    .single();
 
-  if (error) {
-    throw error;
-  }
-
-  await writeAuditLog(supabase, {
-    action: "vote_source_conflict.resolved",
-    actorProfileId: resolver.id,
-    details: {
-      chosen_ballot_id: chosenBallotId,
-      chosen_source: chosenSource,
-      meeting_id: meetingId,
-      room_id: roomId,
-    },
-    entityId: resolution.id,
-    entityType: "vote_source_resolution",
+  await resolveVoteConflict(supabase, {
+    meetingId: requiredText(formData.get("meeting_id"), "Meeting"),
+    roomId: requiredText(formData.get("room_id"), "Room"),
+    onlineBallotId: requiredText(formData.get("online_ballot_id"), "Online ballot"),
+    manualBallotId: requiredText(formData.get("manual_ballot_id"), "Manual ballot"),
+    chosenSource: requiredText(formData.get("chosen_source"), "Chosen source"),
+    conflictRemark: optionalText(formData.get("conflict_remark")),
   });
   revalidateAdminPaths();
   redirect("/admin/voting/conflicts?feedback=success&message=Conflict%20resolved");
@@ -858,7 +759,7 @@ export async function resolveVoteSourceConflictWithState(
   const values = voteSourceConflictValues(formData);
 
   try {
-    const resolver = await requireAdmin();
+    await requireAdmin();
     const validation = voteSourceConflictValidationState(
       validateVoteSourceConflict(values),
       values,
@@ -868,45 +769,15 @@ export async function resolveVoteSourceConflictWithState(
       return validation;
     }
 
-    const chosenBallotId =
-      values.chosen_source === "online"
-        ? values.online_ballot_id
-        : values.manual_ballot_id;
     const supabase = await createClient();
-    const { data: resolution, error } = await supabase
-      .from("vote_source_resolutions")
-      .upsert(
-        {
-          meeting_id: values.meeting_id,
-          room_id: values.room_id,
-          online_ballot_id: values.online_ballot_id,
-          manual_ballot_id: values.manual_ballot_id,
-          chosen_source: values.chosen_source,
-          chosen_ballot_id: chosenBallotId,
-          conflict_remark: optionalText(values.conflict_remark),
-          resolved_by: resolver.id,
-          resolved_at: new Date().toISOString(),
-        },
-        { onConflict: "meeting_id,room_id" },
-      )
-      .select("id")
-      .single();
 
-    if (error) {
-      return { error: error.message, values };
-    }
-
-    await writeAuditLog(supabase, {
-      action: "vote_source_conflict.resolved",
-      actorProfileId: resolver.id,
-      details: {
-        chosen_ballot_id: chosenBallotId,
-        chosen_source: values.chosen_source,
-        meeting_id: values.meeting_id,
-        room_id: values.room_id,
-      },
-      entityId: resolution.id,
-      entityType: "vote_source_resolution",
+    await resolveVoteConflict(supabase, {
+      meetingId: values.meeting_id,
+      roomId: values.room_id,
+      onlineBallotId: values.online_ballot_id,
+      manualBallotId: values.manual_ballot_id,
+      chosenSource: values.chosen_source,
+      conflictRemark: optionalText(values.conflict_remark),
     });
     revalidateAdminPaths();
 

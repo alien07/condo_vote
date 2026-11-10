@@ -59,7 +59,11 @@ npm run test:e2e
 ```
 
 ### Database Tests
-Recommended tool: Supabase CLI plus SQL smoke checks.
+Tool: pgTAP through `npm run test:db` (`supabase test db`). Test files live
+in `supabase/tests/`. CI runs them after starting Supabase.
+
+Current coverage: `voting_core.test.sql` (voting core service, room lock,
+answer validation, proxy limit, proxy snapshot sync).
 
 Scope:
 - Local Docker Supabase starts.

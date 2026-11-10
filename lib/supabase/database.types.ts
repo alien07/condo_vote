@@ -1094,9 +1094,9 @@ export type Database = {
       }
       room_owners: {
         Row: {
-          created_at: string
           cancelled_at: string | null
           cancelled_by: string | null
+          created_at: string
           ends_at: string | null
           id: string
           owner_id: string
@@ -1106,9 +1106,9 @@ export type Database = {
           status: string
         }
         Insert: {
-          created_at?: string
           cancelled_at?: string | null
           cancelled_by?: string | null
+          created_at?: string
           ends_at?: string | null
           id?: string
           owner_id: string
@@ -1118,9 +1118,9 @@ export type Database = {
           status?: string
         }
         Update: {
-          created_at?: string
           cancelled_at?: string | null
           cancelled_by?: string | null
+          created_at?: string
           ends_at?: string | null
           id?: string
           owner_id?: string
@@ -1130,6 +1130,13 @@ export type Database = {
           status?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "room_owners_cancelled_by_fkey"
+            columns: ["cancelled_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "room_owners_owner_id_fkey"
             columns: ["owner_id"]
@@ -1267,6 +1274,39 @@ export type Database = {
     Functions: {
       current_profile_id: { Args: never; Returns: string }
       has_app_role: { Args: { required_role: string }; Returns: boolean }
+      resolve_vote_source_conflict: {
+        Args: {
+          p_chosen_source: string
+          p_conflict_remark: string
+          p_manual_ballot_id: string
+          p_meeting_id: string
+          p_online_ballot_id: string
+          p_room_id: string
+        }
+        Returns: Json
+      }
+      submit_ballot: {
+        Args: { p_answers: Json; p_meeting_id: string; p_room_id: string }
+        Returns: Json
+      }
+      submit_manual_ballot: {
+        Args: {
+          p_answers: Json
+          p_audit_note: string
+          p_meeting_id: string
+          p_room_id: string
+          p_voter_identity_text: string
+          p_voter_profile_id: string
+        }
+        Returns: Json
+      }
+      vote_normalize_answers: {
+        Args: { p_answers: Json; p_meeting_id: string }
+        Returns: {
+          choice_id: string
+          question_id: string
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
@@ -1402,3 +1442,4 @@ export const Constants = {
     Enums: {},
   },
 } as const
+

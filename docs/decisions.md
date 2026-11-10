@@ -73,7 +73,7 @@ the queued delivery described in [communication.md](communication.md).
 These decisions were made on 2026-11-08 for V1. Implementation is pending.
 
 ### D010 - Voting Core Service
-Status: accepted, not implemented
+Status: implemented (migration 0020, `features/voting/core/ballot-service.ts`)
 
 Every ballot write goes through one voting core service: online votes,
 admin-imported manual ballots, and online/manual conflict resolution. The
@@ -82,7 +82,7 @@ place for the rules in D011, D012, D017, and the voting window. This is a
 module inside the app (D008), not a separate deployment.
 
 ### D011 - One Voting Right Per Room
-Status: accepted, not implemented
+Status: implemented (migration 0020)
 
 - If a meeting has an approved proxy for a room, only that proxy can vote
   for the room in that meeting.
@@ -90,9 +90,12 @@ Status: accepted, not implemented
   eligible voters for the room cannot change that ballot. The voter who
   locked it can edit it until voting closes.
 - Co-owner consent is not required.
+- `eligible_voters_snapshot` keeps one voter per room. After publishing,
+  approving or revoking a proxy updates that row, and is refused once the
+  room has voted (`VOTE_ROOM_ALREADY_VOTED`).
 
 ### D012 - Proxy Limit
-Status: accepted, not implemented
+Status: implemented (migration 0020)
 
 One proxy can hold at most three rooms per meeting (Condominium Act
 section 47). Enforce it when creating and approving proxy authorizations.
