@@ -1,5 +1,6 @@
 "use client";
 
+import { bangkokDateTimeParts } from "@/lib/datetime";
 import { useEffect, useState } from "react";
 import { PendingSubmitButton } from "@/features/debug/tracked-submit-button";
 
@@ -74,15 +75,7 @@ function syncUrl(filters: DocumentFilters) {
   window.history.replaceState(null, "", query ? `?${query}` : "/admin/documents");
 }
 
-function formatDateTime(value: string) {
-  const date = new Date(value);
-  const pad = (part: number) => String(part).padStart(2, "0");
-
-  return {
-    date: `${pad(date.getDate())}/${pad(date.getMonth() + 1)}/${date.getFullYear()}`,
-    time: `${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`,
-  };
-}
+const formatDateTime = bangkokDateTimeParts;
 
 export function DocumentRegistryTable({
   documentTypes,

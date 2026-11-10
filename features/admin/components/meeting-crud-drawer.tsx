@@ -1,5 +1,6 @@
 "use client";
 
+import { isoToBangkokLocalInput } from "@/lib/datetime";
 import { useActionState, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import {
@@ -38,21 +39,8 @@ type MeetingCrudDrawerProps = {
 
 const emptyState: MeetingActionState = {};
 
-function formatDateTimeLocal(value: string | null | undefined) {
-  if (!value) {
-    return "";
-  }
-
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return "";
-  }
-
-  const offsetMs = date.getTimezoneOffset() * 60_000;
-
-  return new Date(date.getTime() - offsetMs).toISOString().slice(0, 16);
-}
+// Bangkok time, so the server render and the browser agree.
+const formatDateTimeLocal = isoToBangkokLocalInput;
 
 function fieldErrorId(fieldName: string) {
   return `meeting-${fieldName}-error`;

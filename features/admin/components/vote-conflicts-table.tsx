@@ -1,5 +1,6 @@
 "use client";
 
+import { bangkokDateTimeParts } from "@/lib/datetime";
 import { useActionState, useEffect, useRef, useState } from "react";
 import {
   resolveVoteSourceConflictWithState,
@@ -107,10 +108,9 @@ function formatDateTime(value: string | null | undefined) {
     return "-";
   }
 
-  const date = new Date(value);
-  const pad = (part: number) => String(part).padStart(2, "0");
+  const { date, time } = bangkokDateTimeParts(value);
 
-  return `${pad(date.getDate())}/${pad(date.getMonth() + 1)}/${date.getFullYear()} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+  return `${date} ${time}`;
 }
 
 function escapeSelectorValue(value: string) {

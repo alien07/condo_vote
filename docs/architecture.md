@@ -11,6 +11,13 @@
 - Email: Google SMTP with queued delivery (P002).
 - Video: external URL such as YouTube unlisted, Google Drive, or Vimeo.
 
+## Time Handling
+- Store every time in UTC (`timestamptz`).
+- Read form times and show times as Asia/Bangkok through `lib/datetime.ts`,
+  never through the server's own time zone. Hosts run in UTC; dev machines
+  run in Bangkok, so time zone bugs only appear after deploy.
+- Unit tests run with `TZ=UTC` (`vitest.config.ts`).
+
 ## High-Level Flow
 1. Admin imports or creates room and owner master data.
 2. User registers or signs in with Google.

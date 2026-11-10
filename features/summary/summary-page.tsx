@@ -1,3 +1,4 @@
+import { formatBangkokDateTime } from "@/lib/datetime";
 import Link from "next/link";
 import { FileText } from "lucide-react";
 import { ChoiceResultsTable } from "@/features/results/choice-results-table";
@@ -15,16 +16,7 @@ type SummaryPageProps = {
   history: ApprovedSummary[];
 };
 
-function formatDateTime(value: string | undefined) {
-  if (!value) {
-    return "-";
-  }
-
-  return new Intl.DateTimeFormat("en-GB", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(new Date(value));
-}
+const formatDateTime = formatBangkokDateTime;
 
 function formatPercent(value: number | undefined) {
   return `${Number(value ?? 0).toFixed(2)}%`;

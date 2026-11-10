@@ -1,9 +1,4 @@
-export function formatDateTime(value: string) {
-  return new Intl.DateTimeFormat("en-GB", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(new Date(value));
-}
+export { formatBangkokDateTime as formatDateTime } from "@/lib/datetime";
 
 export function getResultTotals(payload: unknown) {
   if (!payload || typeof payload !== "object" || !("totals" in payload)) {

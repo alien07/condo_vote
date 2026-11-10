@@ -1,3 +1,4 @@
+import { isoToBangkokLocalInput } from "@/lib/datetime";
 import fs from "node:fs";
 import path from "node:path";
 import { expect, test, type Page } from "@playwright/test";
@@ -39,13 +40,11 @@ const serviceKey =
   localEnv.SUPABASE_SECRET_KEY ||
   localEnv.SUPABASE_SERVICE_ROLE_KEY;
 
+// The form takes Bangkok time, whatever time zone the test machine uses.
 function toDateTimeLocal(date: Date) {
-  date.setMinutes(Math.floor(date.getMinutes() / 10) * 10, 0, 0);
-  const pad = (value: number) => String(value).padStart(2, "0");
+  date.setUTCMinutes(Math.floor(date.getUTCMinutes() / 10) * 10, 0, 0);
 
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(
-    date.getDate(),
-  )}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+  return isoToBangkokLocalInput(date.toISOString());
 }
 
 async function gotoWithRetry(

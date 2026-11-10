@@ -1,4 +1,5 @@
 import type { VotingWindowStatus } from "@/features/voting/status";
+import { APP_TIME_ZONE } from "@/lib/datetime";
 
 // Plain-language text for the voter screens. Times show in Asia/Bangkok (D014).
 
@@ -9,7 +10,7 @@ const dateTime = new Intl.DateTimeFormat("en-GB", {
   year: "numeric",
   hour: "2-digit",
   minute: "2-digit",
-  timeZone: "Asia/Bangkok",
+  timeZone: APP_TIME_ZONE,
 });
 
 export function formatVoterDateTime(value: string) {

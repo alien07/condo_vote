@@ -1,5 +1,6 @@
 "use client";
 
+import { todayInBangkok } from "@/lib/datetime";
 import { useEffect, useMemo, useActionState, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import {
@@ -202,10 +203,7 @@ function mergeParams(
 }
 
 function todayLocalDate() {
-  const date = new Date();
-  const offsetDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
-
-  return offsetDate.toISOString().slice(0, 10);
+  return todayInBangkok();
 }
 
 function ownershipDisplayStatus(link: RoomOwnerLink) {
