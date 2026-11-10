@@ -81,6 +81,13 @@ system admins read all. `needs_privacy_consent()` and
 `accept_privacy_notice(version)` run as security definer.
 Database tests: `supabase/tests/privacy.test.sql`.
 
+## Result Documents (D019)
+Migration 0026 adds `meeting_incidents`: admin inserts, updates and deletes;
+admin and committee select (`can_approve_as_committee()`). Committee members
+can also read `committee_approvals`, so the official record can list them.
+`submit_ballot` accepts ballots in the advance window or the meeting-day
+window. Database tests: `supabase/tests/result_documents.test.sql`.
+
 ## Still Needed
 - `approval_requests` has no policies yet.
 - Provider-specific file access policies after direct upload adapters are selected.

@@ -52,6 +52,12 @@ export function thaiQuorum(quorum: { required_percent?: number | null; met?: boo
   return `${rule}${result}`;
 }
 
+export const THAI_RESOLUTION_TYPES: Record<string, string> = {
+  ordinary: "มติทั่วไป",
+  special: "มติพิเศษ",
+  informational: "เพื่อทราบ",
+};
+
 export const THAI_MEETING_TYPES: Record<string, string> = {
   agm: "การประชุมใหญ่สามัญประจำปี",
   egm: "การประชุมใหญ่วิสามัญ",

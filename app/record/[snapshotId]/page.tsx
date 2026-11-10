@@ -4,6 +4,7 @@ import { PrintButton } from "@/features/results/print-button";
 import {
   THAI_MEETING_ROUNDS,
   THAI_MEETING_TYPES,
+  THAI_RESOLUTION_TYPES,
   THAI_SIGNATORIES,
   thaiBallotSecrecy,
   thaiOutcome,
@@ -249,7 +250,7 @@ export default async function OfficialRecordPage({ params }: RecordPageProps) {
               <p>{question.text}</p>
               <p className="mt-1">
                 เกณฑ์: {thaiPassRule(question.pass_rule)}
-                {question.resolution_type ? ` · ประเภทมติ: ${question.resolution_type}` : ""}
+                {question.resolution_type ? ` · ประเภทมติ: ${THAI_RESOLUTION_TYPES[question.resolution_type] ?? question.resolution_type}` : ""}
                 {question.legal_note ? ` · ${question.legal_note}` : ""}
               </p>
               <table className="mt-2 w-full border-collapse">
