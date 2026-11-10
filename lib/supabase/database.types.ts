@@ -996,6 +996,76 @@ export type Database = {
         }
         Relationships: []
       }
+      privacy_settings: {
+        Row: {
+          consent_required: boolean
+          id: boolean
+          notice_text: string
+          notice_version: number
+          retention_months_inactive_profiles: number
+          retention_months_vote_records: number
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          consent_required?: boolean
+          id?: boolean
+          notice_text: string
+          notice_version?: number
+          retention_months_inactive_profiles?: number
+          retention_months_vote_records?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          consent_required?: boolean
+          id?: boolean
+          notice_text?: string
+          notice_version?: number
+          retention_months_inactive_profiles?: number
+          retention_months_vote_records?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "privacy_settings_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profile_consents: {
+        Row: {
+          accepted_at: string
+          id: string
+          notice_version: number
+          profile_id: string
+        }
+        Insert: {
+          accepted_at?: string
+          id?: string
+          notice_version: number
+          profile_id: string
+        }
+        Update: {
+          accepted_at?: string
+          id?: string
+          notice_version?: number
+          profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profile_consents_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           approval_status: string
@@ -1371,6 +1441,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      accept_privacy_notice: {
+        Args: { p_notice_version: number }
+        Returns: undefined
+      }
       approve_close_voting: { Args: { p_meeting_id: string }; Returns: Json }
       approve_result_snapshot: {
         Args: { p_notes: string; p_result_snapshot_id: string }
@@ -1388,6 +1462,7 @@ export type Database = {
           vote_count: number
         }[]
       }
+      needs_privacy_consent: { Args: never; Returns: boolean }
       queue_result_approved_emails: {
         Args: { p_meeting_id: string }
         Returns: number

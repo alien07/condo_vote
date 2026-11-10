@@ -127,7 +127,7 @@ Admin chooses open or secret ballot when creating a meeting. For a secret
 ballot, admins see totals only, not which room chose what.
 
 ### D016 - System Admin Role And PDPA Settings
-Status: accepted, not implemented
+Status: implemented (migration 0025, `/consent` and `/system` pages)
 
 - Add a `system_admin` role for technical, service, and maintenance
   settings. Admins who run meetings are not expected to be technical.

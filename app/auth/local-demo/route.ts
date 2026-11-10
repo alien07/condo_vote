@@ -137,11 +137,12 @@ export async function GET(request: NextRequest) {
       throw profileError;
     }
 
+    // The local demo user runs meetings and technical settings (D016).
     const { error: roleError } = await supabase.from("app_roles").upsert(
-      {
-        profile_id: profile.id,
-        role: "admin",
-      },
+      [
+        { profile_id: profile.id, role: "admin" },
+        { profile_id: profile.id, role: "system_admin" },
+      ],
       { onConflict: "profile_id,role" },
     );
 

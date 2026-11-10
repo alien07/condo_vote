@@ -110,6 +110,21 @@ export async function isCommittee() {
   return hasAppRole(APP_ROLES.COMMITTEE);
 }
 
+export async function isSystemAdmin() {
+  return hasAppRole(APP_ROLES.SYSTEM_ADMIN);
+}
+
+// Technical settings belong to system admins (D016).
+export async function requireSystemAdmin() {
+  const allowed = await isSystemAdmin();
+
+  if (!allowed) {
+    redirect("/summary");
+  }
+
+  return requireProfile();
+}
+
 export async function requireAdmin() {
   const allowed = await isAdmin();
 

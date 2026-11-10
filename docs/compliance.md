@@ -28,8 +28,13 @@ Checklist for each meeting:
 
 ## Personal Data (PDPA)
 Decision: [D016](decisions.md#d016---system-admin-role-and-pdpa-settings).
-- Collect consent at registration, with the privacy notice shown.
-- System admin configures the privacy notice text and retention periods.
+- Collect consent at registration, with the privacy notice shown. Every
+  signed-in page redirects to `/consent` until the user accepts the current
+  notice version; "Decline" signs the user out.
+- System admin configures the privacy notice text and retention periods on
+  the System page (`/system`). Changing the text starts a new version.
+- V1 records two retention periods (vote records, inactive profiles);
+  deletion is a manual maintenance task until an automatic job is added.
 - Retention periods to configure: profiles, ballots and ballot versions,
   proxy and ownership documents, audit logs, email logs.
 - Data subject requests (access, correction, deletion) go to the juristic

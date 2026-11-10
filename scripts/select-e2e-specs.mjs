@@ -15,6 +15,7 @@ const SPEC = {
   vote: "tests/e2e/vote-flow.spec.ts",
   admin: "tests/e2e/admin-demo.spec.ts",
   tables: "tests/e2e/table-search.spec.ts",
+  privacy: "tests/e2e/privacy.spec.ts",
 };
 
 // Shared code: any change here runs the full suite.
@@ -35,7 +36,9 @@ const runAll = [
 const rules = [
   [/^tests\/e2e\/(.+\.spec\.ts)$/, (m) => [`tests/e2e/${m[1]}`]],
   [/^(app\/(vote|summary)|features\/(voting|summary))\//, () => [SPEC.vote]],
-  [/^(app\/(auth|login)|features\/(auth|shell)|lib\/auth)\//, () => [SPEC.roles]],
+  [/^(app\/(auth|login)|features\/(auth|shell)|lib\/auth)\//, () => [SPEC.roles, SPEC.privacy]],
+  [/^(app\/(consent|system)|features\/privacy)\//, () => [SPEC.privacy]],
+  [/^(app\/committee|features\/(committee|results))\//, () => [SPEC.roles, SPEC.admin]],
   [/^features\/admin\/components\/(table-controls|sections\/shared)/, () => [SPEC.tables]],
   [/^(app\/admin|app\/api\/admin|features\/admin|lib\/audit)\//, () => [SPEC.admin, SPEC.roles]],
   [/^(features\/debug|components)\//, () => [SPEC.admin]],

@@ -1,11 +1,14 @@
 import type { ReactNode } from "react";
+import { redirect } from "next/navigation";
 import { Building2, LogOut } from "lucide-react";
 import { signOut } from "@/features/auth/actions";
 import { TrackedSubmitButton } from "@/features/debug/tracked-submit-button";
 import { AppFeedbackBanner } from "@/features/shell/app-feedback-banner";
 import { AppShellNav } from "@/features/shell/app-shell-nav";
 import { APP_NAME, APP_VERSION } from "@/lib/app-config";
+import { needsPrivacyConsent } from "@/features/privacy/service";
 import { requireProfileWithRoles } from "@/lib/auth/permissions";
+import { createClient } from "@/lib/supabase/server";
 
 type AuthenticatedShellProps = {
   children: ReactNode;
@@ -13,6 +16,12 @@ type AuthenticatedShellProps = {
 
 export async function AuthenticatedShell({ children }: AuthenticatedShellProps) {
   const { profile, roles } = await requireProfileWithRoles();
+
+  // PDPA consent comes before any page that shows personal data (D016).
+  if (await needsPrivacyConsent(await createClient())) {
+    redirect("/consent");
+  }
+
   const isAdmin = roles.includes("admin");
   const roleLabel = roles.length > 0 ? roles.join(", ") : "user";
 
@@ -50,7 +59,11 @@ export async function AuthenticatedShell({ children }: AuthenticatedShellProps) 
             </form>
           </div>
         </div>
-        <AppShellNav isAdmin={isAdmin} isCommittee={roles.includes("committee")} />
+        <AppShellNav
+          isAdmin={isAdmin}
+          isCommittee={roles.includes("committee")}
+          isSystemAdmin={roles.includes("system_admin")}
+        />
       </header>
       <AppFeedbackBanner />
       {children}

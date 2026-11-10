@@ -1,5 +1,6 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import {
   createClient,
@@ -9,6 +10,7 @@ import {
   revalidateAdminPaths,
 } from "@/features/admin/action-modules/shared";
 import { writeAuditLog } from "@/lib/audit/business-audit";
+import { isSystemAdmin, requireProfile, requireSystemAdmin } from "@/lib/auth/permissions";
 
 export type DocumentActionState = {
   error?: string;
@@ -274,7 +276,7 @@ export async function registerDocumentReferenceWithState(
 }
 
 export async function saveAppSettings(formData: FormData) {
-  const admin = await requireAdmin();
+  const admin = await requireSystemAdmin();
   const id = optionalText(formData.get("id"));
   const documentStorageProvider = requiredText(
     formData.get("document_storage_provider"),
@@ -317,7 +319,14 @@ export async function saveAppSettingsWithState(
   const values = appSettingsFormValues(formData);
 
   try {
-    const admin = await requireAdmin();
+    if (!(await isSystemAdmin())) {
+      return {
+        error: "Only a system admin can change technical settings.",
+        values,
+      };
+    }
+
+    const admin = await requireProfile();
     const validation = appSettingsValidationState(
       validateAppSettings(values),
       values,
@@ -357,6 +366,7 @@ export async function saveAppSettingsWithState(
       entityType: "app_settings",
     });
     revalidateAdminPaths();
+    revalidatePath("/system");
 
     return {
       recordId: settings.id,

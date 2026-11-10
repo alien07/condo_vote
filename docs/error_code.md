@@ -41,6 +41,16 @@ and mapped to `VoteError` in `features/voting/core/ballot-service.ts`.
 | `VOTE_ROOM_ALREADY_VOTED` | The room already voted, so its proxy cannot change (D011). | Approving or revoking a proxy after the room voted. |
 | `VOTE_SECRECY_LOCKED` | Ballot secrecy cannot change after publishing (D015). | Editing a published meeting from open to secret. |
 
+## Privacy Consent
+
+Raised by `accept_privacy_notice` in
+`supabase/migrations/0025_system_admin_privacy.sql`.
+
+| Code | Meaning | Common scenario |
+| --- | --- | --- |
+| `PRIVACY_NOT_SIGNED_IN` | No signed-in profile. | Session expired on the consent page. |
+| `PRIVACY_NOTICE_CHANGED` | The notice version changed while the user was reading. | System admin saved a new notice; the page reloads with the new text. |
+
 ## Committee Approvals
 
 Raised by `approve_result_snapshot` and `approve_close_voting` in

@@ -6,7 +6,7 @@ This is the initial relational model. Names may change during implementation, bu
 
 | Role | Purpose | Vote Permission |
 | --- | --- | --- |
-| System admin | Manages technical, service, and maintenance settings, including PDPA notice and retention (D016). Planned role. | Same as normal user unless separately eligible. |
+| System admin | Manages technical, service, and maintenance settings, including PDPA notice and retention (D016). Role `system_admin`; only a system admin can grant it. | Same as normal user unless separately eligible. |
 | Admin | Manages master data, meetings, questions, choices, approvals, and result publication. | Can manage votes but should not vote unless also eligible as owner/proxy. |
 | Committee | Reviews calculated results and approves publication. | Same as normal user unless separately eligible. |
 | Owner | Verified room owner. | Can vote for owned room. |
@@ -74,6 +74,8 @@ erDiagram
 | [meeting_close_approvals](#meeting_close_approvals) | Committee approvals to close voting before `ends_at`. |
 | [documents](#documents) | Private file references for owner/proxy approval and generated PDFs. |
 | [app_settings](#app_settings) | App-level operational settings such as the selected private document storage provider. |
+| [privacy_settings](#privacy_settings) | One row: PDPA privacy notice, its version, and retention periods. |
+| [profile_consents](#profile_consents) | Which privacy notice version each profile accepted. |
 | [audit_logs](#audit_logs) | Append-only business action records for traceability and troubleshooting. |
 | [email_logs](#email_logs) | Delivery log for invitations, reminders, and result notifications. |
 
@@ -204,9 +206,19 @@ Key fields: owner type, owner ID, document type, provider, storage path or priva
 Notes: Used for owner/proxy approval documents and generated PDFs. Default visibility is private. The `document_set_key` groups revisions of one logical document; SHA-256 and file size verify the exact file. Provider credentials must not be stored in this table.
 
 ### app_settings
-Purpose: Stores operational settings controlled by admin.
+Purpose: Stores technical settings controlled by the system admin (D016). Admins can read them.
 Key fields: document storage provider and root path or private folder link.
 Notes: V1 supports `local_drive` and `google_drive` as registry providers. Store only the root locator. Keep Google credentials outside the database.
+
+### privacy_settings
+Purpose: PDPA privacy notice and retention periods (D016).
+Key fields: consent required flag, notice text, notice version, vote record retention (months), inactive profile retention (months), updated by/at.
+Notes: One row. Only `system_admin` can update. Changing the notice text increases the version, so every user accepts again. Retention periods are recorded settings; deletion runs as a manual maintenance task in V1. Local and CI seed set `consent_required = false`.
+
+### profile_consents
+Purpose: Records PDPA consent.
+Key fields: profile, notice version, accepted timestamp.
+Notes: Unique per profile and version. Written only by `accept_privacy_notice()`, which also writes a `privacy.accepted` audit entry.
 
 ### audit_logs
 Purpose: Stores business audit entries created by authenticated actions.
@@ -238,10 +250,9 @@ Decided on 2026-11-08; see [decisions.md](decisions.md). Not migrated yet.
 | ✅ Per-question pass rule: `pass_basis`, `pass_operator`, `pass_percent`; `required_threshold` is now a preset or `custom` (0022) | D013 |
 | ✅ `meetings.required_approvals`, `closed_at`; several approvals per snapshot; `result_publications`; `meeting_close_approvals` (0023) | D014 |
 | ✅ `meetings.ballot_secrecy` (`open`/`secret`, fixed after publishing); admin reads online answers only for open ballots; `meeting_online_tally()` (0024) | D015 |
-| `system_admin` role; PDPA consent on profiles; retention settings | D016 |
+| ✅ `system_admin` role; `privacy_settings`; `profile_consents`; storage settings editable by system admin only (0025) | D016 |
 | ✅ Multiple answers per question in `ballot_answers` and `manual_ballot_answers`; `is_abstain` flag on choices; `max_choices` on questions (0020, 0021) | D017 |
 
 ## Open Questions
-- Whether co-owner consent needs a separate table.
-- Whether every question allows single choice only or some allow multiple choice.
-- Whether abstain is stored as a regular choice or a special answer state.
+- None open for V1. Co-owner consent is not required (D011); multiple choice
+  and the Abstain choice are decided in D017.

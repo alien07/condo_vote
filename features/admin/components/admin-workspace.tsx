@@ -1,4 +1,5 @@
 import { getAdminDashboardData } from "@/features/admin/data";
+import { isSystemAdmin } from "@/lib/auth/permissions";
 import { AdminSoftNavigation } from "@/features/admin/components/admin-soft-navigation";
 import { ShieldCheck } from "lucide-react";
 import { PeopleCrudPilot } from "@/features/admin/components/sections/people/people-crud-pilot";
@@ -92,6 +93,7 @@ export async function AdminWorkspace({
     resultPublications,
   } =
     await getAdminDashboardData({ auditFilters });
+  const canEditTechnicalSettings = await isSystemAdmin();
   const {
     appRolesByProfile,
     approvalCountBySnapshotId,
@@ -185,6 +187,7 @@ export async function AdminWorkspace({
 
         <DocumentStorageSection
           appSettings={appSettings}
+          canEdit={canEditTechnicalSettings}
           hidden={!visibleSections.has("storage")}
         />
 
