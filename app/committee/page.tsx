@@ -11,7 +11,8 @@ import {
   QuestionOutcomeLine,
   type QuestionOutcomePayload,
 } from "@/features/results/question-outcome";
-import { PendingSubmitButton } from "@/features/debug/tracked-submit-button";
+import { ChoiceResultsTable, type ChoiceResult } from "@/features/results/choice-results-table";
+import { ConfirmSubmitButton } from "@/features/admin/components/form-controls";
 
 function formatDateTime(value: string) {
   return new Intl.DateTimeFormat("en-GB", {
@@ -22,11 +23,16 @@ function formatDateTime(value: string) {
 }
 
 type PendingPayload = {
-  totals?: { quorum?: { label?: string; met?: boolean | null } | null };
+  totals?: {
+    quorum?: { label?: string; met?: boolean | null } | null;
+    eligible_voters?: number;
+    submitted_ballots?: number;
+  };
   questions?: (QuestionOutcomePayload & {
     agenda_no?: string | null;
     agenda_title?: string | null;
     text?: string;
+    choices?: ChoiceResult[];
   })[];
 };
 
@@ -43,8 +49,8 @@ export default async function CommitteePage() {
 
   return (
     <main className="mx-auto max-w-5xl px-6 py-8">
-      <div className="mb-6 flex items-center gap-3 border-b border-[var(--border)] pb-5">
-        <Gavel className="text-[var(--primary)]" size={26} />
+      <div className="mb-6 flex items-start gap-3 border-b border-[var(--border)] pb-5">
+        <Gavel className="mt-1 shrink-0 text-[var(--primary)]" size={26} />
         <div>
           <h1 className="text-2xl font-semibold">Committee</h1>
           <p className="text-sm text-[var(--muted)]">
@@ -69,8 +75,8 @@ export default async function CommitteePage() {
                 <div>
                   <div className="font-medium">{meeting.title}</div>
                   <div className="text-sm text-[var(--muted)]">
-                    Closes automatically {formatDateTime(meeting.ends_at)}. Close
-                    approvals: {meeting.close_approvals} of {meeting.required_approvals}
+                    Closes automatically {formatDateTime(meeting.ends_at)} · Close
+                    approvals {meeting.close_approvals} of {meeting.required_approvals}
                   </div>
                 </div>
                 {meeting.approved_by_me ? (
@@ -78,13 +84,14 @@ export default async function CommitteePage() {
                 ) : (
                   <form action={approveCloseVotingAsCommittee}>
                     <input name="meeting_id" type="hidden" value={meeting.id} />
-                    <PendingSubmitButton
-                      className="rounded-md border border-[var(--border)] px-3 py-2 text-sm font-medium"
+                    <ConfirmSubmitButton
+                      className="min-h-11 rounded-md border border-[var(--border)] px-3 py-2 text-sm font-medium"
+                      confirmMessage={`Approve closing voting for "${meeting.title}" now? Voting ends when ${meeting.required_approvals} committee approval(s) are recorded. This cannot be undone.`}
                       pendingLabel="Saving..."
                       type="submit"
                     >
                       Approve closing voting
-                    </PendingSubmitButton>
+                    </ConfirmSubmitButton>
                   </form>
                 )}
               </div>
@@ -108,55 +115,78 @@ export default async function CommitteePage() {
                   data-result-snapshot-id={result.snapshot_id}
                   key={result.snapshot_id}
                 >
-                  <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div>
-                      <h3 className="font-medium">{result.title}</h3>
-                      <p className="text-sm text-[var(--muted)]">
-                        Generated {formatDateTime(result.generated_at)}. Approvals:{" "}
-                        {result.approvals} of {result.required_approvals}
-                      </p>
-                      {payload.totals?.quorum?.label ? (
-                        <p className="text-sm">
-                          Quorum: {payload.totals.quorum.label}:{" "}
-                          {payload.totals.quorum.met === null
-                            ? "not evaluated"
-                            : payload.totals.quorum.met
-                              ? "met"
-                              : "not met"}
-                        </p>
-                      ) : null}
-                    </div>
-                    {result.approved_by_me ? (
-                      <span className="text-sm text-[var(--muted)]">You approved this result</span>
+                  {/* Read the result first, then approve (details above the form). */}
+                  <h3 className="font-semibold">{result.title}</h3>
+                  <p className="text-sm text-[var(--muted)]">
+                    Generated {formatDateTime(result.generated_at)} · Approvals{" "}
+                    {result.approvals} of {result.required_approvals}
+                  </p>
+                  {payload.totals?.submitted_ballots !== undefined ? (
+                    <p className="mt-1 text-sm">
+                      Ballots counted: {payload.totals.submitted_ballots} of{" "}
+                      {payload.totals.eligible_voters ?? 0} eligible rooms
+                    </p>
+                  ) : null}
+                  {payload.totals?.quorum?.label ? (
+                    <p className="text-sm">
+                      Quorum: {payload.totals.quorum.label}:{" "}
+                      <span className="font-medium">
+                        {payload.totals.quorum.met === null
+                          ? "not evaluated"
+                          : payload.totals.quorum.met
+                            ? "met"
+                            : "not met"}
+                      </span>
+                    </p>
+                  ) : null}
+                  <div className="mt-4 grid gap-4">
+                    {payload.questions?.length ? (
+                      payload.questions.map((question, index) => (
+                        <div
+                          className="border-t border-[var(--border)] pt-3 text-sm"
+                          key={`${result.snapshot_id}-${index}`}
+                        >
+                          <div className="font-medium">
+                            {question.agenda_no ? `Agenda ${question.agenda_no}` : `Item ${index + 1}`}
+                            {" · "}
+                            {question.agenda_title ?? question.text ?? "-"}
+                          </div>
+                          <QuestionOutcomeLine question={question} />
+                          <ChoiceResultsTable choices={question.choices} />
+                        </div>
+                      ))
                     ) : (
-                      <form action={approveResultAsCommittee} className="grid gap-2">
+                      <p className="text-sm text-[var(--muted)]">
+                        This result has no agenda items.
+                      </p>
+                    )}
+                  </div>
+                  <div className="mt-4 border-t border-[var(--border)] pt-4">
+                    {result.approved_by_me ? (
+                      <p className="text-sm text-[var(--muted)]">You approved this result.</p>
+                    ) : (
+                      <form
+                        action={approveResultAsCommittee}
+                        className="grid gap-2 sm:max-w-md"
+                      >
                         <input name="result_snapshot_id" type="hidden" value={result.snapshot_id} />
-                        <input
-                          aria-label="Approval notes"
-                          className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-                          name="notes"
-                          placeholder="Notes (optional)"
-                        />
-                        <PendingSubmitButton
-                          className="rounded-md bg-[var(--primary)] px-3 py-2 text-sm font-medium text-[var(--primary-foreground)]"
+                        <label className="grid gap-1 text-sm font-medium">
+                          Approval notes (optional)
+                          <input
+                            className="min-h-11 rounded-md border border-[var(--border)] px-3 py-2 text-sm font-normal"
+                            name="notes"
+                          />
+                        </label>
+                        <ConfirmSubmitButton
+                          className="min-h-11 rounded-md bg-[var(--primary)] px-3 py-2 text-sm font-medium text-[var(--primary-foreground)]"
+                          confirmMessage={`Approve the result of "${result.title}"? The result is published when ${result.required_approvals} committee approval(s) are recorded. This cannot be undone.`}
                           pendingLabel="Approving..."
                           type="submit"
                         >
                           Approve result
-                        </PendingSubmitButton>
+                        </ConfirmSubmitButton>
                       </form>
                     )}
-                  </div>
-                  <div className="mt-3 grid gap-2">
-                    {payload.questions?.map((question, index) => (
-                      <div className="text-sm" key={`${result.snapshot_id}-${index}`}>
-                        <div className="font-medium">
-                          {question.agenda_no ?? `Item ${index + 1}`}{" "}
-                          {question.agenda_title ?? question.text ?? "-"}
-                        </div>
-                        <QuestionOutcomeLine question={question} />
-                      </div>
-                    ))}
                   </div>
                 </section>
               );

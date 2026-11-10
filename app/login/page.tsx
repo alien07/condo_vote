@@ -59,7 +59,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
         <LogIn className="mb-4 text-[var(--primary)]" size={24} />
         <h1 className="text-xl font-semibold">Sign in</h1>
         <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
-          Sign in with Google. Version {APP_VERSION}.
+          Use your Google account to vote and see meeting results.
         </p>
         {errorMessage ? (
           <p className="mt-3 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
@@ -81,6 +81,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
             </p>
           </div>
         ) : null}
+        <p className="mt-6 text-xs text-[var(--muted)]">Version {APP_VERSION}</p>
       </section>
     </main>
   );

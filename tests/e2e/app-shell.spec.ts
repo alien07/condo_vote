@@ -31,8 +31,9 @@ test.describe("@test:e2e app shell", () => {
 
     await expect(page.getByRole("heading", { name: "Sign in" })).toBeVisible();
     await expect(
-      page.getByText(`Sign in with Google. Version ${APP_VERSION}.`),
+      page.getByText("Use your Google account to vote and see meeting results."),
     ).toBeVisible();
+    await expect(page.getByText(`Version ${APP_VERSION}`)).toBeVisible();
   });
 
   test("0.0.0.0 redirects to the canonical laptop host", async ({ request }) => {

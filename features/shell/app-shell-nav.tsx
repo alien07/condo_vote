@@ -126,7 +126,7 @@ export function AppShellNav({
                 <TrackedLink
                   aria-current={active ? "page" : undefined}
                   className={[
-                    "inline-flex min-h-10 shrink-0 items-center gap-2 rounded-md border px-3 py-2 font-medium",
+                    "inline-flex min-h-11 shrink-0 items-center gap-2 rounded-md border px-3 py-2 font-medium",
                     active
                       ? "border-[var(--primary)] bg-[var(--primary)] text-[var(--primary-foreground)]"
                       : "border-[var(--border)] bg-[var(--surface)] text-[var(--foreground)]",
@@ -142,11 +142,13 @@ export function AppShellNav({
             })}
         </nav>
 
-        {breadcrumbs.length > 0 ? (
-          <div className="flex flex-wrap items-center gap-2 text-xs text-[var(--muted)]">
+        {/* A single crumb repeats the active tab, so show the trail only on
+            nested pages. */}
+        {breadcrumbs.length > 1 || backHref ? (
+          <div className="flex flex-wrap items-center gap-x-2 text-xs text-[var(--muted)]">
             {backHref ? (
               <TrackedLink
-                className="font-medium text-[var(--foreground)]"
+                className="inline-flex min-h-11 items-center font-medium text-[var(--foreground)] md:min-h-0"
                 debugName="shell.back"
                 href={backHref}
               >
@@ -158,11 +160,12 @@ export function AppShellNav({
               <span className="flex items-center gap-2" key={`${item.href}:${index}`}>
                 {index > 0 ? <span>/</span> : null}
                 <TrackedLink
-                  className={
+                  className={[
+                    "inline-flex min-h-11 items-center capitalize md:min-h-0",
                     index === breadcrumbs.length - 1
-                      ? "capitalize text-[var(--foreground)]"
-                      : "capitalize hover:text-[var(--foreground)]"
-                  }
+                      ? "text-[var(--foreground)]"
+                      : "hover:text-[var(--foreground)]",
+                  ].join(" ")}
                   debugName={`shell.breadcrumb.${item.label}`}
                   href={item.href}
                 >

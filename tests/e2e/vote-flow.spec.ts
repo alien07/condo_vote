@@ -236,7 +236,7 @@ test.describe("@test:e2e @test:voting owner/proxy vote flow", () => {
       await expect(page.getByText(fixture.meetingTitle)).toBeVisible();
       await expect(
         page.getByText(
-          `Room ${fixture.roomNumber} / ${voterType} / ownership 1%`,
+          `Room ${fixture.roomNumber} · ${voterType === "owner" ? "Owner" : "Proxy"} · 1% ownership`,
         ),
       ).toBeVisible();
 

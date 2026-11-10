@@ -27,34 +27,39 @@ export async function AuthenticatedShell({ children }: AuthenticatedShellProps) 
 
   return (
     <>
-      <header className="sticky top-0 z-30 border-b border-[var(--border)] bg-[var(--background)]">
-        <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-3 md:flex-row md:items-center md:justify-between md:px-6">
+      {/* Sticky only from tablet up: on phones a sticky header covered a
+          third of the screen and hid questions the browser scrolled to. */}
+      <header className="z-30 border-b border-[var(--border)] bg-[var(--background)] md:sticky md:top-0">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 md:px-6">
           <div className="flex min-w-0 items-center gap-3">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-[var(--primary)] text-[var(--primary-foreground)]">
               <Building2 size={22} aria-hidden="true" />
             </div>
             <div className="min-w-0">
               <div className="truncate text-sm font-semibold">{APP_NAME}</div>
-              <div className="text-xs text-[var(--muted)]">v{APP_VERSION}</div>
+              <div className="hidden text-xs text-[var(--muted)] sm:block">
+                v{APP_VERSION}
+              </div>
             </div>
           </div>
 
-          <div className="flex min-w-0 flex-col gap-2 text-sm sm:flex-row sm:items-center">
-            <div className="min-w-0 rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 sm:max-w-72">
+          <div className="flex min-w-0 items-center gap-2 text-sm">
+            <div className="min-w-0 text-right sm:rounded-md sm:border sm:border-[var(--border)] sm:bg-[var(--surface)] sm:px-3 sm:py-2 sm:text-left md:max-w-72">
               <div className="truncate font-medium">{profile.full_name}</div>
-              <div className="truncate text-xs text-[var(--muted)]">
+              <div className="hidden truncate text-xs text-[var(--muted)] sm:block">
                 {profile.email} / {profile.default_status} / {roleLabel}
               </div>
             </div>
             <form action={signOut}>
               <TrackedSubmitButton
-                className="inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm font-medium md:w-auto"
+                aria-label="Sign out"
+                className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center gap-2 rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm font-medium"
                 debugName="auth.logout"
                 pendingLabel="Signing out..."
                 type="submit"
               >
                 <LogOut size={16} aria-hidden="true" />
-                Sign out
+                <span className="hidden sm:inline">Sign out</span>
               </TrackedSubmitButton>
             </form>
           </div>

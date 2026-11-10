@@ -1,15 +1,9 @@
 import Link from "next/link";
 import { Vote } from "lucide-react";
 import { getVotingDashboardData } from "@/features/voting/data";
+import { describeVoterRoom, describeVotingWindow } from "@/features/voting/display";
 import { VotingStatusBadge } from "@/features/voting/status-badge";
 import { getVotingWindowStatus } from "@/features/voting/status";
-
-function formatDateTime(value: string) {
-  return new Intl.DateTimeFormat("en-GB", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(new Date(value));
-}
 
 export default async function VotePage() {
   const { eligibleRows, ballotsByMeetingRoom } = await getVotingDashboardData();
@@ -36,7 +30,7 @@ export default async function VotePage() {
               contact the admin if you expect voting access.
             </p>
             <Link
-              className="mt-4 inline-flex min-h-10 items-center justify-center rounded-md border border-[var(--border)] px-4 py-2 font-medium"
+              className="mt-4 inline-flex min-h-11 items-center justify-center rounded-md border border-[var(--border)] px-4 py-2 font-medium"
               href="/summary"
             >
               Open summary
@@ -64,13 +58,15 @@ export default async function VotePage() {
                         {meeting?.title ?? "Meeting"}
                       </h2>
                       <p className="mt-1 text-sm text-[var(--muted)]">
-                        Room {room?.room_number ?? "-"} / {eligible.voter_type} /{" "}
-                        ownership {eligible.ownership_percent}%
+                        {describeVoterRoom(
+                          room?.room_number,
+                          eligible.voter_type,
+                          eligible.ownership_percent,
+                        )}
                       </p>
                       {meeting ? (
-                        <p className="mt-1 text-sm text-[var(--muted)]">
-                          {formatDateTime(meeting.starts_at)} -{" "}
-                          {formatDateTime(meeting.ends_at)}
+                        <p className="mt-1 text-sm font-medium">
+                          {describeVotingWindow(meeting, votingStatus)}
                         </p>
                       ) : null}
                     </div>
@@ -91,7 +87,7 @@ export default async function VotePage() {
                         </div>
                       ) : null}
                       <Link
-                        className="inline-flex min-h-10 items-center justify-center rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)]"
+                        className="inline-flex min-h-11 items-center justify-center rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)]"
                         href={href}
                       >
                         Open ballot
