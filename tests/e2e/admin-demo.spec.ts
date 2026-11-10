@@ -72,11 +72,12 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
     "Local Supabase service key is required for admin demo integration.",
   );
 
-  test("demo admin can sign in and manage master data", async ({ page }) => {
-    // Quarantined: stale steps (e.g. waitForURL("**/admin/voting") vs the new
-    // ?feedback= redirects) make this 800-line test hang until timeout.
-    // Tracked in https://github.com/alien07/condo_vote/issues/4.
-    test.fixme(true, "Stale admin flow steps, see issue #4");
+  // End-to-end admin lifecycle. Tagged @full: it runs only in full-suite runs,
+  // not in per-PR smoke tests. See docs/testing.md.
+  test(
+    "demo admin can sign in and manage master data",
+    { tag: "@full" },
+    async ({ page }) => {
     test.setTimeout(900_000);
 
     const supabase = createClient<Database>(supabaseUrl!, serviceKey!, {
@@ -775,7 +776,9 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
       await dialog.accept().catch(() => undefined);
     });
     await resolveIdentityDrawer.getByRole("button", { name: "Link profile" }).click();
-    await page.waitForURL("**/admin/voting", { waitUntil: "domcontentloaded" });
+    await page.waitForURL(/\/admin\/voting\?[\s\S]*feedback=success/, {
+      waitUntil: "domcontentloaded",
+    });
 
     await page.goto(
       `${activeAppOrigin}/admin/voting/conflicts?meeting=${encodeURIComponent(
@@ -846,7 +849,7 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
       await dialog.accept().catch(() => undefined);
     });
     await approveResultDrawer.getByRole("button", { name: "Approve result" }).click();
-    await page.waitForURL("**/admin/results?feedback=success**", {
+    await page.waitForURL(/\/admin\/results\?[\s\S]*feedback=success/, {
       waitUntil: "commit",
     });
     await gotoWithRetry(

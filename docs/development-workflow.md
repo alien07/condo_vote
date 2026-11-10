@@ -76,7 +76,7 @@ All checks must pass before merge:
 | Lint | in CI |
 | Typecheck | in CI |
 | Build | in CI |
-| E2E smoke test for changed features, against local Supabase | in CI as a full run, currently failing (to fix: run only changed domains) |
+| E2E smoke test for changed features, against local Supabase | in CI |
 | Unit tests (Vitest) | to set up |
 | Migration check (`db reset` and generated types diff) | to set up |
 | Secret scan (gitleaks) | to set up |
@@ -84,10 +84,13 @@ All checks must pass before merge:
 
 E2E in the CI gate is a smoke test of the features the PR changes, not the
 full suite:
-- Tag each e2e test with its domain, for example `@voting`, `@results`,
-  `@people` **(to set up)**.
-- CI maps changed paths to domains and runs only the matching tags, plus the
-  app shell smoke test (`tests/e2e/app-shell.spec.ts`) **(to set up)**.
+- `scripts/select-e2e-specs.mjs` maps changed paths to spec files and always
+  adds the app shell test (`tests/e2e/app-shell.spec.ts`).
+- Smoke runs skip tests tagged `@full` (long end-to-end flows):
+  `npm run test:e2e:smoke`.
+- The full suite, including `@full`, runs when shared code changes, or on
+  demand from GitHub Actions ("Run workflow" on CI, `full` = true):
+  `npm run test:e2e`.
 
 ## 8. Review
 - Self-review the diff first.
@@ -99,7 +102,9 @@ full suite:
 ## 9. Merge
 - Squash merge into `dev` after CI is green and the PR is approved.
 - Delete the branch after merge.
-- Branch protection on `dev` enforces this **(to set up)**.
+- No branch protection on `dev` (decided 2026-11-08). Whoever merges,
+  person or agent, checks that CI is green first. Never merge a red or
+  still-running PR.
 
 ## 10. Release And Deploy
 - Every PR gets a preview deployment on the non-production Supabase project
@@ -133,9 +138,7 @@ These apply on top of the steps above.
 
 ## Setup Backlog
 Set up in this order (highest value first):
-1. Fix CI e2e smoke tests (pin `ubuntu-24.04`, start Supabase in CI, tag
-   tests by domain, select tags from changed paths) and enable branch
-   protection on `dev`.
+1. ~~Fix CI e2e smoke tests~~ (done in #3).
 2. Prettier, husky + lint-staged, and Conventional Commits check.
 3. Vitest, starting with result calculation.
 4. Review checklist adoption (template added with this document).
