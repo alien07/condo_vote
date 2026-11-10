@@ -97,17 +97,18 @@ export async function generateResultSnapshot(formData: FormData) {
 
   const meetingId = requiredText(formData.get("id"), "Meeting ID");
   const supabase = await createClient();
-  const { data: existingApproval, error: existingApprovalError } = await supabase
+  // A snapshot can have several approvals (D014), so check for any row.
+  const { data: existingApprovals, error: existingApprovalError } = await supabase
     .from("committee_approvals")
     .select("id")
     .eq("meeting_id", meetingId)
-    .maybeSingle();
+    .limit(1);
 
   if (existingApprovalError) {
     throw existingApprovalError;
   }
 
-  if (existingApproval) {
+  if (existingApprovals.length > 0) {
     throw new Error("Cannot generate a new result after committee approval.");
   }
 
@@ -166,6 +167,15 @@ export async function generateResultSnapshot(formData: FormData) {
 
   if (meetingResult.error) {
     throw meetingResult.error;
+  }
+
+  if (
+    meetingResult.data.status === "published" &&
+    Date.parse(meetingResult.data.ends_at) > Date.now()
+  ) {
+    throw new Error(
+      "Voting is still open. Results can be generated after the end time or after the committee approves closing voting.",
+    );
   }
 
   if (questionsResult.error) {

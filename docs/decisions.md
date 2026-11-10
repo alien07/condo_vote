@@ -118,6 +118,8 @@ Status: implemented (migration 0023, `/committee` page)
   approval is a separate, immutable record.
 - Voting closes automatically at `ends_at`, or earlier when committee
   approvals to close reach the same minimum.
+- Generating a result does not close voting. It is allowed only after
+  voting has closed, so a single admin cannot end voting early.
 - Store times in UTC; display in Asia/Bangkok.
 
 ### D015 - Ballot Secrecy Per Meeting

@@ -121,8 +121,26 @@ function escapeSelectorValue(value: string) {
   return value.replaceAll('"', '\\"');
 }
 
+// A question can have several answers (multiple choice, D017).
 function answerByQuestion(answers: ConflictAnswer[]) {
-  return new Map(answers.map((answer) => [answer.questionId, answer]));
+  const grouped = new Map<
+    string,
+    { choiceIds: string[]; choiceText: string; questionText: string }
+  >();
+
+  for (const answer of answers) {
+    const current = grouped.get(answer.questionId);
+
+    grouped.set(answer.questionId, {
+      choiceIds: [...(current?.choiceIds ?? []), answer.choiceId].sort(),
+      choiceText: current
+        ? `${current.choiceText}, ${answer.choiceText}`
+        : answer.choiceText,
+      questionText: answer.questionText,
+    });
+  }
+
+  return grouped;
 }
 
 function conflictQuestionRows(conflict: VoteConflictRow) {
@@ -141,7 +159,8 @@ function conflictQuestionRows(conflict: VoteConflictRow) {
 
     return {
       differs:
-        !conflict.onlineAnswersHidden && manual?.choiceId !== online?.choiceId,
+        !conflict.onlineAnswersHidden &&
+        (manual?.choiceIds.join(",") ?? "") !== (online?.choiceIds.join(",") ?? ""),
       manual,
       online,
       questionId,
