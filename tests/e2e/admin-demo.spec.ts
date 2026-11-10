@@ -893,19 +893,68 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
         .filter({ hasText: meetingTitle })
         .getByRole("cell", { name: "approved", exact: true }),
     ).toBeVisible({ timeout: 15_000 });
-    const pdfPreview = page.locator("#mock-pdf-summary");
+    // D019: both result documents show the numbers of the published snapshot.
+    const persistedMeetingId = persistedMeetingResult.data!.id;
+    const [publicationResult, eligibleResult] = await Promise.all([
+      supabase
+        .from("result_publications")
+        .select("result_snapshot_id, result_snapshots(payload_sha256)")
+        .eq("meeting_id", persistedMeetingId)
+        .single(),
+      supabase
+        .from("eligible_voters_snapshot")
+        .select("room_id, ownership_percent")
+        .eq("meeting_id", persistedMeetingId),
+    ]);
+
+    expect(publicationResult.error).toBeNull();
+    expect(eligibleResult.error).toBeNull();
+    const publishedSnapshotId = publicationResult.data!.result_snapshot_id;
+    const publishedHash = publicationResult.data!.result_snapshots!.payload_sha256!;
+    const totalOwnership = eligibleResult.data!.reduce(
+      (sum, row) => sum + Number(row.ownership_percent),
+      0,
+    );
+    const votedOwnership = Number(
+      eligibleResult.data!.find(
+        (row) => row.room_id === persistedRoomResult.data!.id,
+      )!.ownership_percent,
+    );
+    const shareOfAll = `${((votedOwnership / totalOwnership) * 100).toFixed(2)}%`;
+
+    expect(publishedHash).toMatch(/^[0-9a-f]{64}$/);
+    await gotoWithRetry(page, `${activeAppOrigin}/record/${publishedSnapshotId}`, {
+      waitUntil: "commit",
+    });
     await expect(
-      pdfPreview.getByRole("heading", { name: "Mock PDF Result Summary" }),
+      page.getByRole("heading", { name: "บันทึกผลการลงมติ", level: 1 }),
     ).toBeVisible();
-    await expect(pdfPreview.getByText(meetingTitle)).toBeVisible();
-    await expect(pdfPreview.getByText("Agenda Results")).toBeVisible();
-    await expect(pdfPreview.getByText(updatedChoiceText).first()).toBeVisible();
-    // D013: the only voting room chose this option, so it decides the question.
-    await expect(
-      pdfPreview.getByText("Pass rule: More than 50% of ownership of rooms that voted."),
-    ).toBeVisible();
-    await expect(pdfPreview.getByText(`Decided: ${updatedChoiceText}`)).toBeVisible();
-    await expect(pdfPreview.getByText("Use online demo vote")).toBeVisible();
+    await expect(page.getByText(meetingTitle).first()).toBeVisible();
+    await expect(page.getByText("เผยแพร่ผลเมื่อ", { exact: false })).toBeVisible();
+    await expect(page.getByText("1 ห้อง (เลือกแหล่งแล้ว 1)")).toBeVisible();
+    // The only voting room chose this option, so it decides the question (D013).
+    const recordChoiceRow = page
+      .getByRole("row")
+      .filter({ hasText: updatedChoiceText });
+    await expect(recordChoiceRow.getByRole("cell").nth(1)).toHaveText("1");
+    await expect(recordChoiceRow.getByRole("cell").nth(2)).toHaveText(shareOfAll);
+    await expect(recordChoiceRow.getByRole("cell").nth(3)).toHaveText("100.00%");
+    await expect(page.getByText(`ผล: มีมติ: ${updatedChoiceText}`)).toBeVisible();
+    await expect(page.getByText(publishedHash).first()).toBeVisible();
+
+    await gotoWithRetry(page, `${activeAppOrigin}/summary/${persistedMeetingId}`, {
+      waitUntil: "commit",
+    });
+    await expect(page.getByText("ประกาศผลการลงมติ (ฉบับสรุป)")).toBeVisible();
+    const summaryChoiceRow = page
+      .getByRole("row")
+      .filter({ hasText: updatedChoiceText });
+    await expect(summaryChoiceRow.getByRole("cell").nth(2)).toHaveText(shareOfAll);
+    await expect(summaryChoiceRow.getByRole("cell").nth(3)).toHaveText("100.00%");
+    await expect(page.getByText(publishedHash)).toBeVisible();
+    await page.getByRole("link", { name: "ตรวจสอบเลขอ้างอิงนี้" }).click();
+    await expect(page).toHaveURL(new RegExp(`/verify/${publishedSnapshotId}$`));
+    await expect(page.getByText(publishedHash)).toBeVisible();
 
     await page.goto(
       `${activeAppOrigin}/admin/meetings?title=${encodeURIComponent(meetingTitle)}`,

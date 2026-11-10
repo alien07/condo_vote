@@ -32,9 +32,6 @@ export function deriveSharedAdminState({
       (approvalCountBySnapshotId.get(approval.result_snapshot_id) ?? 0) + 1,
     );
   }
-  const approvalBySnapshotId = new Map(
-    committeeApprovals.map((approval) => [approval.result_snapshot_id, approval]),
-  );
   const approvedMeetingIds = new Set(
     resultPublications.map((publication) => publication.meeting_id),
   );
@@ -57,7 +54,6 @@ export function deriveSharedAdminState({
   return {
     appRolesByProfile,
     approvalCountBySnapshotId,
-    approvalBySnapshotId,
     lockedMeetingIds,
     approvedMeetingIds,
     approvedResultSnapshotIds,

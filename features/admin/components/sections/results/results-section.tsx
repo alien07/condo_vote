@@ -1,7 +1,6 @@
 import { ListChecks } from "lucide-react";
 import { PerPageSelect } from "@/features/admin/components/table-controls";
 import { ResultApprovalDrawer, ResultSnapshotRowFocus } from "@/features/admin/components/result-approval-drawer";
-import { ResultPdfPreview } from "@/features/admin/components/sections/results/result-pdf-preview";
 import { resultHref } from "@/features/admin/components/sections/results/result-hrefs";
 import { formatDateTime, formatPercent, getResultTotals } from "@/features/admin/components/sections/shared/format";
 import { tablePage, tablePerPage } from "@/features/admin/components/sections/shared/table";
@@ -16,14 +15,11 @@ import type {
 
 type ResultsSectionProps = Pick<
     AdminDashboardData,
-    "committeeMembers"
-    | "condoProfile"
-    | "resultSnapshots"
+    "resultSnapshots"
   > &
   Pick<
     SharedAdminState,
-    "approvalBySnapshotId"
-    | "approvalCountBySnapshotId"
+    "approvalCountBySnapshotId"
     | "approvedMeetingIds"
     | "approvedResultSnapshotIds"
     | "lockedMeetingIds"
@@ -39,13 +35,10 @@ type ResultsSectionProps = Pick<
 };
 
 export function ResultsSection({
-  approvalBySnapshotId,
   approvalCountBySnapshotId,
   approvedMeetingIds,
   approvedResultSnapshotIds,
   lockedMeetingIds,
-  committeeMembers,
-  condoProfile,
   drawer,
   focusedResultSnapshotId,
   pendingManualBallotsByMeetingId,
@@ -420,13 +413,6 @@ export function ResultsSection({
               />
             ))
         : null}
-      <ResultPdfPreview
-        approvalBySnapshotId={approvalBySnapshotId}
-        approvedResultSnapshotIds={approvedResultSnapshotIds}
-        committeeMembers={committeeMembers}
-        condoProfile={condoProfile}
-        resultSnapshots={resultSnapshots}
-      />
     </section>
   );
 }

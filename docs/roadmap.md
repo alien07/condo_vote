@@ -23,11 +23,17 @@
 - Proxy approval documents.
 - Private document registry foundation with configurable local-drive or Google Drive references.
 - Email invitations.
-- Mock PDF result summary.
+- Mock PDF result summary (replaced by the result documents, D019).
 - Mock Thai/English result notification email queue.
 
 ## Tail V1 - Production Communication
-- Generate juristic-person PDF result summary from approved snapshots.
+- Done (D019): official result record and owner summary from the approved
+  snapshot, printable from the browser, with SHA-256 and a verify page.
+- Next: master PDF files generated once when results are published, kept in
+  Supabase Storage (Google Drive backup later) and used for preview,
+  download and email.
+- Next: owner language (`th`/`en`, Thai default) for owner-facing pages,
+  emails, and the owner summary; admin pages stay English for now.
 - Send Thai/English result notification emails together.
 - Apply provider send limits with queued delivery ordering.
 - Attach PDF or provide a signed PDF download link.
@@ -50,6 +56,7 @@
 - Add a language switcher, dictionary files, locale-aware date/number
   formatting, and admin-configurable default language.
 - Translate admin pages after owner-facing Vote and Summary flows are stable.
+- Admin-editable email templates (Thai and English).
 - Split remaining oversized files by domain sub-feature (see code-organization.md backlog).
 
 ## Later
