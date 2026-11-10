@@ -298,4 +298,60 @@ test.describe("@test:e2e @test:voting owner/proxy vote flow", () => {
       ]);
     });
   }
+  test("owner can submit a multiple choice ballot", async ({ page }) => {
+    test.setTimeout(120_000);
+
+    const supabase = createClient<Database>(supabaseUrl!, serviceKey!, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+    });
+    const profile = await createProfile(supabase, "owner");
+    const fixture = await createVotingFixture(supabase, "owner", profile.profileId);
+
+    // Turn the fixture question into a multiple choice question (D017).
+    const { error: questionError } = await supabase
+      .from("meeting_questions")
+      .update({ question_type: "multiple_choice", max_choices: 2 })
+      .eq("id", fixture.questionId);
+
+    expect(questionError).toBeNull();
+
+    const { data: abstainChoice } = await supabase
+      .from("meeting_choices")
+      .select("id")
+      .eq("question_id", fixture.questionId)
+      .eq("is_abstain", true)
+      .single();
+
+    expect(abstainChoice?.id).toBeTruthy();
+
+    await signInByGeneratedLink(page, supabase, profile.email);
+    await page.goto(`/vote/${fixture.meetingId}/${fixture.roomId}`);
+    await expect(page.getByText("Choose up to 2.")).toBeVisible();
+
+    const choice = (choiceId: string) =>
+      page
+        .locator(`input[name="choice:${fixture.questionId}"]`)
+        .and(page.locator(`input[value="${choiceId}"]`));
+
+    await expect(choice(fixture.approveChoiceId)).toHaveAttribute("type", "checkbox");
+    await choice(fixture.approveChoiceId).check();
+    await choice(fixture.rejectChoiceId).check();
+    await page.getByRole("button", { name: "Submit ballot" }).click();
+    await expect(page.getByText("Version v1")).toBeVisible();
+
+    const { data: ballot, error: ballotError } = await supabase
+      .from("ballots")
+      .select("ballot_answers(choice_id)")
+      .eq("meeting_id", fixture.meetingId)
+      .eq("room_id", fixture.roomId)
+      .single();
+
+    expect(ballotError).toBeNull();
+    expect(ballot!.ballot_answers.map((answer) => answer.choice_id).sort()).toEqual(
+      [fixture.approveChoiceId, fixture.rejectChoiceId].sort(),
+    );
+  });
 });

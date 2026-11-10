@@ -31,7 +31,7 @@ export async function getVotingDashboardData() {
     supabase
       .from("meeting_questions")
       .select(
-        "id, meeting_id, agenda_no, agenda_title, question_text, question_type, display_order, required, meeting_choices(id, choice_text, display_order)",
+        "id, meeting_id, agenda_no, agenda_title, question_text, question_type, max_choices, display_order, required, meeting_choices(id, choice_text, display_order, is_abstain)",
       )
       .in("meeting_id", meetingIds)
       .order("display_order", { ascending: true }),
@@ -107,7 +107,7 @@ export async function getVotingAssignmentData(meetingId: string, roomId: string)
     supabase
       .from("meeting_questions")
       .select(
-        "id, meeting_id, agenda_no, agenda_title, question_text, question_type, display_order, required, meeting_choices(id, choice_text, display_order)",
+        "id, meeting_id, agenda_no, agenda_title, question_text, question_type, max_choices, display_order, required, meeting_choices(id, choice_text, display_order, is_abstain)",
       )
       .eq("meeting_id", meetingId)
       .order("display_order", { ascending: true }),

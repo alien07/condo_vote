@@ -1,4 +1,8 @@
 import Link from "next/link";
+import {
+  BallotChoiceInputs,
+  selectedChoicesByQuestion,
+} from "@/features/voting/components/ballot-choice-inputs";
 import { notFound } from "next/navigation";
 import { Vote } from "lucide-react";
 import { RequiredMark, RequiredNote } from "@/features/admin/components/field-label";
@@ -56,7 +60,7 @@ export default async function ManualVotePage({
       supabase
         .from("meeting_questions")
         .select(
-          "id, agenda_no, agenda_title, question_text, required, display_order, meeting_choices(id, choice_text, display_order)",
+          "id, agenda_no, agenda_title, question_text, question_type, max_choices, required, display_order, meeting_choices(id, choice_text, display_order, is_abstain)",
         )
         .eq("meeting_id", meetingId)
         .order("display_order", { ascending: true }),
@@ -92,12 +96,7 @@ export default async function ManualVotePage({
   const meeting = meetingResult.data;
   const room = roomResult.data;
   const profile = profileResult.data;
-  const answerByQuestion = new Map(
-    manualBallotResult.data?.manual_ballot_answers.map((answer) => [
-      answer.question_id,
-      answer.choice_id,
-    ]) ?? [],
-  );
+  const answerByQuestion = selectedChoicesByQuestion(manualBallotResult.data?.manual_ballot_answers);
   const voterLabel = profile
     ? `${profile.full_name ?? profile.email} (${profile.email})`
     : voterName;
@@ -173,29 +172,13 @@ export default async function ManualVotePage({
                       {question.agenda_title}
                     </p>
                   ) : null}
-                  <div className="mt-3 grid gap-2">
-                    {question.meeting_choices
-                      .sort(
-                        (left, right) => left.display_order - right.display_order,
-                      )
-                      .map((choice) => (
-                        <label
-                          className="flex items-center gap-2 rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-                          key={choice.id}
-                        >
-                          <input
-                            defaultChecked={
-                              answerByQuestion.get(question.id) === choice.id
-                            }
-                            name={`choice:${question.id}`}
-                            required={question.required}
-                            type="radio"
-                            value={choice.id}
-                          />
-                          {choice.choice_text}
-                        </label>
-                      ))}
-                  </div>
+                  <BallotChoiceInputs
+                    choices={question.meeting_choices}
+                    question={question}
+                    selectedChoiceIds={
+                      answerByQuestion.get(question.id) ?? new Set<string>()
+                    }
+                  />
                 </fieldset>
               ))}
               <section className="rounded-md border border-[var(--border)] bg-[var(--background)] p-4">

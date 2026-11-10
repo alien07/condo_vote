@@ -237,6 +237,7 @@ const questionFormFields = [
   "agenda_title",
   "question_text",
   "question_type",
+  "max_choices",
   "resolution_type",
   "required_threshold",
   "display_order",
@@ -283,6 +284,18 @@ function validateQuestionForm(
     fieldErrors.display_order = "Order must be a whole number of 0 or greater.";
   }
 
+  const maxChoices = values.max_choices?.trim();
+
+  if (maxChoices) {
+    const parsed = Number(maxChoices);
+
+    if (!Number.isInteger(parsed) || parsed < 1) {
+      fieldErrors.max_choices = "Max choices must be a whole number of 1 or greater.";
+    } else if (values.question_type !== "multiple_choice") {
+      fieldErrors.max_choices = "Max choices applies to multiple choice questions only.";
+    }
+  }
+
   return fieldErrors;
 }
 
@@ -310,6 +323,10 @@ function questionPayload(values: Record<string, string>) {
     agenda_title: optionalText(values.agenda_title),
     question_text: values.question_text.trim(),
     question_type: values.question_type.trim(),
+    max_choices:
+      values.question_type === "multiple_choice" && values.max_choices?.trim()
+        ? Number(values.max_choices)
+        : null,
     resolution_type: values.resolution_type.trim(),
     required_threshold: values.required_threshold.trim(),
     requires_land_office_registration:

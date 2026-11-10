@@ -134,12 +134,15 @@ Status: accepted, not implemented
   privacy notice text and data retention periods.
 
 ### D017 - Question Choices
-Status: accepted, not implemented
+Status: implemented (migration 0021)
 
 - Multiple-choice questions are supported in V1.
 - Every question gets an "Abstain" choice by default. Admin can remove it
   while setting up choices. The choice carries an abstain flag so results
   can count it as its own group.
+- Multiple choice questions can set `max_choices`. Abstain cannot be
+  combined with other choices. Questions of draft meetings got the default
+  Abstain choice when this shipped; published meetings were not changed.
 
 ### D018 - Electronic Meeting Compliance In V1
 Status: accepted
