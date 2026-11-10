@@ -440,7 +440,9 @@ export type Database = {
           manager_name: string | null
           phone: string | null
           project_name: string
+          record_signatories: string[]
           registration_no: string | null
+          result_notice_days: number | null
           seal_storage_path: string | null
           summary_history_limit: number
           tax_id: string | null
@@ -457,7 +459,9 @@ export type Database = {
           manager_name?: string | null
           phone?: string | null
           project_name: string
+          record_signatories?: string[]
           registration_no?: string | null
+          result_notice_days?: number | null
           seal_storage_path?: string | null
           summary_history_limit?: number
           tax_id?: string | null
@@ -474,7 +478,9 @@ export type Database = {
           manager_name?: string | null
           phone?: string | null
           project_name?: string
+          record_signatories?: string[]
           registration_no?: string | null
+          result_notice_days?: number | null
           seal_storage_path?: string | null
           summary_history_limit?: number
           tax_id?: string | null
@@ -826,6 +832,54 @@ export type Database = {
           },
         ]
       }
+      meeting_incidents: {
+        Row: {
+          action_taken: string | null
+          created_at: string
+          created_by: string | null
+          description: string
+          ended_at: string | null
+          id: string
+          meeting_id: string
+          started_at: string
+        }
+        Insert: {
+          action_taken?: string | null
+          created_at?: string
+          created_by?: string | null
+          description: string
+          ended_at?: string | null
+          id?: string
+          meeting_id: string
+          started_at: string
+        }
+        Update: {
+          action_taken?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string
+          ended_at?: string | null
+          id?: string
+          meeting_id?: string
+          started_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meeting_incidents_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meeting_incidents_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       meeting_questions: {
         Row: {
           agenda_no: string | null
@@ -896,6 +950,8 @@ export type Database = {
       }
       meetings: {
         Row: {
+          advance_ends_at: string | null
+          advance_starts_at: string | null
           ballot_secrecy: string
           chairperson_name: string | null
           closed_at: string | null
@@ -904,20 +960,27 @@ export type Database = {
           ends_at: string
           fiscal_year: string | null
           id: string
+          identity_method: string | null
           location: string | null
           meeting_number: string | null
+          meeting_round: string
           meeting_type: string
+          notice_sent_at: string | null
           published_at: string | null
           quorum_rule: string
+          recording_reference: string | null
           required_approvals: number
           starts_at: string
           status: string
           title: string
+          traffic_log_reference: string | null
           transcript: string | null
           updated_at: string
           video_url: string | null
         }
         Insert: {
+          advance_ends_at?: string | null
+          advance_starts_at?: string | null
           ballot_secrecy?: string
           chairperson_name?: string | null
           closed_at?: string | null
@@ -926,20 +989,27 @@ export type Database = {
           ends_at: string
           fiscal_year?: string | null
           id?: string
+          identity_method?: string | null
           location?: string | null
           meeting_number?: string | null
+          meeting_round?: string
           meeting_type?: string
+          notice_sent_at?: string | null
           published_at?: string | null
           quorum_rule?: string
+          recording_reference?: string | null
           required_approvals?: number
           starts_at: string
           status?: string
           title: string
+          traffic_log_reference?: string | null
           transcript?: string | null
           updated_at?: string
           video_url?: string | null
         }
         Update: {
+          advance_ends_at?: string | null
+          advance_starts_at?: string | null
           ballot_secrecy?: string
           chairperson_name?: string | null
           closed_at?: string | null
@@ -948,15 +1018,20 @@ export type Database = {
           ends_at?: string
           fiscal_year?: string | null
           id?: string
+          identity_method?: string | null
           location?: string | null
           meeting_number?: string | null
+          meeting_round?: string
           meeting_type?: string
+          notice_sent_at?: string | null
           published_at?: string | null
           quorum_rule?: string
+          recording_reference?: string | null
           required_approvals?: number
           starts_at?: string
           status?: string
           title?: string
+          traffic_log_reference?: string | null
           transcript?: string | null
           updated_at?: string
           video_url?: string | null
@@ -1229,6 +1304,7 @@ export type Database = {
           id: string
           meeting_id: string
           payload_json: Json
+          payload_sha256: string | null
         }
         Insert: {
           generated_at?: string
@@ -1236,6 +1312,7 @@ export type Database = {
           id?: string
           meeting_id: string
           payload_json: Json
+          payload_sha256?: string | null
         }
         Update: {
           generated_at?: string
@@ -1243,6 +1320,7 @@ export type Database = {
           id?: string
           meeting_id?: string
           payload_json?: Json
+          payload_sha256?: string | null
         }
         Relationships: [
           {

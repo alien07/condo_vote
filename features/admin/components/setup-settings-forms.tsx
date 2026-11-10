@@ -23,6 +23,8 @@ type CondoProfile = {
   registration_no: string | null;
   summary_history_limit: number | null;
   tax_id: string | null;
+  record_signatories?: string[];
+  result_notice_days?: number | null;
 } | null;
 
 type AppSettings = {
@@ -232,6 +234,53 @@ export function JuristicProfileForm({
         name="address"
         placeholder="Address"
       />
+      <fieldset className="grid gap-2 rounded-md border border-[var(--border)] p-3 text-sm md:col-span-2">
+        <legend className="px-1 font-medium">Official result record</legend>
+        <span className="text-xs text-[var(--muted)]">
+          Follow your regulations; confirm with your lawyer.
+        </span>
+        <span className="font-medium">Signed by</span>
+        <div className="flex flex-wrap gap-x-4 gap-y-2">
+          {[
+            ["chairperson", "Meeting chairperson"],
+            ["manager", "Juristic person manager"],
+            ["minutes_taker", "Minutes taker"],
+            ["committee_member", "Committee member"],
+          ].map(([value, label]) => (
+            <label className="inline-flex min-h-11 items-center gap-2" key={value}>
+              <input
+                className="h-4 w-4 accent-[var(--primary)]"
+                defaultChecked={(
+                  state.values?.record_signatories?.split(",") ??
+                  condoProfile?.record_signatories ?? ["chairperson", "manager"]
+                ).includes(value)}
+                name="record_signatories"
+                type="checkbox"
+                value={value}
+              />
+              {label}
+            </label>
+          ))}
+        </div>
+        <FieldError fieldName="record_signatories" prefix="condo-profile" state={state} />
+        <label className="grid gap-1 font-medium md:max-w-xs">
+          Days to notify owners of results (optional)
+          <input
+            {...fieldProps("condo-profile", "result_notice_days", state)}
+            className="rounded-md border border-[var(--border)] px-3 py-2 text-sm font-normal"
+            defaultValue={stateValue(
+              state,
+              "result_notice_days",
+              condoProfile?.result_notice_days ?? "",
+            )}
+            max={90}
+            min={1}
+            name="result_notice_days"
+            type="number"
+          />
+          <FieldError fieldName="result_notice_days" prefix="condo-profile" state={state} />
+        </label>
+      </fieldset>
       <textarea
         className="rounded-md border border-[var(--border)] px-3 py-2 text-sm md:col-span-2"
         defaultValue={stateValue(

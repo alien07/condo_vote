@@ -39,15 +39,27 @@ const condoProfileFields = [
   "manager_name",
   "document_footer",
   "summary_history_limit",
+  "result_notice_days",
 ];
 
+// Who signs the official result record. The regulations decide; the lawyer
+// confirms, so it is a setting.
+const recordSignatories = ["chairperson", "manager", "minutes_taker", "committee_member"];
+
 function condoProfileFormValues(formData: FormData) {
-  return Object.fromEntries(
-    condoProfileFields.map((field) => [
-      field,
-      String(formData.get(field) ?? ""),
-    ]),
-  );
+  return {
+    ...Object.fromEntries(
+      condoProfileFields.map((field) => [
+        field,
+        String(formData.get(field) ?? ""),
+      ]),
+    ),
+    record_signatories: formData.getAll("record_signatories").map(String).join(","),
+  } as Record<string, string>;
+}
+
+function signatoriesFrom(value: string | undefined) {
+  return (value ?? "").split(",").filter((role) => recordSignatories.includes(role));
 }
 
 function validateCondoProfile(values: Record<string, string>) {
@@ -70,6 +82,18 @@ function validateCondoProfile(values: Record<string, string>) {
   ) {
     fieldErrors.summary_history_limit =
       "Summary history limit must be a whole number from 1 to 20.";
+  }
+
+  if (signatoriesFrom(values.record_signatories).length === 0) {
+    fieldErrors.record_signatories = "Choose at least one person who signs the record.";
+  }
+
+  const noticeDays = values.result_notice_days?.trim();
+
+  if (noticeDays && !/^\d+$/.test(noticeDays)) {
+    fieldErrors.result_notice_days = "Notice days must be a whole number.";
+  } else if (noticeDays && (Number(noticeDays) < 1 || Number(noticeDays) > 90)) {
+    fieldErrors.result_notice_days = "Notice days must be from 1 to 90.";
   }
 
   return fieldErrors;
@@ -104,6 +128,12 @@ function condoProfilePayload(values: Record<string, string>) {
     manager_name: optionalText(values.manager_name),
     document_footer: optionalText(values.document_footer),
     summary_history_limit: Number(values.summary_history_limit || 5),
+    record_signatories: signatoriesFrom(values.record_signatories).length
+      ? signatoriesFrom(values.record_signatories)
+      : ["chairperson", "manager"],
+    result_notice_days: values.result_notice_days?.trim()
+      ? Number(values.result_notice_days)
+      : null,
   };
 }
 

@@ -122,11 +122,13 @@ export async function generateResultSnapshot(formData: FormData) {
     manualBallotsResult,
     voteSourceResolutionsResult,
     onlineTallyResult,
+    condoProfileResult,
+    incidentsResult,
   ] = await Promise.all([
       supabase
         .from("meetings")
         .select(
-          "id, title, starts_at, ends_at, status, meeting_number, meeting_type, fiscal_year, location, chairperson_name, quorum_rule",
+          "id, title, starts_at, ends_at, status, meeting_number, meeting_type, fiscal_year, location, chairperson_name, quorum_rule, ballot_secrecy, advance_starts_at, advance_ends_at, notice_sent_at, meeting_round, identity_method, recording_reference, traffic_log_reference",
         )
         .eq("id", meetingId)
         .single(),
@@ -139,11 +141,11 @@ export async function generateResultSnapshot(formData: FormData) {
         .order("display_order", { ascending: true }),
       supabase
         .from("eligible_voters_snapshot")
-        .select("room_id, ownership_percent")
+        .select("room_id, ownership_percent, voter_type")
         .eq("meeting_id", meetingId),
       supabase
         .from("ballots")
-        .select("id, room_id, status")
+        .select("id, room_id, status, submitted_at")
         .eq("meeting_id", meetingId)
         .eq("status", "submitted"),
       supabase
@@ -163,6 +165,17 @@ export async function generateResultSnapshot(formData: FormData) {
       // Online totals are summed in the database so secret ballots (D015)
       // never expose per-room answers to admins.
       supabase.rpc("meeting_online_tally", { p_meeting_id: meetingId }),
+      // The official record keeps the juristic person's details as they were.
+      supabase
+        .from("condo_profiles")
+        .select("project_name, juristic_name, registration_no, tax_id, address, manager_name")
+        .order("created_at", { ascending: false })
+        .limit(1),
+      supabase
+        .from("meeting_incidents")
+        .select("started_at, ended_at, description, action_taken")
+        .eq("meeting_id", meetingId)
+        .order("started_at", { ascending: true }),
     ]);
 
   if (meetingResult.error) {
@@ -200,6 +213,14 @@ export async function generateResultSnapshot(formData: FormData) {
 
   if (onlineTallyResult.error) {
     throw onlineTallyResult.error;
+  }
+
+  if (condoProfileResult.error) {
+    throw condoProfileResult.error;
+  }
+
+  if (incidentsResult.error) {
+    throw incidentsResult.error;
   }
 
   const ownershipByRoom = new Map(
@@ -273,6 +294,29 @@ export async function generateResultSnapshot(formData: FormData) {
   }
 
   const submittedRoomIds = new Set(effectiveRoomSources.keys());
+  // Record details: rooms that voted through a proxy (Condominium Act s.47),
+  // and online ballots by voting phase (advance or meeting day).
+  const voterTypeByRoom = new Map(
+    eligibleResult.data.map((eligible) => [eligible.room_id, eligible.voter_type]),
+  );
+  const proxyRooms = [...submittedRoomIds].filter(
+    (roomId) => voterTypeByRoom.get(roomId) === "proxy",
+  ).length;
+  const advanceEnds = meetingResult.data.advance_ends_at
+    ? Date.parse(meetingResult.data.advance_ends_at)
+    : null;
+  const effectiveOnlineBallots = ballotsResult.data.filter(
+    (ballot) => effectiveRoomSources.get(ballot.room_id) === "online",
+  );
+  const advanceOnlineBallots = effectiveOnlineBallots.filter(
+    (ballot) =>
+      advanceEnds !== null &&
+      ballot.submitted_at !== null &&
+      Date.parse(ballot.submitted_at) <= advanceEnds,
+  ).length;
+  const effectiveManualBallots = [...effectiveRoomSources.values()].filter(
+    (source) => source === "manual",
+  ).length;
   const totalEligibleOwnership = [...ownershipByRoom.values()].reduce(
     (sum, ownership) => sum + ownership,
     0,
@@ -323,8 +367,14 @@ export async function generateResultSnapshot(formData: FormData) {
   );
   const payload = {
     meeting: meetingResult.data,
+    condo: condoProfileResult.data[0] ?? null,
+    incidents: incidentsResult.data,
     generated_at: new Date().toISOString(),
     totals: {
+      proxy_rooms: proxyRooms,
+      advance_online_ballots: advanceOnlineBallots,
+      meeting_day_online_ballots: effectiveOnlineBallots.length - advanceOnlineBallots,
+      effective_manual_ballots: effectiveManualBallots,
       quorum,
       eligible_voters: eligibleResult.data.length,
       submitted_ballots: submittedRoomIds.size,

@@ -1,8 +1,8 @@
-import { formatBangkokDateTime } from "@/lib/datetime";
+import { formatBangkokDateTime, formatThaiDateTime } from "@/lib/datetime";
 import Link from "next/link";
 import { FileText } from "lucide-react";
 import { ChoiceResultsTable } from "@/features/results/choice-results-table";
-import { QuestionOutcomeLine } from "@/features/results/question-outcome";
+import { thaiOutcome, thaiPassRule, thaiQuorum } from "@/features/results/thai-labels";
 import type { ApprovedSummary } from "@/features/summary/data";
 
 type SummaryPageProps = {
@@ -61,9 +61,12 @@ export function SummaryPage({
           </section>
         ) : (
           <div className="grid gap-5 lg:grid-cols-[1fr_280px]">
+            {/* Owner summary (document 2): totals only, no names or per-room
+                choices (PDPA); the official record stays with the juristic
+                person and can be checked by its reference and SHA-256. */}
             <article className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-5 shadow-sm">
               <div className="border-b border-[var(--border)] pb-4 text-center">
-                <p className="text-sm text-[var(--muted)]">Result document</p>
+                <p className="text-sm text-[var(--muted)]">ประกาศผลการลงมติ (ฉบับสรุป)</p>
                 <h2 className="mt-2 text-xl font-semibold">
                   {condoProfile?.project_name ??
                     payload.meeting?.title ??
@@ -79,15 +82,14 @@ export function SummaryPage({
                   <h3 className="font-semibold">
                     {payload.meeting?.title ?? "Meeting"}
                   </h3>
-                  {/* Show only the details this meeting has. */}
                   {payload.meeting?.meeting_number || payload.meeting?.fiscal_year ? (
                     <p className="mt-1 text-[var(--muted)]">
                       {[
                         payload.meeting?.meeting_number
-                          ? `Meeting no. ${payload.meeting.meeting_number}`
+                          ? `ครั้งที่ ${payload.meeting.meeting_number}`
                           : null,
                         payload.meeting?.fiscal_year
-                          ? `FY ${payload.meeting.fiscal_year}`
+                          ? `ปีบัญชี ${payload.meeting.fiscal_year}`
                           : null,
                       ]
                         .filter(Boolean)
@@ -96,111 +98,93 @@ export function SummaryPage({
                   ) : null}
                   {payload.meeting?.location ? (
                     <p className="text-[var(--muted)]">
-                      Location: {payload.meeting.location}
+                      สถานที่/ช่องทาง: {payload.meeting.location}
                     </p>
                   ) : null}
                 </div>
                 <div>
                   <p>
-                    Approved:{" "}
+                    เผยแพร่ผลเมื่อ{" "}
                     <span className="font-medium">
-                      {formatDateTime(selected.approvedAt)}
+                      {formatThaiDateTime(selected.approvedAt)}
                     </span>
                   </p>
                   <p className="text-[var(--muted)]">
-                    Generated:{" "}
-                    {formatDateTime(payload.generated_at ?? selected.generatedAt)}
+                    {thaiQuorum(payload.totals?.quorum)}
                   </p>
-                  {selected.notes ? (
-                    <p className="text-[var(--muted)]">Notes: {selected.notes}</p>
-                  ) : null}
                 </div>
               </section>
 
               <section className="mt-5 grid gap-3 text-sm md:grid-cols-4">
-                <div className="rounded-md border border-[var(--border)] p-3">
-                  <div className="text-[var(--muted)]">Eligible</div>
-                  <div className="text-lg font-semibold">
-                    {payload.totals?.eligible_voters ?? 0}
+                {[
+                  ["ห้องที่มีสิทธิ์", String(payload.totals?.eligible_voters ?? 0)],
+                  ["ห้องที่ลงคะแนน", String(payload.totals?.submitted_ballots ?? 0)],
+                  ["คะแนนเสียงที่ลงคะแนน", formatPercent(payload.totals?.submitted_ownership)],
+                  ["คะแนนเสียงรวม", formatPercent(payload.totals?.total_eligible_ownership)],
+                ].map(([label, value]) => (
+                  <div className="rounded-md border border-[var(--border)] p-3" key={label}>
+                    <div className="text-[var(--muted)]">{label}</div>
+                    <div className="text-lg font-semibold">{value}</div>
                   </div>
-                </div>
-                <div className="rounded-md border border-[var(--border)] p-3">
-                  <div className="text-[var(--muted)]">Submitted</div>
-                  <div className="text-lg font-semibold">
-                    {payload.totals?.submitted_ballots ?? 0}
-                  </div>
-                </div>
-                <div className="rounded-md border border-[var(--border)] p-3">
-                  <div className="text-[var(--muted)]">Submitted ownership</div>
-                  <div className="text-lg font-semibold">
-                    {formatPercent(payload.totals?.submitted_ownership)}
-                  </div>
-                </div>
-                <div className="rounded-md border border-[var(--border)] p-3">
-                  <div className="text-[var(--muted)]">Total ownership</div>
-                  <div className="text-lg font-semibold">
-                    {formatPercent(payload.totals?.total_eligible_ownership)}
-                  </div>
-                </div>
+                ))}
               </section>
-              {payload.totals?.quorum?.label ? (
-                <p className="mt-3 text-sm">
-                  Quorum: {payload.totals.quorum.label}:{" "}
-                  <span className="font-medium">
-                    {payload.totals.quorum.met === null
-                      ? "not evaluated"
-                      : payload.totals.quorum.met
-                        ? "met"
-                        : "not met"}
-                  </span>
-                </p>
-              ) : null}
 
               <section className="mt-5">
-                <h3 className="font-semibold">Agenda Results</h3>
+                <h3 className="font-semibold">ผลรายวาระ</h3>
                 <div className="mt-3 grid gap-4">
                   {!payload.questions?.length ? (
-                    <p className="text-sm text-[var(--muted)]">
-                      No agenda items were recorded for this meeting.
-                    </p>
+                    <p className="text-sm text-[var(--muted)]">ไม่มีวาระในการลงมติครั้งนี้</p>
                   ) : null}
-                  {payload.questions?.map((question, index) => (
-                    <section
-                      className="rounded-md border border-[var(--border)] p-4"
-                      key={`${question.agenda_no ?? index}-${question.text}`}
-                    >
-                      <h4 className="font-medium">
-                        {question.agenda_no ?? `Item ${index + 1}`}{" "}
-                        {question.agenda_title ?? question.text ?? "-"}
-                      </h4>
-                      {question.resolution_type ? (
+                  {payload.questions?.map((question, index) => {
+                    const decided = (question.choices ?? [])
+                      .filter((choice) => choice.id && question.passed_choice_ids?.includes(choice.id))
+                      .map((choice) => choice.text ?? "-");
+
+                    return (
+                      <section
+                        className="rounded-md border border-[var(--border)] p-4"
+                        key={`${question.agenda_no ?? index}-${question.text}`}
+                      >
+                        <h4 className="font-medium">
+                          วาระที่ {question.agenda_no ?? index + 1}{" "}
+                          {question.agenda_title ?? question.text ?? "-"}
+                        </h4>
+                        {question.agenda_title && question.text ? (
+                          <p className="mt-1 text-sm">{question.text}</p>
+                        ) : null}
                         <p className="mt-1 text-sm text-[var(--muted)]">
-                          Resolution: {question.resolution_type}
+                          เกณฑ์: {thaiPassRule(question.pass_rule)}
                         </p>
-                      ) : null}
-                      <QuestionOutcomeLine question={question} />
-                      <ChoiceResultsTable choices={question.choices} />
-                    </section>
-                  ))}
+                        <p className="mt-1 text-sm font-semibold" data-outcome={question.outcome ?? undefined}>
+                          {thaiOutcome(question.outcome, decided)}
+                        </p>
+                        <ChoiceResultsTable choices={question.choices} lang="th" />
+                      </section>
+                    );
+                  })}
                 </div>
               </section>
 
               <section className="mt-5 border-t border-[var(--border)] pt-4 text-sm">
-                <h3 className="font-semibold">Conflict And Audit Notes</h3>
+                <h3 className="font-semibold">ตรวจสอบกับฉบับทางการ</h3>
                 <p className="mt-1 text-[var(--muted)]">
-                  Source conflicts: {payload.totals?.source_conflicts ?? 0};
-                  resolved: {payload.totals?.resolved_source_conflicts ?? 0}.
+                  เอกสารนี้เป็นฉบับสรุป ฉบับทางการคือบันทึกผลการลงมติที่นิติบุคคลเก็บไว้
+                  ขอดูได้ที่สำนักงานนิติบุคคล
                 </p>
-                {payload.vote_source_audit?.conflicts?.length ? (
-                  <ul className="mt-2 list-disc pl-5">
-                    {payload.vote_source_audit.conflicts.map((conflict, index) => (
-                      <li key={`${conflict.chosen_source}-${index}`}>
-                        Source: {conflict.chosen_source ?? "-"}; remark:{" "}
-                        {conflict.conflict_remark ?? "-"}
-                      </li>
-                    ))}
-                  </ul>
+                <p className="mt-2">
+                  เลขอ้างอิง <span className="font-mono text-xs">{selected.snapshotId}</span>
+                </p>
+                {selected.payloadSha256 ? (
+                  <p className="break-all">
+                    SHA-256 <span className="font-mono text-xs">{selected.payloadSha256}</span>
+                  </p>
                 ) : null}
+                <Link
+                  className="mt-2 inline-flex min-h-11 items-center font-medium text-[var(--primary)] underline"
+                  href={`/verify/${selected.snapshotId}`}
+                >
+                  ตรวจสอบเลขอ้างอิงนี้
+                </Link>
               </section>
 
               {condoProfile?.document_footer ? (

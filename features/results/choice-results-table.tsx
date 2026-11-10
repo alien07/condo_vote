@@ -13,11 +13,22 @@ function formatPercent(value: number | undefined) {
   return `${Number(value ?? 0).toFixed(2)}%`;
 }
 
-export function ChoiceResultsTable({ choices }: { choices?: ChoiceResult[] }) {
+const LABELS = {
+  en: { empty: "No votes were recorded for this item.", choice: "Choice", rooms: "Rooms", ownership: "Ownership", cast: "Of votes cast" },
+  th: { empty: "ไม่มีการลงคะแนนในวาระนี้", choice: "ตัวเลือก", rooms: "ห้อง", ownership: "คะแนนเสียง", cast: "% ของผู้ลงคะแนน" },
+};
+
+export function ChoiceResultsTable({
+  choices,
+  lang = "en",
+}: {
+  choices?: ChoiceResult[];
+  lang?: keyof typeof LABELS;
+}) {
+  const label = LABELS[lang];
+
   if (!choices || choices.length === 0) {
-    return (
-      <p className="mt-2 text-sm text-[var(--muted)]">No votes were recorded for this item.</p>
-    );
+    return <p className="mt-2 text-sm text-[var(--muted)]">{label.empty}</p>;
   }
 
   return (
@@ -25,10 +36,10 @@ export function ChoiceResultsTable({ choices }: { choices?: ChoiceResult[] }) {
       <table className="w-full border-collapse text-left text-sm">
         <thead className="border-b border-[var(--border)] text-[var(--muted)]">
           <tr>
-            <th className="py-2 pr-3 font-medium">Choice</th>
-            <th className="py-2 pr-3 text-right font-medium">Rooms</th>
-            <th className="py-2 pr-3 text-right font-medium">Ownership</th>
-            <th className="py-2 text-right font-medium">Of votes cast</th>
+            <th className="py-2 pr-3 font-medium">{label.choice}</th>
+            <th className="py-2 pr-3 text-right font-medium">{label.rooms}</th>
+            <th className="py-2 pr-3 text-right font-medium">{label.ownership}</th>
+            <th className="py-2 text-right font-medium">{label.cast}</th>
           </tr>
         </thead>
         <tbody>

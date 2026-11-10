@@ -352,6 +352,12 @@ export function ResultsSection({
                         Locked by approved result
                       </span>
                     ) : null}
+                    <a
+                      className="ml-2 inline-flex min-h-9 items-center text-sm font-medium text-[var(--primary)] underline"
+                      href={`/record/${snapshot.id}`}
+                    >
+                      Official record
+                    </a>
                   </td>
                 </tr>
               );

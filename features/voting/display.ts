@@ -19,23 +19,36 @@ export function formatVoterDateTime(value: string) {
 
 /** "Voting closes Fri 13 Nov 2026, 13:43" and similar, by window status. */
 export function describeVotingWindow(
-  meeting: { starts_at: string; ends_at: string; closed_at?: string | null } | null,
+  meeting: {
+    starts_at: string;
+    ends_at: string;
+    closed_at?: string | null;
+    advance_starts_at?: string | null;
+    advance_ends_at?: string | null;
+  } | null,
   status: VotingWindowStatus,
 ) {
   if (!meeting) {
     return null;
   }
 
-  switch (status.label) {
-    case "Not open yet":
-      return `Voting opens ${formatVoterDateTime(meeting.starts_at)}`;
-    case "Open":
-      return `Voting closes ${formatVoterDateTime(meeting.ends_at)}`;
-    case "Closed":
-      return `Voting closed ${formatVoterDateTime(meeting.closed_at ?? meeting.ends_at)}`;
-    default:
-      return null;
+  if (status.label === "Open") {
+    return status.phase === "advance" && meeting.advance_ends_at
+      ? `Advance voting closes ${formatVoterDateTime(meeting.advance_ends_at)}. Meeting-day voting opens ${formatVoterDateTime(meeting.starts_at)}.`
+      : `Voting closes ${formatVoterDateTime(meeting.ends_at)}`;
   }
+
+  if (status.label === "Not open yet") {
+    return status.nextPhase === "advance" && meeting.advance_starts_at
+      ? `Advance voting opens ${formatVoterDateTime(meeting.advance_starts_at)}`
+      : `Meeting-day voting opens ${formatVoterDateTime(meeting.starts_at)}`;
+  }
+
+  if (status.label === "Closed") {
+    return `Voting closed ${formatVoterDateTime(meeting.closed_at ?? meeting.ends_at)}`;
+  }
+
+  return null;
 }
 
 const voterTypeLabels: Record<string, string> = {

@@ -75,3 +75,20 @@ export function bangkokDateTimeParts(value: string) {
     time: `${pad(shifted.getUTCHours())}:${pad(shifted.getUTCMinutes())}:${pad(shifted.getUTCSeconds())}`,
   };
 }
+
+const thaiDateTime = new Intl.DateTimeFormat("th-TH", {
+  dateStyle: "long",
+  timeStyle: "short",
+  timeZone: APP_TIME_ZONE,
+});
+
+/** Thai date with the Buddhist year, e.g. "13 พฤศจิกายน 2569 เวลา 13:00". */
+export function formatThaiDateTime(value: string | null | undefined) {
+  if (!value) {
+    return "-";
+  }
+
+  const date = new Date(value);
+
+  return Number.isNaN(date.getTime()) ? "-" : thaiDateTime.format(date);
+}

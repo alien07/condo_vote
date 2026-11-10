@@ -383,6 +383,14 @@ export function MeetingsSection({
                           Voting open
                         </span>
                       ) : null}
+                      {meeting.status !== "draft" ? (
+                        <a
+                          className="rounded-md border border-[var(--border)] px-3 py-1 text-sm font-medium text-[var(--primary)]"
+                          href={`/admin/meetings/${meeting.id}/record`}
+                        >
+                          Meeting record
+                        </a>
+                      ) : null}
                       {(meeting.status === "published" ||
                         meeting.status === "closed") &&
                       !resultLocked &&

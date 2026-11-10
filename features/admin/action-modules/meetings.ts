@@ -48,6 +48,8 @@ const meetingFormFields = [
   "ballot_secrecy",
   "starts_at",
   "ends_at",
+  "advance_starts_at",
+  "advance_ends_at",
   "description",
 ];
 
@@ -117,6 +119,30 @@ function validateMeetingForm(
     fieldErrors.ends_at = "End time must be after start time.";
   }
 
+  // Optional advance voting phase: both times or neither, ending before the
+  // meeting-day voting starts.
+  const advanceStartsIso = bangkokLocalToIso(values.advance_starts_at);
+  const advanceEndsIso = bangkokLocalToIso(values.advance_ends_at);
+
+  if (values.advance_starts_at && !advanceStartsIso) {
+    fieldErrors.advance_starts_at = "Advance voting start must be a valid date and time.";
+  }
+
+  if (values.advance_ends_at && !advanceEndsIso) {
+    fieldErrors.advance_ends_at = "Advance voting end must be a valid date and time.";
+  }
+
+  if (Boolean(values.advance_starts_at) !== Boolean(values.advance_ends_at)) {
+    fieldErrors[values.advance_starts_at ? "advance_ends_at" : "advance_starts_at"] =
+      "Set both advance voting times, or leave both empty.";
+  } else if (advanceStartsIso && advanceEndsIso) {
+    if (advanceStartsIso >= advanceEndsIso) {
+      fieldErrors.advance_ends_at = "Advance voting must end after it starts.";
+    } else if (startsAtIso && advanceEndsIso > startsAtIso) {
+      fieldErrors.advance_ends_at = "Advance voting must end before meeting-day voting starts.";
+    }
+  }
+
   return fieldErrors;
 }
 
@@ -144,6 +170,8 @@ function meetingPayload(values: Record<string, string>) {
     video_url: optionalText(values.video_url),
     starts_at: bangkokLocalToIso(values.starts_at)!,
     ends_at: bangkokLocalToIso(values.ends_at)!,
+    advance_starts_at: bangkokLocalToIso(values.advance_starts_at),
+    advance_ends_at: bangkokLocalToIso(values.advance_ends_at),
     meeting_number: optionalText(values.meeting_number),
     meeting_type: values.meeting_type.trim(),
     fiscal_year: optionalText(values.fiscal_year),
