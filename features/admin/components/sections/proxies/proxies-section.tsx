@@ -1,3 +1,5 @@
+import { getStaffI18n } from "@/lib/i18n/server";
+import { codeLabel, fill } from "@/lib/i18n/template";
 import { UserCheck } from "lucide-react";
 import { PerPageSelect } from "@/features/admin/components/table-controls";
 import { ProxyCrudDrawer, ProxyRowFocus } from "@/features/admin/components/proxy-crud-drawer";
@@ -26,7 +28,7 @@ type ProxiesSectionProps = Pick<
   hidden: boolean;
 };
 
-export function ProxiesSection({
+export async function ProxiesSection({
   drawer,
   focusedProxyId,
   meetings,
@@ -37,6 +39,7 @@ export function ProxiesSection({
   rooms,
   hidden,
 }: ProxiesSectionProps) {
+  const { s } = await getStaffI18n();
   const proxyTableFilters: Required<ProxyTableFilters> = {
     dir: proxyFilters?.dir ?? "asc",
     meeting: proxyFilters?.meeting ?? "",
@@ -161,9 +164,9 @@ export function ProxiesSection({
         <div className="flex items-center gap-2">
           <UserCheck className="text-[var(--primary)]" size={20} />
           <div>
-            <h2 className="text-lg font-semibold">Proxy Authorizations</h2>
+            <h2 className="text-lg font-semibold">{s.proxies.title}</h2>
             <p className="text-sm text-[var(--muted)]">
-              Create and review proxy voting authority for a meeting and room.
+              {s.proxies.intro}
             </p>
           </div>
         </div>
@@ -171,15 +174,15 @@ export function ProxiesSection({
           className="inline-flex min-h-10 items-center justify-center rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)]"
           href={`${proxyListHref}&mode=create&type=proxy_authorization`}
         >
-          Add proxy authorization
+          {s.proxies.add}
         </a>
       </div>
 
       <section className="mb-5 rounded-lg border border-[var(--border)] bg-[var(--background)] p-4">
         <div className="mb-3">
-          <h3 className="text-sm font-semibold">Search Criteria</h3>
+          <h3 className="text-sm font-semibold">{s.common.searchCriteria}</h3>
           <p className="mt-1 text-xs text-[var(--muted)]">
-            Filter proxy authorizations by meeting, room, and proxy.
+            {s.proxies.filter}
           </p>
         </div>
         <form className="grid gap-3 md:grid-cols-12">
@@ -191,30 +194,30 @@ export function ProxiesSection({
             value={proxyTableFilters.perPage}
           />
           <label className="grid gap-1 text-xs font-medium text-[var(--muted)] md:col-span-3">
-            Meeting
+            {s.proxies.meeting}
             <input
               className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)]"
               defaultValue={proxyTableFilters.meeting}
               name="meeting"
-              placeholder="Search meeting"
+              placeholder={s.proxies.searchMeeting}
             />
           </label>
           <label className="grid gap-1 text-xs font-medium text-[var(--muted)] md:col-span-3">
-            Room
+            {s.proxies.room}
             <input
               className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)]"
               defaultValue={proxyTableFilters.room}
               name="room"
-              placeholder="Search room"
+              placeholder={s.proxies.searchRoom}
             />
           </label>
           <label className="grid gap-1 text-xs font-medium text-[var(--muted)] md:col-span-3">
-            Proxy
+            {s.proxies.proxy}
             <input
               className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)]"
               defaultValue={proxyTableFilters.proxy}
               name="proxy"
-              placeholder="Search proxy"
+              placeholder={s.proxies.searchProxy}
             />
           </label>
           <div className="flex flex-wrap items-end justify-center gap-2 md:col-span-3">
@@ -222,27 +225,27 @@ export function ProxiesSection({
               className="min-h-10 rounded-md bg-[var(--primary)] px-5 py-2 text-sm font-medium text-[var(--primary-foreground)]"
               type="submit"
             >
-              Search
+              {s.common.search}
             </button>
             <a
               className="inline-flex min-h-10 items-center rounded-md border border-[var(--border)] bg-[var(--surface)] px-5 py-2 text-sm font-medium"
               href="/admin/proxies"
             >
-              Clear
+              {s.common.clear}
             </a>
           </div>
         </form>
       </section>
       <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h3 className="text-sm font-semibold">Results</h3>
+          <h3 className="text-sm font-semibold">{s.common.results}</h3>
           <p className="mt-1 text-xs text-[var(--muted)]">
-            Showing {proxyPageStart}-{proxyPageEnd} of {proxyTotal}
+            {fill(s.common.showing, { start: proxyPageStart, end: proxyPageEnd, total: proxyTotal })}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2 rounded-md border border-[var(--border)] bg-[var(--background)] px-3 py-2">
           <PerPageSelect
-            label="Page"
+            label={s.common.page}
             options={Array.from(
               { length: proxyTotalPages },
               (_, index) => index + 1,
@@ -251,11 +254,11 @@ export function ProxiesSection({
             value={proxyPage}
           />
           <div className="text-xs font-medium text-[var(--muted)]">
-            of {proxyTotalPages}
+            {fill(s.common.ofPages, { total: proxyTotalPages })}
           </div>
           <div className="hidden h-6 w-px bg-[var(--border)] sm:block" />
           <PerPageSelect
-            label="Per page"
+            label={s.common.perPage}
             urlByValue={proxyPerPageUrls}
             value={proxyTableFilters.perPage}
           />
@@ -267,30 +270,30 @@ export function ProxiesSection({
             <tr>
               <th className="py-2 pr-3 font-medium">
                 <a href={proxySortHref("meeting")}>
-                  Meeting{proxySortLabel("meeting")}
+                  {s.proxies.meeting}{proxySortLabel("meeting")}
                 </a>
               </th>
               <th className="py-2 pr-3 font-medium">
                 <a href={proxySortHref("room")}>
-                  Room{proxySortLabel("room")}
+                  {s.proxies.room}{proxySortLabel("room")}
                 </a>
               </th>
               <th className="py-2 pr-3 font-medium">
                 <a href={proxySortHref("owner")}>
-                  Owner{proxySortLabel("owner")}
+                  {s.proxies.owner}{proxySortLabel("owner")}
                 </a>
               </th>
               <th className="py-2 pr-3 font-medium">
                 <a href={proxySortHref("proxy")}>
-                  Proxy{proxySortLabel("proxy")}
+                  {s.proxies.proxy}{proxySortLabel("proxy")}
                 </a>
               </th>
               <th className="py-2 pr-3 font-medium">
                 <a href={proxySortHref("status")}>
-                  Status{proxySortLabel("status")}
+                  {s.common.status}{proxySortLabel("status")}
                 </a>
               </th>
-              <th className="py-2 font-medium">Action</th>
+              <th className="py-2 font-medium">{s.common.action}</th>
             </tr>
           </thead>
           <tbody>
@@ -325,13 +328,13 @@ export function ProxiesSection({
                   <td className="py-2 pr-3">
                     {authorization.profiles?.full_name ?? "-"}
                   </td>
-                  <td className="py-2 pr-3">{authorization.status}</td>
+                  <td className="py-2 pr-3">{codeLabel(s.common.code, authorization.status)}</td>
                   <td className="py-2">
                     <a
                       className="inline-flex min-h-9 items-center rounded-md border border-[var(--border)] px-3 py-1 text-sm font-medium"
                       href={`${proxyListHref}&mode=edit&type=proxy_authorization&id=${authorization.id}`}
                     >
-                      Review
+                      {s.proxies.review}
                     </a>
                   </td>
                 </tr>
@@ -342,7 +345,7 @@ export function ProxiesSection({
       </div>
       {pagedProxyAuthorizations.length === 0 ? (
         <p className="mt-3 text-sm text-[var(--muted)]">
-          No proxy authorizations match the selected criteria.
+          {s.proxies.noProxies}
         </p>
       ) : null}
       <ProxyRowFocus authorizationId={focusedProxyId} />
@@ -358,7 +361,7 @@ export function ProxiesSection({
             page: Math.max(1, proxyPage - 1),
           })}
         >
-          Previous
+          {s.common.previous}
         </a>
         <div className="text-sm text-[var(--muted)]">
           {proxyPageStart}-{proxyPageEnd} / {proxyTotal}
@@ -376,7 +379,7 @@ export function ProxiesSection({
             page: Math.min(proxyTotalPages, proxyPage + 1),
           })}
         >
-          Next
+          {s.common.next}
         </a>
       </div>
       {drawer?.mode === "create" && drawer.type === "proxy_authorization" ? (

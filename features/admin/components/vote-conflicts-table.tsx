@@ -1,5 +1,7 @@
 "use client";
 
+import { useMessageText, useStaffText } from "@/lib/i18n/staff/client";
+import { codeLabel, fill } from "@/lib/i18n/template";
 import { bangkokDateTimeParts } from "@/lib/datetime";
 import { useActionState, useEffect, useRef, useState } from "react";
 import {
@@ -178,6 +180,8 @@ function ResolveConflictForm({
   conflict: VoteConflictRow;
   onResolved: (recordKey: string) => void;
 }) {
+  const tm = useMessageText();
+  const { s } = useStaffText();
   const formRef = useRef<HTMLFormElement>(null);
   const [state, formAction] = useActionState(
     resolveVoteSourceConflictWithState,
@@ -213,7 +217,7 @@ function ResolveConflictForm({
           className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-800"
           role="alert"
         >
-          {state.error}
+          {tm(state.error)}
         </div>
       ) : null}
       <input name="meeting_id" type="hidden" value={conflict.meetingId} />
@@ -229,7 +233,7 @@ function ResolveConflictForm({
         value={conflict.manualBallotId}
       />
       <label className="grid gap-1 text-sm font-medium">
-        Chosen source
+        {s.voting.chosenSource}
         <select
           aria-invalid={state.fieldErrors?.chosen_source ? "true" : undefined}
           className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
@@ -240,8 +244,8 @@ function ResolveConflictForm({
           }
           name="chosen_source"
         >
-          <option value="manual">Manual</option>
-          <option value="online">Online</option>
+          <option value="manual">{s.voting.manual}</option>
+          <option value="online">{s.voting.online}</option>
         </select>
         {state.fieldErrors?.chosen_source ? (
           <p className="text-xs font-medium text-red-700">
@@ -250,7 +254,7 @@ function ResolveConflictForm({
         ) : null}
       </label>
       <label className="grid gap-1 text-sm font-medium">
-        Conflict remark
+        {s.voting.remark}
         <textarea
           className="min-h-24 rounded-md border border-[var(--border)] px-3 py-2 text-sm"
           defaultValue={
@@ -259,16 +263,16 @@ function ResolveConflictForm({
             ""
           }
           name="conflict_remark"
-          placeholder="Explain why this source is selected."
+          placeholder={s.voting.remarkPlaceholder}
         />
       </label>
       <div className="flex flex-wrap gap-2">
         <PendingSubmitButton
           className="rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)]"
-          pendingLabel="Saving..."
+          pendingLabel={s.common.saving}
           type="submit"
         >
-          Resolve source
+          {s.voting.resolveSource}
         </PendingSubmitButton>
         <FormResetButton label="Reset changes" />
       </div>
@@ -283,6 +287,8 @@ export function VoteConflictsTable({
   initialRows,
   initialTotal,
 }: VoteConflictsTableProps) {
+  const tm = useMessageText();
+  const { s } = useStaffText();
   const [criteria, setCriteria] = useState(initialFilters);
   const [appliedFilters, setAppliedFilters] = useState(initialFilters);
   const [rows, setRows] = useState(initialRows);
@@ -311,7 +317,7 @@ export function VoteConflictsTable({
       );
 
       if (!response.ok) {
-        throw new Error("Could not load conflicts.");
+        throw new Error(s.voting.loadFailed);
       }
 
       const payload = (await response.json()) as ConflictApiResponse;
@@ -332,7 +338,7 @@ export function VoteConflictsTable({
       setError(
         caughtError instanceof Error
           ? caughtError.message
-          : "Could not load conflicts.",
+          : s.voting.loadFailed,
       );
     } finally {
       setLoading(false);
@@ -350,7 +356,7 @@ export function VoteConflictsTable({
 
   async function handleResolved(recordKey: string) {
     setFocusedKey(recordKey);
-    setMessage("Conflict resolved.");
+    setMessage(s.voting.resolved);
     setSelected(null);
     await load(appliedFilters);
   }
@@ -376,9 +382,9 @@ export function VoteConflictsTable({
     <div>
       <section className="rounded-md border border-[var(--border)] bg-[var(--background)] p-4">
         <div className="mb-3">
-          <h2 className="text-sm font-semibold">Search Criteria</h2>
+          <h2 className="text-sm font-semibold">{s.common.searchCriteria}</h2>
           <p className="mt-1 text-xs text-[var(--muted)]">
-            Filter conflicts by meeting, room, and resolution status.
+            {s.voting.conflictsFilter}
           </p>
         </div>
         <form
@@ -389,7 +395,7 @@ export function VoteConflictsTable({
           }}
         >
           <label className="grid gap-1 text-xs font-medium text-[var(--muted)] md:col-span-3">
-            Meeting
+            {s.voting.meeting}
             <input
               className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)]"
               onChange={(event) => {
@@ -400,12 +406,12 @@ export function VoteConflictsTable({
                   meeting: value,
                 }));
               }}
-              placeholder="Search meeting"
+              placeholder={s.voting.searchMeeting}
               value={criteria.meeting}
             />
           </label>
           <label className="grid gap-1 text-xs font-medium text-[var(--muted)] md:col-span-3">
-            Room
+            {s.voting.room}
             <input
               className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)]"
               onChange={(event) => {
@@ -416,12 +422,12 @@ export function VoteConflictsTable({
                   room: value,
                 }));
               }}
-              placeholder="Search room"
+              placeholder={s.voting.searchRoom}
               value={criteria.room}
             />
           </label>
           <label className="grid gap-1 text-xs font-medium text-[var(--muted)] md:col-span-3">
-            Status
+            {s.common.status}
             <select
               className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)]"
               onChange={(event) => {
@@ -434,18 +440,18 @@ export function VoteConflictsTable({
               }}
               value={criteria.status}
             >
-              <option value="all">All statuses</option>
-              <option value="unresolved">Unresolved</option>
-              <option value="resolved">Resolved</option>
+              <option value="all">{s.common.allStatuses}</option>
+              <option value="unresolved">{s.voting.unresolvedOption}</option>
+              <option value="resolved">{s.voting.resolvedOption}</option>
             </select>
           </label>
           <div className="flex flex-wrap items-end justify-center gap-2 md:col-span-3">
             <PendingSubmitButton
               className="min-h-10 rounded-md bg-[var(--primary)] px-5 py-2 text-sm font-medium text-[var(--primary-foreground)]"
-              pendingLabel="Searching..."
+              pendingLabel={s.common.searching}
               type="submit"
             >
-              Search
+              {s.common.search}
             </PendingSubmitButton>
             <button
               className="inline-flex min-h-10 items-center rounded-md border border-[var(--border)] bg-[var(--surface)] px-5 py-2 text-sm font-medium"
@@ -464,7 +470,7 @@ export function VoteConflictsTable({
               }}
               type="button"
             >
-              Clear
+              {s.common.clear}
             </button>
           </div>
         </form>
@@ -476,21 +482,21 @@ export function VoteConflictsTable({
       >
         {loading ? (
           <div className="absolute inset-0 z-10 flex items-start justify-center bg-white/70 pt-16 text-sm font-medium text-[var(--muted)]">
-            Loading results...
+            {s.common.loadingResults}
           </div>
         ) : null}
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--border)] px-4 py-3">
           <div>
-            <h2 className="text-sm font-semibold">Results</h2>
+            <h2 className="text-sm font-semibold">{s.common.results}</h2>
             <p className="mt-1 text-xs text-[var(--muted)]">
-              Showing {pageStart}-{pageEnd} of {total}
+              {fill(s.common.showing, { start: pageStart, end: pageEnd, total: total })}
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2 rounded-md border border-[var(--border)] bg-[var(--background)] px-3 py-2">
             <label className="flex items-center gap-2 text-xs font-medium text-[var(--muted)]">
-              Page
+              {s.common.page}
               <select
-                aria-label="Page"
+                aria-label={s.common.page}
                 className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-2 py-1 text-sm text-[var(--foreground)]"
                 disabled={loading || totalPages <= 1}
                 onChange={(event) =>
@@ -509,13 +515,13 @@ export function VoteConflictsTable({
                   ),
                 )}
               </select>
-              <span>of {totalPages}</span>
+              <span>{fill(s.common.ofPages, { total: totalPages })}</span>
             </label>
             <div className="hidden h-6 w-px bg-[var(--border)] sm:block" />
             <label className="flex items-center gap-2 text-xs font-medium text-[var(--muted)]">
-              Per page
+              {s.common.perPage}
               <select
-                aria-label="Per page"
+                aria-label={s.common.perPage}
                 className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-2 py-1 text-sm text-[var(--foreground)]"
                 disabled={loading}
                 onChange={(event) =>
@@ -537,12 +543,12 @@ export function VoteConflictsTable({
         </div>
         {error ? (
           <p className="border-b border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-            {error}
+            {tm(error)}
           </p>
         ) : null}
         {message ? (
           <div className="border-b border-green-200 bg-green-50 px-4 py-3 text-sm font-medium text-green-800">
-            {message}
+            {tm(message)}
           </div>
         ) : null}
         <div className="overflow-x-auto">
@@ -550,10 +556,10 @@ export function VoteConflictsTable({
             <thead className="bg-[var(--background)] text-[var(--muted)]">
               <tr className="border-b border-[var(--border)]">
                 {[
-                  ["meeting", "Meeting"],
-                  ["room", "Room"],
-                  ["status", "Status"],
-                  ["resolved_at", "Resolved at"],
+                  ["meeting", s.voting.meeting],
+                  ["room", s.voting.room],
+                  ["status", s.common.status],
+                  ["resolved_at", s.voting.resolvedAt],
                 ].map(([sort, label]) => (
                   <th className="px-4 py-3 font-medium" key={sort}>
                     <button
@@ -570,7 +576,7 @@ export function VoteConflictsTable({
                     </button>
                   </th>
                 ))}
-                <th className="px-4 py-3 font-medium">Action</th>
+                <th className="px-4 py-3 font-medium">{s.common.action}</th>
               </tr>
             </thead>
             <tbody>
@@ -594,7 +600,7 @@ export function VoteConflictsTable({
                   >
                     <td className="px-4 py-3">{conflict.meetingTitle}</td>
                     <td className="px-4 py-3">{conflict.roomNumber}</td>
-                    <td className="px-4 py-3">{conflict.status}</td>
+                    <td className="px-4 py-3">{codeLabel(s.common.code, conflict.status)}</td>
                     <td className="px-4 py-3">
                       {formatDateTime(conflict.resolution?.resolved_at)}
                     </td>
@@ -604,7 +610,7 @@ export function VoteConflictsTable({
                         onClick={() => setSelected(conflict)}
                         type="button"
                       >
-                        Review / Resolve
+                        {s.voting.reviewResolve}
                       </button>
                     </td>
                   </tr>
@@ -615,7 +621,7 @@ export function VoteConflictsTable({
         </div>
         {rows.length === 0 ? (
           <p className="px-4 py-4 text-sm text-[var(--muted)]">
-            No manual/online conflicts match the selected criteria.
+            {s.voting.noConflicts}
           </p>
         ) : null}
         <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
@@ -627,7 +633,7 @@ export function VoteConflictsTable({
             }
             type="button"
           >
-            Previous
+            {s.common.previous}
           </button>
           <div className="text-sm text-[var(--muted)]">
             {pageStart}-{pageEnd} / {total}
@@ -640,14 +646,14 @@ export function VoteConflictsTable({
             }
             type="button"
           >
-            Next
+            {s.common.next}
           </button>
         </div>
       </section>
 
       {selected ? (
         <div
-          aria-label="Review vote source conflict"
+          aria-label={s.voting.reviewDialog}
           aria-modal="true"
           className="fixed inset-0 z-50 flex justify-end bg-black/30"
           role="dialog"
@@ -655,7 +661,7 @@ export function VoteConflictsTable({
           <aside className="h-full w-full max-w-2xl overflow-y-auto bg-[var(--surface)] p-5 shadow-xl">
             <div className="mb-4 flex items-start justify-between gap-3">
               <div>
-                <h2 className="text-xl font-semibold">Review conflict</h2>
+                <h2 className="text-xl font-semibold">{s.voting.reviewConflict}</h2>
                 <p className="mt-1 text-sm text-[var(--muted)]">
                   {selected.meetingTitle} / room {selected.roomNumber}
                 </p>
@@ -665,16 +671,14 @@ export function VoteConflictsTable({
                 onClick={() => setSelected(null)}
                 type="button"
               >
-                Close
+                {s.common.close}
               </button>
             </div>
             <p className="mb-4 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
-              Answers are read-only. Choose one source for the whole ballot. Manual
-              is the default because it represents the signed vote sheet collected
-              at the meeting venue.
+              {s.voting.readOnlyHelp}
             </p>
             <div className="mb-4 rounded-md border border-[var(--border)] bg-[var(--background)] p-3 text-sm">
-              <p className="font-medium">Manual ballot identity</p>
+              <p className="font-medium">{s.voting.manualIdentity}</p>
               <p className="mt-1 text-[var(--muted)]">
                 {selected.manualIdentityStatus} /{" "}
                 {selected.manualVoterIdentityText ??
@@ -684,17 +688,16 @@ export function VoteConflictsTable({
             </div>
             {selected.onlineAnswersHidden ? (
               <p className="mb-4 rounded-md border border-[var(--border)] bg-[var(--background)] p-3 text-sm text-[var(--muted)]">
-                Secret ballot: online answers are hidden. Choose the source
-                using the ballot times and the paper record.
+                {s.voting.secretHelp}
               </p>
             ) : null}
             <div className="overflow-x-auto">
               <table className="w-full min-w-[680px] border-collapse text-left text-sm">
                 <thead className="bg-[var(--background)] text-[var(--muted)]">
                   <tr className="border-b border-[var(--border)]">
-                    <th className="px-3 py-2 font-medium">Question</th>
-                    <th className="px-3 py-2 font-medium">Manual</th>
-                    <th className="px-3 py-2 font-medium">Online</th>
+                    <th className="px-3 py-2 font-medium">{s.voting.question}</th>
+                    <th className="px-3 py-2 font-medium">{s.voting.manual}</th>
+                    <th className="px-3 py-2 font-medium">{s.voting.online}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -719,7 +722,7 @@ export function VoteConflictsTable({
                         ].join(" ")}
                       >
                         {selected.onlineAnswersHidden
-                          ? "Hidden"
+                          ? s.voting.hidden
                           : (row.online?.choiceText ?? "-")}
                       </td>
                     </tr>

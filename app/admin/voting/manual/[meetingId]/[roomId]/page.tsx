@@ -1,3 +1,5 @@
+import { getStaffI18n } from "@/lib/i18n/server";
+import { fill } from "@/lib/i18n/template";
 import { formatBangkokDateTime } from "@/lib/datetime";
 import Link from "next/link";
 import {
@@ -29,6 +31,7 @@ export default async function ManualVotePage({
   params,
   searchParams,
 }: ManualVotePageProps) {
+  const { s } = await getStaffI18n();
   await requireAdmin();
 
   const { meetingId, roomId } = await params;
@@ -105,22 +108,20 @@ export default async function ManualVotePage({
           <Vote className="text-[var(--primary)]" size={26} />
           <div>
             <Link className="text-sm text-[var(--muted)]" href="/admin/voting">
-              Back to manual votes
+              {s.voting.backToManual}
             </Link>
             <h1 className="mt-1 text-2xl font-semibold">
-              Manual vote entry: {meeting.title}
+              {fill(s.voting.entryTitle, { title: meeting.title })}
             </h1>
             <p className="text-sm text-[var(--muted)]">
-              Room {room.room_number} / voter: {voterLabel}
+              {fill(s.voting.entryRoom, { room: room.room_number, voter: voterLabel })}
             </p>
           </div>
         </div>
 
         {pendingIdentity ? (
           <p className="mb-4 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
-            This manual vote will be saved as pending identity because the voter
-            is not linked to a registered profile yet. It will not be used in
-            result calculation until admin registers and links the voter.
+            {s.voting.entryPending}
           </p>
         ) : null}
 
@@ -133,13 +134,13 @@ export default async function ManualVotePage({
               </p>
             </div>
             <div className="text-sm text-[var(--muted)]">
-              Manual source / ownership {room.ownership_percent}%
+              {fill(s.voting.entrySource, { percent: room.ownership_percent })}
             </div>
           </div>
 
           {questionsResult.data.length === 0 ? (
             <p className="mt-4 text-sm text-[var(--muted)]">
-              No voting questions are configured for this meeting.
+              {s.voting.noQuestions}
             </p>
           ) : (
             <form action={submitManualBallot} className="mt-4 grid gap-5">
@@ -178,18 +179,17 @@ export default async function ManualVotePage({
                 </fieldset>
               ))}
               <section className="rounded-md border border-[var(--border)] bg-[var(--background)] p-4">
-                <h2 className="text-sm font-semibold">Review</h2>
+                <h2 className="text-sm font-semibold">{s.voting.review}</h2>
                 <p className="mt-1 text-sm text-[var(--muted)]">
-                  Confirm that these choices match the signed paper ballot before
-                  saving the manual vote entry.
+                  {s.voting.reviewText}
                 </p>
               </section>
               <PendingSubmitButton
                 className="min-h-10 rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)] disabled:cursor-not-allowed disabled:opacity-50"
-                pendingLabel="Saving..."
+                pendingLabel={s.common.saving}
                 type="submit"
               >
-                Save manual vote
+                {s.voting.save}
               </PendingSubmitButton>
             </form>
           )}

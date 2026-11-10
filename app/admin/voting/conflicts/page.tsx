@@ -1,3 +1,4 @@
+import { getStaffI18n } from "@/lib/i18n/server";
 import Link from "next/link";
 import { ListChecks } from "lucide-react";
 import {
@@ -58,6 +59,7 @@ function getConflictFilters(
 export default async function AdminVoteConflictsPage({
   searchParams,
 }: AdminVoteConflictsPageProps) {
+  const { s } = await getStaffI18n();
   await requireAdmin();
 
   const params = await searchParams;
@@ -74,14 +76,13 @@ export default async function AdminVoteConflictsPage({
               <ListChecks className="text-[var(--primary)]" size={26} />
               <div>
                 <Link className="text-sm text-[var(--muted)]" href="/admin/voting">
-                  Back to manual votes
+                  {s.voting.backToManual}
                 </Link>
                 <h1 className="mt-1 text-2xl font-semibold">
-                  Manual/Online Conflicts
+                  {s.voting.conflictsTitle}
                 </h1>
                 <p className="text-sm text-[var(--muted)]">
-                  Review rooms with both manual and online votes, then choose the
-                  effective source for the whole ballot.
+                  {s.voting.conflictsIntro}
                 </p>
               </div>
             </div>

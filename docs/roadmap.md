@@ -55,9 +55,8 @@
   as an alternate language.
 - Add a language switcher, dictionary files, locale-aware date/number
   formatting, and admin-configurable default language.
-- Translate admin pages (in progress, D020): committee, system, admin menu,
-  overview, setup, documents, rooms and owners, ownership, and meetings done;
-  voting, results, proxies, communications, and server messages next.
+- Done (D020): admin, committee, and system pages in Thai and English,
+  including action messages. Admin dates still use the English date format.
 - Admin-editable email templates (Thai and English).
 - Split remaining oversized files by domain sub-feature (see code-organization.md backlog).
 

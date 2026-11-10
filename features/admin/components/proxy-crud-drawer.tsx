@@ -1,5 +1,7 @@
 "use client";
 
+import { useMessageText, useStaffText } from "@/lib/i18n/staff/client";
+import { fill } from "@/lib/i18n/template";
 import { useActionState, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import {
@@ -80,11 +82,12 @@ function FieldError({
   fieldName: string;
   state: ProxyActionState;
 }) {
+  const tm = useMessageText();
   const message = state.fieldErrors?.[fieldName];
 
   return message ? (
     <p className="text-xs font-medium text-red-700" id={fieldErrorId(fieldName)}>
-      {message}
+      {tm(message)}
     </p>
   ) : null;
 }
@@ -144,6 +147,8 @@ export function ProxyCrudDrawer({
   profiles,
   rooms,
 }: ProxyCrudDrawerProps) {
+  const tm = useMessageText();
+  const { s } = useStaffText();
   const formRef = useRef<HTMLFormElement>(null);
   const searchParams = useSearchParams();
   const [state, formAction] = useActionState(
@@ -192,13 +197,13 @@ export function ProxyCrudDrawer({
       summary={
         mode === "edit" && authorization
           ? [
-              `Meeting: ${authorization.meetings?.title ?? "-"}`,
-              `Room: ${authorization.rooms?.room_number ?? "-"}`,
-              `Proxy: ${authorization.profiles?.full_name ?? "-"}`,
+              fill(s.proxies.meetingSummary, { title: authorization.meetings?.title ?? "-" }),
+              fill(s.proxies.roomSummary, { room: authorization.rooms?.room_number ?? "-" }),
+              fill(s.proxies.proxySummary, { name: authorization.profiles?.full_name ?? "-" }),
             ]
-          : ["New proxy authorization"]
+          : [s.proxies.newProxy]
       }
-      title={mode === "edit" ? "Review proxy authorization" : "Add proxy authorization"}
+      title={mode === "edit" ? s.proxies.reviewProxy : s.proxies.add}
     >
       <form action={formAction} className="grid gap-3" noValidate ref={formRef}>
         <RequiredNote />
@@ -207,7 +212,7 @@ export function ProxyCrudDrawer({
             className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-800"
             role="alert"
           >
-            {state.error}
+            {tm(state.error)}
           </div>
         ) : null}
         {mode === "edit" && authorization ? (
@@ -217,7 +222,7 @@ export function ProxyCrudDrawer({
         {mode === "create" ? (
           <>
             <label className="grid gap-1 text-sm font-medium">
-              <FieldLabel required>Meeting</FieldLabel>
+              <FieldLabel required>{s.proxies.meeting}</FieldLabel>
               <select
                 {...fieldProps("meeting_id", state)}
                 autoFocus
@@ -226,7 +231,7 @@ export function ProxyCrudDrawer({
                 name="meeting_id"
                 required
               >
-                <option value="">Select meeting</option>
+                <option value="">{s.proxies.selectMeeting}</option>
                 {meetings
                   .filter((meeting) => meeting.status !== "archived")
                   .map((meeting) => (
@@ -238,7 +243,7 @@ export function ProxyCrudDrawer({
               <FieldError fieldName="meeting_id" state={state} />
             </label>
             <label className="grid gap-1 text-sm font-medium">
-              <FieldLabel required>Room</FieldLabel>
+              <FieldLabel required>{s.proxies.room}</FieldLabel>
               <select
                 {...fieldProps("room_id", state)}
                 className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
@@ -246,7 +251,7 @@ export function ProxyCrudDrawer({
                 name="room_id"
                 required
               >
-                <option value="">Select room</option>
+                <option value="">{s.proxies.selectRoom}</option>
                 {rooms
                   .filter((room) => room.active)
                   .map((room) => (
@@ -258,13 +263,13 @@ export function ProxyCrudDrawer({
               <FieldError fieldName="room_id" state={state} />
             </label>
             <label className="grid gap-1 text-sm font-medium">
-              Owner
+              {s.proxies.owner}
               <select
                 className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
                 defaultValue={stateValue(state, "owner_id")}
                 name="owner_id"
               >
-                <option value="">Owner optional</option>
+                <option value="">{s.proxies.ownerOptional}</option>
                 {owners
                   .filter((owner) => owner.active)
                   .map((owner) => (
@@ -275,7 +280,7 @@ export function ProxyCrudDrawer({
               </select>
             </label>
             <label className="grid gap-1 text-sm font-medium">
-              <FieldLabel required>Proxy profile</FieldLabel>
+              <FieldLabel required>{s.proxies.proxyProfile}</FieldLabel>
               <select
                 {...fieldProps("proxy_profile_id", state)}
                 className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
@@ -283,7 +288,7 @@ export function ProxyCrudDrawer({
                 name="proxy_profile_id"
                 required
               >
-                <option value="">Select proxy profile</option>
+                <option value="">{s.proxies.selectProxy}</option>
                 {profiles.map((profile) => (
                   <option key={profile.id} value={profile.id}>
                     {profile.full_name ?? profile.email} ({profile.email})
@@ -293,7 +298,7 @@ export function ProxyCrudDrawer({
               <FieldError fieldName="proxy_profile_id" state={state} />
             </label>
             <label className="grid gap-1 text-sm font-medium">
-              Valid from
+              {s.proxies.validFrom}
               <input
                 className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
                 defaultValue={stateValue(state, "valid_from")}
@@ -302,7 +307,7 @@ export function ProxyCrudDrawer({
               />
             </label>
             <label className="grid gap-1 text-sm font-medium">
-              Valid until
+              {s.proxies.validUntil}
               <input
                 className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
                 defaultValue={stateValue(state, "valid_until")}
@@ -313,7 +318,7 @@ export function ProxyCrudDrawer({
           </>
         ) : (
           <label className="grid gap-1 text-sm font-medium">
-            <FieldLabel required>Status</FieldLabel>
+            <FieldLabel required>{s.common.status}</FieldLabel>
             <select
               {...fieldProps("status", state)}
               autoFocus
@@ -322,10 +327,10 @@ export function ProxyCrudDrawer({
               name="status"
               required
             >
-              <option value="pending">Pending</option>
-              <option value="approved">Approved</option>
-              <option value="rejected">Rejected</option>
-              <option value="revoked">Revoked</option>
+              <option value="pending">{s.proxies.pending}</option>
+              <option value="approved">{s.proxies.approved}</option>
+              <option value="rejected">{s.proxies.rejected}</option>
+              <option value="revoked">{s.proxies.revoked}</option>
             </select>
             <FieldError fieldName="status" state={state} />
           </label>
@@ -335,19 +340,21 @@ export function ProxyCrudDrawer({
           {mode === "edit" ? (
             <ConfirmSubmitButton
               className="rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)]"
-              confirmMessage={`Update proxy authorization for room ${authorization?.rooms?.room_number ?? "-"}? Approving, rejecting, or revoking changes who can vote for this room.`}
-              pendingLabel="Saving..."
+              confirmMessage={fill(s.proxies.confirmReview, {
+                room: authorization?.rooms?.room_number ?? "-",
+              })}
+              pendingLabel={s.common.saving}
               type="submit"
             >
-              Save review
+              {s.proxies.saveReview}
             </ConfirmSubmitButton>
           ) : (
             <PendingSubmitButton
               className="rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)]"
-              pendingLabel="Adding..."
+              pendingLabel={s.proxies.adding}
               type="submit"
             >
-              Add proxy authorization
+              {s.proxies.add}
             </PendingSubmitButton>
           )}
           <FormResetButton label={mode === "edit" ? "Reset changes" : "Clear form"} />
@@ -355,7 +362,7 @@ export function ProxyCrudDrawer({
             className="inline-flex items-center justify-center rounded-md border border-[var(--border)] px-4 py-2 text-sm font-medium"
             href={closeHref}
           >
-            Cancel
+            {s.common.cancel}
           </a>
         </div>
       </form>

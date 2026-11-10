@@ -1,3 +1,5 @@
+import { getStaffI18n } from "@/lib/i18n/server";
+import { codeLabel, fill } from "@/lib/i18n/template";
 import { ListChecks } from "lucide-react";
 import { PerPageSelect } from "@/features/admin/components/table-controls";
 import { ManualVoteIdentityDrawer, ManualVoteImportDrawer, ManualVoteRowFocus } from "@/features/admin/components/manual-vote-crud-drawer";
@@ -25,7 +27,7 @@ type ManualVotesSectionProps = Pick<
   hidden: boolean;
 };
 
-export function ManualVotesSection({
+export async function ManualVotesSection({
   drawer,
   focusedManualBallotId,
   manualBallots,
@@ -35,6 +37,7 @@ export function ManualVotesSection({
   rooms,
   hidden,
 }: ManualVotesSectionProps) {
+  const { s } = await getStaffI18n();
   const manualVoteTableFilters: Required<ManualVoteTableFilters> = {
     dir: manualVoteFilters?.dir ?? "asc",
     meeting: manualVoteFilters?.meeting ?? "",
@@ -182,9 +185,9 @@ export function ManualVotesSection({
         <div className="flex items-center gap-2">
           <ListChecks className="text-[var(--primary)]" size={20} />
           <div>
-            <h2 className="text-lg font-semibold">Manual Votes</h2>
+            <h2 className="text-lg font-semibold">{s.voting.title}</h2>
             <p className="text-sm text-[var(--muted)]">
-              Import manual ballots and resolve manual/online conflicts.
+              {s.voting.intro}
             </p>
           </div>
         </div>
@@ -193,13 +196,13 @@ export function ManualVotesSection({
             className="inline-flex min-h-10 items-center justify-center rounded-md border border-[var(--border)] px-4 py-2 text-sm font-medium"
             href="/admin/voting/conflicts"
           >
-            Review conflicts
+            {s.voting.reviewConflicts}
           </a>
           <a
             className="inline-flex min-h-10 items-center justify-center rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)]"
             href={`${manualVoteListHref}&mode=create&type=manual_vote`}
           >
-            Import manual vote
+            {s.voting.importManual}
           </a>
         </div>
       </div>
@@ -208,23 +211,21 @@ export function ManualVotesSection({
         <section className="mb-5 rounded-lg border border-amber-200 bg-amber-50 p-4">
           <div className="mb-3">
             <h3 className="text-sm font-semibold text-amber-950">
-              Pending manual vote identities
+              {s.voting.pendingTitle}
             </h3>
             <p className="mt-1 text-xs text-amber-900">
-              These records block result generation and committee approval.
-              Link each pending identity to a registered profile before
-              continuing the result process.
+              {s.voting.pendingText}
             </p>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full border-collapse text-left text-sm">
               <thead className="border-b border-amber-200 text-amber-900">
                 <tr>
-                  <th className="py-2 pr-3 font-medium">Meeting</th>
-                  <th className="py-2 pr-3 font-medium">Room</th>
-                  <th className="py-2 pr-3 font-medium">Captured identity</th>
-                  <th className="py-2 pr-3 font-medium">Status</th>
-                  <th className="py-2 font-medium">Action</th>
+                  <th className="py-2 pr-3 font-medium">{s.voting.meeting}</th>
+                  <th className="py-2 pr-3 font-medium">{s.voting.room}</th>
+                  <th className="py-2 pr-3 font-medium">{s.voting.identity}</th>
+                  <th className="py-2 pr-3 font-medium">{s.common.status}</th>
+                  <th className="py-2 font-medium">{s.common.action}</th>
                 </tr>
               </thead>
               <tbody>
@@ -245,14 +246,15 @@ export function ManualVotesSection({
                         "-"}
                     </td>
                     <td className="py-2 pr-3">
-                      {manualBallot.identity_status} / {manualBallot.status}
+                      {codeLabel(s.common.code, manualBallot.identity_status)} /{" "}
+                      {codeLabel(s.common.code, manualBallot.status)}
                     </td>
                     <td className="py-2">
                       <a
                         className="inline-flex min-h-9 items-center rounded-md border border-amber-300 bg-white px-3 py-1 text-sm font-medium text-amber-900"
                         href={`${manualVoteListHref}&mode=edit&type=manual_vote_identity&id=${manualBallot.id}`}
                       >
-                        Link profile
+                        {s.voting.linkProfile}
                       </a>
                     </td>
                   </tr>
@@ -265,9 +267,9 @@ export function ManualVotesSection({
 
       <section className="mb-5 rounded-lg border border-[var(--border)] bg-[var(--background)] p-4">
         <div className="mb-3">
-          <h3 className="text-sm font-semibold">Search Criteria</h3>
+          <h3 className="text-sm font-semibold">{s.common.searchCriteria}</h3>
           <p className="mt-1 text-xs text-[var(--muted)]">
-            Filter manual vote rows by meeting and room.
+            {s.voting.filter}
           </p>
         </div>
         <form className="grid gap-3 md:grid-cols-12">
@@ -287,21 +289,21 @@ export function ManualVotesSection({
             value={manualVoteTableFilters.perPage}
           />
           <label className="grid gap-1 text-xs font-medium text-[var(--muted)] md:col-span-4">
-            Meeting
+            {s.voting.meeting}
             <input
               className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)]"
               defaultValue={manualVoteTableFilters.meeting}
               name="meeting"
-              placeholder="Search meeting"
+              placeholder={s.voting.searchMeeting}
             />
           </label>
           <label className="grid gap-1 text-xs font-medium text-[var(--muted)] md:col-span-4">
-            Room
+            {s.voting.room}
             <input
               className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)]"
               defaultValue={manualVoteTableFilters.room}
               name="room"
-              placeholder="Search room"
+              placeholder={s.voting.searchRoom}
             />
           </label>
           <div className="flex flex-wrap items-end justify-center gap-2 md:col-span-4">
@@ -309,28 +311,27 @@ export function ManualVotesSection({
               className="min-h-10 rounded-md bg-[var(--primary)] px-5 py-2 text-sm font-medium text-[var(--primary-foreground)]"
               type="submit"
             >
-              Search
+              {s.common.search}
             </button>
             <a
               className="inline-flex min-h-10 items-center rounded-md border border-[var(--border)] bg-[var(--surface)] px-5 py-2 text-sm font-medium"
               href="/admin/voting"
             >
-              Clear
+              {s.common.clear}
             </a>
           </div>
         </form>
       </section>
       <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h3 className="text-sm font-semibold">Results</h3>
+          <h3 className="text-sm font-semibold">{s.common.results}</h3>
           <p className="mt-1 text-xs text-[var(--muted)]">
-            Showing {manualVotePageStart}-{manualVotePageEnd} of{" "}
-            {manualVoteTotal}
+            {fill(s.common.showing, { start: manualVotePageStart, end: manualVotePageEnd, total: manualVoteTotal })}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2 rounded-md border border-[var(--border)] bg-[var(--background)] px-3 py-2">
           <PerPageSelect
-            label="Page"
+            label={s.common.page}
             options={Array.from(
               { length: manualVoteTotalPages },
               (_, index) => index + 1,
@@ -339,11 +340,11 @@ export function ManualVotesSection({
             value={manualVotePage}
           />
           <div className="text-xs font-medium text-[var(--muted)]">
-            of {manualVoteTotalPages}
+            {fill(s.common.ofPages, { total: manualVoteTotalPages })}
           </div>
           <div className="hidden h-6 w-px bg-[var(--border)] sm:block" />
           <PerPageSelect
-            label="Per page"
+            label={s.common.perPage}
             urlByValue={manualVotePerPageUrls}
             value={manualVoteTableFilters.perPage}
           />
@@ -355,21 +356,21 @@ export function ManualVotesSection({
             <tr>
               <th className="py-2 pr-3 font-medium">
                 <a href={manualVoteSortHref("meeting")}>
-                  Meeting{manualVoteSortLabel("meeting")}
+                  {s.voting.meeting}{manualVoteSortLabel("meeting")}
                 </a>
               </th>
               <th className="py-2 pr-3 font-medium">
                 <a href={manualVoteSortHref("room")}>
-                  Room{manualVoteSortLabel("room")}
+                  {s.voting.room}{manualVoteSortLabel("room")}
                 </a>
               </th>
               <th className="py-2 pr-3 font-medium">
                 <a href={manualVoteSortHref("question")}>
-                  Question{manualVoteSortLabel("question")}
+                  {s.voting.question}{manualVoteSortLabel("question")}
                 </a>
               </th>
-              <th className="py-2 pr-3 font-medium">Choice</th>
-              <th className="py-2 font-medium">Audit</th>
+              <th className="py-2 pr-3 font-medium">{s.voting.choice}</th>
+              <th className="py-2 font-medium">{s.voting.audit}</th>
             </tr>
           </thead>
           <tbody>
@@ -397,7 +398,7 @@ export function ManualVotesSection({
       </div>
       {pagedManualVoteRows.length === 0 ? (
         <p className="mt-3 text-sm text-[var(--muted)]">
-          No manual vote rows match the selected criteria.
+          {s.voting.noRows}
         </p>
       ) : null}
       <ManualVoteRowFocus manualBallotId={focusedManualBallotId} />
@@ -413,7 +414,7 @@ export function ManualVotesSection({
             page: Math.max(1, manualVotePage - 1),
           })}
         >
-          Previous
+          {s.common.previous}
         </a>
         <div className="text-sm text-[var(--muted)]">
           {manualVotePageStart}-{manualVotePageEnd} / {manualVoteTotal}
@@ -431,7 +432,7 @@ export function ManualVotesSection({
             page: Math.min(manualVoteTotalPages, manualVotePage + 1),
           })}
         >
-          Next
+          {s.common.next}
         </a>
       </div>
       {drawer?.mode === "create" && drawer.type === "manual_vote" ? (

@@ -1,5 +1,6 @@
 "use client";
 
+import { useMessageText } from "@/lib/i18n/staff/client";
 import type { PeopleActionState } from "@/features/admin/action-modules/people";
 import { useFormStatus } from "react-dom";
 import { LoaderCircle } from "lucide-react";
@@ -19,6 +20,7 @@ export function FieldError({
   fieldName: string;
   state: PeopleActionState;
 }) {
+  const tm = useMessageText();
   const message = state.fieldErrors?.[fieldName];
 
   if (!message) {
@@ -27,7 +29,7 @@ export function FieldError({
 
   return (
     <p className="text-xs font-medium text-red-700" id={fieldErrorId(fieldName)}>
-      {message}
+      {tm(message)}
     </p>
   );
 }
@@ -50,6 +52,7 @@ export function stateValue(
 }
 
 export function FormErrorSummary({ state }: { state: PeopleActionState }) {
+  const tm = useMessageText();
   if (!state.error) {
     return null;
   }
@@ -59,7 +62,7 @@ export function FormErrorSummary({ state }: { state: PeopleActionState }) {
       className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-800"
       role="alert"
     >
-      {state.error}
+      {tm(state.error)}
     </div>
   );
 }

@@ -1,3 +1,5 @@
+import { getStaffI18n } from "@/lib/i18n/server";
+import { codeLabel, fill } from "@/lib/i18n/template";
 import { ListChecks } from "lucide-react";
 import { EmailInviteControls } from "@/features/admin/components/email-invite-controls";
 import { PerPageSelect } from "@/features/admin/components/table-controls";
@@ -21,7 +23,7 @@ type EmailSectionProps = Pick<AdminDashboardData, "emailLogs" | "meetings"> &
   hidden: boolean;
 };
 
-export function EmailSection({
+export async function EmailSection({
   drawer,
   emailFilters,
   emailLogs,
@@ -29,6 +31,7 @@ export function EmailSection({
   meetings,
   hidden,
 }: EmailSectionProps) {
+  const { s } = await getStaffI18n();
   const emailTableFilters: Required<EmailTableFilters> = {
     created: emailFilters?.created ?? "",
     dir: emailFilters?.dir ?? "asc",
@@ -126,14 +129,14 @@ export function EmailSection({
     >
       <div className="mb-4 flex items-center gap-2">
         <ListChecks className="text-[var(--primary)]" size={20} />
-        <h2 className="text-lg font-semibold">Email Queue</h2>
+        <h2 className="text-lg font-semibold">{s.communications.queueTitle}</h2>
       </div>
       <EmailInviteControls meetings={meetings} />
       <section className="mb-5 rounded-lg border border-[var(--border)] bg-[var(--background)] p-4">
         <div className="mb-3">
-          <h3 className="text-sm font-semibold">Search Criteria</h3>
+          <h3 className="text-sm font-semibold">{s.common.searchCriteria}</h3>
           <p className="mt-1 text-xs text-[var(--muted)]">
-            Filter email logs by recipient, status, and created date.
+            {s.communications.filter}
           </p>
         </div>
         <form className="grid gap-3 md:grid-cols-12">
@@ -145,31 +148,31 @@ export function EmailSection({
             value={emailTableFilters.perPage}
           />
           <label className="grid gap-1 text-xs font-medium text-[var(--muted)] md:col-span-4">
-            Recipient
+            {s.communications.recipient}
             <input
               className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)]"
               defaultValue={emailTableFilters.recipient}
               name="recipient"
-              placeholder="Search email"
+              placeholder={s.communications.searchEmail}
             />
           </label>
           <label className="grid gap-1 text-xs font-medium text-[var(--muted)] md:col-span-3">
-            Status
+            {s.common.status}
             <select
               className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)]"
               defaultValue={emailTableFilters.status}
               name="status"
             >
-              <option value="all">All statuses</option>
-              <option value="queued">Queued</option>
-              <option value="sending">Sending</option>
-              <option value="sent">Sent</option>
-              <option value="failed">Failed</option>
-              <option value="permanent_failed">Permanent failed</option>
+              <option value="all">{s.common.allStatuses}</option>
+              <option value="queued">{s.communications.queued}</option>
+              <option value="sending">{s.communications.sendingOption}</option>
+              <option value="sent">{s.communications.sent}</option>
+              <option value="failed">{s.communications.failed}</option>
+              <option value="permanent_failed">{s.communications.permanentFailed}</option>
             </select>
           </label>
           <label className="grid gap-1 text-xs font-medium text-[var(--muted)] md:col-span-3">
-            Created
+            {s.communications.created}
             <input
               className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)]"
               defaultValue={emailTableFilters.created}
@@ -182,27 +185,27 @@ export function EmailSection({
               className="min-h-10 rounded-md bg-[var(--primary)] px-5 py-2 text-sm font-medium text-[var(--primary-foreground)]"
               type="submit"
             >
-              Search
+              {s.common.search}
             </button>
             <a
               className="inline-flex min-h-10 items-center rounded-md border border-[var(--border)] bg-[var(--surface)] px-5 py-2 text-sm font-medium"
               href="/admin/communications"
             >
-              Clear
+              {s.common.clear}
             </a>
           </div>
         </form>
       </section>
       <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h3 className="text-sm font-semibold">Email Delivery Logs</h3>
+          <h3 className="text-sm font-semibold">{s.communications.logsTitle}</h3>
           <p className="mt-1 text-xs text-[var(--muted)]">
-            Showing {emailPageStart}-{emailPageEnd} of {emailTotal}
+            {fill(s.common.showing, { start: emailPageStart, end: emailPageEnd, total: emailTotal })}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2 rounded-md border border-[var(--border)] bg-[var(--background)] px-3 py-2">
           <PerPageSelect
-            label="Page"
+            label={s.common.page}
             options={Array.from(
               { length: emailTotalPages },
               (_, index) => index + 1,
@@ -211,11 +214,11 @@ export function EmailSection({
             value={emailPage}
           />
           <div className="text-xs font-medium text-[var(--muted)]">
-            of {emailTotalPages}
+            {fill(s.common.ofPages, { total: emailTotalPages })}
           </div>
           <div className="hidden h-6 w-px bg-[var(--border)] sm:block" />
           <PerPageSelect
-            label="Per page"
+            label={s.common.perPage}
             urlByValue={emailPerPageUrls}
             value={emailTableFilters.perPage}
           />
@@ -227,22 +230,22 @@ export function EmailSection({
             <tr>
               <th className="py-2 pr-3 font-medium">
                 <a href={emailSortHref("recipient")}>
-                  Recipient{emailSortLabel("recipient")}
+                  {s.communications.recipient}{emailSortLabel("recipient")}
                 </a>
               </th>
-              <th className="py-2 pr-3 font-medium">Template</th>
+              <th className="py-2 pr-3 font-medium">{s.communications.template}</th>
               <th className="py-2 pr-3 font-medium">
                 <a href={emailSortHref("status")}>
-                  Status{emailSortLabel("status")}
+                  {s.common.status}{emailSortLabel("status")}
                 </a>
               </th>
               <th className="py-2 pr-3 font-medium">
                 <a href={emailSortHref("created")}>
-                  Created{emailSortLabel("created")}
+                  {s.communications.created}{emailSortLabel("created")}
                 </a>
               </th>
-              <th className="py-2 pr-3 font-medium">Error</th>
-              <th className="py-2 font-medium">Action</th>
+              <th className="py-2 pr-3 font-medium">{s.communications.error}</th>
+              <th className="py-2 font-medium">{s.common.action}</th>
             </tr>
           </thead>
           <tbody>
@@ -267,7 +270,7 @@ export function EmailSection({
                 >
                   <td className="py-2 pr-3">{log.recipient_email}</td>
                   <td className="py-2 pr-3">{log.template_key}</td>
-                  <td className="py-2 pr-3">{log.status}</td>
+                  <td className="py-2 pr-3">{codeLabel(s.common.code, log.status)}</td>
                   <td className="py-2 pr-3">
                     {formatDateTime(log.created_at)}
                   </td>
@@ -277,7 +280,7 @@ export function EmailSection({
                       className="inline-flex min-h-9 items-center justify-center rounded-md border border-[var(--border)] px-3 py-1 text-sm font-medium"
                       href={`${emailListHref}&mode=view&type=email_log&id=${log.id}`}
                     >
-                      View details
+                      {s.common.viewDetails}
                     </a>
                   </td>
                 </tr>
@@ -288,7 +291,7 @@ export function EmailSection({
       </div>
       {pagedEmailLogs.length === 0 ? (
         <p className="mt-3 text-sm text-[var(--muted)]">
-          No email logs match the selected criteria.
+          {s.communications.noLogs}
         </p>
       ) : null}
       <EmailLogRowFocus logId={focusedEmailLogId} />
@@ -304,7 +307,7 @@ export function EmailSection({
             page: Math.max(1, emailPage - 1),
           })}
         >
-          Previous
+          {s.common.previous}
         </a>
         <div className="text-sm text-[var(--muted)]">
           {emailPageStart}-{emailPageEnd} / {emailTotal}
@@ -322,7 +325,7 @@ export function EmailSection({
             page: Math.min(emailTotalPages, emailPage + 1),
           })}
         >
-          Next
+          {s.common.next}
         </a>
       </div>
       {drawer?.mode === "view" && drawer.type === "email_log"

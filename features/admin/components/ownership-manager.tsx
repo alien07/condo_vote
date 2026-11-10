@@ -1,6 +1,6 @@
 "use client";
 
-import { useStaffText } from "@/lib/i18n/staff/client";
+import { useMessageText, useStaffText } from "@/lib/i18n/staff/client";
 import { fill } from "@/lib/i18n/template";
 import { todayInBangkok } from "@/lib/datetime";
 import { useEffect, useMemo, useActionState, useRef, useState } from "react";
@@ -93,11 +93,12 @@ function FieldError({
   fieldName: string;
   state: OwnershipActionState;
 }) {
+  const tm = useMessageText();
   const message = state.fieldErrors?.[fieldName];
 
   return message ? (
     <p className="text-xs font-medium text-red-700" id={fieldErrorId(fieldName)}>
-      {message}
+      {tm(message)}
     </p>
   ) : null;
 }
@@ -227,10 +228,11 @@ function ownershipDisplayStatus(link: RoomOwnerLink) {
 }
 
 function ActionMessage({ state }: { state: OwnershipActionState }) {
+  const tm = useMessageText();
   if (state.error) {
     return (
       <p className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-        {state.error}
+        {tm(state.error)}
       </p>
     );
   }
@@ -238,7 +240,7 @@ function ActionMessage({ state }: { state: OwnershipActionState }) {
   if (state.success) {
     return (
       <p className="rounded-md border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-800">
-        {state.success}
+        {tm(state.success)}
       </p>
     );
   }

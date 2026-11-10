@@ -1,5 +1,7 @@
 "use client";
 
+import { useStaffText } from "@/lib/i18n/staff/client";
+import { codeLabel, fill } from "@/lib/i18n/template";
 import { useEffect } from "react";
 import { AdminCrudDrawer } from "@/features/admin/components/admin-crud-drawer";
 import { renderEmail, templateNameFromKey } from "@/features/email/templates";
@@ -63,26 +65,30 @@ export function EmailLogDetailDrawer({
   log,
   sentLabel,
 }: EmailLogDetailDrawerProps) {
+  const { s } = useStaffText();
   const templateName = templateNameFromKey(log.template_key);
   const preview = templateName
     ? renderEmail(templateName, isLocale(log.language) ? log.language : "th")
     : null;
   const detailRows = [
-    ["Recipient", log.recipient_email],
-    ["Template", log.template_key],
-    ["Language", log.language === "en" ? "English" : "Thai"],
-    ["Status", log.status],
-    ["Created", createdLabel],
-    ["Sent", sentLabel],
-    ["Provider message ID", log.provider_message_id ?? "-"],
-    ["Error", log.error_message ?? "-"],
+    [s.communications.recipient, log.recipient_email],
+    [s.communications.template, log.template_key],
+    [s.communications.language, log.language === "en" ? s.communications.english : s.communications.thai],
+    [s.common.status, codeLabel(s.common.code, log.status)],
+    [s.communications.created, createdLabel],
+    [s.communications.sentAt, sentLabel],
+    [s.communications.providerId, log.provider_message_id ?? "-"],
+    [s.communications.error, log.error_message ?? "-"],
   ];
 
   return (
     <AdminCrudDrawer
       closeHref={closeHref}
-      summary={[`Recipient: ${log.recipient_email}`, `Status: ${log.status}`]}
-      title="Email log details"
+      summary={[
+        fill(s.communications.recipientSummary, { email: log.recipient_email }),
+        fill(s.communications.statusSummary, { status: codeLabel(s.common.code, log.status) }),
+      ]}
+      title={s.communications.detailsTitle}
     >
       <dl className="grid gap-3 text-sm">
         {detailRows.map(([label, value]) => (
@@ -102,7 +108,7 @@ export function EmailLogDetailDrawer({
       {preview ? (
         <section className="mt-4 rounded-md border border-[var(--border)] p-3 text-sm">
           <h3 className="text-xs font-medium uppercase text-[var(--muted)]">
-            Content preview
+            {s.communications.preview}
           </h3>
           <p className="mt-2 font-medium" lang={log.language}>
             {preview.subject}
@@ -111,7 +117,7 @@ export function EmailLogDetailDrawer({
             {preview.body}
           </p>
           <p className="mt-2 text-xs text-[var(--muted)]">
-            Placeholders in braces are filled in when the email is sent.
+            {s.communications.placeholders}
           </p>
         </section>
       ) : null}

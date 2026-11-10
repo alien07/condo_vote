@@ -1,3 +1,5 @@
+import { getStaffI18n } from "@/lib/i18n/server";
+import { fill } from "@/lib/i18n/template";
 import { ListChecks } from "lucide-react";
 import { createResultPdfs } from "@/features/results/pdf/actions";
 import { RESULT_PDF_FILES } from "@/features/results/pdf/files";
@@ -36,7 +38,7 @@ type ResultsSectionProps = Pick<
   hidden: boolean;
 };
 
-export function ResultsSection({
+export async function ResultsSection({
   approvalCountBySnapshotId,
   approvedMeetingIds,
   approvedResultSnapshotIds,
@@ -48,6 +50,7 @@ export function ResultsSection({
   resultSnapshots,
   hidden,
 }: ResultsSectionProps) {
+  const { s } = await getStaffI18n();
   const resultTableFilters: Required<ResultTableFilters> = {
     approval: resultFilters?.approval ?? "all",
     dir: resultFilters?.dir ?? "asc",
@@ -158,13 +161,13 @@ export function ResultsSection({
     >
       <div className="mb-4 flex items-center gap-2">
         <ListChecks className="text-[var(--primary)]" size={20} />
-        <h2 className="text-lg font-semibold">Results</h2>
+        <h2 className="text-lg font-semibold">{s.results.title}</h2>
       </div>
       <section className="mb-5 rounded-lg border border-[var(--border)] bg-[var(--background)] p-4">
         <div className="mb-3">
-          <h3 className="text-sm font-semibold">Search Criteria</h3>
+          <h3 className="text-sm font-semibold">{s.common.searchCriteria}</h3>
           <p className="mt-1 text-xs text-[var(--muted)]">
-            Filter result snapshots by meeting, generated date, and approval.
+            {s.results.filter}
           </p>
         </div>
         <form className="grid gap-3 md:grid-cols-12">
@@ -176,16 +179,16 @@ export function ResultsSection({
             value={resultTableFilters.perPage}
           />
           <label className="grid gap-1 text-xs font-medium text-[var(--muted)] md:col-span-4">
-            Meeting
+            {s.results.meeting}
             <input
               className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)]"
               defaultValue={resultTableFilters.meeting}
               name="meeting"
-              placeholder="Search meeting"
+              placeholder={s.results.searchMeeting}
             />
           </label>
           <label className="grid gap-1 text-xs font-medium text-[var(--muted)] md:col-span-3">
-            Generated
+            {s.results.generated}
             <input
               className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)]"
               defaultValue={resultTableFilters.generated}
@@ -194,15 +197,15 @@ export function ResultsSection({
             />
           </label>
           <label className="grid gap-1 text-xs font-medium text-[var(--muted)] md:col-span-3">
-            Approval
+            {s.results.approval}
             <select
               className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)]"
               defaultValue={resultTableFilters.approval}
               name="approval"
             >
-              <option value="all">All approvals</option>
-              <option value="approved">Approved</option>
-              <option value="pending">Pending</option>
+              <option value="all">{s.results.allApprovals}</option>
+              <option value="approved">{s.results.approvedOption}</option>
+              <option value="pending">{s.results.pendingOption}</option>
             </select>
           </label>
           <div className="flex flex-wrap items-end justify-center gap-2 md:col-span-2">
@@ -210,27 +213,27 @@ export function ResultsSection({
               className="min-h-10 rounded-md bg-[var(--primary)] px-5 py-2 text-sm font-medium text-[var(--primary-foreground)]"
               type="submit"
             >
-              Search
+              {s.common.search}
             </button>
             <a
               className="inline-flex min-h-10 items-center rounded-md border border-[var(--border)] bg-[var(--surface)] px-5 py-2 text-sm font-medium"
               href="/admin/results"
             >
-              Clear
+              {s.common.clear}
             </a>
           </div>
         </form>
       </section>
       <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h3 className="text-sm font-semibold">Results</h3>
+          <h3 className="text-sm font-semibold">{s.results.title}</h3>
           <p className="mt-1 text-xs text-[var(--muted)]">
-            Showing {resultPageStart}-{resultPageEnd} of {resultTotal}
+            {fill(s.common.showing, { start: resultPageStart, end: resultPageEnd, total: resultTotal })}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2 rounded-md border border-[var(--border)] bg-[var(--background)] px-3 py-2">
           <PerPageSelect
-            label="Page"
+            label={s.common.page}
             options={Array.from(
               { length: resultTotalPages },
               (_, index) => index + 1,
@@ -239,11 +242,11 @@ export function ResultsSection({
             value={resultPage}
           />
           <div className="text-xs font-medium text-[var(--muted)]">
-            of {resultTotalPages}
+            {fill(s.common.ofPages, { total: resultTotalPages })}
           </div>
           <div className="hidden h-6 w-px bg-[var(--border)] sm:block" />
           <PerPageSelect
-            label="Per page"
+            label={s.common.perPage}
             urlByValue={resultPerPageUrls}
             value={resultTableFilters.perPage}
           />
@@ -255,22 +258,22 @@ export function ResultsSection({
             <tr>
               <th className="py-2 pr-3 font-medium">
                 <a href={resultSortHref("meeting")}>
-                  Meeting{resultSortLabel("meeting")}
+                  {s.results.meeting}{resultSortLabel("meeting")}
                 </a>
               </th>
               <th className="py-2 pr-3 font-medium">
                 <a href={resultSortHref("generated")}>
-                  Generated{resultSortLabel("generated")}
+                  {s.results.generated}{resultSortLabel("generated")}
                 </a>
               </th>
-              <th className="py-2 pr-3 font-medium">Submitted</th>
-              <th className="py-2 pr-3 font-medium">Ownership</th>
+              <th className="py-2 pr-3 font-medium">{s.results.submitted}</th>
+              <th className="py-2 pr-3 font-medium">{s.results.ownership}</th>
               <th className="py-2 pr-3 font-medium">
                 <a href={resultSortHref("approval")}>
-                  Approval{resultSortLabel("approval")}
+                  {s.results.approval}{resultSortLabel("approval")}
                 </a>
               </th>
-              <th className="py-2 font-medium">Action</th>
+              <th className="py-2 font-medium">{s.common.action}</th>
             </tr>
           </thead>
           <tbody>
@@ -327,8 +330,8 @@ export function ResultsSection({
                   </td>
                   <td className="py-2 pr-3">
                     {approved
-                      ? "approved"
-                      : `pending (${approvalCount}/${requiredApprovals} approvals)`}
+                      ? s.results.approved
+                      : fill(s.results.pending, { count: approvalCount, required: requiredApprovals })}
                   </td>
                   <td className="py-2">
                     {!meetingApproved && !lockedByOther && pendingManualCount === 0 ? (
@@ -336,7 +339,7 @@ export function ResultsSection({
                         className="inline-flex min-h-9 items-center justify-center rounded-md border border-[var(--border)] px-3 py-1 text-sm font-medium"
                         href={`${resultListHref}&mode=edit&type=result_approval&id=${snapshot.id}`}
                       >
-                        Approve result
+                        {s.results.approve}
                       </a>
                     ) : null}
                     {!meetingApproved && pendingManualCount > 0 ? (
@@ -344,26 +347,26 @@ export function ResultsSection({
                         className="text-sm font-medium text-amber-700"
                         href="/admin/voting"
                       >
-                        Resolve {pendingManualCount} pending manual vote
+                        {fill(s.results.resolvePending, { count: pendingManualCount })}
                       </a>
                     ) : null}
                     {(meetingApproved && !approved) || lockedByOther ? (
                       <span className="text-sm text-[var(--muted)]">
-                        Locked by approved result
+                        {s.results.lockedByApproved}
                       </span>
                     ) : null}
                     <a
                       className="ml-2 inline-flex min-h-9 items-center text-sm font-medium text-[var(--primary)] underline"
                       href={`/record/${snapshot.id}`}
                     >
-                      Official record
+                      {s.results.officialRecord}
                     </a>
                     {approved && hasOfficialPdf ? (
                       <a
                         className="ml-2 inline-flex min-h-9 items-center text-sm font-medium text-[var(--primary)] underline"
                         href={`/result-files/${snapshot.id}/official-th.pdf`}
                       >
-                        Official PDF
+                        {s.results.officialPdf}
                       </a>
                     ) : null}
                     {approved && pdfCount < RESULT_PDF_FILES.length ? (
@@ -373,7 +376,7 @@ export function ResultsSection({
                           className="inline-flex min-h-9 items-center rounded-md border border-[var(--border)] px-3 text-sm font-medium"
                           type="submit"
                         >
-                          Create PDF files ({pdfCount}/{RESULT_PDF_FILES.length})
+                          {fill(s.results.createPdfs, { count: pdfCount, total: RESULT_PDF_FILES.length })}
                         </button>
                       </form>
                     ) : null}
@@ -386,7 +389,7 @@ export function ResultsSection({
       </div>
       {pagedResultSnapshots.length === 0 ? (
         <p className="mt-3 text-sm text-[var(--muted)]">
-          No result snapshots match the selected criteria.
+          {s.results.noResults}
         </p>
       ) : null}
       <ResultSnapshotRowFocus snapshotId={focusedResultSnapshotId} />
@@ -402,7 +405,7 @@ export function ResultsSection({
             page: Math.max(1, resultPage - 1),
           })}
         >
-          Previous
+          {s.common.previous}
         </a>
         <div className="text-sm text-[var(--muted)]">
           {resultPageStart}-{resultPageEnd} / {resultTotal}
@@ -420,7 +423,7 @@ export function ResultsSection({
             page: Math.min(resultTotalPages, resultPage + 1),
           })}
         >
-          Next
+          {s.common.next}
         </a>
       </div>
       {drawer?.mode === "edit" && drawer.type === "result_approval"

@@ -1,5 +1,8 @@
 "use client";
 
+import type { Locale } from "@/lib/i18n/locales";
+import { translateMessage } from "@/lib/i18n/staff/messages";
+
 import { useEffect, useMemo, useState } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { CheckCircle2, Info, TriangleAlert, X, XCircle } from "lucide-react";
@@ -61,8 +64,10 @@ function parseMessage(value: string | null) {
 
 export function AppFeedbackBanner({
   dismissLabel = "Dismiss message",
+  locale = "en",
 }: {
   dismissLabel?: string;
+  locale?: Locale;
 }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -119,7 +124,7 @@ export function AppFeedbackBanner({
         role={tone === "error" || tone === "warning" ? "alert" : "status"}
       >
         <Icon aria-hidden="true" className="mt-0.5 shrink-0" size={18} />
-        <p className="min-w-0 flex-1">{message}</p>
+        <p className="min-w-0 flex-1">{translateMessage(locale, message)}</p>
         <button
           aria-label={dismissLabel}
           className="shrink-0 rounded p-1 hover:bg-black/5"
