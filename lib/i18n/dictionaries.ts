@@ -193,9 +193,9 @@ const th: Dictionary = {
     dismiss: "ปิดข้อความ",
     user: "ผู้ใช้",
     nav: {
-      admin: "Admin",
-      committee: "Committee",
-      system: "System",
+      admin: "ผู้ดูแล",
+      committee: "คณะกรรมการ",
+      system: "ระบบ",
       vote: "ลงคะแนน",
       summary: "ผลการลงมติ",
     },
@@ -207,7 +207,7 @@ const th: Dictionary = {
   home: {
     tagline: "ระบบลงคะแนนการประชุมอาคารชุด",
     signIn: "เข้าสู่ระบบ",
-    adminTitle: "Admin",
+    adminTitle: "ผู้ดูแล",
     adminText: "จัดการห้อง เจ้าของร่วม การประชุม การอนุมัติ และผลการลงมติ",
     voteTitle: "ลงคะแนน",
     voteText: "เปิดการประชุมที่มีสิทธิ์ แล้วลงหรือแก้ไขคะแนน",

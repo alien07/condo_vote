@@ -11,6 +11,8 @@ import { requireProfileWithRoles } from "@/lib/auth/permissions";
 import { createClient } from "@/lib/supabase/server";
 import { LanguageSwitcher } from "@/features/i18n/language-switcher";
 import { getI18n } from "@/lib/i18n/server";
+import { getStaffDictionary } from "@/lib/i18n/staff";
+import { StaffTextProvider } from "@/lib/i18n/staff/client";
 
 type AuthenticatedShellProps = {
   children: ReactNode;
@@ -26,6 +28,8 @@ export async function AuthenticatedShell({ children }: AuthenticatedShellProps) 
 
   const { locale, t } = await getI18n();
   const isAdmin = roles.includes("admin");
+  // Staff pages get their words in the client too (D020).
+  const isStaff = isAdmin || roles.includes("committee") || roles.includes("system_admin");
   const roleLabel = roles.length > 0 ? roles.join(", ") : t.shell.user;
 
   return (
@@ -78,7 +82,13 @@ export async function AuthenticatedShell({ children }: AuthenticatedShellProps) 
       <div className="print:hidden">
         <AppFeedbackBanner dismissLabel={t.shell.dismiss} />
       </div>
-      {children}
+      {isStaff ? (
+        <StaffTextProvider locale={locale} s={getStaffDictionary(locale)}>
+          {children}
+        </StaffTextProvider>
+      ) : (
+        children
+      )}
     </>
   );
 }

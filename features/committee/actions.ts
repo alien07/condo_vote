@@ -5,11 +5,12 @@ import { redirect } from "next/navigation";
 import { requireProfileWithRoles } from "@/lib/auth/permissions";
 import { createClient } from "@/lib/supabase/server";
 import {
-  approvalMessage,
   approveCloseVoting,
   approveResult,
 } from "@/features/results/committee-service";
 import { scheduleResultPdfs } from "@/features/results/pdf/schedule";
+import { getStaffI18n } from "@/lib/i18n/server";
+import { fill } from "@/lib/i18n/template";
 
 function feedbackHref(tone: "success" | "error", message: string) {
   return `/committee?feedback=${tone}&message=${encodeURIComponent(message)}`;
@@ -26,6 +27,7 @@ async function requireCommittee() {
 export async function approveResultAsCommittee(formData: FormData) {
   await requireCommittee();
   const supabase = await createClient();
+  const t = (await getStaffI18n()).s.committee;
   let href: string;
 
   try {
@@ -39,9 +41,14 @@ export async function approveResultAsCommittee(formData: FormData) {
       await scheduleResultPdfs(resultSnapshotId);
     }
 
-    href = feedbackHref("success", approvalMessage(result));
+    href = feedbackHref(
+      "success",
+      result.published
+        ? t.approvedPublished
+        : fill(t.approvalRecorded, { count: result.approvals, required: result.required }),
+    );
   } catch (error) {
-    href = feedbackHref("error", error instanceof Error ? error.message : "Could not approve.");
+    href = feedbackHref("error", error instanceof Error ? error.message : t.couldNotApprove);
   }
 
   revalidatePath("/committee");
@@ -52,6 +59,7 @@ export async function approveResultAsCommittee(formData: FormData) {
 export async function approveCloseVotingAsCommittee(formData: FormData) {
   await requireCommittee();
   const supabase = await createClient();
+  const t = (await getStaffI18n()).s.committee;
   let href: string;
 
   try {
@@ -62,11 +70,11 @@ export async function approveCloseVotingAsCommittee(formData: FormData) {
     href = feedbackHref(
       "success",
       result.closed
-        ? "Voting closed"
-        : `Close approval recorded (${result.approvals} of ${result.required})`,
+        ? t.closedMessage
+        : fill(t.closeRecorded, { count: result.approvals, required: result.required }),
     );
   } catch (error) {
-    href = feedbackHref("error", error instanceof Error ? error.message : "Could not approve.");
+    href = feedbackHref("error", error instanceof Error ? error.message : t.couldNotApprove);
   }
 
   revalidatePath("/committee");

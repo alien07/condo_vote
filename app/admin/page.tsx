@@ -13,6 +13,8 @@ import {
   Vote,
 } from "lucide-react";
 import { getAdminDashboardData } from "@/features/admin/data";
+import { getStaffI18n } from "@/lib/i18n/server";
+import { fill } from "@/lib/i18n/template";
 
 type MetricCardProps = {
   actionLabel?: string;
@@ -25,50 +27,6 @@ type MetricCardProps = {
   tone?: "default" | "warning" | "success";
   value: string;
 };
-
-const dashboardLinks = [
-  {
-    href: "/admin/setup?tab=setup",
-    title: "Setup",
-    description:
-      "Juristic profile, private document registry, committee members, and audit log.",
-  },
-  {
-    href: "/admin/people?tab=rooms",
-    title: "Rooms & Owners",
-    description: "Rooms, owners, profiles, and app roles.",
-  },
-  {
-    href: "/admin/ownership",
-    title: "Ownership",
-    description: "Room owner links and ownership dates.",
-  },
-  {
-    href: "/admin/meetings?tab=meetings",
-    title: "Meetings",
-    description: "Meeting setup, questions, choices, publish, and archive.",
-  },
-  {
-    href: "/admin/voting",
-    title: "Voting",
-    description: "Manual ballots and manual/online conflict resolution.",
-  },
-  {
-    href: "/admin/results",
-    title: "Results",
-    description: "Snapshots, approval, and locked result state.",
-  },
-  {
-    href: "/admin/proxies",
-    title: "Proxies",
-    description: "Proxy authorization review.",
-  },
-  {
-    href: "/admin/communications",
-    title: "Communications",
-    description: "Mock email queue and delivery logs.",
-  },
-];
 
 function percent(value: number, total: number) {
   if (total <= 0) {
@@ -171,6 +129,19 @@ export default async function AdminDashboardPage() {
     emailLogs,
     profiles,
   } = await getAdminDashboardData();
+  const { s: staff } = await getStaffI18n();
+  const t = staff.adminHome;
+  const m = t.metrics;
+  const dashboardLinks = [
+    { href: "/admin/setup?tab=setup", title: t.links.setupTitle, description: t.links.setupText },
+    { href: "/admin/people?tab=rooms", title: t.links.peopleTitle, description: t.links.peopleText },
+    { href: "/admin/ownership", title: t.links.ownershipTitle, description: t.links.ownershipText },
+    { href: "/admin/meetings?tab=meetings", title: t.links.meetingsTitle, description: t.links.meetingsText },
+    { href: "/admin/voting", title: t.links.votingTitle, description: t.links.votingText },
+    { href: "/admin/results", title: t.links.resultsTitle, description: t.links.resultsText },
+    { href: "/admin/proxies", title: t.links.proxiesTitle, description: t.links.proxiesText },
+    { href: "/admin/communications", title: t.links.communicationsTitle, description: t.links.communicationsText },
+  ];
   const totalRooms = rooms.length;
   const activeRooms = rooms.filter((room) => room.active).length;
   const activeRoomIds = new Set(
@@ -216,112 +187,116 @@ export default async function AdminDashboardPage() {
   ).length;
   const dashboardGroups = [
     {
-      title: "Master Data",
-      description: "Room, owner, and profile readiness.",
+      title: t.groups.masterTitle,
+      description: t.groups.masterText,
       metrics: [
         {
           href: "/admin/people?tab=rooms",
           icon: Building2,
-          label: "Active rooms",
+          label: m.activeRooms,
           value: `${activeRooms} / ${totalRooms}`,
-          detail: `${activeRooms} of ${totalRooms} rooms active`,
+          detail: fill(m.activeRoomsDetail, { active: activeRooms, total: totalRooms }),
           percent: percent(activeRooms, totalRooms),
-          status: `${formatPercent(percent(activeRooms, totalRooms))} active`,
+          status: fill(m.active, { percent: formatPercent(percent(activeRooms, totalRooms)) }),
           tone: "success" as const,
         },
         {
           href: "/admin/people?tab=owners",
           icon: Users,
-          label: "Active owners",
+          label: m.activeOwners,
           value: `${activeOwners} / ${totalOwners}`,
-          detail: `${activeOwners} of ${totalOwners} owners active`,
+          detail: fill(m.activeOwnersDetail, { active: activeOwners, total: totalOwners }),
           percent: percent(activeOwners, totalOwners),
-          status: `${formatPercent(percent(activeOwners, totalOwners))} active`,
+          status: fill(m.active, { percent: formatPercent(percent(activeOwners, totalOwners)) }),
           tone: "success" as const,
         },
         {
           href: "/admin/ownership",
           icon: Link2,
-          label: "Room links",
+          label: m.roomLinks,
           value: `${linkedActiveRoomIds.size} / ${activeRooms}`,
-          detail: `${activeRoomOwnerLinks} active ownership links`,
+          detail: fill(m.roomLinksDetail, { count: activeRoomOwnerLinks }),
           percent: percent(linkedActiveRoomIds.size, activeRooms),
-          status: `${formatPercent(percent(linkedActiveRoomIds.size, activeRooms))} coverage`,
+          status: fill(m.coverage, {
+            percent: formatPercent(percent(linkedActiveRoomIds.size, activeRooms)),
+          }),
           tone:
             linkedActiveRoomIds.size < activeRooms ? ("warning" as const) : ("success" as const),
         },
         {
           href: "/admin/people?tab=profiles",
           icon: UserCheck,
-          label: "Profiles",
+          label: m.profiles,
           value: String(profiles.length),
-          detail: `${ownerProfiles} owners, ${residentProfiles} residents`,
-          status: "View profiles",
+          detail: fill(m.profilesDetail, { owners: ownerProfiles, residents: residentProfiles }),
+          status: m.viewProfiles,
         },
       ],
     },
     {
-      title: "Voting Readiness",
-      description: "Meeting setup and eligible voter coverage.",
+      title: t.groups.readinessTitle,
+      description: t.groups.readinessText,
       metrics: [
         {
           href: "/admin/meetings?tab=meetings",
           icon: ClipboardList,
-          label: "Meetings",
+          label: m.meetings,
           value: String(activeMeetings),
-          detail: `${activeMeetings} active, ${archivedMeetings} archived`,
-          status: "Manage meetings",
+          detail: fill(m.meetingsDetail, { active: activeMeetings, archived: archivedMeetings }),
+          status: m.manageMeetings,
         },
         {
           href: "/admin/meetings?tab=questions",
           icon: Vote,
-          label: "Questions",
+          label: m.questions,
           value: String(questions.length),
-          detail: `${questions.length} agenda questions configured`,
-          status: "Review agenda",
+          detail: fill(m.questionsDetail, { count: questions.length }),
+          status: m.reviewAgenda,
         },
         {
           href: "/admin/voting",
           icon: CheckCircle2,
-          label: "Eligible voters",
+          label: m.eligible,
           value: `${eligibleRoomIds.size} / ${activeRooms}`,
-          detail: `${eligibleVoters.length} eligible voter records`,
+          detail: fill(m.eligibleDetail, { count: eligibleVoters.length }),
           percent: percent(eligibleRoomIds.size, activeRooms),
-          status: `${formatPercent(percent(eligibleRoomIds.size, activeRooms))} room coverage`,
+          status: fill(m.roomCoverage, {
+            percent: formatPercent(percent(eligibleRoomIds.size, activeRooms)),
+          }),
           tone:
             eligibleRoomIds.size < activeRooms ? ("warning" as const) : ("success" as const),
         },
       ],
     },
     {
-      title: "Needs Attention",
-      description: "Operational queues that may require admin action.",
+      title: t.groups.attentionTitle,
+      description: t.groups.attentionText,
       metrics: [
         {
           href: "/admin/voting",
           icon: AlertTriangle,
-          label: "Conflicts",
+          label: m.conflicts,
           value: String(conflictCount),
-          detail: `${voteSourceResolutions.length} source resolutions recorded`,
-          status: conflictCount > 0 ? "Review required" : "All clear",
+          detail: fill(m.conflictsDetail, { count: voteSourceResolutions.length }),
+          status: conflictCount > 0 ? m.reviewRequired : m.allClear,
           tone: conflictCount > 0 ? ("warning" as const) : ("success" as const),
         },
         {
           href: "/admin/communications",
           icon: Mail,
-          label: "Queued mail",
+          label: m.queuedMail,
           value: String(queuedEmailCount),
-          detail: `${emailLogs.length} recent email log records`,
-          status: queuedEmailCount > 0 ? "Send/check queue" : "All clear",
+          detail: fill(m.queuedMailDetail, { count: emailLogs.length }),
+          status: queuedEmailCount > 0 ? m.checkQueue : m.allClear,
           tone: queuedEmailCount > 0 ? ("warning" as const) : ("success" as const),
         },
         {
           href: "/admin/proxies",
           icon: UserCheck,
-          label: "Proxy requests",
+          label: m.proxyRequests,
           value: String(pendingProxyAuthorizations),
-          detail: `${proxyAuthorizations.length} proxy requests total`,
-          status: pendingProxyAuthorizations > 0 ? "Review pending" : "All clear",
+          detail: fill(m.proxyRequestsDetail, { count: proxyAuthorizations.length }),
+          status: pendingProxyAuthorizations > 0 ? m.reviewPending : m.allClear,
           tone:
             pendingProxyAuthorizations > 0
               ? ("warning" as const)
@@ -330,25 +305,27 @@ export default async function AdminDashboardPage() {
       ],
     },
     {
-      title: "Results & Communication",
-      description: "Result snapshot approval and delivery readiness.",
+      title: t.groups.resultsTitle,
+      description: t.groups.resultsText,
       metrics: [
         {
           href: "/admin/results",
           icon: BarChart3,
-          label: "Results",
+          label: m.results,
           value: String(resultSnapshots.length),
-          detail: `${resultSnapshots.length} generated snapshots`,
-          status: "Open results",
+          detail: fill(m.resultsDetail, { count: resultSnapshots.length }),
+          status: m.openResults,
         },
         {
           href: "/admin/results",
           icon: CheckCircle2,
-          label: "Approvals",
+          label: m.approvals,
           value: `${approvedResultCount} / ${resultSnapshots.length}`,
-          detail: `${approvedResultCount} committee approvals recorded`,
+          detail: fill(m.approvalsDetail, { count: approvedResultCount }),
           percent: percent(approvedResultCount, resultSnapshots.length),
-          status: `${formatPercent(percent(approvedResultCount, resultSnapshots.length))} approved`,
+          status: fill(m.approved, {
+            percent: formatPercent(percent(approvedResultCount, resultSnapshots.length)),
+          }),
           tone:
             approvedResultCount < resultSnapshots.length
               ? ("warning" as const)
@@ -357,11 +334,16 @@ export default async function AdminDashboardPage() {
         {
           href: "/admin/voting",
           icon: Send,
-          label: "Manual votes",
+          label: m.manualVotes,
           value: String(manualBallots.length),
-          detail: `${manualBallots.length} manual ballots, ${eligibleVoters.length} eligible records`,
+          detail: fill(m.manualVotesDetail, {
+            manual: manualBallots.length,
+            eligible: eligibleVoters.length,
+          }),
           percent: percent(manualBallots.length, eligibleVoters.length),
-          status: `${formatPercent(percent(manualBallots.length, eligibleVoters.length))} of eligible records`,
+          status: fill(m.ofEligible, {
+            percent: formatPercent(percent(manualBallots.length, eligibleVoters.length)),
+          }),
         },
       ],
     },
@@ -371,17 +353,17 @@ export default async function AdminDashboardPage() {
     <main className="min-h-screen px-6 py-8">
       <section className="mx-auto max-w-5xl">
         <div className="mb-6 border-b border-[var(--border)] pb-5">
-          <h1 className="text-2xl font-semibold">Admin</h1>
+          <h1 className="text-2xl font-semibold">{t.title}</h1>
           <p className="mt-1 text-sm text-[var(--muted)]">
-            Dashboard overview and shortcuts for the condoVotes admin workspace.
+            {t.intro}
           </p>
         </div>
 
         <section>
           <div className="mb-4">
-            <h2 className="text-xl font-semibold">Operational Dashboard</h2>
+            <h2 className="text-xl font-semibold">{t.dashboardTitle}</h2>
             <p className="mt-1 text-sm text-[var(--muted)]">
-              Readiness, attention items, and result delivery status.
+              {t.dashboardIntro}
             </p>
           </div>
           <div className="grid gap-6">
@@ -405,10 +387,9 @@ export default async function AdminDashboardPage() {
 
         <section className="mt-8 border-t border-[var(--border)] pt-6">
           <div className="mb-4">
-            <h2 className="text-xl font-semibold">Admin Functions</h2>
+            <h2 className="text-xl font-semibold">{t.functionsTitle}</h2>
             <p className="mt-1 text-sm text-[var(--muted)]">
-              Open a workspace area to manage setup, people, meetings, voting,
-              results, proxies, or communications.
+              {t.functionsIntro}
             </p>
           </div>
           <div className="grid gap-4 md:grid-cols-2">

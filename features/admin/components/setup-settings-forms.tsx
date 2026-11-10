@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useRef } from "react";
+import { useStaffText } from "@/lib/i18n/staff/client";
 import {
   saveAppSettingsWithState,
   saveCondoProfileWithState,
@@ -316,6 +317,8 @@ export function DocumentStorageSettingsForm({
     saveAppSettingsWithState,
     emptyAppSettingsState,
   );
+  const { s: staff } = useStaffText();
+  const t = staff.system;
 
   useEffect(() => {
     focusFirstInvalidField(formRef.current, state);
@@ -326,7 +329,7 @@ export function DocumentStorageSettingsForm({
       <FormMessage state={state} />
       <input name="id" type="hidden" value={stateValue(state, "id", appSettings?.id)} />
       <label className="grid gap-1 text-sm font-medium">
-        Document storage provider
+        {t.storageProvider}
         <select
           {...fieldProps("app-settings", "document_storage_provider", state)}
           className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
@@ -337,8 +340,8 @@ export function DocumentStorageSettingsForm({
           )}
           name="document_storage_provider"
         >
-          <option value="local_drive">Local drive</option>
-          <option value="google_drive">Google Drive</option>
+          <option value="local_drive">{t.localDrive}</option>
+          <option value="google_drive">{t.googleDrive}</option>
         </select>
         <FieldError
           fieldName="document_storage_provider"
@@ -347,7 +350,7 @@ export function DocumentStorageSettingsForm({
         />
       </label>
       <label className="grid gap-1 text-sm font-medium">
-        Root path or private folder link
+        {t.storageRoot}
         <input
           className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
           defaultValue={stateValue(
@@ -356,16 +359,16 @@ export function DocumentStorageSettingsForm({
             appSettings?.document_storage_root,
           )}
           name="document_storage_root"
-          placeholder="/secure/condovotes or private Drive folder URL"
+          placeholder={t.storageRootPlaceholder}
         />
       </label>
       <div className="flex flex-wrap gap-2 md:col-span-2">
         <PendingSubmitButton
           className="rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)]"
-          pendingLabel="Saving..."
+          pendingLabel={staff.common.saving}
           type="submit"
         >
-          Save document storage config
+          {t.saveStorage}
         </PendingSubmitButton>
         <FormResetButton label="Reset changes" />
       </div>

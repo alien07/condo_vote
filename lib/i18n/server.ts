@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import { getDictionary, type Dictionary } from "@/lib/i18n/dictionaries";
+import { getStaffDictionary, type StaffDictionary } from "@/lib/i18n/staff";
 import { DEFAULT_LOCALE, isLocale, LOCALE_COOKIE, type Locale } from "@/lib/i18n/locales";
 import { createClient } from "@/lib/supabase/server";
 
@@ -36,4 +37,11 @@ export async function getI18n(): Promise<{ locale: Locale; t: Dictionary }> {
   const locale = await getLocale();
 
   return { locale, t: getDictionary(locale) };
+}
+
+/** Staff pages (admin, committee, system): plain-string dictionary. */
+export async function getStaffI18n(): Promise<{ locale: Locale; s: StaffDictionary }> {
+  const locale = await getLocale();
+
+  return { locale, s: getStaffDictionary(locale) };
 }

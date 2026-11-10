@@ -1,5 +1,7 @@
 "use client";
 
+import { useStaffText } from "@/lib/i18n/staff/client";
+
 import Link from "next/link";
 import { useEffect } from "react";
 import { X } from "lucide-react";
@@ -19,6 +21,8 @@ export function AdminCrudDrawer({
   summary,
   title,
 }: AdminCrudDrawerProps) {
+  const { s } = useStaffText();
+
   useEffect(() => {
     if (!lockScroll) {
       return;
@@ -56,7 +60,7 @@ export function AdminCrudDrawer({
               ) : null}
             </div>
             <Link
-              aria-label="Close drawer"
+              aria-label={s.common.closeDrawer}
               className="rounded-md border border-[var(--border)] p-2"
               href={closeHref}
             >

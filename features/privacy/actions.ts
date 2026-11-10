@@ -1,6 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { getStaffI18n } from "@/lib/i18n/server";
+import { fill } from "@/lib/i18n/template";
 import { redirect } from "next/navigation";
 import { writeAuditLog } from "@/lib/audit/business-audit";
 import { isSystemAdmin, requireProfile } from "@/lib/auth/permissions";
@@ -50,9 +52,12 @@ export async function savePrivacySettingsWithState(
   const values = Object.fromEntries(
     privacyFields.map((field) => [field, String(formData.get(field) ?? "")]),
   ) as Record<(typeof privacyFields)[number], string>;
+  const { s: staff } = await getStaffI18n();
+  const t = staff.system.messages;
+  const common = staff.common;
 
   if (!(await isSystemAdmin())) {
-    return { error: "Only a system admin can change privacy settings.", values };
+    return { error: t.onlySystemAdmin, values };
   }
 
   const fieldErrors: Record<string, string> = {};
@@ -64,24 +69,23 @@ export async function savePrivacySettingsWithState(
   );
 
   if (!values.notice_text.trim()) {
-    fieldErrors.notice_text = "Thai privacy notice is required.";
+    fieldErrors.notice_text = t.noticeRequired;
   }
 
   if (voteRetention === null) {
-    fieldErrors.retention_months_vote_records =
-      "Vote record retention must be a whole number of months from 12 to 600.";
+    fieldErrors.retention_months_vote_records = t.voteRetention;
   }
 
   if (profileRetention === null) {
-    fieldErrors.retention_months_inactive_profiles =
-      "Profile retention must be a whole number of months from 1 to 600.";
+    fieldErrors.retention_months_inactive_profiles = t.profileRetention;
   }
 
   const errorCount = Object.keys(fieldErrors).length;
 
   if (errorCount > 0) {
     return {
-      error: `Please fix ${errorCount} field${errorCount === 1 ? "" : "s"} before saving.`,
+      error:
+        errorCount === 1 ? common.fixOneField : fill(common.fixFields, { count: errorCount }),
       fieldErrors,
       values,
     };
@@ -115,7 +119,7 @@ export async function savePrivacySettingsWithState(
   revalidatePath("/system");
 
   return {
-    success: `Privacy settings saved (notice version ${data.notice_version}).`,
+    success: fill(t.saved, { version: data.notice_version }),
     values,
   };
 }

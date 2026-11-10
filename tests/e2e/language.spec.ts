@@ -147,4 +147,33 @@ test.describe("@test:e2e @test:language owner language", () => {
       page.getByRole("heading", { name: "Result Summary", level: 1 }),
     ).toBeVisible();
   });
+
+  test("staff pages follow the same language rule", async ({ page }) => {
+    test.setTimeout(120_000);
+
+    const supabase = createClient<Database>(supabaseUrl!, serviceKey!, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    });
+    const admin = await createOwner(supabase);
+    const { error } = await supabase.from("app_roles").insert([
+      { profile_id: admin.profileId, role: "admin" },
+      { profile_id: admin.profileId, role: "committee" },
+    ]);
+
+    expect(error).toBeNull();
+    await page.context().clearCookies();
+    await signIn(page, supabase, admin.email);
+
+    await page.goto("/admin");
+    await expect(page.getByRole("heading", { name: "ผู้ดูแลระบบ", level: 1 })).toBeVisible();
+    await expect(page.getByRole("link", { name: "การประชุม", exact: true })).toBeVisible();
+
+    await page.goto("/committee");
+    await expect(page.getByRole("heading", { name: "คณะกรรมการ", level: 1 })).toBeVisible();
+
+    await page.getByRole("button", { name: "EN", exact: true }).click();
+    await expect(page.getByRole("heading", { name: "Committee", level: 1 })).toBeVisible();
+    await page.goto("/admin");
+    await expect(page.getByRole("heading", { name: "Admin", level: 1 })).toBeVisible();
+  });
 });

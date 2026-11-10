@@ -1,5 +1,7 @@
 "use client";
 
+import { useStaffText } from "@/lib/i18n/staff/client";
+
 import type { ComponentProps } from "react";
 import { PendingSubmitButton } from "@/features/debug/tracked-submit-button";
 
@@ -36,12 +38,14 @@ type FormResetButtonProps = {
 };
 
 export function FormResetButton({ label }: FormResetButtonProps) {
+  const { s } = useStaffText();
+
   return (
     <button
       className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-4 py-2 text-sm font-medium"
       type="reset"
     >
-      {label}
+      {label === "Clear form" ? s.common.clearForm : s.common.resetChanges}
     </button>
   );
 }

@@ -1,4 +1,7 @@
+"use client";
+
 import type { ReactNode } from "react";
+import { useStaffText } from "@/lib/i18n/staff/client";
 
 export function RequiredMark() {
   return (
@@ -9,9 +12,14 @@ export function RequiredMark() {
 }
 
 export function RequiredNote() {
+  const { s } = useStaffText();
+  const [before, after] = s.common.requiredNote.split("{mark}");
+
   return (
     <p className="text-xs text-[var(--muted)]">
-      Fields marked with <RequiredMark /> are required.
+      {before}
+      <RequiredMark />
+      {after}
     </p>
   );
 }

@@ -7,6 +7,8 @@ import {
 } from "@/features/privacy/actions";
 import type { PrivacySettings } from "@/features/privacy/service";
 import { PendingSubmitButton } from "@/features/debug/tracked-submit-button";
+import { useStaffText } from "@/lib/i18n/staff/client";
+import { fill } from "@/lib/i18n/template";
 
 const emptyState: PrivacySettingsActionState = {};
 
@@ -28,6 +30,8 @@ function FieldError({
 
 export function PrivacySettingsForm({ settings }: { settings: PrivacySettings }) {
   const [state, formAction] = useActionState(savePrivacySettingsWithState, emptyState);
+  const { s: staff } = useStaffText();
+  const t = staff.system;
   const value = (field: keyof PrivacySettings) =>
     state.values?.[field] ?? String(settings[field] ?? "");
 
@@ -57,10 +61,10 @@ export function PrivacySettingsForm({ settings }: { settings: PrivacySettings })
           name="consent_required"
           type="checkbox"
         />
-        Ask every user to accept the privacy notice before using the app
+        {t.consentRequired}
       </label>
       <label className="grid gap-1 text-sm font-medium">
-        Privacy notice in Thai (version {settings.notice_version})
+        {fill(t.noticeTh, { version: settings.notice_version })}
         <textarea
           aria-describedby="privacy-notice_text-error"
           aria-invalid={Boolean(state.fieldErrors?.notice_text)}
@@ -69,13 +73,12 @@ export function PrivacySettingsForm({ settings }: { settings: PrivacySettings })
           name="notice_text"
         />
         <span className="text-xs font-normal text-[var(--muted)]">
-          Changing the text starts a new version. Everyone accepts it again at
-          their next visit.
+          {t.noticeHelp}
         </span>
         <FieldError fieldName="notice_text" state={state} />
       </label>
       <label className="grid gap-1 text-sm font-medium">
-        Privacy notice in English (optional)
+        {t.noticeEn}
         <textarea
           className="min-h-56 rounded-md border border-[var(--border)] px-3 py-2 text-sm font-normal leading-6"
           defaultValue={value("notice_text_en")}
@@ -83,12 +86,12 @@ export function PrivacySettingsForm({ settings }: { settings: PrivacySettings })
           name="notice_text_en"
         />
         <span className="text-xs font-normal text-[var(--muted)]">
-          Shown to owners who chose English. Leave empty to show the Thai notice.
+          {t.noticeEnHelp}
         </span>
       </label>
       <div className="grid gap-4 md:grid-cols-2">
         <label className="grid gap-1 text-sm font-medium">
-          Keep vote records (months)
+          {t.keepVotes}
           <input
             aria-invalid={Boolean(state.fieldErrors?.retention_months_vote_records)}
             className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
@@ -101,7 +104,7 @@ export function PrivacySettingsForm({ settings }: { settings: PrivacySettings })
           <FieldError fieldName="retention_months_vote_records" state={state} />
         </label>
         <label className="grid gap-1 text-sm font-medium">
-          Keep inactive profiles (months)
+          {t.keepProfiles}
           <input
             aria-invalid={Boolean(state.fieldErrors?.retention_months_inactive_profiles)}
             className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
@@ -117,10 +120,10 @@ export function PrivacySettingsForm({ settings }: { settings: PrivacySettings })
       <div>
         <PendingSubmitButton
           className="rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)]"
-          pendingLabel="Saving..."
+          pendingLabel={staff.common.saving}
           type="submit"
         >
-          Save privacy settings
+          {t.savePrivacy}
         </PendingSubmitButton>
       </div>
     </form>

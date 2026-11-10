@@ -182,8 +182,13 @@ Status: implemented (migration 0027)
   profile through `set_preferred_language()`.
 - Owner-facing pages use it: home, login, consent, vote list and ballot,
   owner summary, verify page, header and navigation.
-- Admin and committee pages stay English. The official result record is
-  always Thai. The English owner summary says the Thai version prevails.
+- Staff pages (admin, committee, system) follow the same rule, in three
+  steps: committee, system and the admin menu and overview first, then the
+  admin sections, then server messages. Their words live in
+  `lib/i18n/staff/*.ts` as plain strings with `{name}` placeholders, so
+  client components get them through `useStaffText()`.
+- The official result record is always Thai. The English owner summary
+  says the Thai version prevails.
 - Queued emails store the recipient's language in `email_logs.language`;
   recipients without a profile get Thai. Email text lives in
   `features/email/templates.ts` until admin-editable templates (V2).
