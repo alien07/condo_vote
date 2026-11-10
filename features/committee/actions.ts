@@ -9,6 +9,7 @@ import {
   approveCloseVoting,
   approveResult,
 } from "@/features/results/committee-service";
+import { scheduleResultPdfs } from "@/features/results/pdf/schedule";
 
 function feedbackHref(tone: "success" | "error", message: string) {
   return `/committee?feedback=${tone}&message=${encodeURIComponent(message)}`;
@@ -28,10 +29,16 @@ export async function approveResultAsCommittee(formData: FormData) {
   let href: string;
 
   try {
+    const resultSnapshotId = String(formData.get("result_snapshot_id") ?? "");
     const result = await approveResult(supabase, {
       notes: String(formData.get("notes") ?? "").trim() || null,
-      resultSnapshotId: String(formData.get("result_snapshot_id") ?? ""),
+      resultSnapshotId,
     });
+
+    if (result.published) {
+      await scheduleResultPdfs(resultSnapshotId);
+    }
+
     href = feedbackHref("success", approvalMessage(result));
   } catch (error) {
     href = feedbackHref("error", error instanceof Error ? error.message : "Could not approve.");

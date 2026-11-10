@@ -1,6 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import type { ReactNode } from "react";
 import { PrintButton } from "@/features/results/print-button";
+import { documentFont } from "@/lib/fonts";
 import {
   THAI_MEETING_ROUNDS,
   THAI_MEETING_TYPES,
@@ -50,7 +51,8 @@ export default async function OfficialRecordPage({ params }: RecordPageProps) {
 
   const { snapshotId } = await params;
   const supabase = await createClient();
-  const [snapshotResult, publicationResult, approvalsResult, settingsResult] = await Promise.all([
+  const [snapshotResult, publicationResult, masterPdfResult, approvalsResult, settingsResult] =
+    await Promise.all([
     supabase
       .from("result_snapshots")
       .select("id, meeting_id, generated_at, payload_json, payload_sha256")
@@ -60,6 +62,12 @@ export default async function OfficialRecordPage({ params }: RecordPageProps) {
       .from("result_publications")
       .select("published_at, approvals_count")
       .eq("result_snapshot_id", snapshotId)
+      .maybeSingle(),
+    supabase
+      .from("result_documents")
+      .select("id")
+      .eq("result_snapshot_id", snapshotId)
+      .eq("kind", "official")
       .maybeSingle(),
     supabase
       .from("committee_approvals")
@@ -88,6 +96,7 @@ export default async function OfficialRecordPage({ params }: RecordPageProps) {
   const condo = payload.condo ?? null;
   const totals = payload.totals ?? {};
   const publication = publicationResult.data;
+  const hasMasterPdf = Boolean(masterPdfResult.data);
   const approvals = approvalsResult.data ?? [];
   const settings = settingsResult.data?.[0] ?? null;
   const signatories = settings?.record_signatories?.length
@@ -103,7 +112,7 @@ export default async function OfficialRecordPage({ params }: RecordPageProps) {
   const footer = cssString(`เลขอ้างอิง ${snapshot.id} · SHA-256 ${hash}`);
 
   return (
-    <main className="record-document mx-auto max-w-4xl px-6 py-8 text-sm leading-6 print:max-w-none print:p-0">
+    <main className={`${documentFont.className} record-document mx-auto max-w-4xl px-6 py-8 text-sm leading-6 print:max-w-none print:p-0`}>
       <style>{`
         @page {
           size: A4;
@@ -122,7 +131,17 @@ export default async function OfficialRecordPage({ params }: RecordPageProps) {
         <p className="text-[var(--muted)]">
           Official result record (Thai). Print it, or choose Save as PDF in the print dialog.
         </p>
-        <PrintButton />
+        <div className="flex flex-wrap items-center gap-3">
+          {hasMasterPdf ? (
+            <a
+              className="inline-flex min-h-11 items-center font-medium text-[var(--primary)] underline"
+              href={`/result-files/${snapshot.id}/official-th.pdf`}
+            >
+              Master PDF
+            </a>
+          ) : null}
+          <PrintButton />
+        </div>
       </div>
 
       {!publication ? (

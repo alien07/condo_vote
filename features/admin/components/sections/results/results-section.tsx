@@ -1,4 +1,6 @@
 import { ListChecks } from "lucide-react";
+import { createResultPdfs } from "@/features/results/pdf/actions";
+import { RESULT_PDF_FILES } from "@/features/results/pdf/files";
 import { PerPageSelect } from "@/features/admin/components/table-controls";
 import { ResultApprovalDrawer, ResultSnapshotRowFocus } from "@/features/admin/components/result-approval-drawer";
 import { resultHref } from "@/features/admin/components/sections/results/result-hrefs";
@@ -275,6 +277,11 @@ export function ResultsSection({
             {pagedResultSnapshots.map((snapshot) => {
               const totals = getResultTotals(snapshot.payload_json);
               const approved = approvedResultSnapshotIds.has(snapshot.id);
+              // Master PDF files (D021) are made in the background after
+              // publication; the button makes any that are missing.
+              const pdfFiles = snapshot.result_documents ?? [];
+              const pdfCount = pdfFiles.length;
+              const hasOfficialPdf = pdfFiles.some((file) => file.kind === "official");
               const meetingApproved = approvedMeetingIds.has(
                 snapshot.meeting_id,
               );
@@ -351,6 +358,25 @@ export function ResultsSection({
                     >
                       Official record
                     </a>
+                    {approved && hasOfficialPdf ? (
+                      <a
+                        className="ml-2 inline-flex min-h-9 items-center text-sm font-medium text-[var(--primary)] underline"
+                        href={`/result-files/${snapshot.id}/official-th.pdf`}
+                      >
+                        Official PDF
+                      </a>
+                    ) : null}
+                    {approved && pdfCount < RESULT_PDF_FILES.length ? (
+                      <form action={createResultPdfs} className="ml-2 inline">
+                        <input name="result_snapshot_id" type="hidden" value={snapshot.id} />
+                        <button
+                          className="inline-flex min-h-9 items-center rounded-md border border-[var(--border)] px-3 text-sm font-medium"
+                          type="submit"
+                        >
+                          Create PDF files ({pdfCount}/{RESULT_PDF_FILES.length})
+                        </button>
+                      </form>
+                    ) : null}
                   </td>
                 </tr>
               );

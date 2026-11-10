@@ -10,6 +10,7 @@ import {
   toNumber,
 } from "@/features/admin/action-modules/shared";
 import { writeAuditLog } from "@/lib/audit/business-audit";
+import { scheduleResultPdfs } from "@/features/results/pdf/schedule";
 import {
   approvalMessage,
   approveResult,
@@ -515,10 +516,16 @@ export async function approveResultSnapshot(formData: FormData) {
   await requireAdmin();
   const supabase = await createClient();
 
-  await approveResult(supabase, {
+  const resultSnapshotId = requiredText(formData.get("result_snapshot_id"), "Result snapshot");
+  const approval = await approveResult(supabase, {
     notes: optionalText(formData.get("notes")),
-    resultSnapshotId: requiredText(formData.get("result_snapshot_id"), "Result snapshot"),
+    resultSnapshotId,
   });
+
+  if (approval.published) {
+    await scheduleResultPdfs(resultSnapshotId);
+  }
+
   revalidateAdminPaths();
   redirect("/admin/results?feedback=success&message=Result%20approved");
 }
@@ -555,6 +562,10 @@ export async function approveResultSnapshotWithState(
         error: error instanceof Error ? error.message : "Could not approve result.",
         values,
       };
+    }
+
+    if (approval.published) {
+      await scheduleResultPdfs(values.result_snapshot_id);
     }
 
     revalidateAdminPaths();

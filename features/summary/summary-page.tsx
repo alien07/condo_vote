@@ -6,6 +6,7 @@ import { getDictionary } from "@/lib/i18n/dictionaries";
 import { formatDateTimeIn } from "@/lib/i18n/format";
 import type { Locale } from "@/lib/i18n/locales";
 import type { ApprovedSummary } from "@/features/summary/data";
+import { documentFont } from "@/lib/fonts";
 
 type SummaryPageProps = {
   condoProfile: {
@@ -35,9 +36,11 @@ export function SummaryPage({
   const payload = selected?.payload;
 
   return (
-    <main className="min-h-screen px-6 py-8" lang={locale}>
+    <main className="min-h-screen px-6 py-8 print:min-h-0 print:p-0" lang={locale}>
+      {/* A4 margins for printing and the master PDF (D021). */}
+      <style>{`@page { size: A4; margin: 16mm 14mm; }`}</style>
       <section className="mx-auto max-w-5xl">
-        <div className="mb-6 flex flex-col gap-3 border-b border-[var(--border)] pb-5 md:flex-row md:items-start md:justify-between">
+        <div className="mb-6 flex flex-col gap-3 border-b border-[var(--border)] pb-5 md:flex-row md:items-start md:justify-between print:hidden">
           <div className="flex items-start gap-3">
             <FileText className="mt-1 text-[var(--primary)]" size={26} />
             <div>
@@ -63,11 +66,13 @@ export function SummaryPage({
             </Link>
           </section>
         ) : (
-          <div className="grid gap-5 lg:grid-cols-[1fr_280px]">
+          <div className="grid gap-5 lg:grid-cols-[1fr_280px] print:block">
             {/* Owner summary (document 2): totals only, no names or per-room
                 choices (PDPA); the official record stays with the juristic
                 person and can be checked by its reference and SHA-256. */}
-            <article className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-5 shadow-sm">
+            <article
+              className={`${documentFont.className} rounded-lg border border-[var(--border)] bg-[var(--surface)] p-5 shadow-sm print:border-0 print:p-0 print:shadow-none`}
+            >
               <div className="border-b border-[var(--border)] pb-4 text-center">
                 <p className="text-sm text-[var(--muted)]">{t.documentTitle}</p>
                 <h2 className="mt-2 text-xl font-semibold">
@@ -187,12 +192,22 @@ export function SummaryPage({
                     SHA-256 <span className="font-mono text-xs">{selected.payloadSha256}</span>
                   </p>
                 ) : null}
-                <Link
-                  className="mt-2 inline-flex min-h-11 items-center font-medium text-[var(--primary)] underline"
-                  href={`/verify/${selected.snapshotId}`}
-                >
-                  {t.verifyLink}
-                </Link>
+                <div className="mt-2 flex flex-wrap gap-x-4 print:hidden">
+                  <Link
+                    className="inline-flex min-h-11 items-center font-medium text-[var(--primary)] underline"
+                    href={`/verify/${selected.snapshotId}`}
+                  >
+                    {t.verifyLink}
+                  </Link>
+                  {selected.pdfFiles.includes(`summary-${locale}`) ? (
+                    <a
+                      className="inline-flex min-h-11 items-center font-medium text-[var(--primary)] underline"
+                      href={`/result-files/${selected.snapshotId}/summary-${locale}.pdf`}
+                    >
+                      {t.downloadPdf}
+                    </a>
+                  ) : null}
+                </div>
               </section>
 
               {condoProfile?.document_footer ? (
@@ -202,7 +217,7 @@ export function SummaryPage({
               ) : null}
             </article>
 
-            <aside className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-5">
+            <aside className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-5 print:hidden">
               <h2 className="font-semibold">{t.historyTitle}</h2>
               <p className="mt-1 text-sm text-[var(--muted)]">
                 {t.historyText(historyLimit)}

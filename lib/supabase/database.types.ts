@@ -1267,6 +1267,57 @@ export type Database = {
           },
         ]
       }
+      result_documents: {
+        Row: {
+          byte_size: number
+          created_at: string
+          created_by: string | null
+          id: string
+          kind: string
+          language: string
+          result_snapshot_id: string
+          sha256: string
+          storage_path: string
+        }
+        Insert: {
+          byte_size: number
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          kind: string
+          language: string
+          result_snapshot_id: string
+          sha256: string
+          storage_path: string
+        }
+        Update: {
+          byte_size?: number
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          kind?: string
+          language?: string
+          result_snapshot_id?: string
+          sha256?: string
+          storage_path?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "result_documents_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "result_documents_result_snapshot_id_fkey"
+            columns: ["result_snapshot_id"]
+            isOneToOne: false
+            referencedRelation: "result_snapshots"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       result_publications: {
         Row: {
           approvals_count: number

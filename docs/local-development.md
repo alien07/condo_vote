@@ -36,6 +36,12 @@ npm run supabase:status
 npm run supabase:stop
 ```
 
+Master PDF files (D021) need Supabase Storage, so do not exclude
+`storage-api` when starting the local stack. The dev server prints the PDF
+files with the Chromium that Playwright installed: set
+`PLAYWRIGHT_BROWSERS_PATH` if browsers are installed outside the default
+folder, or `CHROMIUM_EXECUTABLE_PATH` to use another Chromium.
+
 Local Studio is normally available at:
 
 ```text

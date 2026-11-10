@@ -15,6 +15,9 @@ import {
 import { ChoiceResultsTable, type ChoiceResult } from "@/features/results/choice-results-table";
 import { ConfirmSubmitButton } from "@/features/admin/components/form-controls";
 
+// Approving can start the master PDF files (D021), which needs Chromium time.
+export const maxDuration = 60;
+
 const formatDateTime = formatBangkokDateTime;
 
 type PendingPayload = {

@@ -59,6 +59,7 @@ erDiagram
 | [approval_requests](#approval_requests) | Tracks user requests to become an approved owner, resident, or proxy voter. |
 | [proxy_authorizations](#proxy_authorizations) | Meeting-specific proxy permissions allowing a non-owner to vote for a room. |
 | [meetings](#meetings) | Voting event or condominium meeting configuration. |
+| [result_documents](#result_documents) | Master PDF files of published results (D021). |
 | [meeting_incidents](#meeting_incidents) | Problems during voting and what was done, for the official record. |
 | [meeting_questions](#meeting_questions) | Questions shown inside a meeting vote/survey. |
 | [meeting_choices](#meeting_choices) | Choices available for each meeting question. |
@@ -192,6 +193,11 @@ Notes: Result generation should fail when an online/manual conflict exists witho
 Purpose: Stores generated result calculations.
 Key fields: meeting, generated timestamp, generator, result payload.
 Notes: `payload_sha256` is set by trigger from the payload text and printed on both result documents (D019). Payload should include count, percentage against total project ownership, percentage against submitted-vote ownership, effective vote source, and conflict resolution audit. Once a snapshot is referenced by `committee_approvals`, it is immutable. New snapshots for the same meeting are blocked after approval.
+
+### result_documents
+Purpose: Master PDF files of a published result (D021).
+Key fields: result snapshot, kind (official or summary), language, storage path in the `result-documents` bucket, SHA-256, size, created by/at.
+Notes: One file per snapshot, kind and language. The official record is Thai only. Rows are added only for published results.
 
 ### committee_approvals
 Purpose: Stores approval that allows result publication.

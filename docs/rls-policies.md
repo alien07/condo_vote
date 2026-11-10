@@ -94,6 +94,14 @@ function that changes only the caller's own profile. Admins change any
 profile's language through the existing admin update policy.
 Database tests: `supabase/tests/owner_language.test.sql`.
 
+## Master PDF Files (D021)
+Migration 0028: `result_documents` rows and files in the `result-documents`
+bucket are added only for published results, by admin or committee. Admin
+and committee read every file; other signed-in users read summary files of
+published results. A file may be overwritten only while it has no
+`result_documents` row (a failed earlier try). Database tests:
+`supabase/tests/result_pdf_files.test.sql`.
+
 ## Still Needed
 - `approval_requests` has no policies yet.
 - Provider-specific file access policies after direct upload adapters are selected.

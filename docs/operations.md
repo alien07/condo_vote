@@ -56,6 +56,9 @@ For a small invited group. Production later uses the checklist above.
    | `ENABLE_LOCAL_AUTH_BYPASS` | `0` |
 
    Do not add the service role key; the deployed app does not need it.
+   Master PDF files (D021) use `@sparticuz/chromium` on Vercel; the results
+   and committee pages allow 60 seconds for it (`maxDuration`). Check once
+   after the first deploy that "Create PDF files" works there.
    Vercel servers run in UTC; the app reads and shows every time as
    Asia/Bangkok on its own (`lib/datetime.ts`).
 
@@ -88,7 +91,8 @@ For a small invited group. Production later uses the checklist above.
 ### Known limits of the demo
 - Emails are queued in `email_logs` but not sent; share the demo URL
   directly.
-- Voter screens are in English; Thai is planned (roadmap).
+- Owner screens are Thai by default with an English switch (D020); admin
+  screens are English.
 - Users need a Google account listed as a test user.
 
 ## Runbook: System Down During Voting
