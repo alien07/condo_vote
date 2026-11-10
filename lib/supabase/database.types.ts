@@ -613,6 +613,7 @@ export type Database = {
           created_at: string
           error_message: string | null
           id: string
+          language: string
           provider_message_id: string | null
           recipient_email: string
           sent_at: string | null
@@ -623,6 +624,7 @@ export type Database = {
           created_at?: string
           error_message?: string | null
           id?: string
+          language?: string
           provider_message_id?: string | null
           recipient_email: string
           sent_at?: string | null
@@ -633,6 +635,7 @@ export type Database = {
           created_at?: string
           error_message?: string | null
           id?: string
+          language?: string
           provider_message_id?: string | null
           recipient_email?: string
           sent_at?: string | null
@@ -1076,6 +1079,7 @@ export type Database = {
           consent_required: boolean
           id: boolean
           notice_text: string
+          notice_text_en: string | null
           notice_version: number
           retention_months_inactive_profiles: number
           retention_months_vote_records: number
@@ -1086,6 +1090,7 @@ export type Database = {
           consent_required?: boolean
           id?: boolean
           notice_text: string
+          notice_text_en?: string | null
           notice_version?: number
           retention_months_inactive_profiles?: number
           retention_months_vote_records?: number
@@ -1096,6 +1101,7 @@ export type Database = {
           consent_required?: boolean
           id?: boolean
           notice_text?: string
+          notice_text_en?: string | null
           notice_version?: number
           retention_months_inactive_profiles?: number
           retention_months_vote_records?: number
@@ -1152,6 +1158,7 @@ export type Database = {
           id: string
           line_id: string | null
           phone: string | null
+          preferred_language: string
           updated_at: string
         }
         Insert: {
@@ -1164,6 +1171,7 @@ export type Database = {
           id?: string
           line_id?: string | null
           phone?: string | null
+          preferred_language?: string
           updated_at?: string
         }
         Update: {
@@ -1176,6 +1184,7 @@ export type Database = {
           id?: string
           line_id?: string | null
           phone?: string | null
+          preferred_language?: string
           updated_at?: string
         }
         Relationships: []
@@ -1556,6 +1565,7 @@ export type Database = {
         }
         Returns: Json
       }
+      set_preferred_language: { Args: { language: string }; Returns: undefined }
       submit_ballot: {
         Args: { p_answers: Json; p_meeting_id: string; p_room_id: string }
         Returns: Json

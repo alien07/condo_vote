@@ -29,7 +29,7 @@ function FieldError({
 export function PrivacySettingsForm({ settings }: { settings: PrivacySettings }) {
   const [state, formAction] = useActionState(savePrivacySettingsWithState, emptyState);
   const value = (field: keyof PrivacySettings) =>
-    state.values?.[field] ?? String(settings[field]);
+    state.values?.[field] ?? String(settings[field] ?? "");
 
   return (
     <form action={formAction} className="grid gap-4" noValidate>
@@ -60,7 +60,7 @@ export function PrivacySettingsForm({ settings }: { settings: PrivacySettings })
         Ask every user to accept the privacy notice before using the app
       </label>
       <label className="grid gap-1 text-sm font-medium">
-        Privacy notice (version {settings.notice_version})
+        Privacy notice in Thai (version {settings.notice_version})
         <textarea
           aria-describedby="privacy-notice_text-error"
           aria-invalid={Boolean(state.fieldErrors?.notice_text)}
@@ -73,6 +73,18 @@ export function PrivacySettingsForm({ settings }: { settings: PrivacySettings })
           their next visit.
         </span>
         <FieldError fieldName="notice_text" state={state} />
+      </label>
+      <label className="grid gap-1 text-sm font-medium">
+        Privacy notice in English (optional)
+        <textarea
+          className="min-h-56 rounded-md border border-[var(--border)] px-3 py-2 text-sm font-normal leading-6"
+          defaultValue={value("notice_text_en")}
+          lang="en"
+          name="notice_text_en"
+        />
+        <span className="text-xs font-normal text-[var(--muted)]">
+          Shown to owners who chose English. Leave empty to show the Thai notice.
+        </span>
       </label>
       <div className="grid gap-4 md:grid-cols-2">
         <label className="grid gap-1 text-sm font-medium">

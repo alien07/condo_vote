@@ -74,6 +74,25 @@ export function ProfileAccessForm({
           <FieldError fieldName="approval_status" state={state} />
         </label>
         <label className="grid gap-1 text-sm font-medium">
+          Language
+          <select
+            className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+            defaultValue={stateValue(
+              state,
+              "preferred_language",
+              profile.preferred_language ?? "th",
+            )}
+            name="preferred_language"
+          >
+            <option value="th">Thai</option>
+            <option value="en">English</option>
+          </select>
+          <span className="text-xs font-normal text-[var(--muted)]">
+            Owner pages, emails and the owner summary use this language. The
+            owner can also change it with the language switch.
+          </span>
+        </label>
+        <label className="grid gap-1 text-sm font-medium">
           Grant role
           <select
             className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"

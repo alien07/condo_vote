@@ -4,7 +4,19 @@ import { usePathname } from "next/navigation";
 import { BarChart3, CheckSquare, Gavel, Settings, Wrench } from "lucide-react";
 import { TrackedLink } from "@/features/debug/tracked-link";
 
+type NavLabels = {
+  admin: string;
+  committee: string;
+  system: string;
+  vote: string;
+  summary: string;
+  ballot: string;
+  resultDetail: string;
+  back: string;
+};
+
 type AppShellNavProps = {
+  labels: NavLabels;
   isAdmin: boolean;
   isCommittee?: boolean;
   isSystemAdmin?: boolean;
@@ -13,39 +25,39 @@ type AppShellNavProps = {
 const navItems = [
   {
     href: "/admin",
-    label: "Admin",
+    key: "admin",
     icon: Settings,
     adminOnly: true,
   },
   {
     href: "/committee",
-    label: "Committee",
+    key: "committee",
     icon: Gavel,
     adminOnly: false,
     committeeOnly: true,
   },
   {
     href: "/system",
-    label: "System",
+    key: "system",
     icon: Wrench,
     adminOnly: false,
     systemAdminOnly: true,
   },
   {
     href: "/vote",
-    label: "Vote",
+    key: "vote",
     icon: CheckSquare,
     adminOnly: false,
   },
   {
     href: "/summary",
-    label: "Summary",
+    key: "summary",
     icon: BarChart3,
     adminOnly: false,
   },
-];
+] as const;
 
-function getBreadcrumbs(pathname: string) {
+function getBreadcrumbs(pathname: string, labels: NavLabels) {
   const parts = pathname.split("/").filter(Boolean);
 
   if (parts.length === 0) {
@@ -54,7 +66,7 @@ function getBreadcrumbs(pathname: string) {
 
   if (parts[0] === "admin") {
     return [
-      { href: "/admin", label: "Admin" },
+      { href: "/admin", label: labels.admin },
       parts[1]
         ? {
             href: `/admin/${parts[1]}`,
@@ -66,15 +78,15 @@ function getBreadcrumbs(pathname: string) {
 
   if (parts[0] === "vote") {
     return [
-      { href: "/vote", label: "Vote" },
-      parts.length > 1 ? { href: pathname, label: "Ballot" } : null,
+      { href: "/vote", label: labels.vote },
+      parts.length > 1 ? { href: pathname, label: labels.ballot } : null,
     ].filter((item): item is { href: string; label: string } => Boolean(item));
   }
 
   if (parts[0] === "summary") {
     return [
-      { href: "/summary", label: "Summary" },
-      parts.length > 1 ? { href: pathname, label: "Result detail" } : null,
+      { href: "/summary", label: labels.summary },
+      parts.length > 1 ? { href: pathname, label: labels.resultDetail } : null,
     ].filter((item): item is { href: string; label: string } => Boolean(item));
   }
 
@@ -98,12 +110,13 @@ function getBackHref(pathname: string) {
 }
 
 export function AppShellNav({
+  labels,
   isAdmin,
   isCommittee = false,
   isSystemAdmin = false,
 }: AppShellNavProps) {
   const pathname = usePathname();
-  const breadcrumbs = getBreadcrumbs(pathname);
+  const breadcrumbs = getBreadcrumbs(pathname, labels);
   const backHref = getBackHref(pathname);
 
   return (
@@ -131,12 +144,12 @@ export function AppShellNav({
                       ? "border-[var(--primary)] bg-[var(--primary)] text-[var(--primary-foreground)]"
                       : "border-[var(--border)] bg-[var(--surface)] text-[var(--foreground)]",
                   ].join(" ")}
-                  debugName={`shell.nav.${item.label.toLowerCase()}`}
+                  debugName={`shell.nav.${item.key}`}
                   href={item.href}
                   key={item.href}
                 >
                   <Icon size={16} aria-hidden="true" />
-                  {item.label}
+                  {labels[item.key]}
                 </TrackedLink>
               );
             })}
@@ -152,7 +165,7 @@ export function AppShellNav({
                 debugName="shell.back"
                 href={backHref}
               >
-                Back
+                {labels.back}
               </TrackedLink>
             ) : null}
             {backHref ? <span>/</span> : null}

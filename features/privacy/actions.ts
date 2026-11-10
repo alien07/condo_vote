@@ -32,6 +32,7 @@ export type PrivacySettingsActionState = {
 const privacyFields = [
   "consent_required",
   "notice_text",
+  "notice_text_en",
   "retention_months_vote_records",
   "retention_months_inactive_profiles",
 ] as const;
@@ -63,7 +64,7 @@ export async function savePrivacySettingsWithState(
   );
 
   if (!values.notice_text.trim()) {
-    fieldErrors.notice_text = "Privacy notice is required.";
+    fieldErrors.notice_text = "Thai privacy notice is required.";
   }
 
   if (voteRetention === null) {
@@ -93,6 +94,7 @@ export async function savePrivacySettingsWithState(
     .update({
       consent_required: values.consent_required === "on",
       notice_text: values.notice_text.trim(),
+      notice_text_en: values.notice_text_en.trim() || null,
       retention_months_inactive_profiles: profileRetention!,
       retention_months_vote_records: voteRetention!,
     })

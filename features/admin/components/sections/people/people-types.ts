@@ -23,6 +23,7 @@ export type Profile = {
   email: string;
   full_name: string;
   id: string;
+  preferred_language?: string;
 };
 
 export type AppRole = {

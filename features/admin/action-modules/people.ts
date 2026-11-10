@@ -16,6 +16,7 @@ import {
 } from "@/features/admin/action-modules/shared";
 import { writeAuditLog } from "@/lib/audit/business-audit";
 import { isSystemAdmin } from "@/lib/auth/permissions";
+import { isLocale } from "@/lib/i18n/locales";
 
 type AdminSupabaseClient = Awaited<ReturnType<typeof createClient>>;
 
@@ -1227,10 +1228,16 @@ export async function updateProfileAccessWithState(
       "id",
       "default_status",
       "approval_status",
+      "preferred_language",
       "role",
     ]);
     const errors: Record<string, string> = {};
     const id = requiredFormText(formData, "id", "Profile ID", errors);
+    const preferredLanguage = optionalText(formData.get("preferred_language")) ?? "th";
+
+    if (!isLocale(preferredLanguage)) {
+      errors.preferred_language = "Language must be Thai or English.";
+    }
     const defaultStatus = requiredFormText(
       formData,
       "default_status",
@@ -1264,6 +1271,7 @@ export async function updateProfileAccessWithState(
       .update({
         default_status: defaultStatus,
         approval_status: approvalStatus,
+        preferred_language: preferredLanguage,
       })
       .eq("id", id);
 
@@ -1289,6 +1297,7 @@ export async function updateProfileAccessWithState(
         approval_status: approvalStatus,
         default_status: defaultStatus,
         granted_role: role,
+        preferred_language: preferredLanguage,
       },
       entityId: id,
       entityType: "profile",

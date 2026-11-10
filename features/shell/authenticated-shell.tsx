@@ -9,6 +9,8 @@ import { APP_NAME, APP_VERSION } from "@/lib/app-config";
 import { needsPrivacyConsent } from "@/features/privacy/service";
 import { requireProfileWithRoles } from "@/lib/auth/permissions";
 import { createClient } from "@/lib/supabase/server";
+import { LanguageSwitcher } from "@/features/i18n/language-switcher";
+import { getI18n } from "@/lib/i18n/server";
 
 type AuthenticatedShellProps = {
   children: ReactNode;
@@ -22,8 +24,9 @@ export async function AuthenticatedShell({ children }: AuthenticatedShellProps) 
     redirect("/consent");
   }
 
+  const { locale, t } = await getI18n();
   const isAdmin = roles.includes("admin");
-  const roleLabel = roles.length > 0 ? roles.join(", ") : "user";
+  const roleLabel = roles.length > 0 ? roles.join(", ") : t.shell.user;
 
   return (
     <>
@@ -44,6 +47,7 @@ export async function AuthenticatedShell({ children }: AuthenticatedShellProps) 
           </div>
 
           <div className="flex min-w-0 items-center gap-2 text-sm">
+            <LanguageSwitcher locale={locale} />
             <div className="min-w-0 text-right sm:rounded-md sm:border sm:border-[var(--border)] sm:bg-[var(--surface)] sm:px-3 sm:py-2 sm:text-left md:max-w-72">
               <div className="truncate font-medium">{profile.full_name}</div>
               <div className="hidden truncate text-xs text-[var(--muted)] sm:block">
@@ -52,26 +56,27 @@ export async function AuthenticatedShell({ children }: AuthenticatedShellProps) 
             </div>
             <form action={signOut}>
               <TrackedSubmitButton
-                aria-label="Sign out"
+                aria-label={t.shell.signOut}
                 className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center gap-2 rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm font-medium"
                 debugName="auth.logout"
-                pendingLabel="Signing out..."
+                pendingLabel={t.shell.signingOut}
                 type="submit"
               >
                 <LogOut size={16} aria-hidden="true" />
-                <span className="hidden sm:inline">Sign out</span>
+                <span className="hidden sm:inline">{t.shell.signOut}</span>
               </TrackedSubmitButton>
             </form>
           </div>
         </div>
         <AppShellNav
+          labels={{ ...t.shell.nav, ...t.shell.crumbs, back: t.shell.back }}
           isAdmin={isAdmin}
           isCommittee={roles.includes("committee")}
           isSystemAdmin={roles.includes("system_admin")}
         />
       </header>
       <div className="print:hidden">
-        <AppFeedbackBanner />
+        <AppFeedbackBanner dismissLabel={t.shell.dismiss} />
       </div>
       {children}
     </>

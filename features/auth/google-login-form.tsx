@@ -4,10 +4,17 @@ import { TrackedSubmitButton } from "@/features/debug/tracked-submit-button";
 
 type GoogleLoginFormProps = {
   action: (formData: FormData) => void | Promise<void>;
+  label: string;
   next: string;
+  pendingLabel: string;
 };
 
-export function GoogleLoginForm({ action, next }: GoogleLoginFormProps) {
+export function GoogleLoginForm({
+  action,
+  label,
+  next,
+  pendingLabel,
+}: GoogleLoginFormProps) {
   return (
     <form
       action={action}
@@ -25,9 +32,9 @@ export function GoogleLoginForm({ action, next }: GoogleLoginFormProps) {
       <TrackedSubmitButton
         className="w-full rounded-md border border-[var(--border)] bg-[var(--surface)] px-4 py-2 text-sm font-medium"
         debugName="login.google"
-        pendingLabel="Signing in..."
+        pendingLabel={pendingLabel}
       >
-        Continue with Google
+        {label}
       </TrackedSubmitButton>
     </form>
   );

@@ -44,6 +44,8 @@ Decision: [D016](decisions.md#d016---system-admin-role-and-pdpa-settings).
   notice version; "Decline" signs the user out.
 - System admin configures the privacy notice text and retention periods on
   the System page (`/system`). Changing the text starts a new version.
+  The notice has Thai text and optional English text; owners who chose
+  English see the English text when it is filled in (D020).
 - V1 records two retention periods (vote records, inactive profiles);
   deletion is a manual maintenance task until an automatic job is added.
 - Retention periods to configure: profiles, ballots and ballot versions,

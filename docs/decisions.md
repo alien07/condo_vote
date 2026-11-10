@@ -172,3 +172,23 @@ Status: implemented (migration 0026)
   `submit_ballot` accepts votes in either window. Between the two windows
   voting is closed.
 - The record shows room counts and ownership only, never per-room answers.
+
+### D020 - Owner Language
+Status: implemented (migration 0027)
+
+- `profiles.preferred_language` is `th` or `en`; Thai is the default.
+- Language for a request: the switcher cookie (`lang`), then the signed-in
+  profile, then Thai. The switcher (ไทย / EN) sets the cookie and saves the
+  profile through `set_preferred_language()`.
+- Owner-facing pages use it: home, login, consent, vote list and ballot,
+  owner summary, verify page, header and navigation.
+- Admin and committee pages stay English. The official result record is
+  always Thai. The English owner summary says the Thai version prevails.
+- Queued emails store the recipient's language in `email_logs.language`;
+  recipients without a profile get Thai. Email text lives in
+  `features/email/templates.ts` until admin-editable templates (V2).
+- The privacy notice has Thai text (required) and English text (optional,
+  falls back to Thai). Changing either starts a new notice version.
+- Admin sets a profile's language in People > Edit roles/status. The owner
+  Excel import has no language column: the language belongs to the profile,
+  which is created at first sign-in.

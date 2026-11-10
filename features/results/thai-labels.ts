@@ -1,56 +1,75 @@
-// Thai wording for the result documents (official record and owner summary).
-// The app UI stays in English for now; documents for Thai authorities and
-// owners are in Thai.
+// Wording for the result documents. The official record is Thai; the owner
+// summary follows the owner's language (D020).
+
+import { getDictionary } from "@/lib/i18n/dictionaries";
+import type { Locale } from "@/lib/i18n/locales";
 
 type RuleLike = { basis?: string; operator?: string; percent?: number } | null | undefined;
+type QuorumLike = { required_percent?: number | null; met?: boolean | null } | null | undefined;
 
 function percent(value: number) {
   return Number.isInteger(value) ? `${value}%` : `${value.toFixed(2)}%`;
 }
 
-export function thaiPassRule(rule: RuleLike) {
+// Pass rule, outcome and quorum in either language. The owner summary uses the
+// owner's language (D020); the official record is always Thai.
+export function passRuleText(locale: Locale, rule: RuleLike) {
+  const t = getDictionary(locale).results;
+
   if (!rule || rule.basis === "none" || rule.percent === undefined) {
-    return "วาระแจ้งเพื่อทราบ ไม่มีเกณฑ์ผ่าน";
+    return t.infoOnly;
   }
 
-  const operator = rule.operator === "gte" ? "ไม่น้อยกว่า" : "เกินกว่า";
-  const basis =
-    rule.basis === "total_ownership"
-      ? "ของคะแนนเสียงเจ้าของร่วมทั้งหมด (อัตราส่วนกรรมสิทธิ์รวม)"
-      : "ของคะแนนเสียงของห้องที่ลงคะแนน";
+  const operator = rule.operator === "gte" ? t.ruleAtLeast : t.ruleMore;
+  const basis = rule.basis === "total_ownership" ? t.basisTotal : t.basisVoting;
 
   return `${operator} ${percent(rule.percent)} ${basis}`;
 }
 
-export function thaiOutcome(outcome: string | null | undefined, decidedChoices: string[]) {
+export function outcomeText(
+  locale: Locale,
+  outcome: string | null | undefined,
+  decidedChoices: string[],
+) {
+  const t = getDictionary(locale).results;
+
   if (outcome === "decided") {
-    return `มีมติ: ${decidedChoices.join(", ")}`;
+    return t.decided(decidedChoices.join(", "));
   }
 
   if (outcome === "not_decided") {
-    return "ไม่มีมติ: ไม่มีตัวเลือกใดผ่านเกณฑ์";
+    return t.notDecided;
   }
 
   if (outcome === "informational") {
-    return "แจ้งเพื่อทราบ";
+    return t.informational;
   }
 
   return "-";
 }
 
-export function thaiQuorum(quorum: { required_percent?: number | null; met?: boolean | null } | null | undefined) {
+export function quorumText(locale: Locale, quorum: QuorumLike) {
   if (!quorum || quorum.required_percent === undefined || quorum.required_percent === null) {
     return "-";
   }
 
+  const t = getDictionary(locale).results;
   const rule =
     quorum.required_percent === 0
-      ? "การประชุมครั้งใหม่ ไม่บังคับองค์ประชุม"
-      : `ไม่น้อยกว่า ${percent(quorum.required_percent)} ของคะแนนเสียงทั้งหมด`;
-  const result = quorum.met === null ? "" : quorum.met ? " — ครบองค์ประชุม" : " — ไม่ครบองค์ประชุม";
+      ? t.quorumNotRequired
+      : t.quorumRule(percent(quorum.required_percent));
+  const result =
+    quorum.met === null || quorum.met === undefined
+      ? ""
+      : ` — ${quorum.met ? t.quorumMet : t.quorumNotMet}`;
 
   return `${rule}${result}`;
 }
+
+export const thaiPassRule = (rule: RuleLike) => passRuleText("th", rule);
+export const thaiOutcome = (outcome: string | null | undefined, decided: string[]) =>
+  outcomeText("th", outcome, decided);
+export const thaiQuorum = (quorum: QuorumLike) => quorumText("th", quorum);
 
 export const THAI_RESOLUTION_TYPES: Record<string, string> = {
   ordinary: "มติทั่วไป",

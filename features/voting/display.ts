@@ -1,20 +1,13 @@
 import type { VotingWindowStatus } from "@/features/voting/status";
-import { APP_TIME_ZONE } from "@/lib/datetime";
+import { getDictionary } from "@/lib/i18n/dictionaries";
+import { formatDateTimeIn } from "@/lib/i18n/format";
+import type { Locale } from "@/lib/i18n/locales";
 
-// Plain-language text for the voter screens. Times show in Asia/Bangkok (D014).
+// Plain-language text for the voter screens, in the owner's language (D020).
+// Times show in Asia/Bangkok (D014).
 
-const dateTime = new Intl.DateTimeFormat("en-GB", {
-  weekday: "short",
-  day: "numeric",
-  month: "short",
-  year: "numeric",
-  hour: "2-digit",
-  minute: "2-digit",
-  timeZone: APP_TIME_ZONE,
-});
-
-export function formatVoterDateTime(value: string) {
-  return dateTime.format(new Date(value));
+export function formatVoterDateTime(value: string, locale: Locale) {
+  return formatDateTimeIn(locale, value);
 }
 
 /** "Voting closes Fri 13 Nov 2026, 13:43" and similar, by window status. */
@@ -27,44 +20,47 @@ export function describeVotingWindow(
     advance_ends_at?: string | null;
   } | null,
   status: VotingWindowStatus,
+  locale: Locale,
 ) {
   if (!meeting) {
     return null;
   }
 
+  const t = getDictionary(locale).vote.window;
+  const time = (value: string) => formatDateTimeIn(locale, value);
+
   if (status.label === "Open") {
     return status.phase === "advance" && meeting.advance_ends_at
-      ? `Advance voting closes ${formatVoterDateTime(meeting.advance_ends_at)}. Meeting-day voting opens ${formatVoterDateTime(meeting.starts_at)}.`
-      : `Voting closes ${formatVoterDateTime(meeting.ends_at)}`;
+      ? t.advanceOpen(time(meeting.advance_ends_at), time(meeting.starts_at))
+      : t.closes(time(meeting.ends_at));
   }
 
   if (status.label === "Not open yet") {
     return status.nextPhase === "advance" && meeting.advance_starts_at
-      ? `Advance voting opens ${formatVoterDateTime(meeting.advance_starts_at)}`
-      : `Meeting-day voting opens ${formatVoterDateTime(meeting.starts_at)}`;
+      ? t.advanceOpens(time(meeting.advance_starts_at))
+      : t.meetingOpens(time(meeting.starts_at));
   }
 
   if (status.label === "Closed") {
-    return `Voting closed ${formatVoterDateTime(meeting.closed_at ?? meeting.ends_at)}`;
+    return t.closed(time(meeting.closed_at ?? meeting.ends_at));
   }
 
   return null;
 }
-
-const voterTypeLabels: Record<string, string> = {
-  owner: "Owner",
-  proxy: "Proxy",
-};
 
 /** "Room A-1204 · Owner · 1.25% ownership" */
 export function describeVoterRoom(
   roomNumber: string | null | undefined,
   voterType: string,
   ownershipPercent: number | string,
+  locale: Locale,
 ) {
+  const t = getDictionary(locale).vote;
+  const voterTypeLabels: Record<string, string> = { owner: t.owner, proxy: t.proxy };
+
   return [
-    `Room ${roomNumber ?? "-"}`,
+    t.room(roomNumber ?? "-"),
     voterTypeLabels[voterType] ?? voterType,
-    `${ownershipPercent}% ownership`,
+    t.ownership(String(ownershipPercent)),
   ].join(" · ");
 }

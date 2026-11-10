@@ -3,6 +3,7 @@ import ExcelJS from "exceljs";
 import { requireAdmin } from "@/lib/auth/permissions";
 import { bangkokLocalToIso } from "@/lib/datetime";
 import { createClient } from "@/lib/supabase/server";
+import { withRecipientLanguage } from "@/features/email/recipient-language";
 
 export { createClient, requireAdmin };
 
@@ -163,7 +164,26 @@ export async function insertEmailLogs(
   }
 
   const supabase = await createClient();
-  const { error } = await supabase.from("email_logs").insert(rows);
+  const emails = [...new Set(rows.map((row) => row.recipient_email.toLowerCase()))];
+  const profiles: { email: string; preferred_language: string }[] = [];
+
+  // Small batches keep the request URL short.
+  for (let index = 0; index < emails.length; index += 100) {
+    const { data, error: profilesError } = await supabase
+      .from("profiles")
+      .select("email, preferred_language")
+      .in("email", emails.slice(index, index + 100));
+
+    if (profilesError) {
+      throw profilesError;
+    }
+
+    profiles.push(...data);
+  }
+
+  const { error } = await supabase
+    .from("email_logs")
+    .insert(withRecipientLanguage(rows, profiles));
 
   if (error) {
     throw error;

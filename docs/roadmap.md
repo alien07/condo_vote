@@ -32,8 +32,8 @@
 - Next: master PDF files generated once when results are published, kept in
   Supabase Storage (Google Drive backup later) and used for preview,
   download and email.
-- Next: owner language (`th`/`en`, Thai default) for owner-facing pages,
-  emails, and the owner summary; admin pages stay English for now.
+- Done (D020): owner language (`th`/`en`, Thai default) for owner-facing
+  pages, email language, and the owner summary; admin pages stay English.
 - Send Thai/English result notification emails together.
 - Apply provider send limits with queued delivery ordering.
 - Attach PDF or provide a signed PDF download link.

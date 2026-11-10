@@ -6,7 +6,7 @@ export async function fetchCommunicationsData(supabase: SupabaseServerClient) {
   const emailLogsResult = await supabase
     .from("email_logs")
     .select(
-      "id, recipient_email, template_key, status, sent_at, error_message, created_at",
+      "id, recipient_email, template_key, language, status, sent_at, error_message, created_at",
     )
     .order("created_at", { ascending: false })
     .limit(500);

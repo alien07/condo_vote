@@ -2,11 +2,14 @@
 
 import { useEffect } from "react";
 import { AdminCrudDrawer } from "@/features/admin/components/admin-crud-drawer";
+import { renderEmail, templateNameFromKey } from "@/features/email/templates";
+import { isLocale } from "@/lib/i18n/locales";
 
 type EmailLog = {
   created_at: string;
   error_message: string | null;
   id: string;
+  language?: string;
   provider_message_id?: string | null;
   recipient_email: string;
   sent_at: string | null;
@@ -60,9 +63,14 @@ export function EmailLogDetailDrawer({
   log,
   sentLabel,
 }: EmailLogDetailDrawerProps) {
+  const templateName = templateNameFromKey(log.template_key);
+  const preview = templateName
+    ? renderEmail(templateName, isLocale(log.language) ? log.language : "th")
+    : null;
   const detailRows = [
     ["Recipient", log.recipient_email],
     ["Template", log.template_key],
+    ["Language", log.language === "en" ? "English" : "Thai"],
     ["Status", log.status],
     ["Created", createdLabel],
     ["Sent", sentLabel],
@@ -91,6 +99,22 @@ export function EmailLogDetailDrawer({
           </div>
         ))}
       </dl>
+      {preview ? (
+        <section className="mt-4 rounded-md border border-[var(--border)] p-3 text-sm">
+          <h3 className="text-xs font-medium uppercase text-[var(--muted)]">
+            Content preview
+          </h3>
+          <p className="mt-2 font-medium" lang={log.language}>
+            {preview.subject}
+          </p>
+          <p className="mt-2 whitespace-pre-wrap" lang={log.language}>
+            {preview.body}
+          </p>
+          <p className="mt-2 text-xs text-[var(--muted)]">
+            Placeholders in braces are filled in when the email is sent.
+          </p>
+        </section>
+      ) : null}
     </AdminCrudDrawer>
   );
 }

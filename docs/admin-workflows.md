@@ -47,6 +47,7 @@ These workflows define the admin-facing MVP behavior. Ask before implementing an
 - Admin can add an optional advance voting window before meeting day. Leave it empty for one voting window (D019).
 - On `Admin > Meetings > Meeting record`, admin records the notice date, first or reconvened meeting, how attendees proved who they are, where the recording and logs are kept, and incidents during voting. Generate results again after changes; they are frozen into the snapshot.
 - On `Admin > Setup`, admin chooses who signs the official record and the result notice period.
+- In `People > Edit roles/status`, admin sets a profile's language (Thai or English, D020). Owners can also change it with the language switch.
 - Admin can preview a meeting before publication.
 - Admin can publish a meeting when the setup is complete.
 
