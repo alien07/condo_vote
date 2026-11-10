@@ -1,6 +1,9 @@
 import { AdminWorkspace } from "@/features/admin/components/admin-workspace";
 import type { ResultTableFilters } from "@/features/admin/components/admin-workspace";
 
+// Approving can start the master PDF files (D021), which needs Chromium time.
+export const maxDuration = 60;
+
 type AdminResultsPageProps = {
   searchParams: Promise<{
     approval?: string;

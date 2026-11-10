@@ -192,3 +192,24 @@ Status: implemented (migration 0027)
 - Admin sets a profile's language in People > Edit roles/status. The owner
   Excel import has no language column: the language belongs to the profile,
   which is created at first sign-in.
+
+### D021 - Master PDF Files Of Results
+Status: implemented (migration 0028)
+
+- When a result is published, the server makes three PDF files in the
+  background (`after()`): the official record (Thai) and the owner summary
+  in Thai and English. Approving does not wait for them.
+- Each file is printed by headless Chromium from the same page people see,
+  so screen, printout and file match. The documents use the Sarabun font
+  served by the app (`lib/fonts.ts`).
+- Files are stored in the private Supabase Storage bucket `result-documents`
+  as `<snapshot id>/<kind>-<language>.pdf`, with SHA-256 and size in
+  `result_documents`. A file is made once and not replaced.
+- Downloads go through `/result-files/<snapshot id>/<file>`, which checks
+  access and redirects to a 60-second signed link. Admin and committee get
+  every file; other signed-in users get summaries of published results.
+- If making the files fails, the result stays published and Admin > Results
+  shows "Create PDF files (n/3)" to try again.
+- Chromium: on Vercel `@sparticuz/chromium`; elsewhere the Chromium that
+  Playwright installed, or `CHROMIUM_EXECUTABLE_PATH`.
+- Google Drive backup of the files is planned later.

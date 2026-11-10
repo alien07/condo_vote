@@ -142,6 +142,7 @@ const en = {
     historyText: (limit: number) => `Showing latest ${limit} approved summaries.`,
     translationNote:
       "English translation. If it differs from the Thai version, the Thai version prevails.",
+    downloadPdf: "Download PDF",
   },
   results: {
     choice: "Choice",
@@ -316,6 +317,7 @@ const th: Dictionary = {
     historyTitle: "ประวัติ",
     historyText: (limit: number) => `แสดงผลที่อนุมัติแล้ว ${limit} รายการล่าสุด`,
     translationNote: "",
+    downloadPdf: "ดาวน์โหลด PDF",
   },
   results: {
     choice: "ตัวเลือก",

@@ -87,6 +87,8 @@ export type ApprovedSummary = {
   snapshotId: string;
   generatedAt: string;
   payloadSha256: string | null;
+  /** Master PDF files of this result (D021), as "summary-th" and so on. */
+  pdfFiles: string[];
   payload: SummaryPayload;
 };
 
@@ -105,12 +107,14 @@ function normalizeApproval(row: {
         generated_at: string;
         payload_json: unknown;
         payload_sha256: string | null;
+        result_documents?: { kind: string; language: string }[] | null;
       }
     | {
         id: string;
         generated_at: string;
         payload_json: unknown;
         payload_sha256: string | null;
+        result_documents?: { kind: string; language: string }[] | null;
       }[]
     | null;
 }): ApprovedSummary | null {
@@ -130,6 +134,7 @@ function normalizeApproval(row: {
     snapshotId: snapshot.id,
     generatedAt: snapshot.generated_at,
     payloadSha256: snapshot.payload_sha256,
+    pdfFiles: (snapshot.result_documents ?? []).map((file) => `${file.kind}-${file.language}`),
     payload: normalizePayload(snapshot.payload_json),
   };
 }
@@ -158,7 +163,7 @@ export async function getSummaryData(meetingId?: string) {
   let query = supabase
     .from("result_publications")
     .select(
-      "id, meeting_id, approved_at:published_at, result_snapshots(id, generated_at, payload_json, payload_sha256)",
+      "id, meeting_id, approved_at:published_at, result_snapshots(id, generated_at, payload_json, payload_sha256, result_documents(kind, language))",
     )
     .order("published_at", { ascending: false })
     .limit(historyLimit);

@@ -11,7 +11,9 @@ export async function fetchResultsData(supabase: SupabaseServerClient) {
   ] = await Promise.all([
     supabase
       .from("result_snapshots")
-      .select("id, meeting_id, generated_at, payload_json, meetings(id, title, required_approvals)")
+      .select(
+        "id, meeting_id, generated_at, payload_json, meetings(id, title, required_approvals), result_documents(kind, language)",
+      )
       .order("generated_at", { ascending: false }),
     supabase
       .from("committee_approvals")

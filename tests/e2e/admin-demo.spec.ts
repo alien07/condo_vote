@@ -1,4 +1,5 @@
 import { isoToBangkokLocalInput } from "@/lib/datetime";
+import { createHash } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { expect, test, type Page } from "@playwright/test";
@@ -963,6 +964,38 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
     await expect(page).toHaveURL(new RegExp(`/verify/${publishedSnapshotId}$`));
     await expect(page.getByText(publishedHash)).toBeVisible();
     await setLanguageCookie("en");
+
+    // D021: publishing makes three master PDF files in the background.
+    await expect
+      .poll(
+        async () => {
+          const { data } = await supabase
+            .from("result_documents")
+            .select("kind, language")
+            .eq("result_snapshot_id", publishedSnapshotId);
+
+          return (data ?? []).map((file) => `${file.kind}-${file.language}`).sort();
+        },
+        { timeout: 90_000 },
+      )
+      .toEqual(["official-th", "summary-en", "summary-th"]);
+    const { data: officialFile } = await supabase
+      .from("result_documents")
+      .select("sha256")
+      .eq("result_snapshot_id", publishedSnapshotId)
+      .eq("kind", "official")
+      .single();
+    const officialPdf = await page.request.get(
+      `${activeAppOrigin}/result-files/${publishedSnapshotId}/official-th.pdf`,
+    );
+
+    expect(officialPdf.ok()).toBe(true);
+    const officialBytes = await officialPdf.body();
+
+    expect(officialBytes.subarray(0, 5).toString()).toBe("%PDF-");
+    expect(createHash("sha256").update(officialBytes).digest("hex")).toBe(
+      officialFile!.sha256,
+    );
 
     await page.goto(
       `${activeAppOrigin}/admin/meetings?title=${encodeURIComponent(meetingTitle)}`,

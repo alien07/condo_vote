@@ -6,7 +6,7 @@ import type { Locale } from "@/lib/i18n/locales";
 //
 // Placeholders: {meetingTitle}, {link}, {projectName}.
 
-export type EmailTemplateName = "vote_invitation" | "vote_fyi" | "result_published";
+export type EmailTemplateName = "vote_invitation" | "vote_fyi" | "result_approved";
 
 type EmailContent = { subject: string; body: string };
 
@@ -35,7 +35,7 @@ const templates: Record<EmailTemplateName, Record<Locale, EmailContent>> = {
         "Dear resident of {projectName},\n\nFor your information: {meetingTitle}.\nDetails: {link}\n\n{projectName} juristic person",
     },
   },
-  result_published: {
+  result_approved: {
     th: {
       subject: "ประกาศผลการลงมติ: {meetingTitle}",
       body:

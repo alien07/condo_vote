@@ -29,9 +29,9 @@
 ## Tail V1 - Production Communication
 - Done (D019): official result record and owner summary from the approved
   snapshot, printable from the browser, with SHA-256 and a verify page.
-- Next: master PDF files generated once when results are published, kept in
-  Supabase Storage (Google Drive backup later) and used for preview,
-  download and email.
+- Done (D021): master PDF files generated once when results are published,
+  kept in Supabase Storage and downloadable. Next: attach them to result
+  emails once sending is built; Google Drive backup later.
 - Done (D020): owner language (`th`/`en`, Thai default) for owner-facing
   pages, email language, and the owner summary; admin pages stay English.
 - Send Thai/English result notification emails together.
