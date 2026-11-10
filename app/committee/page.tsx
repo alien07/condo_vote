@@ -1,4 +1,6 @@
-import { formatBangkokDateTime } from "@/lib/datetime";
+import { formatDateTimeIn } from "@/lib/i18n/format";
+import { getStaffI18n } from "@/lib/i18n/server";
+import { fill } from "@/lib/i18n/template";
 import { redirect } from "next/navigation";
 import { Gavel } from "lucide-react";
 import { requireProfileWithRoles } from "@/lib/auth/permissions";
@@ -17,8 +19,6 @@ import { ConfirmSubmitButton } from "@/features/admin/components/form-controls";
 
 // Approving can start the master PDF files (D021), which needs Chromium time.
 export const maxDuration = 60;
-
-const formatDateTime = formatBangkokDateTime;
 
 type PendingPayload = {
   totals?: {
@@ -44,24 +44,26 @@ export default async function CommitteePage() {
 
   const supabase = await createClient();
   const overview = await getCommitteeOverview(supabase);
+  const { locale, s } = await getStaffI18n();
+  const t = s.committee;
+  const formatDateTime = (value: string) => formatDateTimeIn(locale, value);
 
   return (
     <main className="mx-auto max-w-5xl px-6 py-8">
       <div className="mb-6 flex items-start gap-3 border-b border-[var(--border)] pb-5">
         <Gavel className="mt-1 shrink-0 text-[var(--primary)]" size={26} />
         <div>
-          <h1 className="text-2xl font-semibold">Committee</h1>
+          <h1 className="text-2xl font-semibold">{t.title}</h1>
           <p className="text-sm text-[var(--muted)]">
-            Approve closing voting early and approve results. Each meeting sets
-            how many approvals are needed.
+            {t.intro}
           </p>
         </div>
       </div>
 
       <section className="mb-6">
-        <h2 className="text-lg font-semibold">Voting Open</h2>
+        <h2 className="text-lg font-semibold">{t.votingOpen}</h2>
         {overview.open_meetings.length === 0 ? (
-          <p className="mt-2 text-sm text-[var(--muted)]">No meeting is open for voting.</p>
+          <p className="mt-2 text-sm text-[var(--muted)]">{t.noOpen}</p>
         ) : (
           <div className="mt-3 grid gap-3">
             {overview.open_meetings.map((meeting) => (
@@ -73,22 +75,28 @@ export default async function CommitteePage() {
                 <div>
                   <div className="font-medium">{meeting.title}</div>
                   <div className="text-sm text-[var(--muted)]">
-                    Closes automatically {formatDateTime(meeting.ends_at)} · Close
-                    approvals {meeting.close_approvals} of {meeting.required_approvals}
+                    {fill(t.closesAuto, {
+                      time: formatDateTime(meeting.ends_at),
+                      count: meeting.close_approvals,
+                      required: meeting.required_approvals,
+                    })}
                   </div>
                 </div>
                 {meeting.approved_by_me ? (
-                  <span className="text-sm text-[var(--muted)]">You approved closing</span>
+                  <span className="text-sm text-[var(--muted)]">{t.youApprovedClosing}</span>
                 ) : (
                   <form action={approveCloseVotingAsCommittee}>
                     <input name="meeting_id" type="hidden" value={meeting.id} />
                     <ConfirmSubmitButton
                       className="min-h-11 rounded-md border border-[var(--border)] px-3 py-2 text-sm font-medium"
-                      confirmMessage={`Approve closing voting for "${meeting.title}" now? Voting ends when ${meeting.required_approvals} committee approval(s) are recorded. This cannot be undone.`}
-                      pendingLabel="Saving..."
+                      confirmMessage={fill(t.confirmClose, {
+                        title: meeting.title,
+                        required: meeting.required_approvals,
+                      })}
+                      pendingLabel={t.saving}
                       type="submit"
                     >
-                      Approve closing voting
+                      {t.approveClose}
                     </ConfirmSubmitButton>
                   </form>
                 )}
@@ -99,9 +107,9 @@ export default async function CommitteePage() {
       </section>
 
       <section>
-        <h2 className="text-lg font-semibold">Results Awaiting Approval</h2>
+        <h2 className="text-lg font-semibold">{t.awaiting}</h2>
         {overview.pending_results.length === 0 ? (
-          <p className="mt-2 text-sm text-[var(--muted)]">No result is waiting for approval.</p>
+          <p className="mt-2 text-sm text-[var(--muted)]">{t.noPending}</p>
         ) : (
           <div className="mt-3 grid gap-4">
             {overview.pending_results.map((result) => {
@@ -116,24 +124,29 @@ export default async function CommitteePage() {
                   {/* Read the result first, then approve (details above the form). */}
                   <h3 className="font-semibold">{result.title}</h3>
                   <p className="text-sm text-[var(--muted)]">
-                    Generated {formatDateTime(result.generated_at)} · Approvals{" "}
-                    {result.approvals} of {result.required_approvals}
+                    {fill(t.generated, {
+                      time: formatDateTime(result.generated_at),
+                      count: result.approvals,
+                      required: result.required_approvals,
+                    })}
                   </p>
                   {payload.totals?.submitted_ballots !== undefined ? (
                     <p className="mt-1 text-sm">
-                      Ballots counted: {payload.totals.submitted_ballots} of{" "}
-                      {payload.totals.eligible_voters ?? 0} eligible rooms
+                      {fill(t.ballotsCounted, {
+                        count: payload.totals.submitted_ballots,
+                        eligible: payload.totals.eligible_voters ?? 0,
+                      })}
                     </p>
                   ) : null}
                   {payload.totals?.quorum?.label ? (
                     <p className="text-sm">
-                      Quorum: {payload.totals.quorum.label}:{" "}
+                      {t.quorum}: {payload.totals.quorum.label}:{" "}
                       <span className="font-medium">
                         {payload.totals.quorum.met === null
-                          ? "not evaluated"
+                          ? t.notEvaluated
                           : payload.totals.quorum.met
-                            ? "met"
-                            : "not met"}
+                            ? t.met
+                            : t.notMet}
                       </span>
                     </p>
                   ) : null}
@@ -145,23 +158,25 @@ export default async function CommitteePage() {
                           key={`${result.snapshot_id}-${index}`}
                         >
                           <div className="font-medium">
-                            {question.agenda_no ? `Agenda ${question.agenda_no}` : `Item ${index + 1}`}
+                            {question.agenda_no
+                              ? fill(t.agenda, { no: question.agenda_no })
+                              : fill(t.item, { no: index + 1 })}
                             {" · "}
                             {question.agenda_title ?? question.text ?? "-"}
                           </div>
-                          <QuestionOutcomeLine question={question} />
-                          <ChoiceResultsTable choices={question.choices} />
+                          <QuestionOutcomeLine locale={locale} question={question} />
+                          <ChoiceResultsTable choices={question.choices} locale={locale} />
                         </div>
                       ))
                     ) : (
                       <p className="text-sm text-[var(--muted)]">
-                        This result has no agenda items.
+                        {t.noItems}
                       </p>
                     )}
                   </div>
                   <div className="mt-4 border-t border-[var(--border)] pt-4">
                     {result.approved_by_me ? (
-                      <p className="text-sm text-[var(--muted)]">You approved this result.</p>
+                      <p className="text-sm text-[var(--muted)]">{t.youApprovedResult}</p>
                     ) : (
                       <form
                         action={approveResultAsCommittee}
@@ -169,7 +184,7 @@ export default async function CommitteePage() {
                       >
                         <input name="result_snapshot_id" type="hidden" value={result.snapshot_id} />
                         <label className="grid gap-1 text-sm font-medium">
-                          Approval notes (optional)
+                          {t.notes}
                           <input
                             className="min-h-11 rounded-md border border-[var(--border)] px-3 py-2 text-sm font-normal"
                             name="notes"
@@ -177,11 +192,14 @@ export default async function CommitteePage() {
                         </label>
                         <ConfirmSubmitButton
                           className="min-h-11 rounded-md bg-[var(--primary)] px-3 py-2 text-sm font-medium text-[var(--primary-foreground)]"
-                          confirmMessage={`Approve the result of "${result.title}"? The result is published when ${result.required_approvals} committee approval(s) are recorded. This cannot be undone.`}
-                          pendingLabel="Approving..."
+                          confirmMessage={fill(t.confirmApprove, {
+                            title: result.title,
+                            required: result.required_approvals,
+                          })}
+                          pendingLabel={t.approving}
                           type="submit"
                         >
-                          Approve result
+                          {t.approveResult}
                         </ConfirmSubmitButton>
                       </form>
                     )}

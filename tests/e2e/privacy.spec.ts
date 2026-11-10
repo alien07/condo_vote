@@ -180,7 +180,8 @@ test.describe("@test:e2e @test:auth @test:privacy privacy and system settings", 
       page.getByRole("button", { name: "Save document storage config" }),
     ).toHaveCount(0);
 
-    await page.context().clearCookies();
+    // Sign out by clearing the session; keep the English test language.
+    await page.context().clearCookies({ name: /^(?!lang$)/ });
     await signInByGeneratedLink(page, supabase, systemAdmin.email);
     await page.goto("/system");
     await expect(

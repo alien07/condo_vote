@@ -1,0 +1,66 @@
+// System page (D016): privacy notice, retention, document storage.
+const en = {
+  title: "System",
+  intro: "Technical settings. Meeting admins can view but not change these.",
+  privacyTitle: "Privacy and PDPA",
+  privacyMissing: "Privacy settings are missing.",
+  storageTitle: "Document Storage",
+  emailTitle: "Email",
+  emailText:
+    "Email delivery uses Google SMTP. Its account and app password belong in the hosting environment variables, never in the database.",
+  consentRequired: "Ask every user to accept the privacy notice before using the app",
+  noticeTh: "Privacy notice in Thai (version {version})",
+  noticeHelp: "Changing the text starts a new version. Everyone accepts it again at their next visit.",
+  noticeEn: "Privacy notice in English (optional)",
+  noticeEnHelp: "Shown to owners who chose English. Leave empty to show the Thai notice.",
+  keepVotes: "Keep vote records (months)",
+  keepProfiles: "Keep inactive profiles (months)",
+  savePrivacy: "Save privacy settings",
+  storageProvider: "Document storage provider",
+  localDrive: "Local drive",
+  googleDrive: "Google Drive",
+  storageRoot: "Root path or private folder link",
+  storageRootPlaceholder: "/secure/condovotes or private Drive folder URL",
+  saveStorage: "Save document storage config",
+  messages: {
+    onlySystemAdmin: "Only a system admin can change privacy settings.",
+    noticeRequired: "Thai privacy notice is required.",
+    voteRetention: "Vote record retention must be a whole number of months from 12 to 600.",
+    profileRetention: "Profile retention must be a whole number of months from 1 to 600.",
+    saved: "Privacy settings saved (notice version {version}).",
+  },
+};
+
+const th: typeof en = {
+  title: "ระบบ",
+  intro: "การตั้งค่าทางเทคนิค ผู้ดูแลการประชุมดูได้แต่แก้ไขไม่ได้",
+  privacyTitle: "ความเป็นส่วนตัวและ PDPA",
+  privacyMissing: "ไม่พบการตั้งค่าความเป็นส่วนตัว",
+  storageTitle: "ที่เก็บเอกสาร",
+  emailTitle: "อีเมล",
+  emailText:
+    "ระบบส่งอีเมลผ่าน Google SMTP บัญชีและรหัสผ่านแอปต้องตั้งในตัวแปรของระบบ host เท่านั้น ห้ามเก็บในฐานข้อมูล",
+  consentRequired: "ให้ผู้ใช้ทุกคนยอมรับประกาศความเป็นส่วนตัวก่อนใช้งาน",
+  noticeTh: "ประกาศความเป็นส่วนตัวภาษาไทย (ฉบับที่ {version})",
+  noticeHelp: "แก้ข้อความแล้วจะเป็นฉบับใหม่ ผู้ใช้ทุกคนต้องยอมรับใหม่เมื่อเข้าใช้ครั้งถัดไป",
+  noticeEn: "ประกาศความเป็นส่วนตัวภาษาอังกฤษ (ไม่บังคับ)",
+  noticeEnHelp: "แสดงให้เจ้าของที่เลือกภาษาอังกฤษ ถ้าเว้นว่างจะแสดงฉบับภาษาไทย",
+  keepVotes: "เก็บข้อมูลการลงคะแนน (เดือน)",
+  keepProfiles: "เก็บผู้ใช้ที่ไม่ได้ใช้งาน (เดือน)",
+  savePrivacy: "บันทึกการตั้งค่าความเป็นส่วนตัว",
+  storageProvider: "ที่เก็บเอกสาร",
+  localDrive: "ไดรฟ์ในเครื่อง",
+  googleDrive: "Google Drive",
+  storageRoot: "โฟลเดอร์หลักหรือลิงก์โฟลเดอร์ส่วนตัว",
+  storageRootPlaceholder: "/secure/condovotes หรือลิงก์โฟลเดอร์ Drive ส่วนตัว",
+  saveStorage: "บันทึกที่เก็บเอกสาร",
+  messages: {
+    onlySystemAdmin: "เฉพาะผู้ดูแลระบบเท่านั้นที่แก้การตั้งค่าความเป็นส่วนตัวได้",
+    noticeRequired: "ต้องกรอกประกาศความเป็นส่วนตัวภาษาไทย",
+    voteRetention: "ระยะเวลาเก็บข้อมูลการลงคะแนนต้องเป็นจำนวนเดือนเต็ม 12 ถึง 600",
+    profileRetention: "ระยะเวลาเก็บผู้ใช้ต้องเป็นจำนวนเดือนเต็ม 1 ถึง 600",
+    saved: "บันทึกการตั้งค่าความเป็นส่วนตัวแล้ว (ประกาศฉบับที่ {version})",
+  },
+};
+
+export const systemText = { en, th };
