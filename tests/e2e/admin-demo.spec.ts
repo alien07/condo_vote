@@ -3224,12 +3224,12 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
     await expect(page.getByText(meetingTitle).first()).toBeVisible();
     await expect(page.getByText(hashed!.payload_sha256!).first()).toBeVisible();
 
-    // The verify page shows the same hash for a snapshot.
+    // The verify page (English here, D020) opens for a snapshot.
     await gotoWithRetry(page, `${appUrl}/verify/${snapshot!.id}`, {
       waitUntil: "commit",
     });
     await expect(
-      page.getByRole("heading", { name: "ตรวจสอบเอกสารผลการลงมติ" }),
+      page.getByRole("heading", { name: "Verify a result document" }),
     ).toBeVisible();
   });
 
