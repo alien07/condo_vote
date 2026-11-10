@@ -2,6 +2,9 @@
 // choice, checkboxes for multiple choice. Used by the online ballot and the
 // admin manual ballot form. The voting core service validates the answers.
 
+import { getDictionary } from "@/lib/i18n/dictionaries";
+import type { Locale } from "@/lib/i18n/locales";
+
 type BallotChoice = {
   id: string;
   choice_text: string;
@@ -19,14 +22,18 @@ type BallotQuestion = {
 export function BallotChoiceInputs({
   choices,
   disabled = false,
+  locale = "en",
   question,
   selectedChoiceIds,
 }: {
+  /** Owner's language on the online ballot; the admin form stays English. */
+  locale?: Locale;
   choices: BallotChoice[];
   disabled?: boolean;
   question: BallotQuestion;
   selectedChoiceIds: ReadonlySet<string>;
 }) {
+  const t = getDictionary(locale).vote;
   const multiple = question.question_type === "multiple_choice";
   const sortedChoices = [...choices].sort(
     (left, right) => left.display_order - right.display_order,
@@ -37,9 +44,9 @@ export function BallotChoiceInputs({
       {multiple ? (
         <p className="text-xs text-[var(--muted)]">
           {question.max_choices
-            ? `Choose up to ${question.max_choices}.`
-            : "Choose one or more."}{" "}
-          Abstain cannot be combined with other choices.
+            ? t.chooseUpTo(question.max_choices)
+            : t.chooseOneOrMore}{" "}
+          {t.abstainAlone}
         </p>
       ) : null}
       {sortedChoices.map((choice) => (

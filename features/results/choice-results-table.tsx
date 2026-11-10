@@ -1,6 +1,9 @@
 // Per-choice totals of one question from a result snapshot. Used on the
 // Summary page and on the Committee page, so both read the same way.
 
+import { getDictionary } from "@/lib/i18n/dictionaries";
+import type { Locale } from "@/lib/i18n/locales";
+
 export type ChoiceResult = {
   id?: string;
   text?: string;
@@ -14,19 +17,22 @@ function formatPercent(value: number | undefined) {
   return `${Number(value ?? 0).toFixed(2)}%`;
 }
 
-const LABELS = {
-  en: { empty: "No votes were recorded for this item.", choice: "Choice", rooms: "Rooms", ownership: "Of all ownership", cast: "Of votes cast" },
-  th: { empty: "ไม่มีการลงคะแนนในวาระนี้", choice: "ตัวเลือก", rooms: "ห้อง", ownership: "% ของทั้งอาคาร", cast: "% ของผู้ลงคะแนน" },
-};
 
 export function ChoiceResultsTable({
   choices,
-  lang = "en",
+  locale = "en",
 }: {
   choices?: ChoiceResult[];
-  lang?: keyof typeof LABELS;
+  locale?: Locale;
 }) {
-  const label = LABELS[lang];
+  const t = getDictionary(locale).results;
+  const label = {
+    empty: t.noVotes,
+    choice: t.choice,
+    rooms: t.rooms,
+    ownership: t.shareOfAll,
+    cast: t.shareOfCast,
+  };
 
   if (!choices || choices.length === 0) {
     return <p className="mt-2 text-sm text-[var(--muted)]">{label.empty}</p>;

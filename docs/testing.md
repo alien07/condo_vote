@@ -172,6 +172,10 @@ CI (`.github/workflows/ci.yml`) starts local Supabase on `ubuntu-24.04` and
 runs a smoke test of the changed domains; `scripts/select-e2e-specs.mjs`
 picks the spec files. Changes to shared code run the full suite.
 
+Language (D020): owner pages default to Thai, but `playwright.config.ts`
+gives every test an English `lang` cookie, so specs read English copy.
+`language.spec.ts` clears it to test the Thai default and the switcher.
+
 Test tags:
 - `@full`: long end-to-end flows, for example the admin lifecycle in
   `admin-demo.spec.ts` "demo admin can sign in and manage master data".

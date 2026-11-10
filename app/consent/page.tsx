@@ -6,6 +6,8 @@ import { getPrivacySettings, needsPrivacyConsent } from "@/features/privacy/serv
 import { PendingSubmitButton } from "@/features/debug/tracked-submit-button";
 import { requireProfile } from "@/lib/auth/permissions";
 import { createClient } from "@/lib/supabase/server";
+import { LanguageSwitcher } from "@/features/i18n/language-switcher";
+import { getI18n } from "@/lib/i18n/server";
 
 type ConsentPageProps = {
   searchParams: Promise<{ changed?: string }>;
@@ -22,26 +24,33 @@ export default async function ConsentPage({ searchParams }: ConsentPageProps) {
   }
 
   const settings = await getPrivacySettings(supabase);
+  const { locale, t: dict } = await getI18n();
+  const t = dict.consent;
+  // Thai is the notice of record; English falls back to it when empty.
+  const noticeText =
+    locale === "en" && settings?.notice_text_en ? settings.notice_text_en : settings?.notice_text;
 
   return (
-    <main className="flex min-h-screen items-center justify-center px-6 py-10">
+    <main className="flex min-h-screen items-center justify-center px-6 py-10" lang={locale}>
       <section className="w-full max-w-2xl rounded-lg border border-[var(--border)] bg-[var(--surface)] p-6">
-        <ShieldCheck className="mb-4 text-[var(--primary)]" size={24} />
-        <h1 className="text-xl font-semibold">Privacy Notice</h1>
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <ShieldCheck className="text-[var(--primary)]" size={24} />
+          <LanguageSwitcher locale={locale} />
+        </div>
+        <h1 className="text-xl font-semibold">{t.title}</h1>
         <p className="mt-1 text-sm text-[var(--muted)]">
-          Please read and accept before using the voting system. Version{" "}
-          {settings?.notice_version ?? 1}.
+          {t.intro(settings?.notice_version ?? 1)}
         </p>
         {params.changed ? (
           <p
             className="mt-4 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-medium text-amber-900"
             role="alert"
           >
-            The privacy notice was updated. Please read the new version.
+            {t.changed}
           </p>
         ) : null}
         <div className="mt-4 max-h-[50vh] overflow-y-auto whitespace-pre-wrap rounded-md border border-[var(--border)] bg-[var(--background)] p-4 text-sm leading-6">
-          {settings?.notice_text}
+          {noticeText}
         </div>
         <div className="mt-5 flex flex-col gap-2 sm:flex-row">
           <form action={acceptPrivacyNotice}>
@@ -52,10 +61,10 @@ export default async function ConsentPage({ searchParams }: ConsentPageProps) {
             />
             <PendingSubmitButton
               className="inline-flex min-h-10 w-full items-center justify-center rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)] sm:w-auto"
-              pendingLabel="Saving..."
+              pendingLabel={t.saving}
               type="submit"
             >
-              I accept
+              {t.accept}
             </PendingSubmitButton>
           </form>
           <form action={signOut}>
@@ -63,7 +72,7 @@ export default async function ConsentPage({ searchParams }: ConsentPageProps) {
               className="inline-flex min-h-10 w-full items-center justify-center rounded-md border border-[var(--border)] px-4 py-2 text-sm font-medium sm:w-auto"
               type="submit"
             >
-              Decline and sign out
+              {t.decline}
             </button>
           </form>
         </div>

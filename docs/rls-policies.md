@@ -88,6 +88,12 @@ can also read `committee_approvals`, so the official record can list them.
 `submit_ballot` accepts ballots in the advance window or the meeting-day
 window. Database tests: `supabase/tests/result_documents.test.sql`.
 
+## Owner Language (D020)
+Migration 0027 adds `set_preferred_language(language)`, a security definer
+function that changes only the caller's own profile. Admins change any
+profile's language through the existing admin update policy.
+Database tests: `supabase/tests/owner_language.test.sql`.
+
 ## Still Needed
 - `approval_requests` has no policies yet.
 - Provider-specific file access policies after direct upload adapters are selected.

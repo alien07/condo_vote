@@ -942,6 +942,13 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
     await expect(page.getByText(`ผล: มีมติ: ${updatedChoiceText}`)).toBeVisible();
     await expect(page.getByText(publishedHash).first()).toBeVisible();
 
+    // The owner summary in Thai (D020); other specs browse in English.
+    const setLanguageCookie = (value: "th" | "en") =>
+      page.context().addCookies([
+        { name: "lang", value, url: activeAppOrigin },
+      ]);
+
+    await setLanguageCookie("th");
     await gotoWithRetry(page, `${activeAppOrigin}/summary/${persistedMeetingId}`, {
       waitUntil: "commit",
     });
@@ -955,6 +962,7 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
     await page.getByRole("link", { name: "ตรวจสอบเลขอ้างอิงนี้" }).click();
     await expect(page).toHaveURL(new RegExp(`/verify/${publishedSnapshotId}$`));
     await expect(page.getByText(publishedHash)).toBeVisible();
+    await setLanguageCookie("en");
 
     await page.goto(
       `${activeAppOrigin}/admin/meetings?title=${encodeURIComponent(meetingTitle)}`,
@@ -3345,6 +3353,11 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
       .toBeVisible();
     await expect(
       detailDrawer.getByText("SMTP mock failure for rollout test"),
+    ).toBeVisible();
+    // No profile for this recipient, so the email is Thai (D020).
+    await expect(detailDrawer.getByText("Thai", { exact: true })).toBeVisible();
+    await expect(
+      detailDrawer.getByText("แจ้งการประชุม: {meetingTitle}"),
     ).toBeVisible();
 
     await gotoWithRetry(

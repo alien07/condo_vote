@@ -5,6 +5,8 @@ type SupabaseServerClient = Awaited<ReturnType<typeof createClient>>;
 export type PrivacySettings = {
   consent_required: boolean;
   notice_text: string;
+  /** English notice; empty means the Thai notice is shown (D020). */
+  notice_text_en: string | null;
   notice_version: number;
   retention_months_inactive_profiles: number;
   retention_months_vote_records: number;
@@ -18,7 +20,7 @@ export async function getPrivacySettings(
   const { data, error } = await supabase
     .from("privacy_settings")
     .select(
-      "consent_required, notice_text, notice_version, retention_months_inactive_profiles, retention_months_vote_records, updated_at",
+      "consent_required, notice_text, notice_text_en, notice_version, retention_months_inactive_profiles, retention_months_vote_records, updated_at",
     )
     .maybeSingle();
 

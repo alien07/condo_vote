@@ -1,16 +1,23 @@
 import clsx from "clsx";
 import type { VotingWindowStatus } from "@/features/voting/status";
+import { getDictionary } from "@/lib/i18n/dictionaries";
+import type { Locale } from "@/lib/i18n/locales";
 
 type VotingStatusBadgeProps = {
   status: VotingWindowStatus;
   submittedVersion?: number | null;
+  locale: Locale;
 };
 
 export function VotingStatusBadge({
   status,
   submittedVersion,
+  locale,
 }: VotingStatusBadgeProps) {
-  const label = submittedVersion ? `Submitted v${submittedVersion}` : status.label;
+  const t = getDictionary(locale).vote;
+  const label = submittedVersion
+    ? t.submittedVersion(submittedVersion)
+    : t.status[status.label];
   const tone = submittedVersion
     ? status.canSubmit
       ? "submittedOpen"

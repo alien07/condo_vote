@@ -4,7 +4,7 @@ import {
 } from "@/features/voting/components/ballot-choice-inputs";
 import { notFound } from "next/navigation";
 import { Vote } from "lucide-react";
-import { RequiredMark, RequiredNote } from "@/features/admin/components/field-label";
+import { RequiredMark } from "@/features/admin/components/field-label";
 import { PendingSubmitButton } from "@/features/debug/tracked-submit-button";
 import { submitBallot } from "@/features/voting/actions";
 import { BallotForm } from "@/features/voting/components/ballot-form";
@@ -16,6 +16,7 @@ import {
 import { getVotingAssignmentData } from "@/features/voting/data";
 import { VotingStatusBadge } from "@/features/voting/status-badge";
 import { getVotingWindowStatus } from "@/features/voting/status";
+import { getI18n } from "@/lib/i18n/server";
 
 type VoteDetailPageProps = {
   params: Promise<{
@@ -59,6 +60,8 @@ export default async function VoteDetailPage({ params }: VoteDetailPageProps) {
     notFound();
   }
 
+  const { locale, t: dict } = await getI18n();
+  const t = dict.vote;
   const meeting = eligible.meetings;
   const room = eligible.rooms;
   const answerByQuestion = selectedChoicesByQuestion(ballot?.ballot_answers);
@@ -82,18 +85,19 @@ export default async function VoteDetailPage({ params }: VoteDetailPageProps) {
           <Vote className="mt-1 shrink-0 text-[var(--primary)]" size={26} />
           <div>
             <h1 className="text-2xl font-semibold">
-              {meeting?.title ?? "Vote"}
+              {meeting?.title ?? t.title}
             </h1>
             <p className="text-sm text-[var(--muted)]">
               {describeVoterRoom(
                 room?.room_number,
                 eligible.voter_type,
                 eligible.ownership_percent,
+                locale,
               )}
             </p>
             {meeting?.ballot_secrecy === "secret" ? (
               <p className="mt-1 text-sm font-medium">
-                Secret ballot: admins see totals only, not your answers.
+                {t.secretBallot}
               </p>
             ) : null}
           </div>
@@ -104,12 +108,13 @@ export default async function VoteDetailPage({ params }: VoteDetailPageProps) {
             <div>
               {meeting ? (
                 <p className="text-sm font-medium">
-                  {describeVotingWindow(meeting, votingStatus)}
+                  {describeVotingWindow(meeting, votingStatus, locale)}
                 </p>
               ) : null}
             </div>
             <div className="flex flex-col items-start gap-2 text-sm text-[var(--muted)] md:items-end">
               <VotingStatusBadge
+                locale={locale}
                 status={votingStatus}
                 submittedVersion={
                   ballot?.status === "submitted" ? ballot.version_number : null
@@ -117,22 +122,24 @@ export default async function VoteDetailPage({ params }: VoteDetailPageProps) {
               />
               {ballot?.status === "submitted" ? (
                 <div>
-                  {votingStatus.canSubmit ? "Open for edits" : votingStatus.label}
+                  {votingStatus.canSubmit
+                    ? t.openForEdits
+                    : t.status[votingStatus.label]}
                 </div>
               ) : null}
               {ballot?.submitted_at ? (
-                <div>Submitted {formatVoterDateTime(ballot.submitted_at)}</div>
+                <div>{t.submittedAt(formatVoterDateTime(ballot.submitted_at, locale))}</div>
               ) : null}
             </div>
           </div>
 
           {questions.length === 0 ? (
             <p className="mt-4 text-sm text-[var(--muted)]">
-              No voting questions are configured for this meeting.
+              {t.noQuestions}
             </p>
           ) : (
             <BallotForm action={submitBallot} className="mt-4 grid gap-5">
-              <RequiredNote />
+              <p className="text-xs text-[var(--muted)]">{t.requiredNote}</p>
               <input name="meeting_id" type="hidden" value={eligible.meeting_id} />
               <input name="room_id" type="hidden" value={eligible.room_id} />
               {questions.map((question) => (
@@ -148,7 +155,7 @@ export default async function VoteDetailPage({ params }: VoteDetailPageProps) {
                     {question.agenda_no || question.agenda_title ? (
                       <span className="block text-xs font-medium text-[var(--muted)]">
                         {[
-                          question.agenda_no ? `Agenda ${question.agenda_no}` : null,
+                          question.agenda_no ? t.agenda(question.agenda_no) : null,
                           question.agenda_title,
                         ]
                           .filter(Boolean)
@@ -172,12 +179,13 @@ export default async function VoteDetailPage({ params }: VoteDetailPageProps) {
                     id={`question-error-${question.id}`}
                     role="alert"
                   >
-                    Choose an answer for this question.
+                    {t.chooseAnswer}
                   </p>
                   <div className="clear-both" />
                   <BallotChoiceInputs
                     choices={question.meeting_choices}
                     disabled={!votingStatus.canSubmit}
+                    locale={locale}
                     question={question}
                     selectedChoiceIds={
                       answerByQuestion.get(question.id) ?? new Set<string>()
@@ -186,16 +194,15 @@ export default async function VoteDetailPage({ params }: VoteDetailPageProps) {
                 </fieldset>
               ))}
               <p className="text-sm text-[var(--muted)]">
-                You can change your ballot until voting closes. The last ballot
-                you submit is the one that counts.
+                {t.canChange}
               </p>
               <PendingSubmitButton
                 className="min-h-11 rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)] disabled:cursor-not-allowed disabled:opacity-50"
                 disabled={!votingStatus.canSubmit}
-                pendingLabel="Submitting..."
+                pendingLabel={t.submitting}
                 type="submit"
               >
-                {ballot ? "Update ballot" : "Submit ballot"}
+                {ballot ? t.update : t.submit}
               </PendingSubmitButton>
             </BallotForm>
           )}
@@ -203,9 +210,9 @@ export default async function VoteDetailPage({ params }: VoteDetailPageProps) {
 
         {ballotVersions.length > 0 ? (
           <section className="mt-5 rounded-lg border border-[var(--border)] bg-[var(--surface)] p-5">
-            <h2 className="text-lg font-semibold">Version history</h2>
+            <h2 className="text-lg font-semibold">{t.historyTitle}</h2>
             <p className="mt-1 text-sm text-[var(--muted)]">
-              Each submit or edit creates an immutable ballot version for audit.
+              {t.historyText}
             </p>
             <div className="mt-4 grid gap-3">
               {ballotVersions.map((version) => {
@@ -218,10 +225,10 @@ export default async function VoteDetailPage({ params }: VoteDetailPageProps) {
                   >
                     <div className="flex flex-col gap-1 md:flex-row md:items-center md:justify-between">
                       <h3 className="font-semibold">
-                        Version v{version.version_number}
+                        {t.version(version.version_number)}
                       </h3>
                       <div className="text-sm text-[var(--muted)]">
-                        {formatVoterDateTime(version.created_at)}
+                        {formatVoterDateTime(version.created_at, locale)}
                       </div>
                     </div>
                     {answers.length > 0 ? (
@@ -233,17 +240,17 @@ export default async function VoteDetailPage({ params }: VoteDetailPageProps) {
                           >
                             <dt className="text-[var(--muted)]">
                               {questionTextById.get(answer.question_id) ??
-                                "Question"}
+                                t.question}
                             </dt>
                             <dd className="font-medium">
-                              {choiceTextById.get(answer.choice_id) ?? "Choice"}
+                              {choiceTextById.get(answer.choice_id) ?? t.choice}
                             </dd>
                           </div>
                         ))}
                       </dl>
                     ) : (
                       <p className="mt-3 text-sm text-[var(--muted)]">
-                        No answers were captured for this version.
+                        {t.noAnswers}
                       </p>
                     )}
                   </article>

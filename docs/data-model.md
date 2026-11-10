@@ -114,7 +114,7 @@ Notes: Date fields drive Active/Scheduled/Ended display state; `status=cancelled
 
 ### profiles
 Purpose: Stores app-level user data linked to Supabase Auth.
-Key fields: auth user ID, full name, email, phone, LINE ID, default status, approval status.
+Key fields: auth user ID, full name, email, phone, LINE ID, default status, approval status, preferred language (`th` default or `en`, D020).
 Notes: A profile is not automatically eligible to vote. Eligibility must come from approval and meeting snapshot.
 
 ### app_roles
@@ -220,7 +220,7 @@ Notes: V1 supports `local_drive` and `google_drive` as registry providers. Store
 
 ### privacy_settings
 Purpose: PDPA privacy notice and retention periods (D016).
-Key fields: consent required flag, notice text, notice version, vote record retention (months), inactive profile retention (months), updated by/at.
+Key fields: consent required flag, notice text (Thai), English notice text (optional, D020), notice version, vote record retention (months), inactive profile retention (months), updated by/at.
 Notes: One row. Only `system_admin` can update. Changing the notice text increases the version, so every user accepts again. Retention periods are recorded settings; deletion runs as a manual maintenance task in V1. Local and CI seed set `consent_required = false`.
 
 ### profile_consents
@@ -235,7 +235,7 @@ Notes: Admin can inspect the latest audit entries. Ballot versions remain the de
 
 ### email_logs
 Purpose: Stores email send attempts for audit and troubleshooting.
-Key fields: recipient email, template key, delivery status, provider message ID, sent timestamp, error message.
+Key fields: recipient email, template key, language (recipient's, D020), delivery status, provider message ID, sent timestamp, error message.
 Notes: Used for invitations, reminders, and result notifications.
 
 ## Important Constraints

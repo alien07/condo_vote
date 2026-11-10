@@ -59,7 +59,11 @@ function parseMessage(value: string | null) {
   return text.length > 180 ? `${text.slice(0, 177)}...` : text;
 }
 
-export function AppFeedbackBanner() {
+export function AppFeedbackBanner({
+  dismissLabel = "Dismiss message",
+}: {
+  dismissLabel?: string;
+}) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const tone = parseTone(searchParams.get("feedback"));
@@ -117,7 +121,7 @@ export function AppFeedbackBanner() {
         <Icon aria-hidden="true" className="mt-0.5 shrink-0" size={18} />
         <p className="min-w-0 flex-1">{message}</p>
         <button
-          aria-label="Dismiss message"
+          aria-label={dismissLabel}
           className="shrink-0 rounded p-1 hover:bg-black/5"
           onClick={() => {
             setDismissedKey(bannerKey);

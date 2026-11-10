@@ -4,9 +4,12 @@ import { getVotingDashboardData } from "@/features/voting/data";
 import { describeVoterRoom, describeVotingWindow } from "@/features/voting/display";
 import { VotingStatusBadge } from "@/features/voting/status-badge";
 import { getVotingWindowStatus } from "@/features/voting/status";
+import { getI18n } from "@/lib/i18n/server";
 
 export default async function VotePage() {
   const { eligibleRows, ballotsByMeetingRoom } = await getVotingDashboardData();
+  const { locale, t: dict } = await getI18n();
+  const t = dict.vote;
 
   return (
     <main className="min-h-screen px-6 py-8">
@@ -14,26 +17,24 @@ export default async function VotePage() {
         <div className="mb-6 flex items-center gap-3">
           <Vote className="text-[var(--primary)]" size={26} />
           <div>
-            <h1 className="text-2xl font-semibold">Vote</h1>
+            <h1 className="text-2xl font-semibold">{t.title}</h1>
             <p className="text-sm text-[var(--muted)]">
-              Select an eligible meeting and room to submit or edit a ballot.
+              {t.intro}
             </p>
           </div>
         </div>
 
         {eligibleRows.length === 0 ? (
           <section className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-5 text-sm">
-            <h2 className="font-semibold">No eligible voting assignments</h2>
+            <h2 className="font-semibold">{t.emptyTitle}</h2>
             <p className="mt-1 text-[var(--muted)]">
-              Your profile is signed in, but no published owner/proxy voting
-              assignment is available yet. Check Summary for approved results or
-              contact the admin if you expect voting access.
+              {t.emptyText}
             </p>
             <Link
               className="mt-4 inline-flex min-h-11 items-center justify-center rounded-md border border-[var(--border)] px-4 py-2 font-medium"
               href="/summary"
             >
-              Open summary
+              {t.openSummary}
             </Link>
           </section>
         ) : (
@@ -55,23 +56,25 @@ export default async function VotePage() {
                   <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                     <div>
                       <h2 className="text-lg font-semibold">
-                        {meeting?.title ?? "Meeting"}
+                        {meeting?.title ?? t.meeting}
                       </h2>
                       <p className="mt-1 text-sm text-[var(--muted)]">
                         {describeVoterRoom(
                           room?.room_number,
                           eligible.voter_type,
                           eligible.ownership_percent,
+                          locale,
                         )}
                       </p>
                       {meeting ? (
                         <p className="mt-1 text-sm font-medium">
-                          {describeVotingWindow(meeting, votingStatus)}
+                          {describeVotingWindow(meeting, votingStatus, locale)}
                         </p>
                       ) : null}
                     </div>
                     <div className="flex flex-col items-start gap-2 md:items-end">
                       <VotingStatusBadge
+                        locale={locale}
                         status={votingStatus}
                         submittedVersion={
                           ballot?.status === "submitted"
@@ -82,15 +85,15 @@ export default async function VotePage() {
                       {ballot?.status === "submitted" ? (
                         <div className="text-sm text-[var(--muted)]">
                           {votingStatus.canSubmit
-                            ? "Open for edits"
-                            : votingStatus.label}
+                            ? t.openForEdits
+                            : t.status[votingStatus.label]}
                         </div>
                       ) : null}
                       <Link
                         className="inline-flex min-h-11 items-center justify-center rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)]"
                         href={href}
                       >
-                        Open ballot
+                        {t.openBallot}
                       </Link>
                     </div>
                   </div>

@@ -28,7 +28,7 @@ export async function fetchPeopleData(supabase: SupabaseServerClient) {
       supabase
         .from("profiles")
         .select(
-          "id, full_name, email, default_status, approval_status, created_at",
+          "id, full_name, email, default_status, approval_status, preferred_language, created_at",
         )
         .order("created_at", { ascending: false }),
     ]);

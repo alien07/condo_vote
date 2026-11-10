@@ -4,6 +4,11 @@ This document covers email events, notification ordering, retries, and PDF resul
 
 ## Email Events
 
+Every email goes out in the recipient's language (D020): the profile's
+`preferred_language`, or Thai when the recipient has no profile. The queue
+stores it in `email_logs.language`. Thai and English text is in
+`features/email/templates.ts`; admin-editable templates are planned for V2.
+
 ### Invitation
 Trigger: meeting is published and eligible voters are ready.
 Recipients: eligible owners and approved proxies for the meeting.
