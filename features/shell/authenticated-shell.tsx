@@ -29,7 +29,7 @@ export async function AuthenticatedShell({ children }: AuthenticatedShellProps) 
     <>
       {/* Sticky only from tablet up: on phones a sticky header covered a
           third of the screen and hid questions the browser scrolled to. */}
-      <header className="z-30 border-b border-[var(--border)] bg-[var(--background)] md:sticky md:top-0">
+      <header className="z-30 border-b border-[var(--border)] bg-[var(--background)] md:sticky md:top-0 print:hidden">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 md:px-6">
           <div className="flex min-w-0 items-center gap-3">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-[var(--primary)] text-[var(--primary-foreground)]">
@@ -70,7 +70,9 @@ export async function AuthenticatedShell({ children }: AuthenticatedShellProps) 
           isSystemAdmin={roles.includes("system_admin")}
         />
       </header>
-      <AppFeedbackBanner />
+      <div className="print:hidden">
+        <AppFeedbackBanner />
+      </div>
       {children}
     </>
   );

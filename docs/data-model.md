@@ -59,6 +59,7 @@ erDiagram
 | [approval_requests](#approval_requests) | Tracks user requests to become an approved owner, resident, or proxy voter. |
 | [proxy_authorizations](#proxy_authorizations) | Meeting-specific proxy permissions allowing a non-owner to vote for a room. |
 | [meetings](#meetings) | Voting event or condominium meeting configuration. |
+| [meeting_incidents](#meeting_incidents) | Problems during voting and what was done, for the official record. |
 | [meeting_questions](#meeting_questions) | Questions shown inside a meeting vote/survey. |
 | [meeting_choices](#meeting_choices) | Choices available for each meeting question. |
 | [eligible_voters_snapshot](#eligible_voters_snapshot) | Frozen voter eligibility list for a meeting. Used to make result calculation auditable. |
@@ -94,6 +95,7 @@ Notes: Source of truth for one-room-one-vote and ownership-weighted result calcu
 Purpose: Stores the juristic-person/project identity printed on formal documents.
 Key fields: juristic name, project name, registration number, tax ID, address, contact channels, manager name, document footer.
 Notes: Keep this separate from app config because it is legal/business data, not application branding.
+Record settings (D019): `record_signatories` (chairperson, manager, minutes_taker, committee_member; 1 to 4) and `result_notice_days` (1 to 90, optional).
 
 ### committee_members
 Purpose: Stores actual committee member names and positions.
@@ -134,6 +136,12 @@ Notes: Proxy voting is scoped to a meeting, not global.
 Purpose: Stores each voting event or condominium meeting.
 Key fields: title, meeting number, meeting type, fiscal year, location/platform, chairperson, quorum rule, start/end time, status.
 Notes: Voting is allowed only inside the configured window after publication. Meeting metadata is copied into result snapshots for PDF/audit use.
+Record fields (D019): optional advance voting window (`advance_starts_at`, `advance_ends_at`, must end before `starts_at`), `notice_sent_at`, `meeting_round` (first or reconvened), `identity_method`, `recording_reference`, `traffic_log_reference`.
+
+### meeting_incidents
+Purpose: Problems during voting (outages, delays) and what was done, for the official record (D019).
+Key fields: meeting, started/ended time, description, action taken, created by.
+Notes: Admin writes; admin and committee read. Copied into the result snapshot.
 
 ### meeting_questions
 Purpose: Stores questions configured by admin for a meeting.
@@ -183,7 +191,7 @@ Notes: Result generation should fail when an online/manual conflict exists witho
 ### result_snapshots
 Purpose: Stores generated result calculations.
 Key fields: meeting, generated timestamp, generator, result payload.
-Notes: Payload should include count, percentage against total project ownership, percentage against submitted-vote ownership, effective vote source, and conflict resolution audit. Once a snapshot is referenced by `committee_approvals`, it is immutable. New snapshots for the same meeting are blocked after approval.
+Notes: `payload_sha256` is set by trigger from the payload text and printed on both result documents (D019). Payload should include count, percentage against total project ownership, percentage against submitted-vote ownership, effective vote source, and conflict resolution audit. Once a snapshot is referenced by `committee_approvals`, it is immutable. New snapshots for the same meeting are blocked after approval.
 
 ### committee_approvals
 Purpose: Stores approval that allows result publication.

@@ -1,3 +1,4 @@
+import { getVotingWindowStatus } from "@/features/voting/status";
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import type { EmailOtpType } from "@supabase/supabase-js";
@@ -106,19 +107,18 @@ export async function GET(request: NextRequest) {
       if (voteTarget) {
         const { data: eligible } = await supabase
           .from("eligible_voters_snapshot")
-          .select("meeting_id, room_id, voter_type, meetings(status, starts_at, ends_at)")
+          .select(
+            "meeting_id, room_id, voter_type, meetings(status, starts_at, ends_at, advance_starts_at, advance_ends_at)",
+          )
           .eq("profile_id", profile.id)
           .eq("meeting_id", voteTarget.meetingId)
           .eq("room_id", voteTarget.roomId)
           .maybeSingle();
-        const meeting = eligible?.meetings;
-        const now = new Date();
+        const meeting = eligible?.meetings ?? null;
         const canVote =
           eligible &&
           (eligible.voter_type === "owner" || eligible.voter_type === "proxy") &&
-          meeting?.status === "published" &&
-          now >= new Date(meeting.starts_at) &&
-          now <= new Date(meeting.ends_at);
+          getVotingWindowStatus(meeting).canSubmit;
 
         return redirectWithCookies(
           canVote ? next : getSummaryPath(voteTarget.meetingId),

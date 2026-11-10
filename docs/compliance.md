@@ -18,6 +18,17 @@ Checklist for each meeting:
 - [ ] Store the evidence in the private document registry
   (Admin > Documents) with a SHA-256 checksum.
 - [ ] Note who kept the evidence and where, in the meeting minutes.
+- [ ] Fill in the meeting record page (notice date, round, identity method,
+  recording and log references, incidents) before generating results, so
+  the official record has them (D019).
+- [ ] Print the official record, sign it, and keep it with the snapshot ID
+  and SHA-256 it shows.
+
+Configurable while waiting for lawyer answers (D019): signatories, result
+notice period, notice date, meeting round, identity method, advance voting
+window. Still needing a lawyer: whether the Land Office accepts the printed
+record, whether a digital signature is required, and whether owners may see
+per-room results.
 
 ## Condominium Act
 - One proxy can hold at most three rooms per meeting, section 47

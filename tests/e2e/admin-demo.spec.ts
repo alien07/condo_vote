@@ -3148,6 +3148,32 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
       notes: `Approved through rollout test ${runId}`,
       result_snapshot_id: snapshot!.id,
     });
+
+    // The official record carries the snapshot reference and its SHA-256.
+    const { data: hashed, error: hashedError } = await supabase
+      .from("result_snapshots")
+      .select("payload_sha256")
+      .eq("id", snapshot!.id)
+      .single();
+
+    expect(hashedError).toBeNull();
+    expect(hashed?.payload_sha256).toMatch(/^[0-9a-f]{64}$/);
+    await gotoWithRetry(page, `${appUrl}/record/${snapshot!.id}`, {
+      waitUntil: "commit",
+    });
+    await expect(
+      page.getByRole("heading", { name: "บันทึกผลการลงมติ", level: 1 }),
+    ).toBeVisible();
+    await expect(page.getByText(meetingTitle).first()).toBeVisible();
+    await expect(page.getByText(hashed!.payload_sha256!).first()).toBeVisible();
+
+    // The verify page shows the same hash for a snapshot.
+    await gotoWithRetry(page, `${appUrl}/verify/${snapshot!.id}`, {
+      waitUntil: "commit",
+    });
+    await expect(
+      page.getByRole("heading", { name: "ตรวจสอบเอกสารผลการลงมติ" }),
+    ).toBeVisible();
   });
 
   test("communications rollout opens email log details drawer", async ({

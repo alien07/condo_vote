@@ -17,6 +17,8 @@ type MeetingRecord = {
   chairperson_name: string | null;
   description: string | null;
   ends_at: string;
+  advance_starts_at?: string | null;
+  advance_ends_at?: string | null;
   fiscal_year: string | null;
   id: string;
   location: string | null;
@@ -322,7 +324,7 @@ export function MeetingCrudDrawer({
           <FieldError fieldName="ballot_secrecy" state={state} />
         </label>
         <label className="grid gap-1 text-sm font-medium">
-          <FieldLabel required>Starts</FieldLabel>
+          <FieldLabel required>Meeting-day voting starts</FieldLabel>
           <input
             {...fieldProps("starts_at", state)}
             className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
@@ -338,7 +340,7 @@ export function MeetingCrudDrawer({
           <FieldError fieldName="starts_at" state={state} />
         </label>
         <label className="grid gap-1 text-sm font-medium">
-          <FieldLabel required>Ends</FieldLabel>
+          <FieldLabel required>Meeting-day voting ends</FieldLabel>
           <input
             {...fieldProps("ends_at", state)}
             className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
@@ -353,6 +355,47 @@ export function MeetingCrudDrawer({
           />
           <FieldError fieldName="ends_at" state={state} />
         </label>
+        <fieldset className="grid gap-3 rounded-md border border-[var(--border)] p-3">
+          <legend className="px-1 text-sm font-medium">Advance voting (optional)</legend>
+          <p className="text-xs text-[var(--muted)]">
+            Lets owners vote before the meeting day. It must end before
+            meeting-day voting starts. Leave both empty for meeting-day voting only.
+          </p>
+          <div className="grid gap-3 md:grid-cols-2">
+            <label className="grid gap-1 text-sm font-medium">
+              Advance voting starts
+              <input
+                {...fieldProps("advance_starts_at", state)}
+                className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+                defaultValue={stateValue(
+                  state,
+                  "advance_starts_at",
+                  formatDateTimeLocal(meeting?.advance_starts_at),
+                )}
+                name="advance_starts_at"
+                step={600}
+                type="datetime-local"
+              />
+              <FieldError fieldName="advance_starts_at" state={state} />
+            </label>
+            <label className="grid gap-1 text-sm font-medium">
+              Advance voting ends
+              <input
+                {...fieldProps("advance_ends_at", state)}
+                className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+                defaultValue={stateValue(
+                  state,
+                  "advance_ends_at",
+                  formatDateTimeLocal(meeting?.advance_ends_at),
+                )}
+                name="advance_ends_at"
+                step={600}
+                type="datetime-local"
+              />
+              <FieldError fieldName="advance_ends_at" state={state} />
+            </label>
+          </div>
+        </fieldset>
         <textarea
           className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
           defaultValue={stateValue(state, "description", meeting?.description)}

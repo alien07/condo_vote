@@ -44,6 +44,9 @@ These workflows define the admin-facing MVP behavior. Ask before implementing an
 - Admin chooses single or multiple choice per question (D017).
 - New questions get an "Abstain" choice by default; admin can remove it (D017).
 - Admin sets each question's pass rule: basis (voting ownership or total ownership) and percentage (D013).
+- Admin can add an optional advance voting window before meeting day. Leave it empty for one voting window (D019).
+- On `Admin > Meetings > Meeting record`, admin records the notice date, first or reconvened meeting, how attendees proved who they are, where the recording and logs are kept, and incidents during voting. Generate results again after changes; they are frozen into the snapshot.
+- On `Admin > Setup`, admin chooses who signs the official record and the result notice period.
 - Admin can preview a meeting before publication.
 - Admin can publish a meeting when the setup is complete.
 
@@ -101,6 +104,7 @@ These workflows define the admin-facing MVP behavior. Ask before implementing an
 - After committee approval, the approved result snapshot and approval record are immutable.
 - After committee approval, generating another result snapshot for the same meeting is blocked.
 - Approved results can be viewed, exported to PDF, and sent by email.
+- `Official record` on the results list opens `/record/[snapshotId]`; print it or save it as PDF from the browser, then sign and keep it (D019).
 
 ## Resolved Questions (2026-11-08)
 - Result approval: multiple committee members, minimum set by admin (D014).

@@ -153,3 +153,22 @@ Status: accepted
 V1 handles the electronic meeting decree requirements (identity check,
 meeting recording, evidence keeping) manually, outside the system. See
 [compliance.md](compliance.md).
+
+### D019 - Result Documents And Voting Phases
+Status: implemented (migration 0026)
+
+- Two documents come from one approved result snapshot:
+  - Official result record (`/record/[snapshotId]`): Thai, A4, for admin and
+    committee. It is the copy the juristic person keeps and signs.
+  - Owner summary (`/summary`): Thai, shorter, with a link to
+    `/verify/[snapshotId]`.
+- Every snapshot stores `payload_sha256`. Both documents print the snapshot
+  ID and the hash so a copy can be checked against the system.
+- Things a lawyer may answer differently are settings, not code:
+  signatories and the result notice period (condo setup), notice date,
+  meeting round, identity method, recording and log references, and
+  incidents (meeting record page).
+- A meeting can have an optional advance voting window before meeting day.
+  `submit_ballot` accepts votes in either window. Between the two windows
+  voting is closed.
+- The record shows room counts and ownership only, never per-room answers.
