@@ -54,7 +54,7 @@ export async function fetchVoteConflictRows(
     supabase
       .from("ballots")
       .select(
-        "id, meeting_id, room_id, status, submitted_at, meetings(id, title), rooms(id, room_number), ballot_answers(question_id, choice_id, meeting_questions(agenda_no, question_text), meeting_choices(choice_text))",
+        "id, meeting_id, room_id, status, submitted_at, meetings(id, title, ballot_secrecy), rooms(id, room_number), ballot_answers(question_id, choice_id, meeting_questions(agenda_no, question_text), meeting_choices(choice_text))",
       )
       .eq("status", "submitted"),
     supabase
@@ -115,6 +115,7 @@ export async function fetchVoteConflictRows(
         onlineAnswers: normalizeAnswers(
           onlineBallot.ballot_answers as VoteAnswer[],
         ),
+        onlineAnswersHidden: onlineBallot.meetings?.ballot_secrecy === "secret",
         onlineBallotId: onlineBallot.id,
         onlineSubmittedAt: onlineBallot.submitted_at,
         resolution,

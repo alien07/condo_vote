@@ -93,6 +93,11 @@ export default async function VoteDetailPage({ params }: VoteDetailPageProps) {
               Room {room?.room_number ?? "-"} / {eligible.voter_type} / ownership{" "}
               {eligible.ownership_percent}%
             </p>
+            {meeting?.ballot_secrecy === "secret" ? (
+              <p className="mt-1 text-sm font-medium">
+                Secret ballot: admins see totals only, not your answers.
+              </p>
+            ) : null}
           </div>
         </div>
 

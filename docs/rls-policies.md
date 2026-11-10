@@ -62,8 +62,16 @@ Migration 0023 adds `approve_result_snapshot`, `approve_close_voting`, and
 published. Admin and committee can read `meeting_close_approvals`.
 Database tests: `supabase/tests/committee_approvals.test.sql`.
 
+## Ballot Secrecy (D015)
+Migration 0024 lets admins read `ballots` (which rooms voted) and
+`ballot_answers` only when the meeting is an open ballot. For a secret
+ballot, admins get totals through `meeting_online_tally(meeting)` (admin
+only, security definer), which sums the online answers that count in the
+result. Voters always see their own answers. Before 0024 admins could not
+read online ballots at all, so results only counted manual votes.
+Database tests: `supabase/tests/secret_ballot.test.sql`.
+
 ## Still Needed
 - `approval_requests` has no policies yet.
 - `system_admin` role policies for technical settings (D016).
-- Secret ballot: admins see totals only (D015).
 - Provider-specific file access policies after direct upload adapters are selected.

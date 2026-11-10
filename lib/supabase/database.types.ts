@@ -896,6 +896,7 @@ export type Database = {
       }
       meetings: {
         Row: {
+          ballot_secrecy: string
           chairperson_name: string | null
           closed_at: string | null
           created_at: string
@@ -917,6 +918,7 @@ export type Database = {
           video_url: string | null
         }
         Insert: {
+          ballot_secrecy?: string
           chairperson_name?: string | null
           closed_at?: string | null
           created_at?: string
@@ -938,6 +940,7 @@ export type Database = {
           video_url?: string | null
         }
         Update: {
+          ballot_secrecy?: string
           chairperson_name?: string | null
           closed_at?: string | null
           created_at?: string
@@ -1377,6 +1380,14 @@ export type Database = {
       committee_overview: { Args: never; Returns: Json }
       current_profile_id: { Args: never; Returns: string }
       has_app_role: { Args: { required_role: string }; Returns: boolean }
+      meeting_online_tally: {
+        Args: { p_meeting_id: string }
+        Returns: {
+          choice_id: string
+          ownership: number
+          vote_count: number
+        }[]
+      }
       queue_result_approved_emails: {
         Args: { p_meeting_id: string }
         Returns: number

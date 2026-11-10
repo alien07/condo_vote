@@ -120,6 +120,7 @@ export async function generateResultSnapshot(formData: FormData) {
     ballotsResult,
     manualBallotsResult,
     voteSourceResolutionsResult,
+    onlineTallyResult,
   ] = await Promise.all([
       supabase
         .from("meetings")
@@ -141,7 +142,7 @@ export async function generateResultSnapshot(formData: FormData) {
         .eq("meeting_id", meetingId),
       supabase
         .from("ballots")
-        .select("id, room_id, status, ballot_answers(question_id, choice_id)")
+        .select("id, room_id, status")
         .eq("meeting_id", meetingId)
         .eq("status", "submitted"),
       supabase
@@ -158,6 +159,9 @@ export async function generateResultSnapshot(formData: FormData) {
           "room_id, online_ballot_id, manual_ballot_id, chosen_source, chosen_ballot_id, conflict_remark, resolved_at",
         )
         .eq("meeting_id", meetingId),
+      // Online totals are summed in the database so secret ballots (D015)
+      // never expose per-room answers to admins.
+      supabase.rpc("meeting_online_tally", { p_meeting_id: meetingId }),
     ]);
 
   if (meetingResult.error) {
@@ -182,6 +186,10 @@ export async function generateResultSnapshot(formData: FormData) {
 
   if (voteSourceResolutionsResult.error) {
     throw voteSourceResolutionsResult.error;
+  }
+
+  if (onlineTallyResult.error) {
+    throw onlineTallyResult.error;
   }
 
   const ownershipByRoom = new Map(
@@ -271,24 +279,11 @@ export async function generateResultSnapshot(formData: FormData) {
     }
   >();
 
-  for (const ballot of ballotsResult.data) {
-    if (effectiveRoomSources.get(ballot.room_id) !== "online") {
-      continue;
-    }
-
-    const ownership = ownershipByRoom.get(ballot.room_id) ?? 0;
-
-    for (const answer of ballot.ballot_answers) {
-      const current = countsByChoice.get(answer.choice_id) ?? {
-        voteCount: 0,
-        ownership: 0,
-      };
-
-      countsByChoice.set(answer.choice_id, {
-        voteCount: current.voteCount + 1,
-        ownership: current.ownership + ownership,
-      });
-    }
+  for (const row of onlineTallyResult.data ?? []) {
+    countsByChoice.set(row.choice_id, {
+      voteCount: row.vote_count,
+      ownership: toNumber(row.ownership),
+    });
   }
 
   for (const manualBallot of manualBallotsResult.data) {

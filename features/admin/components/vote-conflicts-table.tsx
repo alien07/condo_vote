@@ -27,6 +27,7 @@ export type VoteConflictRow = {
   meetingId: string;
   meetingTitle: string;
   onlineAnswers: ConflictAnswer[];
+  onlineAnswersHidden: boolean;
   onlineBallotId: string;
   onlineSubmittedAt: string;
   resolution: {
@@ -139,7 +140,8 @@ function conflictQuestionRows(conflict: VoteConflictRow) {
     const online = onlineByQuestion.get(questionId);
 
     return {
-      differs: manual?.choiceId !== online?.choiceId,
+      differs:
+        !conflict.onlineAnswersHidden && manual?.choiceId !== online?.choiceId,
       manual,
       online,
       questionId,
@@ -661,6 +663,12 @@ export function VoteConflictsTable({
                   "identity not captured"}
               </p>
             </div>
+            {selected.onlineAnswersHidden ? (
+              <p className="mb-4 rounded-md border border-[var(--border)] bg-[var(--background)] p-3 text-sm text-[var(--muted)]">
+                Secret ballot: online answers are hidden. Choose the source
+                using the ballot times and the paper record.
+              </p>
+            ) : null}
             <div className="overflow-x-auto">
               <table className="w-full min-w-[680px] border-collapse text-left text-sm">
                 <thead className="bg-[var(--background)] text-[var(--muted)]">
@@ -691,7 +699,9 @@ export function VoteConflictsTable({
                           row.differs ? "bg-red-50 font-semibold" : "",
                         ].join(" ")}
                       >
-                        {row.online?.choiceText ?? "-"}
+                        {selected.onlineAnswersHidden
+                          ? "Hidden"
+                          : (row.online?.choiceText ?? "-")}
                       </td>
                     </tr>
                   ))}

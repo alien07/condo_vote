@@ -23,6 +23,7 @@ type MeetingRecord = {
   meeting_type: string;
   quorum_rule: string;
   required_approvals?: number;
+  ballot_secrecy?: string;
   starts_at: string;
   status: string;
   title: string;
@@ -310,6 +311,27 @@ export function MeetingCrudDrawer({
             Approvals needed to publish the result or to close voting early.
           </span>
           <FieldError fieldName="required_approvals" state={state} />
+        </label>
+        <label className="grid gap-1 text-sm font-medium">
+          <FieldLabel required>Ballot</FieldLabel>
+          <select
+            {...fieldProps("ballot_secrecy", state)}
+            className="rounded-md border border-[var(--border)] px-3 py-2 text-sm disabled:bg-[var(--background)]"
+            defaultValue={stateValue(
+              state,
+              "ballot_secrecy",
+              meeting?.ballot_secrecy ?? "open",
+            )}
+            disabled={Boolean(meeting && meeting.status !== "draft")}
+            name="ballot_secrecy"
+          >
+            <option value="open">Open ballot: admins can see each room&apos;s answers</option>
+            <option value="secret">Secret ballot: admins see totals only</option>
+          </select>
+          <span className="text-xs font-normal text-[var(--muted)]">
+            Cannot change after the meeting is published.
+          </span>
+          <FieldError fieldName="ballot_secrecy" state={state} />
         </label>
         <label className="grid gap-1 text-sm font-medium">
           <FieldLabel required>Starts</FieldLabel>

@@ -121,7 +121,7 @@ Status: implemented (migration 0023, `/committee` page)
 - Store times in UTC; display in Asia/Bangkok.
 
 ### D015 - Ballot Secrecy Per Meeting
-Status: accepted, not implemented
+Status: implemented (migration 0024)
 
 Admin chooses open or secret ballot when creating a meeting. For a secret
 ballot, admins see totals only, not which room chose what.
