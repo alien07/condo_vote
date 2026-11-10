@@ -1,4 +1,3 @@
-import Link from "next/link";
 import {
   BallotChoiceInputs,
   selectedChoicesByQuestion,
@@ -8,6 +7,12 @@ import { Vote } from "lucide-react";
 import { RequiredMark, RequiredNote } from "@/features/admin/components/field-label";
 import { PendingSubmitButton } from "@/features/debug/tracked-submit-button";
 import { submitBallot } from "@/features/voting/actions";
+import { BallotForm } from "@/features/voting/components/ballot-form";
+import {
+  describeVoterRoom,
+  describeVotingWindow,
+  formatVoterDateTime,
+} from "@/features/voting/display";
 import { getVotingAssignmentData } from "@/features/voting/data";
 import { VotingStatusBadge } from "@/features/voting/status-badge";
 import { getVotingWindowStatus } from "@/features/voting/status";
@@ -18,13 +23,6 @@ type VoteDetailPageProps = {
     roomId: string;
   }>;
 };
-
-function formatDateTime(value: string) {
-  return new Intl.DateTimeFormat("en-GB", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(new Date(value));
-}
 
 function getVersionAnswers(payload: unknown) {
   if (!payload || typeof payload !== "object" || !("answers" in payload)) {
@@ -80,18 +78,18 @@ export default async function VoteDetailPage({ params }: VoteDetailPageProps) {
   return (
     <main className="min-h-screen px-6 py-8">
       <section className="mx-auto max-w-5xl">
-        <div className="mb-6 flex items-center gap-3">
-          <Vote className="text-[var(--primary)]" size={26} />
+        <div className="mb-6 flex items-start gap-3">
+          <Vote className="mt-1 shrink-0 text-[var(--primary)]" size={26} />
           <div>
-            <Link className="text-sm text-[var(--muted)]" href="/vote">
-              Back to voting assignments
-            </Link>
-            <h1 className="mt-1 text-2xl font-semibold">
+            <h1 className="text-2xl font-semibold">
               {meeting?.title ?? "Vote"}
             </h1>
             <p className="text-sm text-[var(--muted)]">
-              Room {room?.room_number ?? "-"} / {eligible.voter_type} / ownership{" "}
-              {eligible.ownership_percent}%
+              {describeVoterRoom(
+                room?.room_number,
+                eligible.voter_type,
+                eligible.ownership_percent,
+              )}
             </p>
             {meeting?.ballot_secrecy === "secret" ? (
               <p className="mt-1 text-sm font-medium">
@@ -105,9 +103,8 @@ export default async function VoteDetailPage({ params }: VoteDetailPageProps) {
           <div className="flex flex-col gap-2 border-b border-[var(--border)] pb-4 md:flex-row md:items-start md:justify-between">
             <div>
               {meeting ? (
-                <p className="text-sm text-[var(--muted)]">
-                  {formatDateTime(meeting.starts_at)} -{" "}
-                  {formatDateTime(meeting.ends_at)}
+                <p className="text-sm font-medium">
+                  {describeVotingWindow(meeting, votingStatus)}
                 </p>
               ) : null}
             </div>
@@ -124,7 +121,7 @@ export default async function VoteDetailPage({ params }: VoteDetailPageProps) {
                 </div>
               ) : null}
               {ballot?.submitted_at ? (
-                <div>{formatDateTime(ballot.submitted_at)}</div>
+                <div>Submitted {formatVoterDateTime(ballot.submitted_at)}</div>
               ) : null}
             </div>
           </div>
@@ -134,30 +131,50 @@ export default async function VoteDetailPage({ params }: VoteDetailPageProps) {
               No voting questions are configured for this meeting.
             </p>
           ) : (
-            <form action={submitBallot} className="mt-4 grid gap-5">
+            <BallotForm action={submitBallot} className="mt-4 grid gap-5">
               <RequiredNote />
               <input name="meeting_id" type="hidden" value={eligible.meeting_id} />
               <input name="room_id" type="hidden" value={eligible.room_id} />
               {questions.map((question) => (
                 <fieldset
-                  className="rounded-md border border-[var(--border)] p-4"
+                  aria-describedby={`question-error-${question.id}`}
+                  className="scroll-mt-28 rounded-md border border-[var(--border)] p-4"
+                  data-required={question.required ? "true" : "false"}
                   key={question.id}
                 >
-                  <legend className="px-1 text-sm font-semibold">
-                    {question.agenda_no ? `${question.agenda_no}. ` : ""}
-                    {question.question_text}
-                    {question.required ? (
-                      <>
-                        {" "}
-                        <RequiredMark />
-                      </>
+                  {/* Floated legend sits inside the card instead of on its
+                      border, so long questions wrap cleanly. */}
+                  <legend className="float-left w-full">
+                    {question.agenda_no || question.agenda_title ? (
+                      <span className="block text-xs font-medium text-[var(--muted)]">
+                        {[
+                          question.agenda_no ? `Agenda ${question.agenda_no}` : null,
+                          question.agenda_title,
+                        ]
+                          .filter(Boolean)
+                          .join(" · ")}
+                      </span>
                     ) : null}
+                    <span className="mt-1 block text-base font-semibold">
+                      {question.question_text}
+                      {question.required ? (
+                        <>
+                          {" "}
+                          <RequiredMark />
+                        </>
+                      ) : null}
+                    </span>
                   </legend>
-                  {question.agenda_title ? (
-                    <p className="mt-1 text-sm text-[var(--muted)]">
-                      {question.agenda_title}
-                    </p>
-                  ) : null}
+                  <p
+                    className="clear-both pt-2 text-sm font-medium text-red-700"
+                    data-question-error
+                    hidden
+                    id={`question-error-${question.id}`}
+                    role="alert"
+                  >
+                    Choose an answer for this question.
+                  </p>
+                  <div className="clear-both" />
                   <BallotChoiceInputs
                     choices={question.meeting_choices}
                     disabled={!votingStatus.canSubmit}
@@ -168,23 +185,19 @@ export default async function VoteDetailPage({ params }: VoteDetailPageProps) {
                   />
                 </fieldset>
               ))}
-              <section className="rounded-md border border-[var(--border)] bg-[var(--background)] p-4">
-                <h2 className="text-sm font-semibold">Review</h2>
-                <p className="mt-1 text-sm text-[var(--muted)]">
-                  Confirm your selected choices before submitting. The latest
-                  submitted version is the effective ballot while voting remains
-                  open.
-                </p>
-              </section>
+              <p className="text-sm text-[var(--muted)]">
+                You can change your ballot until voting closes. The last ballot
+                you submit is the one that counts.
+              </p>
               <PendingSubmitButton
-                className="min-h-10 rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)] disabled:cursor-not-allowed disabled:opacity-50"
+                className="min-h-11 rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)] disabled:cursor-not-allowed disabled:opacity-50"
                 disabled={!votingStatus.canSubmit}
                 pendingLabel="Submitting..."
                 type="submit"
               >
                 {ballot ? "Update ballot" : "Submit ballot"}
               </PendingSubmitButton>
-            </form>
+            </BallotForm>
           )}
         </section>
 
@@ -208,7 +221,7 @@ export default async function VoteDetailPage({ params }: VoteDetailPageProps) {
                         Version v{version.version_number}
                       </h3>
                       <div className="text-sm text-[var(--muted)]">
-                        {formatDateTime(version.created_at)}
+                        {formatVoterDateTime(version.created_at)}
                       </div>
                     </div>
                     {answers.length > 0 ? (

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { FileText } from "lucide-react";
+import { ChoiceResultsTable } from "@/features/results/choice-results-table";
 import { QuestionOutcomeLine } from "@/features/results/question-outcome";
 import type { ApprovedSummary } from "@/features/summary/data";
 
@@ -46,27 +47,21 @@ export function SummaryPage({
             <div>
               <h1 className="text-2xl font-semibold">Result Summary</h1>
               <p className="text-sm text-[var(--muted)]">
-                Approved meeting result with mock PDF preview.
+                Results approved by the committee.
               </p>
             </div>
           </div>
-          <Link
-            className="inline-flex min-h-10 items-center justify-center rounded-md border border-[var(--border)] px-4 py-2 text-sm font-medium"
-            href="/vote"
-          >
-            Vote dashboard
-          </Link>
         </div>
 
         {!selected || !payload ? (
           <section className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-5 text-sm">
             <h2 className="font-semibold">No approved result summary</h2>
             <p className="mt-1 text-[var(--muted)]">
-              Approved meeting results will appear here after admin generates a
-              result snapshot and committee approval is recorded.
+              Results appear here after voting closes and the committee
+              approves them.
             </p>
             <Link
-              className="mt-4 inline-flex min-h-10 items-center justify-center rounded-md border border-[var(--border)] px-4 py-2 font-medium"
+              className="mt-4 inline-flex min-h-11 items-center justify-center rounded-md border border-[var(--border)] px-4 py-2 font-medium"
               href="/vote"
             >
               Open vote dashboard
@@ -76,7 +71,7 @@ export function SummaryPage({
           <div className="grid gap-5 lg:grid-cols-[1fr_280px]">
             <article className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-5 shadow-sm">
               <div className="border-b border-[var(--border)] pb-4 text-center">
-                <p className="text-sm text-[var(--muted)]">Mock PDF Preview</p>
+                <p className="text-sm text-[var(--muted)]">Result document</p>
                 <h2 className="mt-2 text-xl font-semibold">
                   {condoProfile?.project_name ??
                     payload.meeting?.title ??
@@ -92,13 +87,26 @@ export function SummaryPage({
                   <h3 className="font-semibold">
                     {payload.meeting?.title ?? "Meeting"}
                   </h3>
-                  <p className="mt-1 text-[var(--muted)]">
-                    Meeting no. {payload.meeting?.meeting_number ?? "-"} / FY{" "}
-                    {payload.meeting?.fiscal_year ?? "-"}
-                  </p>
-                  <p className="text-[var(--muted)]">
-                    Location: {payload.meeting?.location ?? "-"}
-                  </p>
+                  {/* Show only the details this meeting has. */}
+                  {payload.meeting?.meeting_number || payload.meeting?.fiscal_year ? (
+                    <p className="mt-1 text-[var(--muted)]">
+                      {[
+                        payload.meeting?.meeting_number
+                          ? `Meeting no. ${payload.meeting.meeting_number}`
+                          : null,
+                        payload.meeting?.fiscal_year
+                          ? `FY ${payload.meeting.fiscal_year}`
+                          : null,
+                      ]
+                        .filter(Boolean)
+                        .join(" · ")}
+                    </p>
+                  ) : null}
+                  {payload.meeting?.location ? (
+                    <p className="text-[var(--muted)]">
+                      Location: {payload.meeting.location}
+                    </p>
+                  ) : null}
                 </div>
                 <div>
                   <p>
@@ -111,9 +119,9 @@ export function SummaryPage({
                     Generated:{" "}
                     {formatDateTime(payload.generated_at ?? selected.generatedAt)}
                   </p>
-                  <p className="text-[var(--muted)]">
-                    Notes: {selected.notes ?? "-"}
-                  </p>
+                  {selected.notes ? (
+                    <p className="text-[var(--muted)]">Notes: {selected.notes}</p>
+                  ) : null}
                 </div>
               </section>
 
@@ -159,6 +167,11 @@ export function SummaryPage({
               <section className="mt-5">
                 <h3 className="font-semibold">Agenda Results</h3>
                 <div className="mt-3 grid gap-4">
+                  {!payload.questions?.length ? (
+                    <p className="text-sm text-[var(--muted)]">
+                      No agenda items were recorded for this meeting.
+                    </p>
+                  ) : null}
                   {payload.questions?.map((question, index) => (
                     <section
                       className="rounded-md border border-[var(--border)] p-4"
@@ -168,47 +181,13 @@ export function SummaryPage({
                         {question.agenda_no ?? `Item ${index + 1}`}{" "}
                         {question.agenda_title ?? question.text ?? "-"}
                       </h4>
-                      <p className="mt-1 text-sm text-[var(--muted)]">
-                        Resolution: {question.resolution_type ?? "-"}
-                      </p>
+                      {question.resolution_type ? (
+                        <p className="mt-1 text-sm text-[var(--muted)]">
+                          Resolution: {question.resolution_type}
+                        </p>
+                      ) : null}
                       <QuestionOutcomeLine question={question} />
-                      <div className="mt-3 overflow-x-auto">
-                        <table className="w-full border-collapse text-left text-sm">
-                          <thead className="border-b border-[var(--border)] text-[var(--muted)]">
-                            <tr>
-                              <th className="py-2 pr-3 font-medium">Choice</th>
-                              <th className="py-2 pr-3 font-medium">Rooms</th>
-                              <th className="py-2 pr-3 font-medium">
-                                Ownership
-                              </th>
-                              <th className="py-2 font-medium">Submitted %</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {question.choices?.map((choice) => (
-                              <tr
-                                className="border-b border-[var(--border)] last:border-0"
-                                key={choice.text}
-                              >
-                                <td className="py-2 pr-3">
-                                  {choice.text ?? "-"}
-                                </td>
-                                <td className="py-2 pr-3">
-                                  {choice.vote_count ?? 0}
-                                </td>
-                                <td className="py-2 pr-3">
-                                  {formatPercent(choice.ownership)}
-                                </td>
-                                <td className="py-2">
-                                  {formatPercent(
-                                    choice.percent_of_submitted_ownership,
-                                  )}
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
+                      <ChoiceResultsTable choices={question.choices} />
                     </section>
                   ))}
                 </div>
@@ -232,13 +211,11 @@ export function SummaryPage({
                 ) : null}
               </section>
 
-              <footer className="mt-5 border-t border-[var(--border)] pt-3 text-xs text-[var(--muted)]">
-                This is a v1 mock PDF preview generated from approved snapshot
-                data.
-                {condoProfile?.document_footer
-                  ? ` ${condoProfile.document_footer}`
-                  : ""}
-              </footer>
+              {condoProfile?.document_footer ? (
+                <footer className="mt-5 border-t border-[var(--border)] pt-3 text-xs text-[var(--muted)]">
+                  {condoProfile.document_footer}
+                </footer>
+              ) : null}
             </article>
 
             <aside className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-5">

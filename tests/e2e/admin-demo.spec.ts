@@ -677,7 +677,11 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
     const voteCard = page
       .getByRole("heading", { name: meetingTitle })
       .locator("xpath=ancestor::main[1]");
-    await expect(voteCard.getByText("Review")).toBeVisible();
+    await expect(
+      voteCard.getByText("You can change your ballot until voting closes.", {
+        exact: false,
+      }),
+    ).toBeVisible();
     await voteCard.getByLabel(choiceText).check();
     await voteCard.getByRole("button", { name: "Submit ballot" }).click();
     await expect(voteCard.getByText("Submitted v1")).toBeVisible();
@@ -824,6 +828,8 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
         .getByText("Voting open"),
     ).toBeVisible();
     await page.goto(`${activeAppOrigin}/committee`);
+    // Closing voting asks for confirmation first.
+    page.once("dialog", (dialog) => dialog.accept());
     await page
       .locator("div[data-meeting-id]")
       .filter({ hasText: meetingTitle })
@@ -849,7 +855,9 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
       .getByRole("heading", { name: meetingTitle })
       .locator("xpath=ancestor::main[1]");
     await expect(closedVoteCard.getByText("Submitted v2")).toBeVisible();
-    await expect(closedVoteCard.getByText("Closed")).toBeVisible();
+    // The status badge; "Voting closed <time>" also contains the word.
+    await expect(closedVoteCard.getByText("Closed", { exact: true })).toBeVisible();
+    await expect(closedVoteCard.getByText(/^Voting closed /)).toBeVisible();
     await expect(
       closedVoteCard.getByRole("button", { name: "Update ballot" }),
     ).toBeDisabled();

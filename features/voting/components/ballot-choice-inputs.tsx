@@ -44,10 +44,17 @@ export function BallotChoiceInputs({
       ) : null}
       {sortedChoices.map((choice) => (
         <label
-          className="flex items-center gap-2 rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+          className={[
+            "flex min-h-11 cursor-pointer items-center gap-3 rounded-md border border-[var(--border)] px-3 py-2 text-sm",
+            "has-[:checked]:border-[var(--primary)] has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-[var(--primary)]",
+            "has-[:disabled]:cursor-not-allowed",
+            // Abstain is a real choice, so it reads like one; a gap sets it apart.
+            choice.is_abstain ? "mt-2" : "",
+          ].join(" ")}
           key={choice.id}
         >
           <input
+            className="h-4 w-4 shrink-0 accent-[var(--primary)]"
             defaultChecked={selectedChoiceIds.has(choice.id)}
             disabled={disabled}
             name={`choice:${question.id}`}
@@ -55,9 +62,7 @@ export function BallotChoiceInputs({
             type={multiple ? "checkbox" : "radio"}
             value={choice.id}
           />
-          <span className={choice.is_abstain ? "text-[var(--muted)]" : undefined}>
-            {choice.choice_text}
-          </span>
+          <span>{choice.choice_text}</span>
         </label>
       ))}
     </div>

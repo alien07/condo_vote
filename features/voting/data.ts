@@ -7,7 +7,7 @@ export async function getVotingDashboardData() {
   const { data: eligibleRows, error: eligibleError } = await supabase
     .from("eligible_voters_snapshot")
     .select(
-      "id, meeting_id, room_id, voter_type, ownership_percent, source, meetings(id, title, description, starts_at, ends_at, status, meeting_number, meeting_type, ballot_secrecy), rooms(id, room_number, ownership_percent)",
+      "id, meeting_id, room_id, voter_type, ownership_percent, source, meetings(id, title, description, starts_at, ends_at, status, meeting_number, meeting_type, ballot_secrecy, closed_at), rooms(id, room_number, ownership_percent)",
     )
     .eq("profile_id", profile.id)
     .order("created_at", { ascending: false });
@@ -83,7 +83,7 @@ export async function getVotingAssignmentData(meetingId: string, roomId: string)
   const { data: eligible, error: eligibleError } = await supabase
     .from("eligible_voters_snapshot")
     .select(
-      "id, meeting_id, room_id, voter_type, ownership_percent, source, meetings(id, title, description, starts_at, ends_at, status, meeting_number, meeting_type, ballot_secrecy), rooms(id, room_number, ownership_percent)",
+      "id, meeting_id, room_id, voter_type, ownership_percent, source, meetings(id, title, description, starts_at, ends_at, status, meeting_number, meeting_type, ballot_secrecy, closed_at), rooms(id, room_number, ownership_percent)",
     )
     .eq("profile_id", profile.id)
     .eq("meeting_id", meetingId)
