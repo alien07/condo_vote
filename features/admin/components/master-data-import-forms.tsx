@@ -1,6 +1,6 @@
 "use client";
 
-import { useStaffText } from "@/lib/i18n/staff/client";
+import { useMessageText, useStaffText } from "@/lib/i18n/staff/client";
 import { useActionState, useEffect, useRef } from "react";
 import { Upload } from "lucide-react";
 import {
@@ -32,13 +32,14 @@ function fieldErrorId(title: string) {
 }
 
 function ImportMessage({ state }: { state: ExcelImportActionState }) {
+  const tm = useMessageText();
   if (state.error) {
     return (
       <div
         className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-800"
         role="alert"
       >
-        {state.error}
+        {tm(state.error)}
       </div>
     );
   }
@@ -46,7 +47,7 @@ function ImportMessage({ state }: { state: ExcelImportActionState }) {
   if (state.success) {
     return (
       <div className="rounded-md border border-green-200 bg-green-50 px-3 py-2 text-sm font-medium text-green-800">
-        {state.success}
+        {tm(state.success)}
       </div>
     );
   }
@@ -62,6 +63,7 @@ function ImportCard({
   title,
   uploadLabel,
 }: ImportCardProps) {
+  const tm = useMessageText();
   const { s } = useStaffText();
   const formRef = useRef<HTMLFormElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -114,7 +116,7 @@ function ImportCard({
         />
         {state.fieldErrors?.file ? (
           <p className="text-xs font-medium text-red-700" id={errorId}>
-            {state.fieldErrors.file}
+            {tm(state.fieldErrors.file)}
           </p>
         ) : null}
       </label>

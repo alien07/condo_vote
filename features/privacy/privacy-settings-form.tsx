@@ -7,7 +7,7 @@ import {
 } from "@/features/privacy/actions";
 import type { PrivacySettings } from "@/features/privacy/service";
 import { PendingSubmitButton } from "@/features/debug/tracked-submit-button";
-import { useStaffText } from "@/lib/i18n/staff/client";
+import { useMessageText, useStaffText } from "@/lib/i18n/staff/client";
 import { fill } from "@/lib/i18n/template";
 
 const emptyState: PrivacySettingsActionState = {};
@@ -19,16 +19,18 @@ function FieldError({
   fieldName: string;
   state: PrivacySettingsActionState;
 }) {
+  const tm = useMessageText();
   const message = state.fieldErrors?.[fieldName];
 
   return message ? (
     <span className="text-xs font-medium text-red-700" id={`privacy-${fieldName}-error`}>
-      {message}
+      {tm(message)}
     </span>
   ) : null;
 }
 
 export function PrivacySettingsForm({ settings }: { settings: PrivacySettings }) {
+  const tm = useMessageText();
   const [state, formAction] = useActionState(savePrivacySettingsWithState, emptyState);
   const { s: staff } = useStaffText();
   const t = staff.system;
@@ -42,7 +44,7 @@ export function PrivacySettingsForm({ settings }: { settings: PrivacySettings })
           className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-800"
           role="alert"
         >
-          {state.error}
+          {tm(state.error)}
         </div>
       ) : null}
       {state.success ? (
@@ -50,7 +52,7 @@ export function PrivacySettingsForm({ settings }: { settings: PrivacySettings })
           className="rounded-md border border-green-200 bg-green-50 px-3 py-2 text-sm font-medium text-green-800"
           role="status"
         >
-          {state.success}
+          {tm(state.success)}
         </div>
       ) : null}
       <label className="flex items-center gap-2 text-sm font-medium">

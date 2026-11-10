@@ -1,5 +1,7 @@
 "use client";
 
+import { useMessageText, useStaffText } from "@/lib/i18n/staff/client";
+import { fill } from "@/lib/i18n/template";
 import { useActionState, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import {
@@ -76,11 +78,12 @@ function FieldError({
   fieldName: string;
   state: ManualVoteActionState;
 }) {
+  const tm = useMessageText();
   const message = state.fieldErrors?.[fieldName];
 
   return message ? (
     <p className="text-xs font-medium text-red-700" id={fieldErrorId(fieldName)}>
-      {message}
+      {tm(message)}
     </p>
   ) : null;
 }
@@ -117,6 +120,7 @@ function focusFirstInvalidField(
 }
 
 function ActionMessage({ state }: { state: ManualVoteActionState }) {
+  const tm = useMessageText();
   if (!state.error) {
     return null;
   }
@@ -126,7 +130,7 @@ function ActionMessage({ state }: { state: ManualVoteActionState }) {
       className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-800"
       role="alert"
     >
-      {state.error}
+      {tm(state.error)}
     </div>
   );
 }
@@ -174,6 +178,7 @@ export function ManualVoteImportDrawer({
   profiles,
   rooms,
 }: ManualVoteImportDrawerProps) {
+  const { s } = useStaffText();
   const formRef = useRef<HTMLFormElement>(null);
   const [state, formAction] = useActionState(
     startManualVoteImportWithState,
@@ -195,14 +200,14 @@ export function ManualVoteImportDrawer({
   return (
     <AdminCrudDrawer
       closeHref={closeHref}
-      summary={["Manual vote entry setup"]}
-      title="Import manual vote"
+      summary={[s.voting.entrySetup]}
+      title={s.voting.importManual}
     >
       <form action={formAction} className="grid gap-3" noValidate ref={formRef}>
         <RequiredNote />
         <ActionMessage state={state} />
         <label className="grid gap-1 text-sm font-medium">
-          <FieldLabel required>Meeting</FieldLabel>
+          <FieldLabel required>{s.voting.meeting}</FieldLabel>
           <select
             {...fieldProps("meeting_id", state)}
             autoFocus
@@ -211,7 +216,7 @@ export function ManualVoteImportDrawer({
             name="meeting_id"
             required
           >
-            <option value="">Select meeting</option>
+            <option value="">{s.voting.selectMeeting}</option>
             {meetings
               .filter((meeting) => meeting.status !== "archived")
               .map((meeting) => (
@@ -223,7 +228,7 @@ export function ManualVoteImportDrawer({
           <FieldError fieldName="meeting_id" state={state} />
         </label>
         <label className="grid gap-1 text-sm font-medium">
-          <FieldLabel required>Room</FieldLabel>
+          <FieldLabel required>{s.voting.room}</FieldLabel>
           <select
             {...fieldProps("room_id", state)}
             className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
@@ -231,7 +236,7 @@ export function ManualVoteImportDrawer({
             name="room_id"
             required
           >
-            <option value="">Select room</option>
+            <option value="">{s.voting.selectRoom}</option>
             {rooms
               .filter((room) => room.active)
               .map((room) => (
@@ -243,14 +248,14 @@ export function ManualVoteImportDrawer({
           <FieldError fieldName="room_id" state={state} />
         </label>
         <label className="grid gap-1 text-sm font-medium">
-          Voter profile
+          {s.voting.voterProfile}
           <select
             {...fieldProps("voter_profile_id", state)}
             className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
             defaultValue={stateValue(state, "voter_profile_id")}
             name="voter_profile_id"
           >
-            <option value="">Use pending free-text identity</option>
+            <option value="">{s.voting.usePending}</option>
             {profiles.map((profile) => (
               <option key={profile.id} value={profile.id}>
                 {profile.full_name ?? profile.email} ({profile.email})
@@ -260,35 +265,33 @@ export function ManualVoteImportDrawer({
           <FieldError fieldName="voter_profile_id" state={state} />
         </label>
         <label className="grid gap-1 text-sm font-medium">
-          Pending voter identity
+          {s.voting.pendingIdentity}
           <input
             {...fieldProps("voter_identity_text", state)}
             className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
             defaultValue={stateValue(state, "voter_identity_text")}
             name="voter_identity_text"
-            placeholder="Name on paper ballot when profile is not registered yet"
+            placeholder={s.voting.pendingPlaceholder}
           />
           <FieldError fieldName="voter_identity_text" state={state} />
         </label>
         <p className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
-          If only a free-text identity is entered, the manual vote is saved as
-          draft/pending and will not be used in result calculation until the
-          voter is registered and linked to a profile.
+          {s.voting.pendingHelp}
         </p>
         <div className="flex flex-wrap gap-2 pt-2">
           <PendingSubmitButton
             className="rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)]"
-            pendingLabel="Opening..."
+            pendingLabel={s.voting.opening}
             type="submit"
           >
-            Continue to vote form
+            {s.voting.continue}
           </PendingSubmitButton>
           <FormResetButton label="Clear form" />
           <a
             className="inline-flex items-center justify-center rounded-md border border-[var(--border)] px-4 py-2 text-sm font-medium"
             href={closeHref}
           >
-            Cancel
+            {s.common.cancel}
           </a>
         </div>
       </form>
@@ -301,6 +304,7 @@ export function ManualVoteIdentityDrawer({
   manualBallot,
   profiles,
 }: ManualVoteIdentityDrawerProps) {
+  const { s } = useStaffText();
   const formRef = useRef<HTMLFormElement>(null);
   const searchParams = useSearchParams();
   const [state, formAction] = useActionState(
@@ -333,25 +337,23 @@ export function ManualVoteIdentityDrawer({
     <AdminCrudDrawer
       closeHref={closeHref}
       summary={[
-        `Meeting: ${manualBallot.meetings?.title ?? "-"}`,
-        `Room: ${manualBallot.rooms?.room_number ?? "-"}`,
-        `Captured: ${
-          manualBallot.voter_identity_text ?? manualBallot.audit_note ?? "-"
-        }`,
+        fill(s.voting.meetingSummary, { title: manualBallot.meetings?.title ?? "-" }),
+        fill(s.voting.roomSummary, { room: manualBallot.rooms?.room_number ?? "-" }),
+        fill(s.voting.capturedSummary, {
+          identity: manualBallot.voter_identity_text ?? manualBallot.audit_note ?? "-",
+        }),
       ]}
-      title="Resolve manual vote identity"
+      title={s.voting.resolveIdentity}
     >
       <form action={formAction} className="grid gap-3" noValidate ref={formRef}>
         <RequiredNote />
         <ActionMessage state={state} />
         <input name="id" type="hidden" value={manualBallot.id} />
         <p className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
-          Select the registered profile that matches the paper ballot identity.
-          After saving, this manual vote becomes submitted and can be used in
-          result generation and committee approval.
+          {s.voting.resolveHelp}
         </p>
         <label className="grid gap-1 text-sm font-medium">
-          <FieldLabel required>Voter profile</FieldLabel>
+          <FieldLabel required>{s.voting.voterProfile}</FieldLabel>
           <select
             {...fieldProps("voter_profile_id", state)}
             autoFocus
@@ -360,7 +362,7 @@ export function ManualVoteIdentityDrawer({
             name="voter_profile_id"
             required
           >
-            <option value="">Select profile</option>
+            <option value="">{s.voting.selectProfile}</option>
             {profiles.map((profile) => (
               <option key={profile.id} value={profile.id}>
                 {profile.full_name ?? profile.email} ({profile.email})
@@ -372,21 +374,22 @@ export function ManualVoteIdentityDrawer({
         <div className="flex flex-wrap gap-2 pt-2">
           <ConfirmSubmitButton
             className="rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)]"
-            confirmMessage={`Link pending manual vote identity "${
-              manualBallot.voter_identity_text ??
-              manualBallot.audit_note ??
-              "this identity"
-            }" to the selected profile? This makes the manual vote eligible for result calculation.`}
-            pendingLabel="Saving..."
+            confirmMessage={fill(s.voting.confirmLink, {
+              identity:
+                manualBallot.voter_identity_text ??
+                manualBallot.audit_note ??
+                s.voting.thisIdentity,
+            })}
+            pendingLabel={s.common.saving}
             type="submit"
           >
-            Link profile
+            {s.voting.linkProfile}
           </ConfirmSubmitButton>
           <a
             className="inline-flex items-center justify-center rounded-md border border-[var(--border)] px-4 py-2 text-sm font-medium"
             href={closeHref}
           >
-            Cancel
+            {s.common.cancel}
           </a>
         </div>
       </form>

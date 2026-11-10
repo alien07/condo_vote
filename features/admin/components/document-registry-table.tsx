@@ -1,6 +1,6 @@
 "use client";
 
-import { useStaffText } from "@/lib/i18n/staff/client";
+import { useMessageText, useStaffText } from "@/lib/i18n/staff/client";
 import { fill } from "@/lib/i18n/template";
 import { bangkokDateTimeParts } from "@/lib/datetime";
 import { useEffect, useState } from "react";
@@ -88,6 +88,7 @@ export function DocumentRegistryTable({
   initialRows,
   initialTotal,
 }: DocumentRegistryTableProps) {
+  const tm = useMessageText();
   const { s } = useStaffText();
   const [criteria, setCriteria] = useState(initialFilters);
   const [appliedFilters, setAppliedFilters] = useState(initialFilters);
@@ -320,7 +321,7 @@ export function DocumentRegistryTable({
         </div>
         {error ? (
           <p className="border-b border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-            {error}
+            {tm(error)}
           </p>
         ) : null}
         <div className="overflow-x-auto">

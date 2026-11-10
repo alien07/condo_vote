@@ -187,6 +187,9 @@ Status: implemented (migration 0027)
   admin sections, then server messages. Their words live in
   `lib/i18n/staff/*.ts` as plain strings with `{name}` placeholders, so
   client components get them through `useStaffText()`.
+- Admin actions keep returning English messages; pages show them in the
+  viewer's language through `translateMessage()` (`lib/i18n/staff/messages.ts`).
+  A message without a Thai entry shows in English.
 - The official result record is always Thai. The English owner summary
   says the Thai version prevails.
 - Queued emails store the recipient's language in `email_logs.language`;

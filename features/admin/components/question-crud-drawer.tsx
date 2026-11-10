@@ -1,6 +1,6 @@
 "use client";
 
-import { useStaffText } from "@/lib/i18n/staff/client";
+import { useMessageText, useStaffText } from "@/lib/i18n/staff/client";
 import { fill } from "@/lib/i18n/template";
 import { useActionState, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
@@ -68,11 +68,12 @@ function FieldError({
   fieldName: string;
   state: QuestionActionState;
 }) {
+  const tm = useMessageText();
   const message = state.fieldErrors?.[fieldName];
 
   return message ? (
     <p className="text-xs font-medium text-red-700" id={fieldErrorId(fieldName)}>
-      {message}
+      {tm(message)}
     </p>
   ) : null;
 }
@@ -135,6 +136,7 @@ export function QuestionCrudDrawer({
   mode,
   question,
 }: QuestionCrudDrawerProps) {
+  const tm = useMessageText();
   const { s } = useStaffText();
   const formRef = useRef<HTMLFormElement>(null);
   const searchParams = useSearchParams();
@@ -195,7 +197,7 @@ export function QuestionCrudDrawer({
             className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-800"
             role="alert"
           >
-            {state.error}
+            {tm(state.error)}
           </div>
         ) : null}
         {mode === "edit" && question ? (

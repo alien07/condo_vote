@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useRef } from "react";
-import { useStaffText } from "@/lib/i18n/staff/client";
+import { useMessageText, useStaffText } from "@/lib/i18n/staff/client";
 import {
   saveAppSettingsWithState,
   saveCondoProfileWithState,
@@ -63,11 +63,12 @@ function FieldError({
   prefix: string;
   state: CondoProfileActionState | AppSettingsActionState;
 }) {
+  const tm = useMessageText();
   const message = state.fieldErrors?.[fieldName];
 
   return message ? (
     <p className="text-xs font-medium text-red-700" id={fieldErrorId(prefix, fieldName)}>
-      {message}
+      {tm(message)}
     </p>
   ) : null;
 }
@@ -77,13 +78,14 @@ function FormMessage({
 }: {
   state: CondoProfileActionState | AppSettingsActionState;
 }) {
+  const tm = useMessageText();
   if (state.error) {
     return (
       <div
         className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-800 md:col-span-2"
         role="alert"
       >
-        {state.error}
+        {tm(state.error)}
       </div>
     );
   }
@@ -91,7 +93,7 @@ function FormMessage({
   if (state.success) {
     return (
       <div className="rounded-md border border-green-200 bg-green-50 px-3 py-2 text-sm font-medium text-green-800 md:col-span-2">
-        {state.success}
+        {tm(state.success)}
       </div>
     );
   }

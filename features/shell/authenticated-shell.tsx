@@ -85,7 +85,7 @@ export async function AuthenticatedShell({ children }: AuthenticatedShellProps) 
         />
       </header>
       <div className="print:hidden">
-        <AppFeedbackBanner dismissLabel={t.shell.dismiss} />
+        <AppFeedbackBanner dismissLabel={t.shell.dismiss} locale={locale} />
       </div>
       {isStaff ? (
         <StaffTextProvider locale={locale} s={getStaffDictionary(locale)}>

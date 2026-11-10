@@ -1,5 +1,7 @@
 "use client";
 
+import { useMessageText, useStaffText } from "@/lib/i18n/staff/client";
+import { fill } from "@/lib/i18n/template";
 import { useActionState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -45,11 +47,12 @@ function FieldError({
   fieldName: string;
   state: ResultApprovalActionState;
 }) {
+  const tm = useMessageText();
   const message = state.fieldErrors?.[fieldName];
 
   return message ? (
     <p className="text-xs font-medium text-red-700" id={fieldErrorId(fieldName)}>
-      {message}
+      {tm(message)}
     </p>
   ) : null;
 }
@@ -86,6 +89,7 @@ function focusFirstInvalidField(
 }
 
 function ActionMessage({ state }: { state: ResultApprovalActionState }) {
+  const tm = useMessageText();
   if (!state.error) {
     return null;
   }
@@ -95,7 +99,7 @@ function ActionMessage({ state }: { state: ResultApprovalActionState }) {
       className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-800"
       role="alert"
     >
-      {state.error}
+      {tm(state.error)}
     </div>
   );
 }
@@ -143,6 +147,7 @@ export function ResultApprovalDrawer({
   pendingManualCount,
   snapshot,
 }: ResultApprovalDrawerProps) {
+  const { s } = useStaffText();
   const formRef = useRef<HTMLFormElement>(null);
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -181,10 +186,10 @@ export function ResultApprovalDrawer({
     <AdminCrudDrawer
       closeHref={closeHref}
       summary={[
-        `Meeting: ${snapshot.meetings?.title ?? "-"}`,
-        `Generated: ${generatedLabel}`,
+        fill(s.results.meetingSummary, { title: snapshot.meetings?.title ?? "-" }),
+        fill(s.results.generatedSummary, { time: generatedLabel }),
       ]}
-      title="Approve result"
+      title={s.results.approve}
     >
       <form action={formAction} className="grid gap-3" noValidate ref={formRef}>
         <ActionMessage state={state} />
@@ -192,16 +197,25 @@ export function ResultApprovalDrawer({
         <input name="result_snapshot_id" type="hidden" value={snapshot.id} />
         {pendingManualCount > 0 ? (
           <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
-            Resolve {pendingManualCount} pending manual vote identity record(s)
-            before committee approval. Go to{" "}
-            <a className="font-medium underline" href="/admin/voting">
-              Admin &gt; Voting &gt; Manual votes
-            </a>{" "}
-            to fix them.
+            {(() => {
+              const [before, after] = fill(s.results.pendingBlock, {
+                count: pendingManualCount,
+              }).split("{link}");
+
+              return (
+                <>
+                  {before}
+                  <a className="font-medium underline" href="/admin/voting">
+                    {s.results.pendingLink}
+                  </a>
+                  {after}
+                </>
+              );
+            })()}
           </div>
         ) : null}
         <label className="grid gap-1 text-sm font-medium">
-          Approval / conflict notes
+          {s.results.notes}
           <textarea
             {...fieldProps("notes", state)}
             autoFocus
@@ -219,16 +233,18 @@ export function ResultApprovalDrawer({
               disabled
               type="button"
             >
-              Approval blocked
+              {s.results.blocked}
             </button>
           ) : (
             <ConfirmSubmitButton
               className="rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)]"
-              confirmMessage={`Approve result for "${snapshot.meetings?.title ?? "this meeting"}"? This locks the approved result snapshot as the source of truth.`}
-              pendingLabel="Saving..."
+              confirmMessage={fill(s.results.confirmApprove, {
+                title: snapshot.meetings?.title ?? s.results.thisMeeting,
+              })}
+              pendingLabel={s.common.saving}
               type="submit"
             >
-              Approve result
+              {s.results.approve}
             </ConfirmSubmitButton>
           )}
           <FormResetButton label="Clear form" />
@@ -236,7 +252,7 @@ export function ResultApprovalDrawer({
             className="inline-flex items-center justify-center rounded-md border border-[var(--border)] px-4 py-2 text-sm font-medium"
             href={closeHref}
           >
-            Cancel
+            {s.common.cancel}
           </a>
         </div>
       </form>
