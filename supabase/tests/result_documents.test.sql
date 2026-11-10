@@ -96,7 +96,8 @@ select is(
   64, 'hash is 64 hex characters');
 
 select throws_like(
-  $q$update public.condo_profiles set record_signatories = array['nobody'] where true$q$,
+  $q$insert into public.condo_profiles (juristic_name, project_name, record_signatories)
+     values ('J', 'P', array['nobody'])$q$,
   '%record_signatories_check%', 'only known signatory roles are allowed');
 
 select * from finish();
