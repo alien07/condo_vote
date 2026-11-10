@@ -1,4 +1,5 @@
 import { AdminWorkspace } from "@/features/admin/components/admin-workspace";
+import { getStaffI18n } from "@/lib/i18n/server";
 import type { MeetingTableFilters } from "@/features/admin/components/admin-workspace";
 
 type AdminMeetingsPageProps = {
@@ -54,12 +55,13 @@ function getMeetingFilters(
 export default async function AdminMeetingsPage({
   searchParams,
 }: AdminMeetingsPageProps) {
+  const { s } = await getStaffI18n();
   const params = await searchParams;
 
   return (
     <AdminWorkspace
       activeSection={params.tab}
-      description="Create meetings, configure agenda questions, and publish voting windows."
+      description={s.adminHome.pages.meetingsText}
       drawer={{
         id: params.id,
         mode: params.mode,
@@ -69,7 +71,7 @@ export default async function AdminMeetingsPage({
       focusedQuestionId={params.focusQuestionId}
       meetingFilters={getMeetingFilters(params)}
       sections={["meetings", "questions"]}
-      title="Meetings"
+      title={s.adminHome.pages.meetingsTitle}
     />
   );
 }

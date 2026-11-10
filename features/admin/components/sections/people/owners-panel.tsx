@@ -1,5 +1,7 @@
 "use client";
 
+import { useStaffText } from "@/lib/i18n/staff/client";
+import { fill } from "@/lib/i18n/template";
 import Link from "next/link";
 import { UserRound } from "lucide-react";
 import { deactivateOwner, reactivateOwner } from "@/features/admin/actions";
@@ -21,6 +23,7 @@ export function OwnersPanel({
   drawer,
   owners,
 }: OwnersPanelProps) {
+  const { s } = useStaffText();
   const searchParams = useSearchParams();
   const [ownerCriteria, setOwnerCriteria] = useState(() =>
     ownerTableStateFromParams(searchParams),
@@ -63,8 +66,8 @@ export function OwnersPanel({
     if (drawer?.mode === "create" && drawer.type === "owner") {
       return {
         content: <OwnerForm closeHref={closeHref} mode="create" />,
-        summary: ["New owner record"],
-        title: "Add owner",
+        summary: [s.people.newOwner],
+        title: s.people.addOwner,
       };
     }
 
@@ -74,16 +77,19 @@ export function OwnersPanel({
           <OwnerForm closeHref={closeHref} mode="edit" owner={selectedOwner} />
         ),
         summary: [
-          `Name: ${selectedOwner.full_name}`,
-          `Email: ${selectedOwner.email ?? "-"}`,
-          `Status: ${selectedOwner.active ? "Active" : "Inactive"}`,
+          fill(s.people.nameSummary, { name: selectedOwner.full_name }),
+          fill(s.people.emailSummary, { email: selectedOwner.email ?? "-" }),
+          fill(s.people.statusSummary, {
+            status: selectedOwner.active ? s.common.active : s.common.inactive,
+          }),
         ],
-        title: "Edit owner",
+        title: s.people.editOwner,
       };
     }
 
     return null;
   }, [
+    s,
     activeSection,
     closeHref,
     drawer?.mode,
@@ -150,10 +156,9 @@ export function OwnersPanel({
         <section className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-5">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="max-w-3xl">
-              <h2 className="text-lg font-semibold">Owners Master Data</h2>
+              <h2 className="text-lg font-semibold">{s.people.ownersTitle}</h2>
               <p className="mt-2 text-sm text-[var(--muted)]">
-                Maintain owner records used for room ownership links and voting
-                eligibility.
+                {s.people.ownersIntro}
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -161,13 +166,13 @@ export function OwnersPanel({
                 className="inline-flex min-h-10 items-center justify-center rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)]"
                 href={buildHref({ mode: "create", tab: "owners", type: "owner" })}
               >
-                Add owner
+                {s.people.addOwner}
               </Link>
               <Link
                 className="inline-flex min-h-10 items-center justify-center rounded-md border border-[var(--border)] bg-[var(--surface)] px-4 py-2 text-sm font-medium"
                 href="/admin/people/import"
               >
-                Import Master Data
+                {s.people.importMaster}
               </Link>
             </div>
           </div>
@@ -175,9 +180,9 @@ export function OwnersPanel({
 
         <section className="rounded-lg border border-[var(--border)] bg-[var(--background)] p-5">
           <div className="mb-3">
-            <h2 className="text-sm font-semibold">Search Criteria</h2>
+            <h2 className="text-sm font-semibold">{s.common.searchCriteria}</h2>
             <p className="mt-1 text-xs text-[var(--muted)]">
-              Filter owners by name, email, and active status.
+              {s.people.ownersFilter}
             </p>
           </div>
           <form
@@ -188,7 +193,7 @@ export function OwnersPanel({
             }}
           >
             <label className="grid gap-1 text-xs font-medium text-[var(--muted)] md:col-span-5">
-              Name
+              {s.common.name}
               <input
                 className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)]"
                 onChange={(event) => {
@@ -196,12 +201,12 @@ export function OwnersPanel({
 
                   setOwnerCriteria((current) => ({ ...current, name: value }));
                 }}
-                placeholder="Search owner name or email"
+                placeholder={s.people.searchOwner}
                 value={ownerCriteria.name}
               />
             </label>
             <label className="grid gap-1 text-xs font-medium text-[var(--muted)] md:col-span-3">
-              Status
+              {s.common.status}
               <select
                 className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)]"
                 onChange={(event) => {
@@ -212,9 +217,9 @@ export function OwnersPanel({
                 }}
                 value={ownerCriteria.status}
               >
-                <option value="all">All statuses</option>
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
+                <option value="all">{s.common.allStatuses}</option>
+                <option value="active">{s.common.active}</option>
+                <option value="inactive">{s.common.inactive}</option>
               </select>
             </label>
             <div className="flex flex-wrap items-end justify-center gap-2 md:col-span-4">
@@ -222,7 +227,7 @@ export function OwnersPanel({
                 className="min-h-10 rounded-md bg-[var(--primary)] px-5 py-2 text-sm font-medium text-[var(--primary-foreground)]"
                 type="submit"
               >
-                Search
+                {s.common.search}
               </button>
               <button
                 className="inline-flex min-h-10 items-center rounded-md border border-[var(--border)] bg-[var(--surface)] px-5 py-2 text-sm font-medium"
@@ -238,7 +243,7 @@ export function OwnersPanel({
                 }
                 type="button"
               >
-                Clear
+                {s.common.clear}
               </button>
             </div>
           </form>
@@ -250,17 +255,17 @@ export function OwnersPanel({
               <div className="flex items-center gap-2">
                 <UserRound className="text-[var(--primary)]" size={20} />
                 <div>
-                  <h2 className="text-lg font-semibold">Owners</h2>
+                  <h2 className="text-lg font-semibold">{s.people.owners}</h2>
                   <p className="mt-1 text-xs text-[var(--muted)]">
-                    Showing {ownerPageStart}-{ownerPageEnd} of {ownerTotal}
+                    {fill(s.common.showing, { start: ownerPageStart, end: ownerPageEnd, total: ownerTotal })}
                   </p>
                 </div>
               </div>
               <div className="flex flex-wrap items-center gap-2 rounded-md border border-[var(--border)] bg-[var(--background)] px-3 py-2">
                 <label className="flex items-center gap-2 text-xs font-medium text-[var(--muted)]">
-                  <span>Page</span>
+                  <span>{s.common.page}</span>
                   <select
-                    aria-label="Page"
+                    aria-label={s.common.page}
                     className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-2 py-1 text-sm text-[var(--foreground)]"
                     disabled={ownerTotalPages <= 1}
                     onChange={(event) => {
@@ -289,9 +294,9 @@ export function OwnersPanel({
                 </label>
                 <div className="hidden h-6 w-px bg-[var(--border)] sm:block" />
                 <label className="flex items-center gap-2 text-xs font-medium text-[var(--muted)]">
-                  <span>Per page</span>
+                  <span>{s.common.perPage}</span>
                   <select
-                    aria-label="Per page"
+                    aria-label={s.common.perPage}
                     className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-2 py-1 text-sm text-[var(--foreground)]"
                     onChange={(event) => {
                       const nextPerPage = Number(event.currentTarget.value);
@@ -336,7 +341,7 @@ export function OwnersPanel({
                       }
                       type="button"
                     >
-                      Name
+                      {s.common.name}
                       {ownerTableState.sort === "name"
                         ? ownerTableState.dir === "asc"
                           ? " ↑"
@@ -344,7 +349,7 @@ export function OwnersPanel({
                         : ""}
                     </button>
                   </th>
-                  <th className="py-2 pr-3 font-medium">Email</th>
+                  <th className="py-2 pr-3 font-medium">{s.people.email}</th>
                   <th className="py-2 pr-3 font-medium">
                     <button
                       className="font-medium"
@@ -362,7 +367,7 @@ export function OwnersPanel({
                       }
                       type="button"
                     >
-                      Status
+                      {s.common.status}
                       {ownerTableState.sort === "status"
                         ? ownerTableState.dir === "asc"
                           ? " ↑"
@@ -370,7 +375,7 @@ export function OwnersPanel({
                         : ""}
                     </button>
                   </th>
-                  <th className="py-2 font-medium">Action</th>
+                  <th className="py-2 font-medium">{s.common.action}</th>
                 </tr>
               </thead>
               <tbody>
@@ -393,7 +398,7 @@ export function OwnersPanel({
                       <td className="py-2 pr-3">{owner.full_name}</td>
                       <td className="py-2 pr-3">{owner.email ?? "-"}</td>
                       <td className="py-2 pr-3">
-                        {owner.active ? "Active" : "Inactive"}
+                        {owner.active ? s.common.active : s.common.inactive}
                       </td>
                       <td className="py-2">
                         <div className="flex flex-wrap gap-2">
@@ -406,7 +411,7 @@ export function OwnersPanel({
                               type: "owner",
                             })}
                           >
-                            Edit
+                            {s.common.edit}
                           </Link>
                           <form
                             action={
@@ -422,17 +427,17 @@ export function OwnersPanel({
                               }
                               confirmMessage={
                                 owner.active
-                                  ? `Deactivate owner "${owner.full_name}"? This owner will no longer be available for new active room ownership links.`
-                                  : `Reactivate owner "${owner.full_name}"? This owner will become available for room ownership links.`
+                                  ? fill(s.people.confirmDeactivateOwner, { name: owner.full_name })
+                                  : fill(s.people.confirmReactivateOwner, { name: owner.full_name })
                               }
                               pendingLabel={
                                 owner.active
-                                  ? "Deactivating..."
-                                  : "Reactivating..."
+                                  ? s.common.deactivating
+                                  : s.common.reactivating
                               }
                               type="submit"
                             >
-                              {owner.active ? "Deactivate" : "Reactivate"}
+                              {owner.active ? s.common.deactivate : s.common.reactivate}
                             </ConfirmSubmitButton>
                           </form>
                         </div>
@@ -445,7 +450,7 @@ export function OwnersPanel({
           </div>
           {pagedOwners.length === 0 ? (
             <p className="px-5 py-4 text-sm text-[var(--muted)]">
-              No owners match the selected criteria.
+              {s.people.noOwners}
             </p>
           ) : null}
           <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-4">
@@ -460,7 +465,7 @@ export function OwnersPanel({
               }
               type="button"
             >
-              Previous
+              {s.common.previous}
             </button>
             <div className="text-sm text-[var(--muted)]">
               {ownerPageStart}-{ownerPageEnd} / {ownerTotal}
@@ -476,7 +481,7 @@ export function OwnersPanel({
               }
               type="button"
             >
-              Next
+              {s.common.next}
             </button>
           </div>
         </section>

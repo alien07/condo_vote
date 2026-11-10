@@ -1,4 +1,5 @@
 import { AdminWorkspace } from "@/features/admin/components/admin-workspace";
+import { getStaffI18n } from "@/lib/i18n/server";
 
 type AdminOwnershipPageProps = {
   searchParams: Promise<{
@@ -38,11 +39,12 @@ function ownershipCreateHref(
 export default async function AdminOwnershipPage({
   searchParams,
 }: AdminOwnershipPageProps) {
+  const { s } = await getStaffI18n();
   const params = await searchParams;
 
   return (
     <AdminWorkspace
-      description="Link owners to rooms and maintain effective ownership dates."
+      description={s.adminHome.pages.ownershipText}
       drawer={{
         id: params.id,
         mode: params.mode,
@@ -50,7 +52,7 @@ export default async function AdminOwnershipPage({
       }}
       ownershipCreateHref={ownershipCreateHref(params)}
       sections={["ownership"]}
-      title="Ownership"
+      title={s.adminHome.pages.ownershipTitle}
     />
   );
 }

@@ -73,7 +73,12 @@ export async function AuthenticatedShell({ children }: AuthenticatedShellProps) 
           </div>
         </div>
         <AppShellNav
-          labels={{ ...t.shell.nav, ...t.shell.crumbs, back: t.shell.back }}
+          labels={{
+            ...t.shell.nav,
+            ...t.shell.crumbs,
+            back: t.shell.back,
+            adminSections: isStaff ? getStaffDictionary(locale).adminHome.nav : undefined,
+          }}
           isAdmin={isAdmin}
           isCommittee={roles.includes("committee")}
           isSystemAdmin={roles.includes("system_admin")}

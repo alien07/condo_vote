@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { getStaffI18n } from "@/lib/i18n/server";
 import { redirect } from "next/navigation";
 import { writeAuditLog } from "@/lib/audit/business-audit";
 import { requireAdmin } from "@/lib/auth/permissions";
@@ -15,6 +16,10 @@ function text(formData: FormData, name: string) {
   const value = String(formData.get(name) ?? "").trim();
 
   return value ? value : null;
+}
+
+async function recordText() {
+  return (await getStaffI18n()).s.meetings.recordMessages;
 }
 
 function recordHref(meetingId: string, tone: "success" | "error", message: string) {
@@ -34,11 +39,11 @@ export async function saveMeetingRecord(formData: FormData) {
   const meetingRound = text(formData, "meeting_round") ?? "first";
 
   if (noticeInput && !noticeSentAt) {
-    done(meetingId, "error", "Notice date must be a valid date and time.");
+    done(meetingId, "error", (await recordText()).badNotice);
   }
 
   if (!["first", "reconvened"].includes(meetingRound)) {
-    done(meetingId, "error", "Choose the first meeting or a reconvened meeting.");
+    done(meetingId, "error", (await recordText()).badRound);
   }
 
   const supabase = await createClient();
@@ -65,7 +70,7 @@ export async function saveMeetingRecord(formData: FormData) {
     entityType: "meeting",
   });
 
-  done(meetingId, "success", "Meeting record saved");
+  done(meetingId, "success", (await recordText()).saved);
 }
 
 export async function addMeetingIncident(formData: FormData) {
@@ -77,11 +82,11 @@ export async function addMeetingIncident(formData: FormData) {
   const description = text(formData, "description");
 
   if (!startedAt || !description) {
-    done(meetingId, "error", "Incident start time and description are required.");
+    done(meetingId, "error", (await recordText()).incidentRequired);
   }
 
   if (endedInput && (!endedAt || endedAt < startedAt)) {
-    done(meetingId, "error", "Incident end must be a valid time after its start.");
+    done(meetingId, "error", (await recordText()).incidentEnd);
   }
 
   const supabase = await createClient();
@@ -109,7 +114,7 @@ export async function addMeetingIncident(formData: FormData) {
     entityType: "meeting_incident",
   });
 
-  done(meetingId, "success", "Incident added");
+  done(meetingId, "success", (await recordText()).incidentAdded);
 }
 
 export async function deleteMeetingIncident(formData: FormData) {
@@ -131,5 +136,5 @@ export async function deleteMeetingIncident(formData: FormData) {
     entityType: "meeting_incident",
   });
 
-  done(meetingId, "success", "Incident removed");
+  done(meetingId, "success", (await recordText()).incidentRemoved);
 }

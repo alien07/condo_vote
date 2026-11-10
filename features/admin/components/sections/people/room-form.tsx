@@ -1,5 +1,6 @@
 "use client";
 
+import { useStaffText } from "@/lib/i18n/staff/client";
 import { useActionState, useRef } from "react";
 import { createRoomWithState, updateRoomWithState } from "@/features/admin/actions";
 import { FieldLabel, RequiredNote } from "@/features/admin/components/field-label";
@@ -25,6 +26,7 @@ export function RoomForm({
   mode: "create" | "edit";
   room?: Room;
 }) {
+  const { s } = useStaffText();
   const formRef = useRef<HTMLFormElement>(null);
   const [state, formAction] = useActionState(
     mode === "create" ? createRoomWithState : updateRoomWithState,
@@ -38,7 +40,7 @@ export function RoomForm({
       <FormErrorSummary state={state} />
       {room ? <input name="id" type="hidden" value={room.id} /> : null}
       <label className="grid gap-1 text-sm font-medium">
-        <FieldLabel required>Room number</FieldLabel>
+        <FieldLabel required>{s.people.roomNumber}</FieldLabel>
         <input
           autoFocus
           aria-required="true"
@@ -50,7 +52,7 @@ export function RoomForm({
         <FieldError fieldName="room_number" state={state} />
       </label>
       <label className="grid gap-1 text-sm font-medium">
-        <FieldLabel required>Ownership %</FieldLabel>
+        <FieldLabel required>{s.people.ownershipPercent}</FieldLabel>
         <input
           aria-required="true"
           className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
@@ -67,7 +69,7 @@ export function RoomForm({
         <FieldError fieldName="ownership_percent" state={state} />
       </label>
       <label className="grid gap-1 text-sm font-medium">
-        Building
+        {s.people.building}
         <input
           className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
           defaultValue={stateValue(state, "building", room?.building)}
@@ -75,7 +77,7 @@ export function RoomForm({
         />
       </label>
       <label className="grid gap-1 text-sm font-medium">
-        Floor
+        {s.people.floor}
         <input
           className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
           defaultValue={stateValue(state, "floor", room?.floor)}
@@ -83,7 +85,7 @@ export function RoomForm({
         />
       </label>
       <label className="grid gap-1 text-sm font-medium">
-        Area size
+        {s.people.areaSize}
         <input
           className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
           defaultValue={stateValue(state, "area_size", room?.area_size)}
@@ -93,15 +95,15 @@ export function RoomForm({
         />
       </label>
       <div className="mt-2 flex flex-wrap gap-2">
-        <DrawerSubmitButton pendingLabel={mode === "create" ? "Adding..." : "Saving..."}>
-          {mode === "create" ? "Create room" : "Save changes"}
+        <DrawerSubmitButton pendingLabel={mode === "create" ? s.people.adding : s.common.saving}>
+          {mode === "create" ? s.people.createRoom : s.people.saveChanges}
         </DrawerSubmitButton>
         <FormResetButton label={mode === "create" ? "Clear form" : "Reset changes"} />
         <Link
           className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-4 py-2 text-sm font-medium"
           href={closeHref}
         >
-          Cancel
+          {s.common.cancel}
         </Link>
       </div>
     </form>

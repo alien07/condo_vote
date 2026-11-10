@@ -1,5 +1,7 @@
 "use client";
 
+import { useStaffText } from "@/lib/i18n/staff/client";
+import { fill } from "@/lib/i18n/template";
 import { useActionState, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import {
@@ -115,6 +117,7 @@ export function CommitteeCrudDrawer({
   mode,
   profiles,
 }: CommitteeCrudDrawerProps) {
+  const { s } = useStaffText();
   const formRef = useRef<HTMLFormElement>(null);
   const searchParams = useSearchParams();
   const [state, formAction] = useActionState(
@@ -171,13 +174,13 @@ export function CommitteeCrudDrawer({
       summary={
         mode === "edit" && member
           ? [
-              `Committee member: ${member.full_name}`,
-              `Position: ${member.position_title}`,
+              fill(s.setup.memberSummary, { name: member.full_name }),
+              fill(s.setup.positionSummary, { position: member.position_title }),
             ]
-          : ["New committee member"]
+          : [s.setup.newMember]
       }
       title={
-        mode === "edit" ? "Edit committee member" : "Add committee member"
+        mode === "edit" ? s.setup.editMember : s.setup.addMember
       }
     >
       <form action={formAction} className="grid gap-3" noValidate ref={formRef}>
@@ -194,13 +197,13 @@ export function CommitteeCrudDrawer({
           <input name="id" type="hidden" value={member.id} />
         ) : null}
         <label className="grid gap-1 text-sm font-medium">
-          Profile
+          {s.setup.profile}
           <select
             className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
             defaultValue={stateValue(state, "profile_id", member?.profile_id)}
             name="profile_id"
           >
-            <option value="">Profile optional</option>
+            <option value="">{s.setup.profileOptional}</option>
             {profiles.map((profile) => (
               <option key={profile.id} value={profile.id}>
                 {profile.full_name ?? profile.email} ({profile.email})
@@ -209,7 +212,7 @@ export function CommitteeCrudDrawer({
           </select>
         </label>
         <label className="grid gap-1 text-sm font-medium">
-          <FieldLabel required>Committee name</FieldLabel>
+          <FieldLabel required>{s.setup.memberName}</FieldLabel>
           <input
             {...fieldProps("full_name", state)}
             autoFocus
@@ -220,7 +223,7 @@ export function CommitteeCrudDrawer({
           <FieldError fieldName="full_name" state={state} />
         </label>
         <label className="grid gap-1 text-sm font-medium">
-          <FieldLabel required>Position</FieldLabel>
+          <FieldLabel required>{s.common.position}</FieldLabel>
           <input
             {...fieldProps("position_title", state)}
             className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
@@ -234,7 +237,7 @@ export function CommitteeCrudDrawer({
           <FieldError fieldName="position_title" state={state} />
         </label>
         <label className="grid gap-1 text-sm font-medium">
-          Display order
+          {s.setup.displayOrder}
           <input
             {...fieldProps("display_order", state)}
             className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
@@ -250,7 +253,7 @@ export function CommitteeCrudDrawer({
           <FieldError fieldName="display_order" state={state} />
         </label>
         <label className="grid gap-1 text-sm font-medium">
-          Term starts
+          {s.setup.termStarts}
           <input
             className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
             defaultValue={stateValue(
@@ -263,7 +266,7 @@ export function CommitteeCrudDrawer({
           />
         </label>
         <label className="grid gap-1 text-sm font-medium">
-          Term ends
+          {s.setup.termEnds}
           <input
             {...fieldProps("term_ends_at", state)}
             className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
@@ -284,16 +287,16 @@ export function CommitteeCrudDrawer({
               name="active"
               type="checkbox"
             />
-            Active
+            {s.common.active}
           </label>
         ) : null}
         <div className="flex flex-wrap gap-2 pt-2">
           <PendingSubmitButton
             className="rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)]"
-            pendingLabel={mode === "edit" ? "Saving..." : "Adding..."}
+            pendingLabel={mode === "edit" ? s.common.saving : s.setup.adding}
             type="submit"
           >
-            {mode === "edit" ? "Save committee member" : "Add committee member"}
+            {mode === "edit" ? s.setup.saveMember : s.setup.addMember}
           </PendingSubmitButton>
           <FormResetButton
             label={mode === "edit" ? "Reset changes" : "Clear form"}
@@ -302,7 +305,7 @@ export function CommitteeCrudDrawer({
             className="inline-flex items-center justify-center rounded-md border border-[var(--border)] px-4 py-2 text-sm font-medium"
             href={closeHref}
           >
-            Cancel
+            {s.common.cancel}
           </a>
         </div>
       </form>

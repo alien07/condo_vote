@@ -1,5 +1,7 @@
 "use client";
 
+import { useStaffText } from "@/lib/i18n/staff/client";
+import { fill } from "@/lib/i18n/template";
 import { bangkokDateTimeParts } from "@/lib/datetime";
 import { useState } from "react";
 import { PendingSubmitButton } from "@/features/debug/tracked-submit-button";
@@ -97,6 +99,7 @@ export function AuditLogTable({
   initialRows,
   initialTotal,
 }: AuditLogTableProps) {
+  const { s } = useStaffText();
   const [criteria, setCriteria] = useState(initialFilters);
   const [appliedFilters, setAppliedFilters] = useState(initialFilters);
   const [rows, setRows] = useState(initialRows);
@@ -122,7 +125,7 @@ export function AuditLogTable({
       });
 
       if (!response.ok) {
-        throw new Error("Could not load audit logs.");
+        throw new Error(s.setup.auditLoadFailed);
       }
 
       const payload = (await response.json()) as AuditApiResponse;
@@ -150,7 +153,7 @@ export function AuditLogTable({
       setError(
         caughtError instanceof Error
           ? caughtError.message
-          : "Could not load audit logs.",
+          : s.setup.auditLoadFailed,
       );
     } finally {
       setLoading(false);
@@ -161,10 +164,9 @@ export function AuditLogTable({
     <div>
       <section className="rounded-md border border-[var(--border)] bg-[var(--background)] p-4">
         <div className="mb-3">
-          <h3 className="text-sm font-semibold">Search Criteria</h3>
+          <h3 className="text-sm font-semibold">{s.common.searchCriteria}</h3>
           <p className="mt-1 text-xs text-[var(--muted)]">
-            Filter audit events by time range, actor, and action. Results update
-            without reloading the whole page.
+            {s.setup.auditFilter}
           </p>
         </div>
         <form
@@ -175,7 +177,7 @@ export function AuditLogTable({
           }}
         >
           <label className="grid gap-1 text-xs font-medium text-[var(--muted)] lg:col-span-3">
-            From
+            {s.common.from}
             <input
               className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)]"
               onChange={(event) => {
@@ -192,7 +194,7 @@ export function AuditLogTable({
             />
           </label>
           <label className="grid gap-1 text-xs font-medium text-[var(--muted)] lg:col-span-3">
-            To
+            {s.common.to}
             <input
               className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)]"
               onChange={(event) => {
@@ -209,7 +211,7 @@ export function AuditLogTable({
             />
           </label>
           <label className="grid gap-1 text-xs font-medium text-[var(--muted)] lg:col-span-3">
-            Actor
+            {s.common.actor}
             <select
               className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)]"
               onChange={(event) => {
@@ -222,7 +224,7 @@ export function AuditLogTable({
               }}
               value={criteria.actor}
             >
-              <option value="">All actors</option>
+              <option value="">{s.setup.allActors}</option>
               {actors.map((actor) => (
                 <option key={actor.id} value={actor.id}>
                   {actor.label}
@@ -231,7 +233,7 @@ export function AuditLogTable({
             </select>
           </label>
           <label className="grid gap-1 text-xs font-medium text-[var(--muted)] lg:col-span-8">
-            Actions
+            {s.common.actions}
             <select
               className="min-h-24 rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)]"
               multiple
@@ -254,10 +256,10 @@ export function AuditLogTable({
           <div className="flex flex-wrap items-end justify-center gap-2 lg:col-span-4">
             <PendingSubmitButton
               className="min-h-10 rounded-md bg-[var(--primary)] px-5 py-2 text-sm font-medium text-[var(--primary-foreground)]"
-              pendingLabel="Searching..."
+              pendingLabel={s.common.searching}
               type="submit"
             >
-              Search
+              {s.common.search}
             </PendingSubmitButton>
             <button
               className="inline-flex min-h-10 items-center rounded-md border border-[var(--border)] bg-[var(--surface)] px-5 py-2 text-sm font-medium"
@@ -277,7 +279,7 @@ export function AuditLogTable({
               }}
               type="button"
             >
-              Clear
+              {s.common.clear}
             </button>
           </div>
         </form>
@@ -289,21 +291,21 @@ export function AuditLogTable({
       >
         {loading ? (
           <div className="absolute inset-0 z-10 flex items-start justify-center bg-white/70 pt-16 text-sm font-medium text-[var(--muted)]">
-            Loading results...
+            {s.common.loadingResults}
           </div>
         ) : null}
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--border)] px-4 py-3">
           <div>
-            <h3 className="text-sm font-semibold">Results</h3>
+            <h3 className="text-sm font-semibold">{s.common.results}</h3>
             <p className="mt-1 text-xs text-[var(--muted)]">
-              Showing {pageStart}-{pageEnd} of {total}
+              {fill(s.common.showing, { start: pageStart, end: pageEnd, total: total })}
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2 rounded-md border border-[var(--border)] bg-[var(--background)] px-3 py-2">
             <label className="flex items-center gap-2 text-xs font-medium text-[var(--muted)]">
-              <span>Page</span>
+              <span>{s.common.page}</span>
               <select
-                aria-label="Page"
+                aria-label={s.common.page}
                 className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-2 py-1 text-sm text-[var(--foreground)]"
                 disabled={loading || totalPages <= 1}
                 onChange={(event) => {
@@ -328,9 +330,9 @@ export function AuditLogTable({
             </label>
             <div className="hidden h-6 w-px bg-[var(--border)] sm:block" />
             <label className="flex items-center gap-2 text-xs font-medium text-[var(--muted)]">
-              <span>Per page</span>
+              <span>{s.common.perPage}</span>
               <select
-                aria-label="Per page"
+                aria-label={s.common.perPage}
                 className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-2 py-1 text-sm text-[var(--foreground)]"
                 disabled={loading}
                 onChange={(event) => {
@@ -362,10 +364,10 @@ export function AuditLogTable({
             <thead className="bg-[var(--background)] text-[var(--muted)]">
               <tr className="border-b border-[var(--border)]">
                 {[
-                  ["time", "Time"],
-                  ["actor", "Actor"],
-                  ["action", "Action"],
-                  ["entity", "Entity"],
+                  ["time", s.common.time],
+                  ["actor", s.common.actor],
+                  ["action", s.common.action],
+                  ["entity", s.common.entity],
                 ].map(([sort, label]) => (
                   <th
                     className={
@@ -403,7 +405,7 @@ export function AuditLogTable({
                     </button>
                   </th>
                 ))}
-                <th className="px-4 py-3 font-medium">Details</th>
+                <th className="px-4 py-3 font-medium">{s.common.details}</th>
               </tr>
             </thead>
             <tbody>
@@ -440,7 +442,7 @@ export function AuditLogTable({
         </div>
         {rows.length === 0 ? (
           <p className="px-4 py-4 text-sm text-[var(--muted)]">
-            No audit log rows match the selected criteria.
+            {s.setup.noAudit}
           </p>
         ) : null}
         <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
@@ -452,7 +454,7 @@ export function AuditLogTable({
             }
             type="button"
           >
-            Previous
+            {s.common.previous}
           </button>
           <div className="text-sm text-[var(--muted)]">
             {pageStart}-{pageEnd} / {total}
@@ -465,7 +467,7 @@ export function AuditLogTable({
             }
             type="button"
           >
-            Next
+            {s.common.next}
           </button>
         </div>
       </section>

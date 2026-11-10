@@ -1,8 +1,10 @@
+import { getStaffI18n } from "@/lib/i18n/server";
 import Link from "next/link";
 import { FileSpreadsheet } from "lucide-react";
 import { MasterDataImportForms } from "@/features/admin/components/master-data-import-forms";
 
-export default function AdminPeopleImportPage() {
+export default async function AdminPeopleImportPage() {
+  const { s } = await getStaffI18n();
   return (
     <main className="min-h-screen px-6 py-8">
       <section className="mx-auto max-w-5xl">
@@ -11,18 +13,16 @@ export default function AdminPeopleImportPage() {
             className="mb-4 inline-flex text-sm font-medium text-[var(--primary)]"
             href="/admin/people"
           >
-            Back to People
+            {s.people.backToPeople}
           </Link>
           <div className="flex items-center gap-3">
             <FileSpreadsheet className="text-[var(--primary)]" size={26} />
             <div>
               <h1 className="text-2xl font-semibold">
-                Excel Import Master Data
+                {s.people.importTitle}
               </h1>
               <p className="text-sm text-[var(--muted)]">
-                Download the locked Excel template for each master table, edit
-                only the input rows, then upload the same .xlsx file. Imports
-                are upserts only; deletion stays in the edit/update menus.
+                {s.people.importIntro}
               </p>
             </div>
           </div>

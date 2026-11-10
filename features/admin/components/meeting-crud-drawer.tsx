@@ -1,5 +1,7 @@
 "use client";
 
+import { useStaffText } from "@/lib/i18n/staff/client";
+import { codeLabel, fill } from "@/lib/i18n/template";
 import { isoToBangkokLocalInput } from "@/lib/datetime";
 import { useActionState, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
@@ -120,6 +122,7 @@ export function MeetingCrudDrawer({
   meeting,
   mode,
 }: MeetingCrudDrawerProps) {
+  const { s } = useStaffText();
   const formRef = useRef<HTMLFormElement>(null);
   const searchParams = useSearchParams();
   const [state, formAction] = useActionState(
@@ -173,10 +176,13 @@ export function MeetingCrudDrawer({
       closeHref={closeHref}
       summary={
         mode === "edit" && meeting
-          ? [`Meeting: ${meeting.title}`, `Status: ${meeting.status}`]
-          : ["New meeting"]
+          ? [
+              fill(s.meetings.meetingSummary, { title: meeting.title }),
+              fill(s.meetings.statusSummary, { status: codeLabel(s.common.code, meeting.status) }),
+            ]
+          : [s.meetings.newMeeting]
       }
-      title={mode === "edit" ? "Edit meeting" : "Add meeting"}
+      title={mode === "edit" ? s.meetings.editMeeting : s.meetings.add}
     >
       <form action={formAction} className="grid gap-3" noValidate ref={formRef}>
         <RequiredNote />
@@ -192,7 +198,7 @@ export function MeetingCrudDrawer({
           <input name="id" type="hidden" value={meeting.id} />
         ) : null}
         <label className="grid gap-1 text-sm font-medium">
-          <FieldLabel required>Meeting title</FieldLabel>
+          <FieldLabel required>{s.meetings.meetingTitle}</FieldLabel>
           <input
             {...fieldProps("title", state)}
             autoFocus
@@ -206,7 +212,7 @@ export function MeetingCrudDrawer({
           className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
           defaultValue={stateValue(state, "video_url", meeting?.video_url)}
           name="video_url"
-          placeholder="Video URL"
+          placeholder={s.meetings.videoUrl}
           type="url"
         />
         <input
@@ -217,10 +223,10 @@ export function MeetingCrudDrawer({
             meeting?.meeting_number,
           )}
           name="meeting_number"
-          placeholder="Meeting no."
+          placeholder={s.meetings.meetingNo}
         />
         <label className="grid gap-1 text-sm font-medium">
-          <FieldLabel required>Meeting type</FieldLabel>
+          <FieldLabel required>{s.meetings.meetingType}</FieldLabel>
           <select
             {...fieldProps("meeting_type", state)}
             className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
@@ -231,10 +237,10 @@ export function MeetingCrudDrawer({
             )}
             name="meeting_type"
           >
-            <option value="online_vote">Online vote</option>
-            <option value="agm">AGM</option>
-            <option value="egm">EGM</option>
-            <option value="committee">Committee</option>
+            <option value="online_vote">{s.meetings.onlineVote}</option>
+            <option value="agm">{s.meetings.agm}</option>
+            <option value="egm">{s.meetings.egm}</option>
+            <option value="committee">{s.meetings.committeeType}</option>
           </select>
           <FieldError fieldName="meeting_type" state={state} />
         </label>
@@ -242,13 +248,13 @@ export function MeetingCrudDrawer({
           className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
           defaultValue={stateValue(state, "fiscal_year", meeting?.fiscal_year)}
           name="fiscal_year"
-          placeholder="Fiscal year"
+          placeholder={s.meetings.fiscalYear}
         />
         <input
           className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
           defaultValue={stateValue(state, "location", meeting?.location)}
           name="location"
-          placeholder="Location / platform"
+          placeholder={s.meetings.location}
         />
         <input
           className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
@@ -258,10 +264,10 @@ export function MeetingCrudDrawer({
             meeting?.chairperson_name,
           )}
           name="chairperson_name"
-          placeholder="Chairperson"
+          placeholder={s.meetings.chairperson}
         />
         <label className="grid gap-1 text-sm font-medium">
-          <FieldLabel required>Quorum rule</FieldLabel>
+          <FieldLabel required>{s.meetings.quorumRule}</FieldLabel>
           <select
             {...fieldProps("quorum_rule", state)}
             className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
@@ -273,17 +279,17 @@ export function MeetingCrudDrawer({
             name="quorum_rule"
           >
             <option value="one_fourth_total_ownership">
-              Quorum: 1/4 ownership
+              {s.meetings.quorumQuarter}
             </option>
             <option value="not_required_second_call">
-              Second call: no quorum
+              {s.meetings.quorumNone}
             </option>
-            <option value="committee_policy">Committee policy</option>
+            <option value="committee_policy">{s.meetings.quorumCommittee}</option>
           </select>
           <FieldError fieldName="quorum_rule" state={state} />
         </label>
         <label className="grid gap-1 text-sm font-medium">
-          <FieldLabel required>Committee approvals needed</FieldLabel>
+          <FieldLabel required>{s.meetings.approvalsNeeded}</FieldLabel>
           <input
             {...fieldProps("required_approvals", state)}
             className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
@@ -298,12 +304,12 @@ export function MeetingCrudDrawer({
             type="number"
           />
           <span className="text-xs font-normal text-[var(--muted)]">
-            Approvals needed to publish the result or to close voting early.
+            {s.meetings.approvalsHelp}
           </span>
           <FieldError fieldName="required_approvals" state={state} />
         </label>
         <label className="grid gap-1 text-sm font-medium">
-          <FieldLabel required>Ballot</FieldLabel>
+          <FieldLabel required>{s.meetings.ballot}</FieldLabel>
           <select
             {...fieldProps("ballot_secrecy", state)}
             className="rounded-md border border-[var(--border)] px-3 py-2 text-sm disabled:bg-[var(--background)]"
@@ -315,16 +321,16 @@ export function MeetingCrudDrawer({
             disabled={Boolean(meeting && meeting.status !== "draft")}
             name="ballot_secrecy"
           >
-            <option value="open">Open ballot: admins can see each room&apos;s answers</option>
-            <option value="secret">Secret ballot: admins see totals only</option>
+            <option value="open">{s.meetings.openBallot}</option>
+            <option value="secret">{s.meetings.secretBallot}</option>
           </select>
           <span className="text-xs font-normal text-[var(--muted)]">
-            Cannot change after the meeting is published.
+            {s.meetings.ballotLocked}
           </span>
           <FieldError fieldName="ballot_secrecy" state={state} />
         </label>
         <label className="grid gap-1 text-sm font-medium">
-          <FieldLabel required>Meeting-day voting starts</FieldLabel>
+          <FieldLabel required>{s.meetings.dayStarts}</FieldLabel>
           <input
             {...fieldProps("starts_at", state)}
             className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
@@ -340,7 +346,7 @@ export function MeetingCrudDrawer({
           <FieldError fieldName="starts_at" state={state} />
         </label>
         <label className="grid gap-1 text-sm font-medium">
-          <FieldLabel required>Meeting-day voting ends</FieldLabel>
+          <FieldLabel required>{s.meetings.dayEnds}</FieldLabel>
           <input
             {...fieldProps("ends_at", state)}
             className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
@@ -356,14 +362,13 @@ export function MeetingCrudDrawer({
           <FieldError fieldName="ends_at" state={state} />
         </label>
         <fieldset className="grid gap-3 rounded-md border border-[var(--border)] p-3">
-          <legend className="px-1 text-sm font-medium">Advance voting (optional)</legend>
+          <legend className="px-1 text-sm font-medium">{s.meetings.advance}</legend>
           <p className="text-xs text-[var(--muted)]">
-            Lets owners vote before the meeting day. It must end before
-            meeting-day voting starts. Leave both empty for meeting-day voting only.
+            {s.meetings.advanceHelp}
           </p>
           <div className="grid gap-3 md:grid-cols-2">
             <label className="grid gap-1 text-sm font-medium">
-              Advance voting starts
+              {s.meetings.advanceStarts}
               <input
                 {...fieldProps("advance_starts_at", state)}
                 className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
@@ -379,7 +384,7 @@ export function MeetingCrudDrawer({
               <FieldError fieldName="advance_starts_at" state={state} />
             </label>
             <label className="grid gap-1 text-sm font-medium">
-              Advance voting ends
+              {s.meetings.advanceEnds}
               <input
                 {...fieldProps("advance_ends_at", state)}
                 className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
@@ -400,16 +405,16 @@ export function MeetingCrudDrawer({
           className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
           defaultValue={stateValue(state, "description", meeting?.description)}
           name="description"
-          placeholder="Description"
+          placeholder={s.meetings.description}
           rows={3}
         />
         <div className="flex flex-wrap gap-2 pt-2">
           <PendingSubmitButton
             className="rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)]"
-            pendingLabel={mode === "edit" ? "Saving..." : "Adding..."}
+            pendingLabel={mode === "edit" ? s.common.saving : s.meetings.adding}
             type="submit"
           >
-            {mode === "edit" ? "Save meeting" : "Add meeting"}
+            {mode === "edit" ? s.meetings.saveMeeting : s.meetings.add}
           </PendingSubmitButton>
           <FormResetButton
             label={mode === "edit" ? "Reset changes" : "Clear form"}
@@ -418,7 +423,7 @@ export function MeetingCrudDrawer({
             className="inline-flex items-center justify-center rounded-md border border-[var(--border)] px-4 py-2 text-sm font-medium"
             href={closeHref}
           >
-            Cancel
+            {s.common.cancel}
           </a>
         </div>
       </form>

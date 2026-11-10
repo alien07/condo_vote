@@ -1,4 +1,5 @@
 import { getAdminDashboardData } from "@/features/admin/data";
+import { getStaffI18n } from "@/lib/i18n/server";
 import { isSystemAdmin } from "@/lib/auth/permissions";
 import { AdminSoftNavigation } from "@/features/admin/components/admin-soft-navigation";
 import { ShieldCheck } from "lucide-react";
@@ -114,23 +115,7 @@ export async function AdminWorkspace({
       ? (requestedActiveSection as AdminSection)
       : sections[0];
   const visibleSections = new Set([activeSection]);
-  const sectionLabels = new Map<AdminSection, string>([
-    ["setup", "Setup"],
-    ["storage", "Storage"],
-    ["committee", "Committee"],
-    ["audit", "Audit"],
-    ["voting", "Voting"],
-    ["meetings", "Meetings"],
-    ["questions", "Questions"],
-    ["results", "Results"],
-    ["email", "Email"],
-    ["people", "Rooms & Owners"],
-    ["rooms", "Rooms"],
-    ["owners", "Owners"],
-    ["ownership", "Ownership"],
-    ["proxies", "Proxies"],
-    ["profiles", "Profiles"],
-  ]);
+  const { s } = await getStaffI18n();
 
   return (
     <main className="min-h-screen px-6 py-8">
@@ -149,10 +134,9 @@ export async function AdminWorkspace({
         {sections.length > 1 ? (
           <div className="sticky top-0 z-10 mb-5 border-b border-[var(--border)] bg-[var(--background)] py-3">
             <div className="mb-3">
-              <h2 className="text-sm font-semibold">Workspace sections</h2>
+              <h2 className="text-sm font-semibold">{s.adminHome.tabsTitle}</h2>
               <p className="mt-1 text-xs text-[var(--muted)]">
-                Use these tabs to switch between focused sections in this admin
-                workspace.
+                {s.adminHome.tabsIntro}
               </p>
             </div>
             <nav className="flex gap-2 overflow-x-auto text-sm">
@@ -171,7 +155,7 @@ export async function AdminWorkspace({
                     href={`?tab=${section}`}
                     key={section}
                   >
-                    {sectionLabels.get(section)}
+                    {s.adminHome.tabs[section]}
                   </a>
                 );
               })}

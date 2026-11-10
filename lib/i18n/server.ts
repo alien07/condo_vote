@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { cookies } from "next/headers";
 import { getDictionary, type Dictionary } from "@/lib/i18n/dictionaries";
 import { getStaffDictionary, type StaffDictionary } from "@/lib/i18n/staff";
@@ -6,7 +7,7 @@ import { createClient } from "@/lib/supabase/server";
 
 /** Language for this request: the switcher cookie, then the signed-in
  * profile, then Thai (D020). */
-export async function getLocale(): Promise<Locale> {
+export const getLocale = cache(async function getLocale(): Promise<Locale> {
   const cookieLocale = (await cookies()).get(LOCALE_COOKIE)?.value;
 
   if (isLocale(cookieLocale)) {
@@ -31,7 +32,7 @@ export async function getLocale(): Promise<Locale> {
   }
 
   return DEFAULT_LOCALE;
-}
+});
 
 export async function getI18n(): Promise<{ locale: Locale; t: Dictionary }> {
   const locale = await getLocale();

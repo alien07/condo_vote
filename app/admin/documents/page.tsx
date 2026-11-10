@@ -1,3 +1,4 @@
+import { getStaffI18n } from "@/lib/i18n/server";
 import Link from "next/link";
 import { FolderLock } from "lucide-react";
 import { DocumentRegistrationDrawer } from "@/features/admin/components/document-registration-drawer";
@@ -86,6 +87,7 @@ function getDocumentFilters(
 export default async function AdminDocumentsPage({
   searchParams,
 }: AdminDocumentsPageProps) {
+  const { s } = await getStaffI18n();
   await requireAdmin();
 
   const params = await searchParams;
@@ -107,10 +109,9 @@ export default async function AdminDocumentsPage({
             <div className="flex items-center gap-3">
               <FolderLock className="text-[var(--primary)]" size={26} />
               <div>
-                <h1 className="text-2xl font-semibold">Documents</h1>
+                <h1 className="text-2xl font-semibold">{s.documents.title}</h1>
                 <p className="text-sm text-[var(--muted)]">
-                  Search private document references and register document
-                  verification metadata.
+                  {s.documents.intro}
                 </p>
               </div>
             </div>
@@ -118,7 +119,7 @@ export default async function AdminDocumentsPage({
               className="inline-flex min-h-10 items-center justify-center rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)]"
               href={registerHref}
             >
-              Register document
+              {s.documents.register}
             </Link>
           </div>
         </div>

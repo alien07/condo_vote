@@ -13,6 +13,8 @@ type NavLabels = {
   ballot: string;
   resultDetail: string;
   back: string;
+  /** Admin area names for the breadcrumb (staff only). */
+  adminSections?: Record<string, string>;
 };
 
 type AppShellNavProps = {
@@ -70,7 +72,7 @@ function getBreadcrumbs(pathname: string, labels: NavLabels) {
       parts[1]
         ? {
             href: `/admin/${parts[1]}`,
-            label: parts[1].replaceAll("-", " "),
+            label: labels.adminSections?.[parts[1]] ?? parts[1].replaceAll("-", " "),
           }
         : null,
     ].filter((item): item is { href: string; label: string } => Boolean(item));

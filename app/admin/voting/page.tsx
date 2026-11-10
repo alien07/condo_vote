@@ -1,4 +1,5 @@
 import { AdminWorkspace } from "@/features/admin/components/admin-workspace";
+import { getStaffI18n } from "@/lib/i18n/server";
 import type { ManualVoteTableFilters } from "@/features/admin/components/admin-workspace";
 
 type AdminVotingPageProps = {
@@ -49,11 +50,12 @@ function getManualVoteFilters(
 export default async function AdminVotingPage({
   searchParams,
 }: AdminVotingPageProps) {
+  const { s } = await getStaffI18n();
   const params = await searchParams;
 
   return (
     <AdminWorkspace
-      description="Import manual ballots and resolve manual/online vote conflicts."
+      description={s.adminHome.pages.votingText}
       drawer={{
         id: params.id,
         mode: params.mode,
@@ -62,7 +64,7 @@ export default async function AdminVotingPage({
       focusedManualBallotId={params.focusManualBallotId}
       manualVoteFilters={getManualVoteFilters(params)}
       sections={["voting"]}
-      title="Voting"
+      title={s.adminHome.pages.votingTitle}
     />
   );
 }

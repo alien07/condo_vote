@@ -1,5 +1,7 @@
 "use client";
 
+import { useStaffText } from "@/lib/i18n/staff/client";
+import { fill } from "@/lib/i18n/template";
 import { bangkokDateTimeParts } from "@/lib/datetime";
 import { useEffect, useState } from "react";
 import { PendingSubmitButton } from "@/features/debug/tracked-submit-button";
@@ -86,6 +88,7 @@ export function DocumentRegistryTable({
   initialRows,
   initialTotal,
 }: DocumentRegistryTableProps) {
+  const { s } = useStaffText();
   const [criteria, setCriteria] = useState(initialFilters);
   const [appliedFilters, setAppliedFilters] = useState(initialFilters);
   const [rows, setRows] = useState(initialRows);
@@ -132,7 +135,7 @@ export function DocumentRegistryTable({
       });
 
       if (!response.ok) {
-        throw new Error("Could not load documents.");
+        throw new Error(s.documents.loadFailed);
       }
 
       const payload = (await response.json()) as DocumentApiResponse;
@@ -153,7 +156,7 @@ export function DocumentRegistryTable({
       setError(
         caughtError instanceof Error
           ? caughtError.message
-          : "Could not load documents.",
+          : s.documents.loadFailed,
       );
     } finally {
       setLoading(false);
@@ -173,9 +176,9 @@ export function DocumentRegistryTable({
     <div>
       <section className="rounded-md border border-[var(--border)] bg-[var(--background)] p-4">
         <div className="mb-3">
-          <h2 className="text-sm font-semibold">Search Criteria</h2>
+          <h2 className="text-sm font-semibold">{s.common.searchCriteria}</h2>
           <p className="mt-1 text-xs text-[var(--muted)]">
-            Filter document references by document set and document type.
+            {s.documents.filter}
           </p>
         </div>
         <form
@@ -186,7 +189,7 @@ export function DocumentRegistryTable({
           }}
         >
           <label className="grid gap-1 text-xs font-medium text-[var(--muted)] md:col-span-5">
-            Set
+            {s.documents.set}
             <input
               className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)]"
               onChange={(event) => {
@@ -197,12 +200,12 @@ export function DocumentRegistryTable({
                   set: value,
                 }));
               }}
-              placeholder="Search document set"
+              placeholder={s.documents.searchSet}
               value={criteria.set}
             />
           </label>
           <label className="grid gap-1 text-xs font-medium text-[var(--muted)] md:col-span-4">
-            Type
+            {s.documents.type}
             <select
               className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)]"
               onChange={(event) => {
@@ -215,7 +218,7 @@ export function DocumentRegistryTable({
               }}
               value={criteria.type}
             >
-              <option value="all">All types</option>
+              <option value="all">{s.documents.allTypes}</option>
               {documentTypes.map((type) => (
                 <option key={type} value={type}>
                   {type}
@@ -226,10 +229,10 @@ export function DocumentRegistryTable({
           <div className="flex flex-wrap items-end justify-center gap-2 md:col-span-3">
             <PendingSubmitButton
               className="min-h-10 rounded-md bg-[var(--primary)] px-5 py-2 text-sm font-medium text-[var(--primary-foreground)]"
-              pendingLabel="Searching..."
+              pendingLabel={s.common.searching}
               type="submit"
             >
-              Search
+              {s.common.search}
             </PendingSubmitButton>
             <button
               className="inline-flex min-h-10 items-center rounded-md border border-[var(--border)] bg-[var(--surface)] px-5 py-2 text-sm font-medium"
@@ -247,7 +250,7 @@ export function DocumentRegistryTable({
               }}
               type="button"
             >
-              Clear
+              {s.common.clear}
             </button>
           </div>
         </form>
@@ -259,21 +262,21 @@ export function DocumentRegistryTable({
       >
         {loading ? (
           <div className="absolute inset-0 z-10 flex items-start justify-center bg-white/70 pt-16 text-sm font-medium text-[var(--muted)]">
-            Loading results...
+            {s.common.loadingResults}
           </div>
         ) : null}
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--border)] px-4 py-3">
           <div>
-            <h2 className="text-sm font-semibold">Results</h2>
+            <h2 className="text-sm font-semibold">{s.common.results}</h2>
             <p className="mt-1 text-xs text-[var(--muted)]">
-              Showing {pageStart}-{pageEnd} of {total}
+              {fill(s.common.showing, { start: pageStart, end: pageEnd, total: total })}
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2 rounded-md border border-[var(--border)] bg-[var(--background)] px-3 py-2">
             <label className="flex items-center gap-2 text-xs font-medium text-[var(--muted)]">
-              Page
+              {s.common.page}
               <select
-                aria-label="Page"
+                aria-label={s.common.page}
                 className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-2 py-1 text-sm text-[var(--foreground)]"
                 disabled={loading || totalPages <= 1}
                 onChange={(event) => {
@@ -295,9 +298,9 @@ export function DocumentRegistryTable({
             </label>
             <div className="hidden h-6 w-px bg-[var(--border)] sm:block" />
             <label className="flex items-center gap-2 text-xs font-medium text-[var(--muted)]">
-              Per page
+              {s.common.perPage}
               <select
-                aria-label="Per page"
+                aria-label={s.common.perPage}
                 className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-2 py-1 text-sm text-[var(--foreground)]"
                 disabled={loading}
                 onChange={(event) => {
@@ -325,9 +328,9 @@ export function DocumentRegistryTable({
             <thead className="bg-[var(--background)] text-[var(--muted)]">
               <tr className="border-b border-[var(--border)]">
                 {[
-                  ["set", "Set / version"],
-                  ["type", "Type"],
-                  ["created", "Created"],
+                  ["set", s.documents.setVersion],
+                  ["type", s.documents.type],
+                  ["created", s.documents.created],
                 ].map(([sort, label]) => (
                   <th className="px-4 py-3 font-medium" key={sort}>
                     <button
@@ -344,8 +347,8 @@ export function DocumentRegistryTable({
                     </button>
                   </th>
                 ))}
-                <th className="px-4 py-3 font-medium">Provider</th>
-                <th className="px-4 py-3 font-medium">Path or link</th>
+                <th className="px-4 py-3 font-medium">{s.documents.providerColumn}</th>
+                <th className="px-4 py-3 font-medium">{s.documents.pathColumn}</th>
                 <th className="px-4 py-3 font-medium">SHA-256</th>
               </tr>
             </thead>
@@ -390,7 +393,7 @@ export function DocumentRegistryTable({
         </div>
         {rows.length === 0 ? (
           <p className="px-4 py-4 text-sm text-[var(--muted)]">
-            No private document references match the selected criteria.
+            {s.documents.noDocuments}
           </p>
         ) : null}
         <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
@@ -402,7 +405,7 @@ export function DocumentRegistryTable({
             }
             type="button"
           >
-            Previous
+            {s.common.previous}
           </button>
           <div className="text-sm text-[var(--muted)]">
             {pageStart}-{pageEnd} / {total}
@@ -415,7 +418,7 @@ export function DocumentRegistryTable({
             }
             type="button"
           >
-            Next
+            {s.common.next}
           </button>
         </div>
       </section>

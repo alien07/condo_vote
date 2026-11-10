@@ -1,5 +1,7 @@
 "use client";
 
+import { useStaffText } from "@/lib/i18n/staff/client";
+import { fill } from "@/lib/i18n/template";
 import Link from "next/link";
 import { Building2 } from "lucide-react";
 import { deactivateRoom, reactivateRoom } from "@/features/admin/actions";
@@ -26,6 +28,7 @@ export function RoomsPanel({
   drawer,
   rooms,
 }: RoomsPanelProps) {
+  const { s } = useStaffText();
   const searchParams = useSearchParams();
   const [roomCriteria, setRoomCriteria] = useState(() =>
     roomTableStateFromParams(searchParams),
@@ -68,8 +71,8 @@ export function RoomsPanel({
     if (drawer?.mode === "create" && drawer.type === "room") {
       return {
         content: <RoomForm closeHref={closeHref} mode="create" />,
-        summary: ["New room master data"],
-        title: "Add room",
+        summary: [s.people.newRoom],
+        title: s.people.addRoom,
       };
     }
 
@@ -77,15 +80,18 @@ export function RoomsPanel({
       return {
         content: <RoomForm closeHref={closeHref} mode="edit" room={selectedRoom} />,
         summary: [
-          `Room: ${selectedRoom.room_number}`,
-          `Status: ${selectedRoom.active ? "Active" : "Inactive"}`,
+          fill(s.people.roomSummary, { room: selectedRoom.room_number }),
+          fill(s.people.statusSummary, {
+            status: selectedRoom.active ? s.common.active : s.common.inactive,
+          }),
         ],
-        title: "Edit room",
+        title: s.people.editRoom,
       };
     }
 
     return null;
   }, [
+    s,
     activeSection,
     closeHref,
     drawer?.mode,
@@ -196,10 +202,9 @@ export function RoomsPanel({
       <section className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-5">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="max-w-3xl">
-            <h2 className="text-lg font-semibold">Rooms Master Data</h2>
+            <h2 className="text-lg font-semibold">{s.people.roomsTitle}</h2>
             <p className="mt-2 text-sm text-[var(--muted)]">
-              Maintain room records used before linking ownership in the
-              Ownership workspace.
+              {s.people.roomsIntro}
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -207,13 +212,13 @@ export function RoomsPanel({
               className="inline-flex min-h-10 items-center justify-center rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)]"
               href={buildHref({ mode: "create", tab: "rooms", type: "room" })}
             >
-              Add room
+              {s.people.addRoom}
             </Link>
             <Link
               className="inline-flex min-h-10 items-center justify-center rounded-md border border-[var(--border)] bg-[var(--surface)] px-4 py-2 text-sm font-medium"
               href="/admin/people/import"
             >
-              Import Master Data
+              {s.people.importMaster}
             </Link>
           </div>
         </div>
@@ -221,9 +226,9 @@ export function RoomsPanel({
 
       <section className="rounded-lg border border-[var(--border)] bg-[var(--background)] p-5">
         <div className="mb-3">
-          <h2 className="text-sm font-semibold">Search Criteria</h2>
+          <h2 className="text-sm font-semibold">{s.common.searchCriteria}</h2>
           <p className="mt-1 text-xs text-[var(--muted)]">
-            Filter rooms by room number and active status.
+            {s.people.roomsFilter}
           </p>
         </div>
         <form
@@ -234,7 +239,7 @@ export function RoomsPanel({
           }}
         >
           <label className="grid gap-1 text-xs font-medium text-[var(--muted)] md:col-span-5">
-            Room
+            {s.people.room}
             <input
               className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)]"
               onChange={(event) => {
@@ -242,12 +247,12 @@ export function RoomsPanel({
 
                 setRoomCriteria((current) => ({ ...current, room: value }));
               }}
-              placeholder="Search room number"
+              placeholder={s.people.searchRoom}
               value={roomCriteria.room}
             />
           </label>
           <label className="grid gap-1 text-xs font-medium text-[var(--muted)] md:col-span-3">
-            Status
+            {s.common.status}
             <select
               className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)]"
               onChange={(event) => {
@@ -257,9 +262,9 @@ export function RoomsPanel({
               }}
               value={roomCriteria.status}
             >
-              <option value="all">All statuses</option>
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
+              <option value="all">{s.common.allStatuses}</option>
+              <option value="active">{s.common.active}</option>
+              <option value="inactive">{s.common.inactive}</option>
             </select>
           </label>
           <div className="flex flex-wrap items-end justify-center gap-2 md:col-span-4">
@@ -267,7 +272,7 @@ export function RoomsPanel({
               className="min-h-10 rounded-md bg-[var(--primary)] px-5 py-2 text-sm font-medium text-[var(--primary-foreground)]"
               type="submit"
             >
-              Search
+              {s.common.search}
             </button>
             <button
               className="inline-flex min-h-10 items-center rounded-md border border-[var(--border)] bg-[var(--surface)] px-5 py-2 text-sm font-medium"
@@ -283,7 +288,7 @@ export function RoomsPanel({
               }
               type="button"
             >
-              Clear
+              {s.common.clear}
             </button>
           </div>
         </form>
@@ -295,17 +300,17 @@ export function RoomsPanel({
             <div className="flex items-center gap-2">
               <Building2 className="text-[var(--primary)]" size={20} />
               <div>
-                <h2 className="text-lg font-semibold">Rooms</h2>
+                <h2 className="text-lg font-semibold">{s.people.rooms}</h2>
                 <p className="mt-1 text-xs text-[var(--muted)]">
-                  Showing {roomPageStart}-{roomPageEnd} of {roomTotal}
+                  {fill(s.common.showing, { start: roomPageStart, end: roomPageEnd, total: roomTotal })}
                 </p>
               </div>
             </div>
             <div className="flex flex-wrap items-center gap-2 rounded-md border border-[var(--border)] bg-[var(--background)] px-3 py-2">
               <label className="flex items-center gap-2 text-xs font-medium text-[var(--muted)]">
-                <span>Page</span>
+                <span>{s.common.page}</span>
                 <select
-                  aria-label="Page"
+                  aria-label={s.common.page}
                   className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-2 py-1 text-sm text-[var(--foreground)]"
                   disabled={roomTotalPages <= 1}
                   onChange={(event) => {
@@ -334,9 +339,9 @@ export function RoomsPanel({
               </label>
               <div className="hidden h-6 w-px bg-[var(--border)] sm:block" />
               <label className="flex items-center gap-2 text-xs font-medium text-[var(--muted)]">
-                <span>Per page</span>
+                <span>{s.common.perPage}</span>
                 <select
-                  aria-label="Per page"
+                  aria-label={s.common.perPage}
                   className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-2 py-1 text-sm text-[var(--foreground)]"
                   onChange={(event) => {
                     const nextPerPage = Number(event.currentTarget.value);
@@ -379,7 +384,7 @@ export function RoomsPanel({
                     }
                     type="button"
                   >
-                    Room
+                    {s.people.room}
                     {roomTableState.sort === "room"
                       ? roomTableState.dir === "asc"
                         ? " ↑"
@@ -387,7 +392,7 @@ export function RoomsPanel({
                       : ""}
                   </button>
                 </th>
-                <th className="py-2 pr-3 font-medium">Owner %</th>
+                <th className="py-2 pr-3 font-medium">{s.people.ownerPercent}</th>
                 <th className="py-2 pr-3 font-medium">
                   <button
                     className="font-medium"
@@ -405,7 +410,7 @@ export function RoomsPanel({
                     }
                     type="button"
                   >
-                    Status
+                    {s.common.status}
                     {roomTableState.sort === "status"
                       ? roomTableState.dir === "asc"
                         ? " ↑"
@@ -413,7 +418,7 @@ export function RoomsPanel({
                       : ""}
                   </button>
                 </th>
-                <th className="py-2 font-medium">Action</th>
+                <th className="py-2 font-medium">{s.common.action}</th>
               </tr>
             </thead>
             <tbody>
@@ -445,7 +450,7 @@ export function RoomsPanel({
                     <td className="py-2 pr-3">{room.room_number}</td>
                     <td className="py-2 pr-3">{room.ownership_percent}</td>
                     <td className="py-2 pr-3">
-                      {room.active ? "Active" : "Inactive"}
+                      {room.active ? s.common.active : s.common.inactive}
                     </td>
                     <td className="py-2">
                       <div className="flex flex-wrap gap-2">
@@ -458,7 +463,7 @@ export function RoomsPanel({
                             type: "room",
                           })}
                         >
-                          Edit
+                          {s.common.edit}
                         </Link>
                         <form
                           action={room.active ? deactivateRoom : reactivateRoom}
@@ -472,15 +477,15 @@ export function RoomsPanel({
                             }
                             confirmMessage={
                               room.active
-                                ? `Deactivate room "${room.room_number}"? This room will no longer be available for active ownership or voting setup.`
-                                : `Reactivate room "${room.room_number}"? This room will become available for active ownership and voting setup.`
+                                ? fill(s.people.confirmDeactivateRoom, { room: room.room_number })
+                                : fill(s.people.confirmReactivateRoom, { room: room.room_number })
                             }
                             pendingLabel={
-                              room.active ? "Deactivating..." : "Reactivating..."
+                              room.active ? s.common.deactivating : s.common.reactivating
                             }
                             type="submit"
                           >
-                            {room.active ? "Deactivate" : "Reactivate"}
+                            {room.active ? s.common.deactivate : s.common.reactivate}
                           </ConfirmSubmitButton>
                         </form>
                       </div>
@@ -493,7 +498,7 @@ export function RoomsPanel({
         </div>
         {pagedRooms.length === 0 ? (
           <p className="px-5 py-4 text-sm text-[var(--muted)]">
-            No rooms match the selected criteria.
+            {s.people.noRooms}
           </p>
         ) : null}
         <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-4">
@@ -508,7 +513,7 @@ export function RoomsPanel({
             }
             type="button"
           >
-            Previous
+            {s.common.previous}
           </button>
           <div className="text-sm text-[var(--muted)]">
             {roomPageStart}-{roomPageEnd} / {roomTotal}
@@ -524,7 +529,7 @@ export function RoomsPanel({
             }
             type="button"
           >
-            Next
+            {s.common.next}
           </button>
         </div>
       </section>

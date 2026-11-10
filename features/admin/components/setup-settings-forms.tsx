@@ -134,6 +134,7 @@ export function JuristicProfileForm({
 }: {
   condoProfile: CondoProfile;
 }) {
+  const { s } = useStaffText();
   const formRef = useRef<HTMLFormElement>(null);
   const [state, formAction] = useActionState(
     saveCondoProfileWithState,
@@ -152,7 +153,7 @@ export function JuristicProfileForm({
       </div>
       <input name="id" type="hidden" value={stateValue(state, "id", condoProfile?.id)} />
       <label className="grid gap-1 text-sm font-medium">
-        <FieldLabel required>Juristic person name</FieldLabel>
+        <FieldLabel required>{s.setup.juristicName}</FieldLabel>
         <input
           {...fieldProps("condo-profile", "juristic_name", state)}
           className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
@@ -167,7 +168,7 @@ export function JuristicProfileForm({
         <FieldError fieldName="juristic_name" prefix="condo-profile" state={state} />
       </label>
       <label className="grid gap-1 text-sm font-medium">
-        <FieldLabel required>Project name</FieldLabel>
+        <FieldLabel required>{s.setup.projectName}</FieldLabel>
         <input
           {...fieldProps("condo-profile", "project_name", state)}
           className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
@@ -181,35 +182,35 @@ export function JuristicProfileForm({
         className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
         defaultValue={stateValue(state, "registration_no", condoProfile?.registration_no)}
         name="registration_no"
-        placeholder="Registration no."
+        placeholder={s.setup.registrationNo}
       />
       <input
         className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
         defaultValue={stateValue(state, "tax_id", condoProfile?.tax_id)}
         name="tax_id"
-        placeholder="Tax ID"
+        placeholder={s.setup.taxId}
       />
       <input
         className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
         defaultValue={stateValue(state, "manager_name", condoProfile?.manager_name)}
         name="manager_name"
-        placeholder="Juristic manager"
+        placeholder={s.setup.manager}
       />
       <input
         className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
         defaultValue={stateValue(state, "phone", condoProfile?.phone)}
         name="phone"
-        placeholder="Phone"
+        placeholder={s.setup.phone}
       />
       <input
         className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
         defaultValue={stateValue(state, "email", condoProfile?.email)}
         name="email"
-        placeholder="Email"
+        placeholder={s.setup.email}
         type="email"
       />
       <label className="grid gap-1 text-sm font-medium">
-        Summary history limit
+        {s.setup.historyLimit}
         <input
           {...fieldProps("condo-profile", "summary_history_limit", state)}
           className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
@@ -233,20 +234,20 @@ export function JuristicProfileForm({
         className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
         defaultValue={stateValue(state, "address", condoProfile?.address)}
         name="address"
-        placeholder="Address"
+        placeholder={s.setup.address}
       />
       <fieldset className="grid gap-2 rounded-md border border-[var(--border)] p-3 text-sm md:col-span-2">
-        <legend className="px-1 font-medium">Official result record</legend>
+        <legend className="px-1 font-medium">{s.setup.recordTitle}</legend>
         <span className="text-xs text-[var(--muted)]">
-          Follow your regulations; confirm with your lawyer.
+          {s.setup.recordHelp}
         </span>
-        <span className="font-medium">Signed by</span>
+        <span className="font-medium">{s.setup.signedBy}</span>
         <div className="flex flex-wrap gap-x-4 gap-y-2">
           {[
-            ["chairperson", "Meeting chairperson"],
-            ["manager", "Juristic person manager"],
-            ["minutes_taker", "Minutes taker"],
-            ["committee_member", "Committee member"],
+            ["chairperson", s.setup.chairperson],
+            ["manager", s.setup.managerRole],
+            ["minutes_taker", s.setup.minutesTaker],
+            ["committee_member", s.setup.committeeMember],
           ].map(([value, label]) => (
             <label className="inline-flex min-h-11 items-center gap-2" key={value}>
               <input
@@ -265,7 +266,7 @@ export function JuristicProfileForm({
         </div>
         <FieldError fieldName="record_signatories" prefix="condo-profile" state={state} />
         <label className="grid gap-1 font-medium md:max-w-xs">
-          Days to notify owners of results (optional)
+          {s.setup.noticeDays}
           <input
             {...fieldProps("condo-profile", "result_notice_days", state)}
             className="rounded-md border border-[var(--border)] px-3 py-2 text-sm font-normal"
@@ -290,16 +291,16 @@ export function JuristicProfileForm({
           condoProfile?.document_footer,
         )}
         name="document_footer"
-        placeholder="Document footer"
+        placeholder={s.setup.footer}
         rows={2}
       />
       <div className="flex flex-wrap gap-2 md:col-span-2">
         <PendingSubmitButton
           className="rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)]"
-          pendingLabel="Saving..."
+          pendingLabel={s.common.saving}
           type="submit"
         >
-          Save juristic profile
+          {s.setup.saveJuristic}
         </PendingSubmitButton>
         <FormResetButton label="Reset changes" />
       </div>

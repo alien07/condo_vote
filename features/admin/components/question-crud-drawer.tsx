@@ -1,5 +1,7 @@
 "use client";
 
+import { useStaffText } from "@/lib/i18n/staff/client";
+import { fill } from "@/lib/i18n/template";
 import { useActionState, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import {
@@ -133,6 +135,7 @@ export function QuestionCrudDrawer({
   mode,
   question,
 }: QuestionCrudDrawerProps) {
+  const { s } = useStaffText();
   const formRef = useRef<HTMLFormElement>(null);
   const searchParams = useSearchParams();
   const [state, formAction] = useActionState(
@@ -180,10 +183,10 @@ export function QuestionCrudDrawer({
       closeHref={closeHref}
       summary={
         mode === "edit" && question
-          ? [`Question: ${question.question_text}`]
-          : ["New agenda question"]
+          ? [fill(s.meetings.questionSummary, { text: question.question_text })]
+          : [s.meetings.newQuestion]
       }
-      title={mode === "edit" ? "Edit question" : "Add question"}
+      title={mode === "edit" ? s.meetings.editQuestion : s.meetings.addQuestion}
     >
       <form action={formAction} className="grid gap-3" noValidate ref={formRef}>
         <RequiredNote />
@@ -199,7 +202,7 @@ export function QuestionCrudDrawer({
           <input name="id" type="hidden" value={question.id} />
         ) : null}
         <label className="grid gap-1 text-sm font-medium">
-          <FieldLabel required>Meeting</FieldLabel>
+          <FieldLabel required>{s.meetings.meeting}</FieldLabel>
           <select
             {...fieldProps("meeting_id", state)}
             autoFocus
@@ -207,7 +210,7 @@ export function QuestionCrudDrawer({
             defaultValue={stateValue(state, "meeting_id", question?.meeting_id)}
             name="meeting_id"
           >
-            <option value="">Select meeting</option>
+            <option value="">{s.meetings.selectMeeting}</option>
             {meetings
               .filter(
                 (meeting) =>
@@ -226,7 +229,7 @@ export function QuestionCrudDrawer({
           className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
           defaultValue={stateValue(state, "agenda_no", question?.agenda_no)}
           name="agenda_no"
-          placeholder="Agenda no."
+          placeholder={s.meetings.agendaNo}
         />
         <input
           className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
@@ -236,10 +239,10 @@ export function QuestionCrudDrawer({
             question?.agenda_title,
           )}
           name="agenda_title"
-          placeholder="Agenda title"
+          placeholder={s.meetings.agendaTitle}
         />
         <label className="grid gap-1 text-sm font-medium">
-          <FieldLabel required>Question</FieldLabel>
+          <FieldLabel required>{s.meetings.question}</FieldLabel>
           <input
             {...fieldProps("question_text", state)}
             className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
@@ -253,7 +256,7 @@ export function QuestionCrudDrawer({
           <FieldError fieldName="question_text" state={state} />
         </label>
         <label className="grid gap-1 text-sm font-medium">
-          <FieldLabel required>Question type</FieldLabel>
+          <FieldLabel required>{s.meetings.questionType}</FieldLabel>
           <select
             {...fieldProps("question_type", state)}
             className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
@@ -264,13 +267,13 @@ export function QuestionCrudDrawer({
             )}
             name="question_type"
           >
-            <option value="single_choice">Single choice</option>
-            <option value="multiple_choice">Multiple choice</option>
+            <option value="single_choice">{s.meetings.single}</option>
+            <option value="multiple_choice">{s.meetings.multiple}</option>
           </select>
           <FieldError fieldName="question_type" state={state} />
         </label>
         <label className="grid gap-1 text-sm font-medium">
-          <FieldLabel>Max choices (multiple choice only)</FieldLabel>
+          <FieldLabel>{s.meetings.maxChoices}</FieldLabel>
           <input
             {...fieldProps("max_choices", state)}
             className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
@@ -281,13 +284,13 @@ export function QuestionCrudDrawer({
             )}
             min={1}
             name="max_choices"
-            placeholder="No limit"
+            placeholder={s.meetings.noLimit}
             type="number"
           />
           <FieldError fieldName="max_choices" state={state} />
         </label>
         <label className="grid gap-1 text-sm font-medium">
-          <FieldLabel required>Resolution type</FieldLabel>
+          <FieldLabel required>{s.meetings.resolutionType}</FieldLabel>
           <select
             {...fieldProps("resolution_type", state)}
             className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
@@ -298,14 +301,14 @@ export function QuestionCrudDrawer({
             )}
             name="resolution_type"
           >
-            <option value="ordinary">Ordinary</option>
-            <option value="special">Special</option>
-            <option value="informational">Informational</option>
+            <option value="ordinary">{s.meetings.ordinary}</option>
+            <option value="special">{s.meetings.special}</option>
+            <option value="informational">{s.meetings.informational}</option>
           </select>
           <FieldError fieldName="resolution_type" state={state} />
         </label>
         <label className="grid gap-1 text-sm font-medium">
-          <FieldLabel required>Pass rule</FieldLabel>
+          <FieldLabel required>{s.meetings.passRule}</FieldLabel>
           <select
             {...fieldProps("required_threshold", state)}
             className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
@@ -317,26 +320,26 @@ export function QuestionCrudDrawer({
             name="required_threshold"
           >
             <option value="majority_submitted">
-              More than 50% of voting ownership
+              {s.meetings.ruleVotingMajority}
             </option>
-            <option value="half_total">More than 50% of total ownership</option>
-            <option value="one_third_total">At least 1/3 of total ownership</option>
+            <option value="half_total">{s.meetings.ruleTotalMajority}</option>
+            <option value="one_third_total">{s.meetings.ruleThird}</option>
             <option value="three_fourths_total">
-              At least 3/4 of total ownership
+              {s.meetings.ruleThreeQuarters}
             </option>
-            <option value="informational">Informational, no pass rule</option>
-            <option value="custom">Custom (set below)</option>
+            <option value="informational">{s.meetings.ruleInfo}</option>
+            <option value="custom">{s.meetings.ruleCustom}</option>
           </select>
           <FieldError fieldName="required_threshold" state={state} />
         </label>
         <fieldset className="grid gap-2 rounded-md border border-[var(--border)] p-3 text-sm">
-          <legend className="px-1 font-medium">Custom pass rule</legend>
+          <legend className="px-1 font-medium">{s.meetings.customRule}</legend>
           <p className="text-xs text-[var(--muted)]">
-            Used only when the pass rule is Custom. Abstain counts as voting.
+            {s.meetings.customHelp}
           </p>
           <div className="grid gap-2 md:grid-cols-[1fr_140px_120px]">
             <label className="grid gap-1">
-              <span>Basis</span>
+              <span>{s.meetings.basis}</span>
               <select
                 {...fieldProps("pass_basis", state)}
                 className="rounded-md border border-[var(--border)] px-3 py-2"
@@ -347,12 +350,12 @@ export function QuestionCrudDrawer({
                 )}
                 name="pass_basis"
               >
-                <option value="voting_ownership">Ownership of rooms that voted</option>
-                <option value="total_ownership">Total project ownership</option>
+                <option value="voting_ownership">{s.meetings.basisVoting}</option>
+                <option value="total_ownership">{s.meetings.basisTotal}</option>
               </select>
             </label>
             <label className="grid gap-1">
-              <span>Comparison</span>
+              <span>{s.meetings.comparison}</span>
               <select
                 {...fieldProps("pass_operator", state)}
                 className="rounded-md border border-[var(--border)] px-3 py-2"
@@ -363,12 +366,12 @@ export function QuestionCrudDrawer({
                 )}
                 name="pass_operator"
               >
-                <option value="gt">More than</option>
-                <option value="gte">At least</option>
+                <option value="gt">{s.meetings.moreThan}</option>
+                <option value="gte">{s.meetings.atLeast}</option>
               </select>
             </label>
             <label className="grid gap-1">
-              <span>Percent</span>
+              <span>{s.meetings.percent}</span>
               <input
                 {...fieldProps("pass_percent", state)}
                 className="rounded-md border border-[var(--border)] px-3 py-2"
@@ -388,7 +391,7 @@ export function QuestionCrudDrawer({
           <FieldError fieldName="pass_percent" state={state} />
         </fieldset>
         <label className="grid gap-1 text-sm font-medium">
-          Order
+          {s.meetings.order}
           <input
             {...fieldProps("display_order", state)}
             className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
@@ -413,7 +416,7 @@ export function QuestionCrudDrawer({
             name="required"
             type="checkbox"
           />
-          Required
+          {s.meetings.required}
         </label>
         <label className="flex items-center gap-2 text-sm">
           <input
@@ -425,22 +428,22 @@ export function QuestionCrudDrawer({
             name="requires_land_office_registration"
             type="checkbox"
           />
-          Land office registration
+          {s.meetings.landOfficeField}
         </label>
         <textarea
           className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
           defaultValue={stateValue(state, "legal_note", question?.legal_note)}
           name="legal_note"
-          placeholder="Legal / admin note"
+          placeholder={s.meetings.legalNote}
           rows={2}
         />
         <div className="flex flex-wrap gap-2 pt-2">
           <PendingSubmitButton
             className="rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)]"
-            pendingLabel={mode === "edit" ? "Saving..." : "Adding..."}
+            pendingLabel={mode === "edit" ? s.common.saving : s.meetings.adding}
             type="submit"
           >
-            {mode === "edit" ? "Save question" : "Add question"}
+            {mode === "edit" ? s.meetings.saveQuestion : s.meetings.addQuestion}
           </PendingSubmitButton>
           <FormResetButton
             label={mode === "edit" ? "Reset changes" : "Clear form"}
@@ -449,7 +452,7 @@ export function QuestionCrudDrawer({
             className="inline-flex items-center justify-center rounded-md border border-[var(--border)] px-4 py-2 text-sm font-medium"
             href={closeHref}
           >
-            Cancel
+            {s.common.cancel}
           </a>
         </div>
       </form>
