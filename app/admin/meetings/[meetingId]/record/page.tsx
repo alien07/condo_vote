@@ -1,4 +1,7 @@
 import Link from "next/link";
+import { formatDateTimeIn } from "@/lib/i18n/format";
+import { getStaffI18n } from "@/lib/i18n/server";
+import { fill } from "@/lib/i18n/template";
 import { notFound } from "next/navigation";
 import { ClipboardList } from "lucide-react";
 import {
@@ -9,7 +12,7 @@ import {
 import { ConfirmSubmitButton } from "@/features/admin/components/form-controls";
 import { PendingSubmitButton } from "@/features/debug/tracked-submit-button";
 import { requireAdmin } from "@/lib/auth/permissions";
-import { formatBangkokDateTime, isoToBangkokLocalInput } from "@/lib/datetime";
+import { isoToBangkokLocalInput } from "@/lib/datetime";
 import { createClient } from "@/lib/supabase/server";
 
 type MeetingRecordPageProps = {
@@ -22,6 +25,9 @@ const inputClass =
 // Post-meeting details for the official result record (document 1). They are
 // copied into the result snapshot when results are generated.
 export default async function MeetingRecordPage({ params }: MeetingRecordPageProps) {
+  const { locale, s } = await getStaffI18n();
+  const t = s.meetings;
+  const formatDateTime = (value: string | null) => formatDateTimeIn(locale, value);
   await requireAdmin();
   const { meetingId } = await params;
   const supabase = await createClient();
@@ -65,44 +71,41 @@ export default async function MeetingRecordPage({ params }: MeetingRecordPagePro
         <div className="mb-6 flex items-start gap-3 border-b border-[var(--border)] pb-5">
           <ClipboardList className="mt-1 shrink-0 text-[var(--primary)]" size={26} />
           <div>
-            <h1 className="text-2xl font-semibold">Meeting record</h1>
+            <h1 className="text-2xl font-semibold">{t.recordTitle}</h1>
             <p className="text-sm text-[var(--muted)]">
-              {meeting.title}. These details go into the official result record
-              when results are generated.
+              {fill(t.recordIntro, { title: meeting.title })}
             </p>
           </div>
         </div>
 
         {latestSnapshot ? (
           <p className="mb-5 rounded-md border border-[var(--border)] bg-[var(--surface)] p-3 text-sm">
-            Results were generated {formatBangkokDateTime(latestSnapshot.generated_at)}.
-            Changes here appear in the record only after results are generated
-            again (possible until the committee approves).{" "}
+            {fill(t.recordGenerated, { time: formatDateTime(latestSnapshot.generated_at) })}{" "}
             <Link
               className="font-medium text-[var(--primary)] underline"
               href={`/record/${latestSnapshot.id}`}
             >
-              Open the official record
+              {t.openRecord}
             </Link>
           </p>
         ) : null}
 
         <section className="mb-6 rounded-lg border border-[var(--border)] bg-[var(--surface)] p-5">
-          <h2 className="text-lg font-semibold">Meeting details</h2>
+          <h2 className="text-lg font-semibold">{t.details}</h2>
           <dl className="mt-3 grid gap-2 text-sm md:grid-cols-2">
             <div>
-              <dt className="text-[var(--muted)]">Advance voting</dt>
+              <dt className="text-[var(--muted)]">{t.advanceVoting}</dt>
               <dd>
                 {meeting.advance_starts_at
-                  ? `${formatBangkokDateTime(meeting.advance_starts_at)} – ${formatBangkokDateTime(meeting.advance_ends_at)}`
-                  : "None"}
+                  ? `${formatDateTime(meeting.advance_starts_at)} – ${formatDateTime(meeting.advance_ends_at)}`
+                  : t.none}
               </dd>
             </div>
             <div>
-              <dt className="text-[var(--muted)]">Meeting-day voting</dt>
+              <dt className="text-[var(--muted)]">{t.meetingDayVoting}</dt>
               <dd>
-                {formatBangkokDateTime(meeting.starts_at)} –{" "}
-                {formatBangkokDateTime(meeting.ends_at)}
+                {formatDateTime(meeting.starts_at)} –{" "}
+                {formatDateTime(meeting.ends_at)}
               </dd>
             </div>
           </dl>
@@ -110,7 +113,7 @@ export default async function MeetingRecordPage({ params }: MeetingRecordPagePro
             <input name="meeting_id" type="hidden" value={meeting.id} />
             <div className="grid gap-4 md:grid-cols-2">
               <label className="grid gap-1 text-sm font-medium">
-                Notice sent to owners
+                {t.noticeSent}
                 <input
                   className={inputClass}
                   defaultValue={isoToBangkokLocalInput(meeting.notice_sent_at)}
@@ -118,66 +121,66 @@ export default async function MeetingRecordPage({ params }: MeetingRecordPagePro
                   type="datetime-local"
                 />
                 <span className="text-xs font-normal text-[var(--muted)]">
-                  The Condominium Act asks for at least 7 days before the meeting (s.42/3).
+                  {t.noticeHelp}
                 </span>
               </label>
               <label className="grid gap-1 text-sm font-medium">
-                Meeting round
+                {t.round}
                 <select className={inputClass} defaultValue={meeting.meeting_round} name="meeting_round">
-                  <option value="first">First meeting</option>
-                  <option value="reconvened">Reconvened meeting (first had no quorum)</option>
+                  <option value="first">{t.firstRound}</option>
+                  <option value="reconvened">{t.reconvened}</option>
                 </select>
               </label>
             </div>
             <label className="grid gap-1 text-sm font-medium">
-              How attendees proved who they are
+              {t.identity}
               <textarea
                 className={inputClass}
                 defaultValue={meeting.identity_method ?? ""}
                 name="identity_method"
-                placeholder="Online: Google sign-in with a profile approved by the admin. Meeting room: ID card check by the juristic office."
+                placeholder={t.identityPlaceholder}
                 rows={3}
               />
             </label>
             <div className="grid gap-4 md:grid-cols-2">
               <label className="grid gap-1 text-sm font-medium">
-                Meeting recording (where it is kept)
+                {t.recording}
                 <input
                   className={inputClass}
                   defaultValue={meeting.recording_reference ?? ""}
                   name="recording_reference"
-                  placeholder="Private folder link or document set key"
+                  placeholder={t.recordingPlaceholder}
                 />
               </label>
               <label className="grid gap-1 text-sm font-medium">
-                Attendance and traffic logs (where they are kept)
+                {t.logs}
                 <input
                   className={inputClass}
                   defaultValue={meeting.traffic_log_reference ?? ""}
                   name="traffic_log_reference"
-                  placeholder="Meeting platform export, private folder link"
+                  placeholder={t.logsPlaceholder}
                 />
               </label>
             </div>
             <div>
               <PendingSubmitButton
                 className="min-h-11 rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)]"
-                pendingLabel="Saving..."
+                pendingLabel={s.common.saving}
                 type="submit"
               >
-                Save meeting record
+                {t.saveRecord}
               </PendingSubmitButton>
             </div>
           </form>
         </section>
 
         <section className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-5">
-          <h2 className="text-lg font-semibold">Incidents during voting</h2>
+          <h2 className="text-lg font-semibold">{t.incidents}</h2>
           <p className="mt-1 text-sm text-[var(--muted)]">
-            Outages or problems, what was decided, and the fallback channel used.
+            {t.incidentsIntro}
           </p>
           {incidents.length === 0 ? (
-            <p className="mt-3 text-sm text-[var(--muted)]">No incidents recorded.</p>
+            <p className="mt-3 text-sm text-[var(--muted)]">{t.noIncidents}</p>
           ) : (
             <ul className="mt-3 grid gap-2">
               {incidents.map((incident) => (
@@ -187,12 +190,14 @@ export default async function MeetingRecordPage({ params }: MeetingRecordPagePro
                 >
                   <div>
                     <div className="font-medium">
-                      {formatBangkokDateTime(incident.started_at)}
-                      {incident.ended_at ? ` – ${formatBangkokDateTime(incident.ended_at)}` : " (ongoing)"}
+                      {formatDateTime(incident.started_at)}
+                      {incident.ended_at ? ` – ${formatDateTime(incident.ended_at)}` : t.ongoing}
                     </div>
                     <div>{incident.description}</div>
                     {incident.action_taken ? (
-                      <div className="text-[var(--muted)]">Action: {incident.action_taken}</div>
+                      <div className="text-[var(--muted)]">
+                        {fill(t.actionLabel, { action: incident.action_taken })}
+                      </div>
                     ) : null}
                   </div>
                   <form action={deleteMeetingIncident}>
@@ -200,11 +205,11 @@ export default async function MeetingRecordPage({ params }: MeetingRecordPagePro
                     <input name="id" type="hidden" value={incident.id} />
                     <ConfirmSubmitButton
                       className="min-h-11 rounded-md border border-red-200 px-3 py-1 text-sm font-medium text-red-700"
-                      confirmMessage="Remove this incident from the meeting record?"
-                      pendingLabel="Removing..."
+                      confirmMessage={t.confirmRemove}
+                      pendingLabel={t.removing}
                       type="submit"
                     >
-                      Remove
+                      {s.common.remove}
                     </ConfirmSubmitButton>
                   </form>
                 </li>
@@ -215,33 +220,33 @@ export default async function MeetingRecordPage({ params }: MeetingRecordPagePro
             <input name="meeting_id" type="hidden" value={meeting.id} />
             <div className="grid gap-3 md:grid-cols-2">
               <label className="grid gap-1 text-sm font-medium">
-                Started
+                {t.started}
                 <input className={inputClass} name="started_at" required type="datetime-local" />
               </label>
               <label className="grid gap-1 text-sm font-medium">
-                Ended (optional)
+                {t.ended}
                 <input className={inputClass} name="ended_at" type="datetime-local" />
               </label>
             </div>
             <label className="grid gap-1 text-sm font-medium">
-              What happened
+              {t.whatHappened}
               <input className={inputClass} name="description" required />
             </label>
             <label className="grid gap-1 text-sm font-medium">
-              Action taken (optional)
+              {t.actionTaken}
               <input
                 className={inputClass}
                 name="action_taken"
-                placeholder="For example: switched to paper ballots, imported as manual votes"
+                placeholder={t.actionPlaceholder}
               />
             </label>
             <div>
               <PendingSubmitButton
                 className="min-h-11 rounded-md border border-[var(--border)] px-4 py-2 text-sm font-medium"
-                pendingLabel="Adding..."
+                pendingLabel={s.meetings.adding}
                 type="submit"
               >
-                Add incident
+                {t.addIncident}
               </PendingSubmitButton>
             </div>
           </form>

@@ -1,3 +1,4 @@
+import { getStaffI18n } from "@/lib/i18n/server";
 import { Building2 } from "lucide-react";
 import { OwnershipManager } from "@/features/admin/components/ownership-manager";
 import type {
@@ -10,7 +11,7 @@ type OwnershipSectionProps = Pick<AdminDashboardData, "owners" | "roomOwners" | 
   hidden: boolean;
 };
 
-export function OwnershipSection({
+export async function OwnershipSection({
   drawer,
   owners,
   ownershipCreateHref,
@@ -18,6 +19,7 @@ export function OwnershipSection({
   rooms,
   hidden,
 }: OwnershipSectionProps) {
+  const { s } = await getStaffI18n();
 
   return (
     <section
@@ -28,9 +30,9 @@ export function OwnershipSection({
         <div className="flex items-center gap-2">
           <Building2 className="text-[var(--primary)]" size={20} />
           <div>
-            <h2 className="text-lg font-semibold">Room Ownership</h2>
+            <h2 className="text-lg font-semibold">{s.ownership.title}</h2>
             <p className="text-sm text-[var(--muted)]">
-              Maintain current room-owner links and effective dates.
+              {s.ownership.intro}
             </p>
           </div>
         </div>
@@ -41,13 +43,11 @@ export function OwnershipSection({
             "/admin/ownership?mode=create&type=ownership_link"
           }
         >
-          Create ownership link
+          {s.ownership.create}
         </a>
       </div>
       <p className="mb-4 max-w-3xl text-sm text-[var(--muted)]">
-        Maintain the active owner for each room. In v1, one room can have
-        one active owner link. To transfer ownership, end the current active
-        link first, then create a new link for the new owner.
+        {s.ownership.help}
       </p>
       <OwnershipManager
         drawer={drawer}

@@ -1,4 +1,5 @@
 import { AdminWorkspace } from "@/features/admin/components/admin-workspace";
+import { getStaffI18n } from "@/lib/i18n/server";
 import type { ProxyTableFilters } from "@/features/admin/components/admin-workspace";
 
 type AdminProxiesPageProps = {
@@ -53,11 +54,12 @@ function getProxyFilters(
 export default async function AdminProxiesPage({
   searchParams,
 }: AdminProxiesPageProps) {
+  const { s } = await getStaffI18n();
   const params = await searchParams;
 
   return (
     <AdminWorkspace
-      description="Create and review proxy authorizations for voting meetings."
+      description={s.adminHome.pages.proxiesText}
       drawer={{
         id: params.id,
         mode: params.mode,
@@ -66,7 +68,7 @@ export default async function AdminProxiesPage({
       focusedProxyId={params.focusProxyId}
       proxyFilters={getProxyFilters(params)}
       sections={["proxies"]}
-      title="Proxies"
+      title={s.adminHome.pages.proxiesTitle}
     />
   );
 }

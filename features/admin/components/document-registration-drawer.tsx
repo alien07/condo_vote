@@ -1,5 +1,6 @@
 "use client";
 
+import { useStaffText } from "@/lib/i18n/staff/client";
 import { useActionState, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import {
@@ -59,6 +60,7 @@ export function DocumentRegistrationDrawer({
   closeHref,
   documentTypes,
 }: DocumentRegistrationDrawerProps) {
+  const { s } = useStaffText();
   const formRef = useRef<HTMLFormElement>(null);
   const searchParams = useSearchParams();
   const [state, formAction] = useActionState(
@@ -102,8 +104,8 @@ export function DocumentRegistrationDrawer({
   return (
     <AdminCrudDrawer
       closeHref={closeHref}
-      summary={["New private document reference"]}
-      title="Register document"
+      summary={[s.documents.newReference]}
+      title={s.documents.register}
     >
       <form action={formAction} className="grid gap-3" noValidate ref={formRef}>
         <RequiredNote />
@@ -116,7 +118,7 @@ export function DocumentRegistrationDrawer({
           </div>
         ) : null}
         <label className="grid gap-1 text-sm font-medium">
-          <FieldLabel required>Storage provider</FieldLabel>
+          <FieldLabel required>{s.documents.provider}</FieldLabel>
           <select
             {...fieldProps("storage_provider", state)}
             autoFocus
@@ -124,29 +126,29 @@ export function DocumentRegistrationDrawer({
             defaultValue={stateValue(state, "storage_provider", "local_drive")}
             name="storage_provider"
           >
-            <option value="local_drive">Local drive</option>
-            <option value="google_drive">Google Drive</option>
+            <option value="local_drive">{s.system.localDrive}</option>
+            <option value="google_drive">{s.system.googleDrive}</option>
           </select>
           <FieldError fieldName="storage_provider" state={state} />
         </label>
         <label className="grid gap-1 text-sm font-medium">
-          <FieldLabel required>Owner type</FieldLabel>
+          <FieldLabel required>{s.documents.ownerType}</FieldLabel>
           <select
             {...fieldProps("owner_type", state)}
             className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
             defaultValue={stateValue(state, "owner_type", "profile")}
             name="owner_type"
           >
-            <option value="profile">Profile</option>
-            <option value="approval_request">Approval request</option>
-            <option value="proxy_authorization">Proxy authorization</option>
-            <option value="meeting">Meeting</option>
-            <option value="result_snapshot">Result snapshot</option>
+            <option value="profile">{s.documents.ownerProfile}</option>
+            <option value="approval_request">{s.documents.ownerApproval}</option>
+            <option value="proxy_authorization">{s.documents.ownerProxy}</option>
+            <option value="meeting">{s.documents.ownerMeeting}</option>
+            <option value="result_snapshot">{s.documents.ownerSnapshot}</option>
           </select>
           <FieldError fieldName="owner_type" state={state} />
         </label>
         <label className="grid gap-1 text-sm font-medium">
-          <FieldLabel required>Document type</FieldLabel>
+          <FieldLabel required>{s.documents.documentType}</FieldLabel>
           <select
             {...fieldProps("document_type", state)}
             className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
@@ -166,7 +168,7 @@ export function DocumentRegistrationDrawer({
           <FieldError fieldName="document_type" state={state} />
         </label>
         <label className="grid gap-1 text-sm font-medium">
-          <FieldLabel required>Owner UUID</FieldLabel>
+          <FieldLabel required>{s.documents.ownerId}</FieldLabel>
           <input
             {...fieldProps("owner_id", state)}
             className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
@@ -177,7 +179,7 @@ export function DocumentRegistrationDrawer({
         </label>
         <label className="grid gap-1 text-sm font-medium">
           <FieldLabel required>
-            Relative path or private Drive file link
+            {s.documents.path}
           </FieldLabel>
           <input
             {...fieldProps("storage_path", state)}
@@ -188,7 +190,7 @@ export function DocumentRegistrationDrawer({
           <FieldError fieldName="storage_path" state={state} />
         </label>
         <label className="grid gap-1 text-sm font-medium">
-          <FieldLabel required>Document set key</FieldLabel>
+          <FieldLabel required>{s.documents.setKey}</FieldLabel>
           <input
             {...fieldProps("document_set_key", state)}
             className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
@@ -199,7 +201,7 @@ export function DocumentRegistrationDrawer({
           <FieldError fieldName="document_set_key" state={state} />
         </label>
         <label className="grid gap-1 text-sm font-medium">
-          <FieldLabel required>Version</FieldLabel>
+          <FieldLabel required>{s.documents.version}</FieldLabel>
           <input
             {...fieldProps("document_version", state)}
             className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
@@ -214,16 +216,16 @@ export function DocumentRegistrationDrawer({
           className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
           defaultValue={stateValue(state, "original_filename")}
           name="original_filename"
-          placeholder="Original filename"
+          placeholder={s.documents.filename}
         />
         <input
           className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
           defaultValue={stateValue(state, "mime_type")}
           name="mime_type"
-          placeholder="MIME type"
+          placeholder={s.documents.mime}
         />
         <label className="grid gap-1 text-sm font-medium">
-          File size bytes
+          {s.documents.size}
           <input
             {...fieldProps("file_size_bytes", state)}
             className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
@@ -235,30 +237,30 @@ export function DocumentRegistrationDrawer({
           <FieldError fieldName="file_size_bytes" state={state} />
         </label>
         <label className="grid gap-1 text-sm font-medium">
-          SHA-256 checksum
+          {s.documents.checksum}
           <input
             {...fieldProps("checksum_sha256", state)}
             className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
             defaultValue={stateValue(state, "checksum_sha256")}
             name="checksum_sha256"
-            placeholder="64 hex characters"
+            placeholder={s.documents.checksumPlaceholder}
           />
           <FieldError fieldName="checksum_sha256" state={state} />
         </label>
         <div className="flex flex-wrap gap-2 pt-2">
           <PendingSubmitButton
             className="rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)]"
-            pendingLabel="Adding..."
+            pendingLabel={s.documents.adding}
             type="submit"
           >
-            Register document
+            {s.documents.register}
           </PendingSubmitButton>
           <FormResetButton label="Clear form" />
           <a
             className="inline-flex items-center justify-center rounded-md border border-[var(--border)] px-4 py-2 text-sm font-medium"
             href={closeHref}
           >
-            Cancel
+            {s.common.cancel}
           </a>
         </div>
       </form>

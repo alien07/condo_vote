@@ -1,3 +1,4 @@
+import { getStaffI18n } from "@/lib/i18n/server";
 import { Building2 } from "lucide-react";
 import { JuristicProfileForm } from "@/features/admin/components/setup-settings-forms";
 import type {
@@ -8,10 +9,11 @@ type JuristicProfileSectionProps = Pick<AdminDashboardData, "condoProfile"> & {
   hidden: boolean;
 };
 
-export function JuristicProfileSection({
+export async function JuristicProfileSection({
   condoProfile,
   hidden,
 }: JuristicProfileSectionProps) {
+  const { s } = await getStaffI18n();
 
   return (
     <section
@@ -21,7 +23,7 @@ export function JuristicProfileSection({
     >
       <div className="mb-4 flex items-center gap-2">
         <Building2 className="text-[var(--primary)]" size={20} />
-        <h2 className="text-lg font-semibold">Juristic Person</h2>
+        <h2 className="text-lg font-semibold">{s.setup.juristicTitle}</h2>
       </div>
       <JuristicProfileForm condoProfile={condoProfile} />
     </section>

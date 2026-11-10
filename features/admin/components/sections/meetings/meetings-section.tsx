@@ -1,3 +1,5 @@
+import { getStaffI18n } from "@/lib/i18n/server";
+import { codeLabel, fill } from "@/lib/i18n/template";
 import { CalendarDays } from "lucide-react";
 import { PerPageSelect } from "@/features/admin/components/table-controls";
 import { archiveMeeting, generateResultSnapshot, publishMeeting } from "@/features/admin/actions";
@@ -35,7 +37,7 @@ function isVotingOpen(status: string, endsAt: string) {
   return status === "published" && Date.parse(endsAt) > Date.now();
 }
 
-export function MeetingsSection({
+export async function MeetingsSection({
   approvedMeetingIds,
   lockedMeetingIds,
   drawer,
@@ -45,6 +47,7 @@ export function MeetingsSection({
   pendingManualBallotsByMeetingId,
   hidden,
 }: MeetingsSectionProps) {
+  const { s } = await getStaffI18n();
   const meetingTableFilters: Required<MeetingTableFilters> = {
     dir: meetingFilters?.dir ?? "asc",
     noType: meetingFilters?.noType ?? "",
@@ -168,9 +171,9 @@ export function MeetingsSection({
         <div className="flex items-center gap-2">
           <CalendarDays className="text-[var(--primary)]" size={20} />
           <div>
-            <h2 className="text-lg font-semibold">Meetings</h2>
+            <h2 className="text-lg font-semibold">{s.meetings.title}</h2>
             <p className="text-sm text-[var(--muted)]">
-              Maintain meeting master data and voting windows.
+              {s.meetings.intro}
             </p>
           </div>
         </div>
@@ -178,15 +181,15 @@ export function MeetingsSection({
           className="inline-flex min-h-10 items-center justify-center rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)]"
           href={meetingDrawerHref(meetingListHref, { mode: "create" })}
         >
-          Add meeting
+          {s.meetings.add}
         </a>
       </div>
 
       <section className="mb-5 rounded-lg border border-[var(--border)] bg-[var(--background)] p-4">
         <div className="mb-3">
-          <h3 className="text-sm font-semibold">Search Criteria</h3>
+          <h3 className="text-sm font-semibold">{s.common.searchCriteria}</h3>
           <p className="mt-1 text-xs text-[var(--muted)]">
-            Filter meetings by title, meeting number/type, and status.
+            {s.meetings.filter}
           </p>
         </div>
         <form className="grid gap-3 md:grid-cols-12">
@@ -199,36 +202,36 @@ export function MeetingsSection({
             value={meetingTableFilters.perPage}
           />
           <label className="grid gap-1 text-xs font-medium text-[var(--muted)] md:col-span-4">
-            Title
+            {s.meetings.titleColumn}
             <input
               className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)]"
               defaultValue={meetingTableFilters.title}
               name="title"
-              placeholder="Search title"
+              placeholder={s.meetings.searchTitle}
             />
           </label>
           <label className="grid gap-1 text-xs font-medium text-[var(--muted)] md:col-span-4">
-            No./Type
+            {s.meetings.noType}
             <input
               className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)]"
               defaultValue={meetingTableFilters.noType}
               name="noType"
-              placeholder="Search meeting no. or type"
+              placeholder={s.meetings.searchNoType}
             />
           </label>
           <label className="grid gap-1 text-xs font-medium text-[var(--muted)] md:col-span-2">
-            Status
+            {s.common.status}
             <select
               className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)]"
               defaultValue={meetingTableFilters.status}
               name="status"
             >
-              <option value="all">All statuses</option>
-              <option value="draft">Draft</option>
-              <option value="published">Published</option>
-              <option value="closed">Closed</option>
-              <option value="archived">Archived</option>
-              <option value="approved">Approved</option>
+              <option value="all">{s.common.allStatuses}</option>
+              <option value="draft">{s.meetings.draft}</option>
+              <option value="published">{s.meetings.published}</option>
+              <option value="closed">{s.meetings.closed}</option>
+              <option value="archived">{s.meetings.archived}</option>
+              <option value="approved">{s.meetings.approved}</option>
             </select>
           </label>
           <div className="flex flex-wrap items-end justify-center gap-2 md:col-span-2">
@@ -236,13 +239,13 @@ export function MeetingsSection({
               className="min-h-10 rounded-md bg-[var(--primary)] px-5 py-2 text-sm font-medium text-[var(--primary-foreground)]"
               type="submit"
             >
-              Search
+              {s.common.search}
             </button>
             <a
               className="inline-flex min-h-10 items-center rounded-md border border-[var(--border)] bg-[var(--surface)] px-5 py-2 text-sm font-medium"
               href="/admin/meetings?tab=meetings"
             >
-              Clear
+              {s.common.clear}
             </a>
           </div>
         </form>
@@ -250,14 +253,14 @@ export function MeetingsSection({
 
       <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h3 className="text-sm font-semibold">Results</h3>
+          <h3 className="text-sm font-semibold">{s.common.results}</h3>
           <p className="mt-1 text-xs text-[var(--muted)]">
-            Showing {meetingPageStart}-{meetingPageEnd} of {meetingTotal}
+            {fill(s.common.showing, { start: meetingPageStart, end: meetingPageEnd, total: meetingTotal })}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2 rounded-md border border-[var(--border)] bg-[var(--background)] px-3 py-2">
           <PerPageSelect
-            label="Page"
+            label={s.common.page}
             options={Array.from(
               { length: meetingTotalPages },
               (_, index) => index + 1,
@@ -266,11 +269,11 @@ export function MeetingsSection({
             value={meetingPage}
           />
           <div className="text-xs font-medium text-[var(--muted)]">
-            of {meetingTotalPages}
+            {fill(s.common.ofPages, { total: meetingTotalPages })}
           </div>
           <div className="hidden h-6 w-px bg-[var(--border)] sm:block" />
           <PerPageSelect
-            label="Per page"
+            label={s.common.perPage}
             urlByValue={meetingPerPageUrls}
             value={meetingTableFilters.perPage}
           />
@@ -283,25 +286,25 @@ export function MeetingsSection({
             <tr>
               <th className="py-2 pr-3 font-medium">
                 <a href={meetingSortHref("title")}>
-                  Title{meetingSortLabel("title")}
+                  {s.meetings.titleColumn}{meetingSortLabel("title")}
                 </a>
               </th>
               <th className="py-2 pr-3 font-medium">
                 <a href={meetingSortHref("no_type")}>
-                  No./Type{meetingSortLabel("no_type")}
+                  {s.meetings.noType}{meetingSortLabel("no_type")}
                 </a>
               </th>
               <th className="py-2 pr-3 font-medium">
                 <a href={meetingSortHref("window")}>
-                  Window{meetingSortLabel("window")}
+                  {s.meetings.windowColumn}{meetingSortLabel("window")}
                 </a>
               </th>
               <th className="py-2 pr-3 font-medium">
                 <a href={meetingSortHref("status")}>
-                  Status{meetingSortLabel("status")}
+                  {s.common.status}{meetingSortLabel("status")}
                 </a>
               </th>
-              <th className="py-2 font-medium">Action</th>
+              <th className="py-2 font-medium">{s.common.action}</th>
             </tr>
           </thead>
           <tbody>
@@ -331,14 +334,14 @@ export function MeetingsSection({
                 >
                   <td className="py-2 pr-3">{meeting.title}</td>
                   <td className="py-2 pr-3">
-                    {meeting.meeting_number ?? "-"} / {meeting.meeting_type}
+                    {meeting.meeting_number ?? "-"} / {codeLabel(s.meetings.types, meeting.meeting_type)}
                   </td>
                   <td className="py-2 pr-3">
                     {formatDateTime(meeting.starts_at)} -{" "}
                     {formatDateTime(meeting.ends_at)}
                   </td>
                   <td className="py-2 pr-3">
-                    {hasApprovedResult ? "approved" : meeting.status}
+                    {codeLabel(s.common.code, hasApprovedResult ? "approved" : meeting.status)}
                   </td>
                   <td className="py-2">
                     <div className="flex flex-wrap gap-2">
@@ -351,16 +354,16 @@ export function MeetingsSection({
                               mode: "edit",
                             })}
                           >
-                            Edit
+                            {s.common.edit}
                           </a>
                           <form action={publishMeeting}>
                             <input name="id" type="hidden" value={meeting.id} />
                             <PendingSubmitButton
                               className="rounded-md border border-[var(--border)] px-3 py-1 text-sm font-medium text-[var(--primary)]"
-                              pendingLabel="Publishing..."
+                              pendingLabel={s.meetings.publishing}
                               type="submit"
                             >
-                              Publish
+                              {s.meetings.publish}
                             </PendingSubmitButton>
                           </form>
                         </>
@@ -370,17 +373,17 @@ export function MeetingsSection({
                           <input name="id" type="hidden" value={meeting.id} />
                           <ConfirmSubmitButton
                             className="rounded-md border border-red-200 px-3 py-1 text-sm font-medium text-red-700"
-                            confirmMessage={`Archive meeting "${meeting.title}"? This meeting will be hidden from active meeting workflows and cannot be published again without an admin change.`}
-                            pendingLabel="Archiving..."
+                            confirmMessage={fill(s.meetings.confirmArchive, { title: meeting.title })}
+                            pendingLabel={s.meetings.archiving}
                             type="submit"
                           >
-                            Archive
+                            {s.meetings.archive}
                           </ConfirmSubmitButton>
                         </form>
                       ) : null}
                       {votingOpen ? (
                         <span className="inline-flex items-center rounded-full border border-[var(--border)] bg-[var(--background)] px-3 py-1 text-xs font-medium text-[var(--muted)]">
-                          Voting open
+                          {s.meetings.votingOpen}
                         </span>
                       ) : null}
                       {meeting.status !== "draft" ? (
@@ -388,7 +391,7 @@ export function MeetingsSection({
                           className="rounded-md border border-[var(--border)] px-3 py-1 text-sm font-medium text-[var(--primary)]"
                           href={`/admin/meetings/${meeting.id}/record`}
                         >
-                          Meeting record
+                          {s.meetings.record}
                         </a>
                       ) : null}
                       {(meeting.status === "published" ||
@@ -400,24 +403,24 @@ export function MeetingsSection({
                             className="inline-flex items-center rounded-md border border-amber-300 bg-amber-50 px-3 py-1 text-sm font-medium text-amber-800"
                             href="/admin/voting"
                           >
-                            Resolve {pendingManualCount} pending manual vote
+                            {fill(s.meetings.resolvePending, { count: pendingManualCount })}
                           </a>
                         ) : (
                           <form action={generateResultSnapshot}>
                             <input name="id" type="hidden" value={meeting.id} />
                             <PendingSubmitButton
                               className="rounded-md border border-[var(--border)] px-3 py-1 text-sm font-medium text-[var(--primary)]"
-                              pendingLabel="Generating..."
+                              pendingLabel={s.meetings.generating}
                               type="submit"
                             >
-                              Generate result
+                              {s.meetings.generate}
                             </PendingSubmitButton>
                           </form>
                         )
                       ) : null}
                       {resultLocked ? (
                         <span className="inline-flex items-center rounded-full border border-[var(--border)] bg-[var(--background)] px-3 py-1 text-xs font-medium text-[var(--muted)]">
-                          Result locked
+                          {s.meetings.locked}
                         </span>
                       ) : null}
                     </div>
@@ -431,7 +434,7 @@ export function MeetingsSection({
       <MeetingRowFocus meetingId={meetingFocusId} />
       {pagedMeetings.length === 0 ? (
         <p className="mt-3 text-sm text-[var(--muted)]">
-          No meetings match the selected criteria.
+          {s.meetings.noMatch}
         </p>
       ) : null}
       <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
@@ -446,7 +449,7 @@ export function MeetingsSection({
             page: Math.max(1, meetingPage - 1),
           })}
         >
-          Previous
+          {s.common.previous}
         </a>
         <div className="text-sm text-[var(--muted)]">
           {meetingPageStart}-{meetingPageEnd} / {meetingTotal}
@@ -464,12 +467,12 @@ export function MeetingsSection({
             page: Math.min(meetingTotalPages, meetingPage + 1),
           })}
         >
-          Next
+          {s.common.next}
         </a>
       </div>
       {meetings.length === 0 ? (
         <p className="mt-3 text-sm text-[var(--muted)]">
-          No meetings have been created yet.
+          {s.meetings.noneYet}
         </p>
       ) : null}
       {showMeetingDrawer ? (

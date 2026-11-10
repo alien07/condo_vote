@@ -1,5 +1,6 @@
 "use client";
 
+import { useStaffText } from "@/lib/i18n/staff/client";
 import { useActionState, useRef } from "react";
 import { createOwnerWithState, updateOwnerWithState } from "@/features/admin/actions";
 import { FieldLabel, RequiredNote } from "@/features/admin/components/field-label";
@@ -25,6 +26,7 @@ export function OwnerForm({
   mode: "create" | "edit";
   owner?: Owner;
 }) {
+  const { s } = useStaffText();
   const formRef = useRef<HTMLFormElement>(null);
   const [state, formAction] = useActionState(
     mode === "create" ? createOwnerWithState : updateOwnerWithState,
@@ -38,7 +40,7 @@ export function OwnerForm({
       <FormErrorSummary state={state} />
       {owner ? <input name="id" type="hidden" value={owner.id} /> : null}
       <label className="grid gap-1 text-sm font-medium">
-        <FieldLabel required>Full name</FieldLabel>
+        <FieldLabel required>{s.people.fullName}</FieldLabel>
         <input
           autoFocus
           aria-required="true"
@@ -50,7 +52,7 @@ export function OwnerForm({
         <FieldError fieldName="full_name" state={state} />
       </label>
       <label className="grid gap-1 text-sm font-medium">
-        Email
+        {s.people.email}
         <input
           className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
           defaultValue={stateValue(state, "email", owner?.email)}
@@ -59,7 +61,7 @@ export function OwnerForm({
         />
       </label>
       <label className="grid gap-1 text-sm font-medium">
-        Phone
+        {s.people.phone}
         <input
           className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
           defaultValue={stateValue(state, "phone", owner?.phone)}
@@ -67,7 +69,7 @@ export function OwnerForm({
         />
       </label>
       <label className="grid gap-1 text-sm font-medium">
-        LINE ID
+        {s.people.lineId}
         <input
           className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
           defaultValue={stateValue(state, "line_id", owner?.line_id)}
@@ -75,15 +77,15 @@ export function OwnerForm({
         />
       </label>
       <div className="mt-2 flex flex-wrap gap-2">
-        <DrawerSubmitButton pendingLabel={mode === "create" ? "Adding..." : "Saving..."}>
-          {mode === "create" ? "Create owner" : "Save changes"}
+        <DrawerSubmitButton pendingLabel={mode === "create" ? s.people.adding : s.common.saving}>
+          {mode === "create" ? s.people.createOwner : s.people.saveChanges}
         </DrawerSubmitButton>
         <FormResetButton label={mode === "create" ? "Clear form" : "Reset changes"} />
         <Link
           className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-4 py-2 text-sm font-medium"
           href={closeHref}
         >
-          Cancel
+          {s.common.cancel}
         </Link>
       </div>
     </form>

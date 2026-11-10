@@ -1,5 +1,7 @@
 "use client";
 
+import { useStaffText } from "@/lib/i18n/staff/client";
+import { fill } from "@/lib/i18n/template";
 import { todayInBangkok } from "@/lib/datetime";
 import { useEffect, useMemo, useActionState, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
@@ -224,13 +226,6 @@ function ownershipDisplayStatus(link: RoomOwnerLink) {
   return "active";
 }
 
-function statusLabel(status: ReturnType<typeof ownershipDisplayStatus>) {
-  return status
-    .split("_")
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(" ");
-}
-
 function ActionMessage({ state }: { state: OwnershipActionState }) {
   if (state.error) {
     return (
@@ -257,6 +252,7 @@ export function OwnershipManager({
   roomOwners,
   rooms,
 }: OwnershipManagerProps) {
+  const { s } = useStaffText();
   const searchParams = useSearchParams();
   const [createState, createAction] = useActionState(
     linkRoomOwnerWithState,
@@ -407,9 +403,9 @@ export function OwnershipManager({
     <>
       <section className="mb-5 rounded-lg border border-[var(--border)] bg-[var(--background)] p-5">
         <div className="mb-3">
-          <h2 className="text-sm font-semibold">Search Criteria</h2>
+          <h2 className="text-sm font-semibold">{s.common.searchCriteria}</h2>
           <p className="mt-1 text-xs text-[var(--muted)]">
-            Filter ownership links by room, owner, and link status.
+            {s.ownership.filter}
           </p>
         </div>
         <form
@@ -420,7 +416,7 @@ export function OwnershipManager({
           }}
         >
           <label className="grid gap-1 text-xs font-medium text-[var(--muted)] md:col-span-3">
-            Room
+            {s.ownership.room}
             <input
               className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)]"
               onChange={(event) => {
@@ -428,12 +424,12 @@ export function OwnershipManager({
 
                 setCriteria((current) => ({ ...current, room: value }));
               }}
-              placeholder="Search room number"
+              placeholder={s.ownership.searchRoom}
               value={criteria.room}
             />
           </label>
           <label className="grid gap-1 text-xs font-medium text-[var(--muted)] md:col-span-3">
-            Owner
+            {s.ownership.owner}
             <input
               className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)]"
               onChange={(event) => {
@@ -441,12 +437,12 @@ export function OwnershipManager({
 
                 setCriteria((current) => ({ ...current, owner: value }));
               }}
-              placeholder="Search owner name"
+              placeholder={s.ownership.searchOwner}
               value={criteria.owner}
             />
           </label>
           <label className="grid gap-1 text-xs font-medium text-[var(--muted)] md:col-span-3">
-            Status
+            {s.common.status}
             <select
               className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)]"
               onChange={(event) => {
@@ -457,11 +453,11 @@ export function OwnershipManager({
               }}
               value={criteria.status}
             >
-              <option value="active">Active</option>
-              <option value="scheduled">Scheduled</option>
-              <option value="ended">Ended</option>
-              <option value="cancelled">Cancelled</option>
-              <option value="all">All statuses</option>
+              <option value="active">{s.ownership.status.active}</option>
+              <option value="scheduled">{s.ownership.status.scheduled}</option>
+              <option value="ended">{s.ownership.status.ended}</option>
+              <option value="cancelled">{s.ownership.status.cancelled}</option>
+              <option value="all">{s.common.allStatuses}</option>
             </select>
           </label>
           <div className="flex flex-wrap items-end justify-center gap-2 md:col-span-3">
@@ -469,7 +465,7 @@ export function OwnershipManager({
               className="min-h-10 rounded-md bg-[var(--primary)] px-5 py-2 text-sm font-medium text-[var(--primary-foreground)]"
               type="submit"
             >
-              Search
+              {s.common.search}
             </button>
             <button
               className="inline-flex min-h-10 items-center rounded-md border border-[var(--border)] bg-[var(--surface)] px-5 py-2 text-sm font-medium"
@@ -486,7 +482,7 @@ export function OwnershipManager({
               }
               type="button"
             >
-              Clear
+              {s.common.clear}
             </button>
           </div>
         </form>
@@ -494,16 +490,16 @@ export function OwnershipManager({
       <div className="overflow-x-auto">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--border)] pb-4">
           <div>
-            <h3 className="text-sm font-semibold">Results</h3>
+            <h3 className="text-sm font-semibold">{s.common.results}</h3>
             <p className="mt-1 text-xs text-[var(--muted)]">
-              Showing {pageStart}-{pageEnd} of {total}
+              {fill(s.common.showing, { start: pageStart, end: pageEnd, total: total })}
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2 rounded-md border border-[var(--border)] bg-[var(--background)] px-3 py-2">
             <label className="flex items-center gap-2 text-xs font-medium text-[var(--muted)]">
-              <span>Page</span>
+              <span>{s.common.page}</span>
               <select
-                aria-label="Page"
+                aria-label={s.common.page}
                 className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-2 py-1 text-sm text-[var(--foreground)]"
                 disabled={totalPages <= 1}
                 onChange={(event) => {
@@ -529,9 +525,9 @@ export function OwnershipManager({
             </label>
             <div className="hidden h-6 w-px bg-[var(--border)] sm:block" />
             <label className="flex items-center gap-2 text-xs font-medium text-[var(--muted)]">
-              <span>Per page</span>
+              <span>{s.common.perPage}</span>
               <select
-                aria-label="Per page"
+                aria-label={s.common.perPage}
                 className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-2 py-1 text-sm text-[var(--foreground)]"
                 onChange={(event) => {
                   const nextPerPage = Number(event.currentTarget.value);
@@ -571,7 +567,7 @@ export function OwnershipManager({
                   }
                   type="button"
                 >
-                  Room
+                  {s.ownership.room}
                   {tableState.sort === "room"
                     ? tableState.dir === "asc"
                       ? " ↑"
@@ -595,7 +591,7 @@ export function OwnershipManager({
                   }
                   type="button"
                 >
-                  Owner
+                  {s.ownership.owner}
                   {tableState.sort === "owner"
                     ? tableState.dir === "asc"
                       ? " ↑"
@@ -603,8 +599,8 @@ export function OwnershipManager({
                     : ""}
                 </button>
               </th>
-              <th className="py-2 pr-3 font-medium">Role</th>
-              <th className="py-2 pr-3 font-medium">Dates</th>
+              <th className="py-2 pr-3 font-medium">{s.ownership.role}</th>
+              <th className="py-2 pr-3 font-medium">{s.ownership.dates}</th>
               <th className="py-2 pr-3 font-medium">
                 <button
                   className="font-medium"
@@ -621,7 +617,7 @@ export function OwnershipManager({
                   }
                   type="button"
                 >
-                  Status
+                  {s.common.status}
                   {tableState.sort === "status"
                     ? tableState.dir === "asc"
                       ? " ↑"
@@ -629,7 +625,7 @@ export function OwnershipManager({
                     : ""}
                 </button>
               </th>
-              <th className="py-2 font-medium">Actions</th>
+              <th className="py-2 font-medium">{s.common.actions}</th>
             </tr>
           </thead>
           <tbody>
@@ -647,7 +643,7 @@ export function OwnershipManager({
       </div>
       {pagedLinks.length === 0 ? (
         <p className="mt-3 text-sm text-[var(--muted)]">
-          No room ownership links match the selected criteria.
+          {s.ownership.noLinks}
         </p>
       ) : null}
       <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
@@ -662,7 +658,7 @@ export function OwnershipManager({
           }
           type="button"
         >
-          Previous
+          {s.common.previous}
         </button>
         <div className="text-sm text-[var(--muted)]">
           {pageStart}-{pageEnd} / {total}
@@ -678,14 +674,14 @@ export function OwnershipManager({
           }
           type="button"
         >
-          Next
+          {s.common.next}
         </button>
       </div>
       {showCreateDrawer ? (
         <AdminCrudDrawer
           closeHref={listHref}
-          summary={["New room-owner link"]}
-          title="Create ownership link"
+          summary={[s.ownership.newLink]}
+          title={s.ownership.create}
         >
           <form
             action={createAction}
@@ -696,7 +692,7 @@ export function OwnershipManager({
             <RequiredNote />
             <ActionMessage state={createState} />
             <label className="grid gap-1 text-sm font-medium">
-              <FieldLabel required>Room</FieldLabel>
+              <FieldLabel required>{s.ownership.room}</FieldLabel>
               <select
                 {...fieldProps("room_id", createState)}
                 autoFocus
@@ -705,7 +701,7 @@ export function OwnershipManager({
                 name="room_id"
                 required
               >
-                <option value="">Select room</option>
+                <option value="">{s.ownership.selectRoom}</option>
                 {rooms
                   .filter((room) => room.active)
                   .map((room) => {
@@ -715,7 +711,9 @@ export function OwnershipManager({
                       <option key={room.id} value={room.id}>
                         {room.room_number}
                         {activeLink
-                          ? ` (current: ${activeLink.owners?.full_name ?? "owner"})`
+                          ? fill(s.ownership.currentOwner, {
+                              name: activeLink.owners?.full_name ?? s.ownership.ownerWord,
+                            })
                           : ""}
                       </option>
                     );
@@ -724,7 +722,7 @@ export function OwnershipManager({
               <FieldError fieldName="room_id" state={createState} />
             </label>
             <label className="grid gap-1 text-sm font-medium">
-              <FieldLabel required>Owner</FieldLabel>
+              <FieldLabel required>{s.ownership.owner}</FieldLabel>
               <select
                 {...fieldProps("owner_id", createState)}
                 className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
@@ -732,7 +730,7 @@ export function OwnershipManager({
                 name="owner_id"
                 required
               >
-                <option value="">Select owner</option>
+                <option value="">{s.ownership.selectOwner}</option>
                 {owners
                   .filter((owner) => owner.active)
                   .map((owner) => (
@@ -744,7 +742,7 @@ export function OwnershipManager({
               <FieldError fieldName="owner_id" state={createState} />
             </label>
             <label className="grid gap-1 text-sm font-medium">
-              <FieldLabel required>Ownership role</FieldLabel>
+              <FieldLabel required>{s.ownership.ownershipRole}</FieldLabel>
               <select
                 {...fieldProps("ownership_role", createState)}
                 className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
@@ -752,12 +750,12 @@ export function OwnershipManager({
                 name="ownership_role"
                 required
               >
-                <option value="owner">Owner</option>
+                <option value="owner">{s.ownership.owner}</option>
               </select>
               <FieldError fieldName="ownership_role" state={createState} />
             </label>
             <label className="grid gap-1 text-sm font-medium">
-              Effective from
+              {s.ownership.from}
               <input
                 className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
                 defaultValue={stateValue(createState, "starts_at")}
@@ -765,11 +763,11 @@ export function OwnershipManager({
                 type="date"
               />
               <span className="text-xs font-normal text-[var(--muted)]">
-                Optional. Leave blank when the exact start date is not tracked.
+                {s.ownership.fromHelp}
               </span>
             </label>
             <label className="grid gap-1 text-sm font-medium">
-              Effective until
+              {s.ownership.until}
               <input
                 {...fieldProps("ends_at", createState)}
                 className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
@@ -778,7 +776,7 @@ export function OwnershipManager({
                 type="date"
               />
               <span className="text-xs font-normal text-[var(--muted)]">
-                  Leave blank when the ownership link has no planned end date.
+                  {s.ownership.untilHelp}
               </span>
               <FieldError fieldName="ends_at" state={createState} />
             </label>
@@ -786,17 +784,17 @@ export function OwnershipManager({
               <PendingSubmitButton
                 className="self-end rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)]"
                 debugName="admin.ownership.create"
-                pendingLabel="Adding..."
+                pendingLabel={s.ownership.adding}
                 type="submit"
               >
-                Create ownership link
+                {s.ownership.create}
               </PendingSubmitButton>
               <FormResetButton label="Clear form" />
               <a
                 className="inline-flex items-center justify-center rounded-md border border-[var(--border)] px-4 py-2 text-sm font-medium"
                 href={listHref}
               >
-                Cancel
+                {s.common.cancel}
               </a>
             </div>
           </form>
@@ -823,6 +821,7 @@ function EditDatesDrawer({
   closeHref: string;
   link: RoomOwnerLink;
 }) {
+  const { s } = useStaffText();
   const [state, action] = useActionState(
     updateRoomOwnerDatesWithState,
     initialState,
@@ -855,16 +854,16 @@ function EditDatesDrawer({
     <AdminCrudDrawer
       closeHref={closeHref}
       summary={[
-        `Room: ${link.rooms?.room_number ?? "-"}`,
-        `Owner: ${link.owners?.full_name ?? "-"}`,
+        fill(s.ownership.roomSummary, { room: link.rooms?.room_number ?? "-" }),
+        fill(s.ownership.ownerSummary, { owner: link.owners?.full_name ?? "-" }),
       ]}
-      title="Edit ownership dates"
+      title={s.ownership.editDates}
     >
       <form action={action} className="grid gap-3" noValidate ref={formRef}>
         <ActionMessage state={state} />
         <input name="id" type="hidden" value={link.id} />
         <label className="grid gap-1 text-sm font-medium">
-          Effective from
+          {s.ownership.from}
           <input
             autoFocus
             className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
@@ -874,7 +873,7 @@ function EditDatesDrawer({
           />
         </label>
         <label className="grid gap-1 text-sm font-medium">
-          Effective until
+          {s.ownership.until}
           <input
             {...fieldProps("ends_at", state)}
             className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
@@ -883,7 +882,7 @@ function EditDatesDrawer({
             type="date"
           />
           <span className="text-xs font-normal text-[var(--muted)]">
-            Leave blank when the ownership link has no planned end date.
+            {s.ownership.untilHelp}
           </span>
           <FieldError fieldName="ends_at" state={state} />
         </label>
@@ -891,17 +890,17 @@ function EditDatesDrawer({
           <PendingSubmitButton
             className="rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)]"
             debugName="admin.ownership.edit_dates"
-            pendingLabel="Saving..."
+            pendingLabel={s.common.saving}
             type="submit"
           >
-            Save dates
+            {s.ownership.saveDates}
           </PendingSubmitButton>
           <FormResetButton label="Reset changes" />
           <a
             className="inline-flex items-center justify-center rounded-md border border-[var(--border)] px-4 py-2 text-sm font-medium"
             href={closeHref}
           >
-            Cancel
+            {s.common.cancel}
           </a>
         </div>
       </form>
@@ -918,6 +917,7 @@ function EndLinkDrawer({
   defaultEndDate: string;
   link: RoomOwnerLink;
 }) {
+  const { s } = useStaffText();
   const [state, action] = useActionState(endRoomOwnerLinkWithState, initialState);
   const formRef = useRef<HTMLFormElement>(null);
   const searchParams = useSearchParams();
@@ -947,21 +947,23 @@ function EndLinkDrawer({
     <AdminCrudDrawer
       closeHref={closeHref}
       summary={[
-        `Room: ${link.rooms?.room_number ?? "-"}`,
-        `Owner: ${link.owners?.full_name ?? "-"}`,
-        `Dates: ${link.starts_at ?? "Not set"} - ${link.ends_at ?? "No end date"}`,
+        fill(s.ownership.roomSummary, { room: link.rooms?.room_number ?? "-" }),
+        fill(s.ownership.ownerSummary, { owner: link.owners?.full_name ?? "-" }),
+        fill(s.ownership.datesSummary, {
+          from: link.starts_at ?? s.ownership.notSet,
+          until: link.ends_at ?? s.ownership.noEnd,
+        }),
       ]}
-      title="End ownership link"
+      title={s.ownership.endLink}
     >
       <form action={action} className="grid gap-3" noValidate ref={formRef}>
         <ActionMessage state={state} />
         <input name="id" type="hidden" value={link.id} />
         <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
-          This owner will no longer be active for this room after the selected
-          end date.
+          {s.ownership.endHelp}
         </p>
         <label className="grid gap-1 text-sm font-medium">
-          <FieldLabel required>End date</FieldLabel>
+          <FieldLabel required>{s.ownership.endDate}</FieldLabel>
           <input
             {...fieldProps("ends_at", state)}
             autoFocus
@@ -976,18 +978,21 @@ function EndLinkDrawer({
         <div className="flex flex-wrap gap-2 pt-2">
           <ConfirmSubmitButton
             className="rounded-md bg-red-700 px-4 py-2 text-sm font-medium text-white"
-            confirmMessage={`End ownership link for room ${link.rooms?.room_number ?? "-"} and owner ${link.owners?.full_name ?? "-"}? This owner will no longer be active for that room after the selected end date.`}
+            confirmMessage={fill(s.ownership.confirmEnd, {
+              room: link.rooms?.room_number ?? "-",
+              owner: link.owners?.full_name ?? "-",
+            })}
             debugName="admin.ownership.end"
-            pendingLabel="Saving..."
+            pendingLabel={s.common.saving}
             type="submit"
           >
-            End Link
+            {s.ownership.endButton}
           </ConfirmSubmitButton>
           <a
             className="inline-flex items-center justify-center rounded-md border border-[var(--border)] px-4 py-2 text-sm font-medium"
             href={closeHref}
           >
-            Cancel
+            {s.common.cancel}
           </a>
         </div>
       </form>
@@ -1006,6 +1011,7 @@ function OwnershipRow({
   link: RoomOwnerLink;
   selected: boolean;
 }) {
+  const { s } = useStaffText();
   const [cancelState, cancelAction] = useActionState(
     cancelRoomOwnerLinkWithState,
     initialState,
@@ -1046,11 +1052,11 @@ function OwnershipRow({
         <td className="py-2 pr-3">{link.owners?.full_name ?? "-"}</td>
         <td className="py-2 pr-3">{link.ownership_role}</td>
         <td className="py-2 pr-3">
-          {link.starts_at ?? "Not set"} - {link.ends_at ?? "No end date"}
+          {link.starts_at ?? s.ownership.notSet} - {link.ends_at ?? s.ownership.noEnd}
         </td>
         <td className="py-2 pr-3">
           <span className="rounded-full border border-[var(--border)] bg-[var(--background)] px-2 py-1 text-xs font-medium">
-            {statusLabel(status)}
+            {s.ownership.status[status]}
           </span>
         </td>
         <td className="py-2">
@@ -1064,7 +1070,7 @@ function OwnershipRow({
                   type: "ownership_dates",
                 })}
               >
-                Edit dates
+                {s.ownership.editDatesButton}
               </a>
             ) : null}
             {status === "active" ? (
@@ -1076,7 +1082,7 @@ function OwnershipRow({
                   type: "ownership_link",
                 })}
               >
-                End Link
+                {s.ownership.endButton}
               </a>
             ) : null}
             {status === "scheduled" ? (
@@ -1084,17 +1090,20 @@ function OwnershipRow({
                 <input name="id" type="hidden" value={link.id} />
                 <ConfirmSubmitButton
                   className="inline-flex min-h-9 items-center rounded-md border border-red-200 px-3 py-1 text-sm font-medium text-red-700"
-                  confirmMessage={`Cancel scheduled ownership link for room ${link.rooms?.room_number ?? "-"} and owner ${link.owners?.full_name ?? "-"}? This link will not become active and will not be used for voting eligibility.`}
+                  confirmMessage={fill(s.ownership.confirmCancel, {
+                    room: link.rooms?.room_number ?? "-",
+                    owner: link.owners?.full_name ?? "-",
+                  })}
                   debugName="admin.ownership.cancel"
-                  pendingLabel="Cancelling..."
+                  pendingLabel={s.ownership.cancelling}
                   type="submit"
                 >
-                  Cancel scheduled link
+                  {s.ownership.cancelScheduled}
                 </ConfirmSubmitButton>
               </form>
             ) : null}
             {status === "ended" || status === "cancelled" ? (
-              <span className="text-sm text-[var(--muted)]">Read only</span>
+              <span className="text-sm text-[var(--muted)]">{s.ownership.readOnly}</span>
             ) : null}
           </div>
         </td>

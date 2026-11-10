@@ -1,3 +1,4 @@
+import { getStaffI18n } from "@/lib/i18n/server";
 import { History } from "lucide-react";
 import { AuditLogTable } from "@/features/admin/components/audit-log-table";
 import type {
@@ -17,7 +18,7 @@ type AuditLogSectionProps = Pick<
   hidden: boolean;
 };
 
-export function AuditLogSection({
+export async function AuditLogSection({
   auditFilters,
   auditLogPage,
   auditLogPerPage,
@@ -26,6 +27,7 @@ export function AuditLogSection({
   auditOptions,
   hidden,
 }: AuditLogSectionProps) {
+  const { s } = await getStaffI18n();
   const auditSortBy = auditFilters?.sortBy ?? "time";
   const auditSortDirection = auditFilters?.sortDirection ?? "desc";
   const auditActors = [
@@ -56,7 +58,7 @@ export function AuditLogSection({
     >
       <div className="mb-4 flex items-center gap-2">
         <History className="text-[var(--primary)]" size={20} />
-        <h2 className="text-lg font-semibold">Business Audit Log</h2>
+        <h2 className="text-lg font-semibold">{s.setup.auditTitle}</h2>
       </div>
       <AuditLogTable
         actions={auditActions}

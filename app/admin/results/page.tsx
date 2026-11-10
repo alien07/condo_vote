@@ -1,4 +1,5 @@
 import { AdminWorkspace } from "@/features/admin/components/admin-workspace";
+import { getStaffI18n } from "@/lib/i18n/server";
 import type { ResultTableFilters } from "@/features/admin/components/admin-workspace";
 
 // Approving can start the master PDF files (D021), which needs Chromium time.
@@ -54,11 +55,12 @@ function getResultFilters(
 export default async function AdminResultsPage({
   searchParams,
 }: AdminResultsPageProps) {
+  const { s } = await getStaffI18n();
   const params = await searchParams;
 
   return (
     <AdminWorkspace
-      description="Generate result snapshots, approve results, and review locked state."
+      description={s.adminHome.pages.resultsText}
       drawer={{
         id: params.id,
         mode: params.mode,
@@ -67,7 +69,7 @@ export default async function AdminResultsPage({
       focusedResultSnapshotId={params.focusResultSnapshotId}
       resultFilters={getResultFilters(params)}
       sections={["results"]}
-      title="Results"
+      title={s.adminHome.pages.resultsTitle}
     />
   );
 }

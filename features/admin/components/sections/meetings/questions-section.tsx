@@ -1,3 +1,5 @@
+import { getStaffI18n } from "@/lib/i18n/server";
+import { fill } from "@/lib/i18n/template";
 import { ListChecks } from "lucide-react";
 import { createMeetingChoice, deleteMeetingChoice, deleteMeetingQuestion } from "@/features/admin/actions";
 import { ConfirmSubmitButton, FormResetButton } from "@/features/admin/components/form-controls";
@@ -14,13 +16,14 @@ type QuestionsSectionProps = Pick<AdminDashboardData, "meetings" | "questions"> 
   hidden: boolean;
 };
 
-export function QuestionsSection({
+export async function QuestionsSection({
   drawer,
   focusedQuestionId,
   meetings,
   questions,
   hidden,
 }: QuestionsSectionProps) {
+  const { s } = await getStaffI18n();
   const selectedQuestion = questions.find((question) => question.id === drawer?.id);
   const showQuestionDrawer =
     drawer?.type === "question" &&
@@ -40,9 +43,9 @@ export function QuestionsSection({
         <div className="flex items-center gap-2">
           <ListChecks className="text-[var(--primary)]" size={20} />
           <div>
-            <h2 className="text-lg font-semibold">Questions And Choices</h2>
+            <h2 className="text-lg font-semibold">{s.meetings.questionsTitle}</h2>
             <p className="text-sm text-[var(--muted)]">
-              Add agenda questions, then manage choices on each question row.
+              {s.meetings.questionsIntro}
             </p>
           </div>
         </div>
@@ -50,7 +53,7 @@ export function QuestionsSection({
           className="inline-flex min-h-10 items-center justify-center rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)]"
           href="/admin/meetings?tab=questions&mode=create&type=question"
         >
-          Add question
+          {s.meetings.addQuestion}
         </a>
       </div>
 
@@ -73,9 +76,13 @@ export function QuestionsSection({
             <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
               <div>
                 <div className="text-sm text-[var(--muted)]">
-                  {question.meetings?.title ?? "-"} / agenda{" "}
-                  {question.agenda_no ?? "-"} / {question.question_type} /{" "}
-                  {question.resolution_type} / {question.required_threshold}
+                  {fill(s.meetings.agendaLine, {
+                    meeting: question.meetings?.title ?? "-",
+                    no: question.agenda_no ?? "-",
+                    type: question.question_type,
+                    resolution: question.resolution_type ?? "-",
+                    threshold: question.required_threshold ?? "-",
+                  })}
                 </div>
                 {question.agenda_title ? (
                   <div className="mt-1 text-sm font-medium">
@@ -85,7 +92,7 @@ export function QuestionsSection({
                 <h3 className="mt-1 font-semibold">{question.question_text}</h3>
                 {question.requires_land_office_registration ? (
                   <div className="mt-1 text-xs text-[var(--muted)]">
-                    Requires land office registration
+                    {s.meetings.landOffice}
                   </div>
                 ) : null}
               </div>
@@ -94,17 +101,17 @@ export function QuestionsSection({
                   className="rounded-md border border-[var(--border)] px-3 py-1 text-sm font-medium text-[var(--primary)]"
                   href={`/admin/meetings?tab=questions&mode=edit&type=question&id=${question.id}`}
                 >
-                  Edit
+                  {s.common.edit}
                 </a>
                 <form action={deleteMeetingQuestion}>
                   <input name="id" type="hidden" value={question.id} />
                   <ConfirmSubmitButton
                     className="rounded-md border border-red-200 px-3 py-1 text-sm font-medium text-red-700"
-                    confirmMessage={`Delete question "${question.question_text}"? This removes the agenda question and its configured choices from the meeting setup.`}
-                    pendingLabel="Deleting..."
+                    confirmMessage={fill(s.meetings.confirmDeleteQuestion, { text: question.question_text })}
+                    pendingLabel={s.common.deleting}
                     type="submit"
                   >
-                    Delete question
+                    {s.meetings.deleteQuestion}
                   </ConfirmSubmitButton>
                 </form>
               </div>
@@ -115,7 +122,7 @@ export function QuestionsSection({
             >
               <input name="question_id" type="hidden" value={question.id} />
               <label className="grid gap-1 text-sm font-medium">
-                <FieldLabel required>Choice</FieldLabel>
+                <FieldLabel required>{s.meetings.choice}</FieldLabel>
                 <input
                   className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
                   name="choice_text"
@@ -127,16 +134,16 @@ export function QuestionsSection({
                 defaultValue={0}
                 min={0}
                 name="display_order"
-                placeholder="Order"
+                placeholder={s.meetings.order}
                 type="number"
               />
               <div className="flex flex-wrap gap-2">
                 <PendingSubmitButton
                   className="rounded-md border border-[var(--border)] px-4 py-2 text-sm font-medium"
-                  pendingLabel="Adding..."
+                  pendingLabel={s.meetings.adding}
                   type="submit"
                 >
-                  Add choice
+                  {s.meetings.addChoice}
                 </PendingSubmitButton>
                 <FormResetButton label="Clear form" />
               </div>
@@ -154,18 +161,18 @@ export function QuestionsSection({
                       {choice.choice_text}
                       {choice.is_abstain ? (
                         <span className="ml-1 text-xs text-[var(--muted)]">
-                          (default, removable)
+                          {s.meetings.defaultRemovable}
                         </span>
                       ) : null}
                     </span>
                     <input name="id" type="hidden" value={choice.id} />
                     <ConfirmSubmitButton
                       className="font-medium text-red-700"
-                      confirmMessage={`Delete choice "${choice.choice_text}"? Existing ballot setup for this choice will no longer be available.`}
-                      pendingLabel="Deleting..."
+                      confirmMessage={fill(s.meetings.confirmDeleteChoice, { text: choice.choice_text })}
+                      pendingLabel={s.common.deleting}
                       type="submit"
                     >
-                      Delete
+                      {s.common.delete}
                     </ConfirmSubmitButton>
                   </form>
                 ))}
@@ -177,7 +184,7 @@ export function QuestionsSection({
       <QuestionRowFocus questionId={questionFocusId} />
       {questions.length === 0 ? (
         <p className="mt-3 text-sm text-[var(--muted)]">
-          No meeting questions have been created yet.
+          {s.meetings.noQuestions}
         </p>
       ) : null}
       {showQuestionDrawer ? (

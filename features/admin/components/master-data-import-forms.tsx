@@ -1,5 +1,6 @@
 "use client";
 
+import { useStaffText } from "@/lib/i18n/staff/client";
 import { useActionState, useEffect, useRef } from "react";
 import { Upload } from "lucide-react";
 import {
@@ -61,6 +62,7 @@ function ImportCard({
   title,
   uploadLabel,
 }: ImportCardProps) {
+  const { s } = useStaffText();
   const formRef = useRef<HTMLFormElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [state, formAction] = useActionState(action, initialState);
@@ -99,7 +101,7 @@ function ImportCard({
         {templateLabel}
       </a>
       <label className="grid gap-1 text-sm font-medium">
-        <FieldLabel required>Excel file</FieldLabel>
+        <FieldLabel required>{s.people.excelFile}</FieldLabel>
         <input
           accept=".xlsx"
           aria-describedby={hasFileError ? errorId : undefined}
@@ -119,7 +121,7 @@ function ImportCard({
       <div className="mt-3 flex flex-wrap gap-2">
         <PendingSubmitButton
           className="min-h-10 rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)]"
-          pendingLabel="Uploading..."
+          pendingLabel={s.people.uploading}
           type="submit"
         >
           {uploadLabel}
@@ -131,31 +133,32 @@ function ImportCard({
 }
 
 export function MasterDataImportForms() {
+  const { s } = useStaffText();
   return (
     <div className="grid gap-4 lg:grid-cols-3">
       <ImportCard
         action={importRoomsExcelWithState}
-        description="Reads the `Rooms` sheet. Upsert key: `room_number`."
+        description={s.people.roomsImportText}
         templateHref="/templates/rooms-import-template.xlsx"
-        templateLabel="Download rooms template"
-        title="Import rooms"
-        uploadLabel="Upload rooms Excel"
+        templateLabel={s.people.roomsTemplate}
+        title={s.people.roomsImport}
+        uploadLabel={s.people.roomsUpload}
       />
       <ImportCard
         action={importOwnersExcelWithState}
-        description="Reads the `Owners` sheet. Upsert key: `email`."
+        description={s.people.ownersImportText}
         templateHref="/templates/owners-import-template.xlsx"
-        templateLabel="Download owners template"
-        title="Import owners"
-        uploadLabel="Upload owners Excel"
+        templateLabel={s.people.ownersTemplate}
+        title={s.people.ownersImport}
+        uploadLabel={s.people.ownersUpload}
       />
       <ImportCard
         action={importRoomOwnersExcelWithState}
-        description="Reads the `RoomOwners` sheet. Links `room_number` to `owner_email` with role `owner`."
+        description={s.people.linksImportText}
         templateHref="/templates/room-owners-import-template.xlsx"
-        templateLabel="Download room owners template"
-        title="Import room owners"
-        uploadLabel="Upload room owners Excel"
+        templateLabel={s.people.linksTemplate}
+        title={s.people.linksImport}
+        uploadLabel={s.people.linksUpload}
       />
     </div>
   );

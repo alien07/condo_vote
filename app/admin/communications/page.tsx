@@ -1,4 +1,5 @@
 import { AdminWorkspace } from "@/features/admin/components/admin-workspace";
+import { getStaffI18n } from "@/lib/i18n/server";
 import type { EmailTableFilters } from "@/features/admin/components/admin-workspace";
 
 type AdminCommunicationsPageProps = {
@@ -51,11 +52,12 @@ function getEmailFilters(
 export default async function AdminCommunicationsPage({
   searchParams,
 }: AdminCommunicationsPageProps) {
+  const { s } = await getStaffI18n();
   const params = await searchParams;
 
   return (
     <AdminWorkspace
-      description="Review mock email queue and delivery logs."
+      description={s.adminHome.pages.communicationsText}
       drawer={{
         id: params.id,
         mode: params.mode,
@@ -64,7 +66,7 @@ export default async function AdminCommunicationsPage({
       emailFilters={getEmailFilters(params)}
       focusedEmailLogId={params.focusEmailLogId}
       sections={["email"]}
-      title="Communications"
+      title={s.adminHome.pages.communicationsTitle}
     />
   );
 }

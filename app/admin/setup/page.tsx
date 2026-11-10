@@ -1,4 +1,5 @@
 import { AdminWorkspace } from "@/features/admin/components/admin-workspace";
+import { getStaffI18n } from "@/lib/i18n/server";
 import type { CommitteeTableFilters } from "@/features/admin/components/admin-workspace";
 import type { AuditLogFilters } from "@/features/admin/data-modules/documents";
 
@@ -88,6 +89,7 @@ function getCommitteeFilters(
 export default async function AdminSetupPage({
   searchParams,
 }: AdminSetupPageProps) {
+  const { s } = await getStaffI18n();
   const params = await searchParams;
 
   return (
@@ -97,7 +99,7 @@ export default async function AdminSetupPage({
       committeeFilters={
         params.tab === "committee" ? getCommitteeFilters(params) : undefined
       }
-      description="Juristic profile and committee setup for formal meeting documents."
+      description={s.adminHome.pages.setupText}
       drawer={{
         id: params.id,
         mode: params.mode,
@@ -105,7 +107,7 @@ export default async function AdminSetupPage({
       }}
       focusedCommitteeId={params.focusCommitteeId}
       sections={["setup", "storage", "committee", "audit"]}
-      title="Setup"
+      title={s.adminHome.pages.setupTitle}
     />
   );
 }

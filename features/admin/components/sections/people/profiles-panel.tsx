@@ -1,5 +1,7 @@
 "use client";
 
+import { useStaffText } from "@/lib/i18n/staff/client";
+import { codeLabel, fill } from "@/lib/i18n/template";
 import Link from "next/link";
 import { AdminCrudDrawer } from "@/features/admin/components/admin-crud-drawer";
 import { useMemo, useState } from "react";
@@ -19,6 +21,7 @@ export function ProfilesPanel({
   drawer,
   profiles,
 }: ProfilesPanelProps) {
+  const { s } = useStaffText();
   const searchParams = useSearchParams();
   const [profileCriteria, setProfileCriteria] = useState(() =>
     profileTableStateFromParams(searchParams),
@@ -68,16 +71,20 @@ export function ProfilesPanel({
           />
         ),
         summary: [
-          `Name: ${selectedProfile.full_name}`,
-          `Email: ${selectedProfile.email}`,
-          `Status: ${selectedProfile.default_status} / ${selectedProfile.approval_status}`,
+          fill(s.people.nameSummary, { name: selectedProfile.full_name }),
+          fill(s.people.emailSummary, { email: selectedProfile.email }),
+          fill(s.people.profileStatusSummary, {
+            defaultStatus: codeLabel(s.common.code, selectedProfile.default_status),
+            approvalStatus: codeLabel(s.common.code, selectedProfile.approval_status),
+          }),
         ],
-        title: "Edit roles/status",
+        title: s.people.editAccess,
       };
     }
 
     return null;
   }, [
+    s,
     activeSection,
     appRolesByProfile,
     closeHref,
@@ -141,9 +148,9 @@ export function ProfilesPanel({
       <div className="grid gap-5">
         <section className="rounded-lg border border-[var(--border)] bg-[var(--background)] p-5">
           <div className="mb-3">
-            <h2 className="text-sm font-semibold">Search Criteria</h2>
+            <h2 className="text-sm font-semibold">{s.common.searchCriteria}</h2>
             <p className="mt-1 text-xs text-[var(--muted)]">
-              Filter profiles by name, email, and default status.
+              {s.people.profilesFilter}
             </p>
           </div>
           <form
@@ -154,7 +161,7 @@ export function ProfilesPanel({
             }}
           >
             <label className="grid gap-1 text-xs font-medium text-[var(--muted)] md:col-span-5">
-              Name
+              {s.common.name}
               <input
                 className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)]"
                 onChange={(event) => {
@@ -165,12 +172,12 @@ export function ProfilesPanel({
                     name: value,
                   }));
                 }}
-                placeholder="Search profile name or email"
+                placeholder={s.people.searchProfile}
                 value={profileCriteria.name}
               />
             </label>
             <label className="grid gap-1 text-xs font-medium text-[var(--muted)] md:col-span-3">
-              Default status
+              {s.people.defaultStatus}
               <select
                 className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)]"
                 onChange={(event) => {
@@ -184,10 +191,10 @@ export function ProfilesPanel({
                 }}
                 value={profileCriteria.defaultStatus}
               >
-                <option value="all">All statuses</option>
-                <option value="owner">Owner</option>
-                <option value="resident">Resident</option>
-                <option value="proxy">Proxy</option>
+                <option value="all">{s.common.allStatuses}</option>
+                <option value="owner">{s.people.ownerOption}</option>
+                <option value="resident">{s.people.residentOption}</option>
+                <option value="proxy">{s.people.proxyOption}</option>
               </select>
             </label>
             <div className="flex flex-wrap items-end justify-center gap-2 md:col-span-4">
@@ -195,7 +202,7 @@ export function ProfilesPanel({
                 className="min-h-10 rounded-md bg-[var(--primary)] px-5 py-2 text-sm font-medium text-[var(--primary-foreground)]"
                 type="submit"
               >
-                Search
+                {s.common.search}
               </button>
               <button
                 className="inline-flex min-h-10 items-center rounded-md border border-[var(--border)] bg-[var(--surface)] px-5 py-2 text-sm font-medium"
@@ -211,7 +218,7 @@ export function ProfilesPanel({
                 }
                 type="button"
               >
-                Clear
+                {s.common.clear}
               </button>
             </div>
           </form>
@@ -220,16 +227,16 @@ export function ProfilesPanel({
         <section className="rounded-lg border border-[var(--border)] bg-[var(--surface)]">
           <div className="flex w-full flex-wrap items-center justify-between gap-3 border-b border-[var(--border)] px-5 py-4">
             <div>
-              <h2 className="text-lg font-semibold">Registered Profiles</h2>
+              <h2 className="text-lg font-semibold">{s.people.profilesTitle}</h2>
               <p className="mt-1 text-xs text-[var(--muted)]">
-                Showing {profilePageStart}-{profilePageEnd} of {profileTotal}
+                {fill(s.common.showing, { start: profilePageStart, end: profilePageEnd, total: profileTotal })}
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2 rounded-md border border-[var(--border)] bg-[var(--background)] px-3 py-2">
               <label className="flex items-center gap-2 text-xs font-medium text-[var(--muted)]">
-                <span>Page</span>
+                <span>{s.common.page}</span>
                 <select
-                  aria-label="Page"
+                  aria-label={s.common.page}
                   className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-2 py-1 text-sm text-[var(--foreground)]"
                   disabled={profileTotalPages <= 1}
                   onChange={(event) => {
@@ -258,9 +265,9 @@ export function ProfilesPanel({
               </label>
               <div className="hidden h-6 w-px bg-[var(--border)] sm:block" />
               <label className="flex items-center gap-2 text-xs font-medium text-[var(--muted)]">
-                <span>Per page</span>
+                <span>{s.common.perPage}</span>
                 <select
-                  aria-label="Per page"
+                  aria-label={s.common.perPage}
                   className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-2 py-1 text-sm text-[var(--foreground)]"
                   onChange={(event) => {
                     const nextPerPage = Number(event.currentTarget.value);
@@ -304,7 +311,7 @@ export function ProfilesPanel({
                     }
                     type="button"
                   >
-                    Name
+                    {s.common.name}
                     {profileTableState.sort === "name"
                       ? profileTableState.dir === "asc"
                         ? " ↑"
@@ -312,7 +319,7 @@ export function ProfilesPanel({
                       : ""}
                   </button>
                 </th>
-                <th className="py-2 pr-3 font-medium">Email</th>
+                <th className="py-2 pr-3 font-medium">{s.people.email}</th>
                 <th className="py-2 pr-3 font-medium">
                   <button
                     className="font-medium"
@@ -330,7 +337,7 @@ export function ProfilesPanel({
                     }
                     type="button"
                   >
-                    Default status
+                    {s.people.defaultStatus}
                     {profileTableState.sort === "default_status"
                       ? profileTableState.dir === "asc"
                         ? " ↑"
@@ -338,9 +345,9 @@ export function ProfilesPanel({
                       : ""}
                   </button>
                 </th>
-                <th className="py-2 pr-3 font-medium">Approval</th>
-                <th className="py-2 pr-3 font-medium">Roles</th>
-                <th className="py-2 font-medium">Action</th>
+                <th className="py-2 pr-3 font-medium">{s.people.approval}</th>
+                <th className="py-2 pr-3 font-medium">{s.people.roles}</th>
+                <th className="py-2 font-medium">{s.common.action}</th>
               </tr>
             </thead>
             <tbody>
@@ -363,10 +370,10 @@ export function ProfilesPanel({
                   >
                     <td className="py-2 pr-3">{profile.full_name}</td>
                     <td className="py-2 pr-3">{profile.email}</td>
-                    <td className="py-2 pr-3">{profile.default_status}</td>
-                    <td className="py-2 pr-3">{profile.approval_status}</td>
+                    <td className="py-2 pr-3">{codeLabel(s.common.code, profile.default_status)}</td>
+                    <td className="py-2 pr-3">{codeLabel(s.common.code, profile.approval_status)}</td>
                     <td className="py-2 pr-3">
-                      {profileRoles.map((role) => role.role).join(", ") || "-"}
+                      {profileRoles.map((role) => codeLabel(s.common.code, role.role)).join(", ") || "-"}
                     </td>
                     <td className="py-2">
                       <Link
@@ -378,7 +385,7 @@ export function ProfilesPanel({
                           type: "profile",
                         })}
                       >
-                        Edit roles/status
+                        {s.people.editAccess}
                       </Link>
                     </td>
                   </tr>
@@ -389,7 +396,7 @@ export function ProfilesPanel({
         </div>
         {pagedProfiles.length === 0 ? (
           <p className="px-5 py-4 text-sm text-[var(--muted)]">
-            No profiles match the selected criteria.
+            {s.people.noProfiles}
           </p>
         ) : null}
           <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-4">
@@ -404,7 +411,7 @@ export function ProfilesPanel({
               }
               type="button"
             >
-              Previous
+              {s.common.previous}
             </button>
             <div className="text-sm text-[var(--muted)]">
               {profilePageStart}-{profilePageEnd} / {profileTotal}
@@ -420,7 +427,7 @@ export function ProfilesPanel({
               }
               type="button"
             >
-              Next
+              {s.common.next}
             </button>
           </div>
         </section>
