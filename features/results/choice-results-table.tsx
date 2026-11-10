@@ -6,6 +6,7 @@ export type ChoiceResult = {
   text?: string;
   vote_count?: number;
   ownership?: number;
+  percent_of_total_ownership?: number;
   percent_of_submitted_ownership?: number;
 };
 
@@ -14,8 +15,8 @@ function formatPercent(value: number | undefined) {
 }
 
 const LABELS = {
-  en: { empty: "No votes were recorded for this item.", choice: "Choice", rooms: "Rooms", ownership: "Ownership", cast: "Of votes cast" },
-  th: { empty: "ไม่มีการลงคะแนนในวาระนี้", choice: "ตัวเลือก", rooms: "ห้อง", ownership: "คะแนนเสียง", cast: "% ของผู้ลงคะแนน" },
+  en: { empty: "No votes were recorded for this item.", choice: "Choice", rooms: "Rooms", ownership: "Of all ownership", cast: "Of votes cast" },
+  th: { empty: "ไม่มีการลงคะแนนในวาระนี้", choice: "ตัวเลือก", rooms: "ห้อง", ownership: "% ของทั้งอาคาร", cast: "% ของผู้ลงคะแนน" },
 };
 
 export function ChoiceResultsTable({
@@ -51,7 +52,7 @@ export function ChoiceResultsTable({
               <td className="py-2 pr-3">{choice.text ?? "-"}</td>
               <td className="py-2 pr-3 text-right tabular-nums">{choice.vote_count ?? 0}</td>
               <td className="py-2 pr-3 text-right tabular-nums">
-                {formatPercent(choice.ownership)}
+                {formatPercent(choice.percent_of_total_ownership ?? choice.ownership)}
               </td>
               <td className="py-2 text-right tabular-nums">
                 {formatPercent(choice.percent_of_submitted_ownership)}

@@ -229,6 +229,10 @@ test.describe("@test:e2e @test:auth @test:role role access", () => {
       primaryNav.getByRole("link", { name: "Summary" }),
     ).toBeVisible();
 
+    // The official result record is for admin and committee only (D019).
+    await page.goto("/record/00000000-0000-0000-0000-000000000000");
+    await expect(page).toHaveURL(/\/summary$/);
+
     await page.goto("/vote");
     await expect(page.getByRole("heading", { name: "Vote" })).toBeVisible();
     await expect(

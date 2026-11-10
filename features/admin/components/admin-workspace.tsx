@@ -97,7 +97,6 @@ export async function AdminWorkspace({
   const {
     appRolesByProfile,
     approvalCountBySnapshotId,
-    approvalBySnapshotId,
     approvedMeetingIds,
     approvedResultSnapshotIds,
     lockedMeetingIds,
@@ -241,13 +240,10 @@ export async function AdminWorkspace({
         />
 
         <ResultsSection
-          approvalBySnapshotId={approvalBySnapshotId}
           approvalCountBySnapshotId={approvalCountBySnapshotId}
           approvedMeetingIds={approvedMeetingIds}
           approvedResultSnapshotIds={approvedResultSnapshotIds}
           lockedMeetingIds={lockedMeetingIds}
-          committeeMembers={committeeMembers}
-          condoProfile={condoProfile}
           drawer={drawer}
           focusedResultSnapshotId={focusedResultSnapshotId}
           hidden={!visibleSections.has("results")}

@@ -258,7 +258,7 @@ export default async function OfficialRecordPage({ params }: RecordPageProps) {
                   <tr className="border-b border-black/20 text-left">
                     <th className="py-1 pr-3">ตัวเลือก</th>
                     <th className="py-1 pr-3 text-right">ห้อง</th>
-                    <th className="py-1 pr-3 text-right">คะแนนเสียง</th>
+                    <th className="py-1 pr-3 text-right">% ของทั้งอาคาร</th>
                     <th className="py-1 text-right">% ของผู้ลงคะแนน</th>
                   </tr>
                 </thead>
@@ -267,7 +267,7 @@ export default async function OfficialRecordPage({ params }: RecordPageProps) {
                     <tr className="border-b border-black/10" key={choice.id ?? choiceIndex}>
                       <td className="py-1 pr-3">{choice.text}</td>
                       <td className="py-1 pr-3 text-right tabular-nums">{choice.vote_count ?? 0}</td>
-                      <td className="py-1 pr-3 text-right tabular-nums">{pct(choice.ownership)}</td>
+                      <td className="py-1 pr-3 text-right tabular-nums">{pct(choice.percent_of_total_ownership ?? choice.ownership)}</td>
                       <td className="py-1 text-right tabular-nums">
                         {pct(choice.percent_of_submitted_ownership)}
                       </td>
