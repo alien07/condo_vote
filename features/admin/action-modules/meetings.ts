@@ -11,6 +11,7 @@ import {
   revalidateAdminPaths,
 } from "@/features/admin/action-modules/shared";
 import { writeAuditLog } from "@/lib/audit/business-audit";
+import { bangkokLocalToIso } from "@/lib/datetime";
 import {
   isPassBasis,
   isPassOperator,
@@ -92,8 +93,11 @@ function validateMeetingForm(
     fieldErrors.ballot_secrecy = "Choose open or secret ballot.";
   }
 
-  const startsAt = values.starts_at ? new Date(values.starts_at) : null;
-  const endsAt = values.ends_at ? new Date(values.ends_at) : null;
+  // Form times are Bangkok time, whatever the server's own time zone is.
+  const startsAtIso = bangkokLocalToIso(values.starts_at);
+  const endsAtIso = bangkokLocalToIso(values.ends_at);
+  const startsAt = values.starts_at ? new Date(startsAtIso ?? "invalid") : null;
+  const endsAt = values.ends_at ? new Date(endsAtIso ?? "invalid") : null;
 
   if (startsAt && Number.isNaN(startsAt.getTime())) {
     fieldErrors.starts_at = "Start time must be a valid date and time.";
@@ -138,8 +142,8 @@ function meetingPayload(values: Record<string, string>) {
     title: values.title.trim(),
     description: optionalText(values.description),
     video_url: optionalText(values.video_url),
-    starts_at: new Date(values.starts_at).toISOString(),
-    ends_at: new Date(values.ends_at).toISOString(),
+    starts_at: bangkokLocalToIso(values.starts_at)!,
+    ends_at: bangkokLocalToIso(values.ends_at)!,
     meeting_number: optionalText(values.meeting_number),
     meeting_type: values.meeting_type.trim(),
     fiscal_year: optionalText(values.fiscal_year),

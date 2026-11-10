@@ -1,3 +1,4 @@
+import { formatBangkokDateTime } from "@/lib/datetime";
 import { redirect } from "next/navigation";
 import { Gavel } from "lucide-react";
 import { requireProfileWithRoles } from "@/lib/auth/permissions";
@@ -14,13 +15,7 @@ import {
 import { ChoiceResultsTable, type ChoiceResult } from "@/features/results/choice-results-table";
 import { ConfirmSubmitButton } from "@/features/admin/components/form-controls";
 
-function formatDateTime(value: string) {
-  return new Intl.DateTimeFormat("en-GB", {
-    dateStyle: "medium",
-    timeStyle: "short",
-    timeZone: "Asia/Bangkok",
-  }).format(new Date(value));
-}
+const formatDateTime = formatBangkokDateTime;
 
 type PendingPayload = {
   totals?: {

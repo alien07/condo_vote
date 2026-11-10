@@ -1,3 +1,4 @@
+import { bangkokLocalToIso } from "@/lib/datetime";
 import type { createClient } from "@/lib/supabase/server";
 
 type SupabaseServerClient = Awaited<ReturnType<typeof createClient>>;
@@ -46,12 +47,16 @@ export async function fetchAuditLogRows(
       { count: "exact" },
     );
 
-  if (auditFilters.dateFrom) {
-    auditLogsQuery = auditLogsQuery.gte("created_at", auditFilters.dateFrom);
+  // Filter inputs are Bangkok time; the column is UTC.
+  const auditFrom = bangkokLocalToIso(auditFilters.dateFrom);
+  const auditTo = bangkokLocalToIso(auditFilters.dateTo);
+
+  if (auditFrom) {
+    auditLogsQuery = auditLogsQuery.gte("created_at", auditFrom);
   }
 
-  if (auditFilters.dateTo) {
-    auditLogsQuery = auditLogsQuery.lte("created_at", auditFilters.dateTo);
+  if (auditTo) {
+    auditLogsQuery = auditLogsQuery.lte("created_at", auditTo);
   }
 
   if (auditFilters.actorProfileId) {

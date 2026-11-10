@@ -1,3 +1,4 @@
+import { formatBangkokDateTime } from "@/lib/datetime";
 import Link from "next/link";
 import {
   BallotChoiceInputs,
@@ -22,12 +23,7 @@ type ManualVotePageProps = {
   }>;
 };
 
-function formatDateTime(value: string) {
-  return new Intl.DateTimeFormat("en-GB", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(new Date(value));
-}
+const formatDateTime = formatBangkokDateTime;
 
 export default async function ManualVotePage({
   params,

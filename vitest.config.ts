@@ -10,5 +10,8 @@ export default defineConfig({
   test: {
     include: ["features/**/*.test.ts", "lib/**/*.test.ts"],
     environment: "node",
+    // Run like a hosted server (UTC), so time zone bugs show up on Bangkok
+    // dev machines too.
+    env: { TZ: "UTC" },
   },
 });

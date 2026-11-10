@@ -1,6 +1,7 @@
 import { revalidatePath } from "next/cache";
 import ExcelJS from "exceljs";
 import { requireAdmin } from "@/lib/auth/permissions";
+import { bangkokLocalToIso } from "@/lib/datetime";
 import { createClient } from "@/lib/supabase/server";
 
 export { createClient, requireAdmin };
@@ -92,13 +93,13 @@ export function assertUpsertAction(
 
 export function requiredDateTime(value: FormDataEntryValue | null, fieldName: string) {
   const text = requiredText(value, fieldName);
-  const date = new Date(text);
+  const iso = bangkokLocalToIso(text);
 
-  if (Number.isNaN(date.getTime())) {
+  if (!iso) {
     throw new Error(`${fieldName} must be a valid date and time.`);
   }
 
-  return date.toISOString();
+  return iso;
 }
 
 export function optionalDate(value: FormDataEntryValue | null) {
