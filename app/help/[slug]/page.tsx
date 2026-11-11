@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Download, Lightbulb } from "lucide-react";
 import { LanguageSwitcher } from "@/features/i18n/language-switcher";
+import { ScreenshotZoom } from "@/features/help/screenshot-zoom";
 import { findGuide, HELP_CHECKED_FOR, HELP_TEXT } from "@/lib/help";
 import type { HelpGuide } from "@/lib/help/types";
 import type { Locale } from "@/lib/i18n/locales";
@@ -101,9 +102,10 @@ function WebGuide({ guide, locale }: { guide: HelpGuide; locale: Locale }) {
                 ) : null}
               </div>
               {step.image ? (
-                <Image
+                <ScreenshotZoom
                   alt={step.title}
-                  className="mx-auto w-full max-w-[220px] rounded-xl border border-[var(--border)] shadow-sm"
+                  closeLabel={t.close}
+                  enlargeLabel={t.enlarge}
                   height={SHOT.height}
                   src={screenshot(locale, step.image)}
                   width={SHOT.width}

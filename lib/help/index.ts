@@ -32,6 +32,8 @@ export const HELP_TEXT = {
     checkedFor: (version: string) => `ตรวจกับระบบเวอร์ชัน ${version}`,
     screenshotNote: "ภาพตัวอย่างจากข้อมูลทดสอบ หน้าจอจริงอาจมีชื่อการประชุมต่างกัน",
     comingSoon: "คู่มือผู้ดูแล คณะกรรมการ และการติดตั้งระบบ จะเพิ่มเร็ว ๆ นี้",
+    enlarge: "ขยาย",
+    close: "ปิด",
   },
   en: {
     title: "Help",
@@ -46,6 +48,8 @@ export const HELP_TEXT = {
     checkedFor: (version: string) => `Checked against version ${version}`,
     screenshotNote: "Screenshots use test data; your meeting names will differ.",
     comingSoon: "Guides for admins, the committee, and system setup are coming soon.",
+    enlarge: "Enlarge",
+    close: "Close",
   },
 } satisfies Record<Locale, Record<string, unknown>>;
 

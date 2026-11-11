@@ -17,6 +17,20 @@ test.describe("help", () => {
     expect(await screenshot.evaluate((img: HTMLImageElement) => img.naturalWidth)).toBeGreaterThan(0);
   });
 
+  test("a screenshot opens full size and closes", async ({ page }) => {
+    await page.goto("/help/owner");
+    await page.getByRole("button", { name: "Enlarge: Sign in with Google" }).click();
+
+    const dialog = page.getByRole("dialog", { name: "Sign in with Google" });
+    await expect(dialog).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(dialog).toBeHidden();
+
+    await page.getByRole("button", { name: "Enlarge: Sign in with Google" }).click();
+    await dialog.getByRole("button", { name: "Close" }).click();
+    await expect(dialog).toBeHidden();
+  });
+
   test("shows Thai by default", async ({ browser }) => {
     const context = await browser.newContext({ storageState: { cookies: [], origins: [] } });
     const page = await context.newPage();
