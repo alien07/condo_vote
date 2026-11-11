@@ -17,6 +17,7 @@ const SPEC = {
   tables: "tests/e2e/table-search.spec.ts",
   privacy: "tests/e2e/privacy.spec.ts",
   language: "tests/e2e/language.spec.ts",
+  help: "tests/e2e/help.spec.ts",
 };
 
 // Shared code: any change here runs the full suite.
@@ -45,6 +46,7 @@ const rules = [
   [/^(features\/debug|components)\//, () => [SPEC.admin]],
   [/^(lib|features)\/i18n\//, () => [SPEC.language, SPEC.vote, SPEC.privacy]],
   [/^features\/email\//, () => [SPEC.admin]],
+  [/^(app\/help|features\/help|lib\/help|public\/help)\//, () => [SPEC.help]],
 ];
 
 const selected = new Set([SPEC.shell]);

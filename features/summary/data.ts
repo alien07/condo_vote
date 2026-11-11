@@ -50,6 +50,7 @@ export type SummaryPayload = {
     choices?: {
       id?: string;
       text?: string;
+      is_abstain?: boolean;
       vote_count?: number;
       ownership?: number;
       percent_of_submitted_ownership?: number;

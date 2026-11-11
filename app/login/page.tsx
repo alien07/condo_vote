@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { LogIn } from "lucide-react";
 import {
   isLocalAuthBypassAvailable,
@@ -83,7 +84,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
           pendingLabel={t.signingIn}
         />
         {canUseLocalBypass ? (
-          <div className="mt-4 rounded-md border border-amber-300 bg-amber-50 p-3">
+          <div className="mt-4 rounded-md border border-amber-300 bg-amber-50 p-3" data-demo-signin>
             <p className="text-xs font-semibold text-amber-900">
               Local demo sign in (no Google)
             </p>
@@ -116,6 +117,11 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
             </p>
           </div>
         ) : null}
+        <p className="mt-4 text-sm">
+          <Link className="font-medium text-[var(--primary)] underline" href="/help/owner">
+            {t.howTo}
+          </Link>
+        </p>
         <p className="mt-6 text-xs text-[var(--muted)]">
           {t.version} {APP_VERSION}
         </p>

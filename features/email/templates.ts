@@ -4,7 +4,8 @@ import type { Locale } from "@/lib/i18n/locales";
 // recipient's language in email_logs.language. Admin-editable templates are
 // planned for V2; until then the text lives here.
 //
-// Placeholders: {meetingTitle}, {link}, {projectName}.
+// Placeholders: {meetingTitle}, {link}, {projectName}, {helpLink} (the
+// owner guide, /help/owner).
 
 export type EmailTemplateName = "vote_invitation" | "vote_fyi" | "result_approved";
 
@@ -15,12 +16,12 @@ const templates: Record<EmailTemplateName, Record<Locale, EmailContent>> = {
     th: {
       subject: "เชิญลงคะแนน: {meetingTitle}",
       body:
-        "เรียน เจ้าของร่วม {projectName}\n\nท่านมีสิทธิ์ลงคะแนนในการประชุม {meetingTitle}\nเข้าสู่ระบบด้วยบัญชี Google เพื่อลงคะแนน: {link}\n\nท่านแก้ไขคะแนนได้จนกว่าจะปิดลงคะแนน\n\nนิติบุคคลอาคารชุด {projectName}",
+        "เรียน เจ้าของร่วม {projectName}\n\nท่านมีสิทธิ์ลงคะแนนในการประชุม {meetingTitle}\nเข้าสู่ระบบด้วยบัญชี Google เพื่อลงคะแนน: {link}\n\nท่านแก้ไขคะแนนได้จนกว่าจะปิดลงคะแนน\nวิธีลงคะแนนทีละขั้น: {helpLink}\n\nนิติบุคคลอาคารชุด {projectName}",
     },
     en: {
       subject: "Invitation to vote: {meetingTitle}",
       body:
-        "Dear co-owner of {projectName},\n\nYou can vote in {meetingTitle}.\nSign in with your Google account to vote: {link}\n\nYou can change your ballot until voting closes.\n\n{projectName} juristic person",
+        "Dear co-owner of {projectName},\n\nYou can vote in {meetingTitle}.\nSign in with your Google account to vote: {link}\n\nYou can change your ballot until voting closes.\nStep-by-step guide: {helpLink}\n\n{projectName} juristic person",
     },
   },
   vote_fyi: {
@@ -59,11 +60,11 @@ export function templateNameFromKey(templateKey: string): EmailTemplateName | nu
 export function renderEmail(
   name: EmailTemplateName,
   locale: Locale,
-  values: Partial<Record<"meetingTitle" | "link" | "projectName", string>> = {},
+  values: Partial<Record<"meetingTitle" | "link" | "projectName" | "helpLink", string>> = {},
 ): EmailContent {
   const content = templates[name][locale];
   const fill = (text: string) =>
-    text.replace(/\{(meetingTitle|link|projectName)\}/g, (match, key: keyof typeof values) =>
+    text.replace(/\{(meetingTitle|link|projectName|helpLink)\}/g, (match, key: keyof typeof values) =>
       values[key] ?? match,
     );
 

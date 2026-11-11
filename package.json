@@ -25,7 +25,9 @@
     "env:test": "node scripts/write-test-env.mjs",
     "admin:grant:local": "node --env-file=.env.local scripts/grant-local-admin.mjs",
     "demo:seed": "node scripts/seed-demo.mjs",
-    "demo:excel": "python scripts/create-demo-excel.py"
+    "demo:excel": "python scripts/create-demo-excel.py",
+    "help:screenshots": "node scripts/help-screenshots.mjs",
+    "help:pdf": "node scripts/help-screenshots.mjs --pdf"
   },
   "dependencies": {
     "@sparticuz/chromium": "153.0.0",

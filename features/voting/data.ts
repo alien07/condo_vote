@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 export async function getVotingDashboardData() {
   const profile = await requireProfile();
   const supabase = await createClient();
-  const { data: eligibleRows, error: eligibleError } = await supabase
+  const { data: snapshotRows, error: eligibleError } = await supabase
     .from("eligible_voters_snapshot")
     .select(
       "id, meeting_id, room_id, voter_type, ownership_percent, source, meetings(id, title, description, starts_at, ends_at, status, meeting_number, meeting_type, ballot_secrecy, closed_at, advance_starts_at, advance_ends_at), rooms(id, room_number, ownership_percent)",
@@ -15,6 +15,10 @@ export async function getVotingDashboardData() {
   if (eligibleError) {
     throw eligibleError;
   }
+
+  // Owners cannot read archived meetings (RLS), so those rows come back
+  // without a meeting. Leave them out instead of showing an untitled item.
+  const eligibleRows = snapshotRows.filter((row) => row.meetings);
 
   const meetingIds = [...new Set(eligibleRows.map((row) => row.meeting_id))];
 

@@ -4,6 +4,7 @@ import {
 } from "@/features/voting/components/ballot-choice-inputs";
 import { notFound } from "next/navigation";
 import { Vote } from "lucide-react";
+import { choiceLabel } from "@/lib/i18n/choice";
 import { RequiredMark } from "@/features/admin/components/field-label";
 import { PendingSubmitButton } from "@/features/debug/tracked-submit-button";
 import { submitBallot } from "@/features/voting/actions";
@@ -68,7 +69,10 @@ export default async function VoteDetailPage({ params }: VoteDetailPageProps) {
   const votingStatus = getVotingWindowStatus(meeting);
   const choiceTextById = new Map(
     questions.flatMap((question) =>
-      question.meeting_choices.map((choice) => [choice.id, choice.choice_text]),
+      question.meeting_choices.map((choice) => [
+        choice.id,
+        choiceLabel(choice.choice_text, choice.is_abstain, locale),
+      ]),
     ),
   );
   const questionTextById = new Map(

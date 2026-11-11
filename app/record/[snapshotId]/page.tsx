@@ -15,6 +15,7 @@ import {
 import type { SummaryPayload } from "@/features/summary/data";
 import { requireProfileWithRoles } from "@/lib/auth/permissions";
 import { formatThaiDateTime } from "@/lib/datetime";
+import { choiceLabel } from "@/lib/i18n/choice";
 import { createClient } from "@/lib/supabase/server";
 
 type RecordPageProps = {
@@ -284,7 +285,7 @@ export default async function OfficialRecordPage({ params }: RecordPageProps) {
                 <tbody>
                   {(question.choices ?? []).map((choice, choiceIndex) => (
                     <tr className="border-b border-black/10" key={choice.id ?? choiceIndex}>
-                      <td className="py-1 pr-3">{choice.text}</td>
+                      <td className="py-1 pr-3">{choiceLabel(choice.text, choice.is_abstain, "th")}</td>
                       <td className="py-1 pr-3 text-right tabular-nums">{choice.vote_count ?? 0}</td>
                       <td className="py-1 pr-3 text-right tabular-nums">{pct(choice.percent_of_total_ownership ?? choice.ownership)}</td>
                       <td className="py-1 text-right tabular-nums">

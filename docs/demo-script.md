@@ -186,7 +186,7 @@ Then:
 - Meeting times count from when the seed runs. Run `--reset` again before every demo; it wipes the whole local database.
 - The RoomOwners/Owners Excel import stops at the first bad row, and the rows before it are already saved (no whole-file rollback).
 - A room with a scheduled ownership transfer (A-210: current owner has an end date, buyer starts next month) **drops out of the snapshot** when a meeting is published through the app, because publishing uses only links with no end date. The seeded meetings include A-210. This should go to the backlog.
-- The archived meeting (M10) shows in Owner A's Vote list as a meeting with no title.
+- Before running the e2e tests on this machine, run `npx supabase db reset` (without the seed). The demo data with `--consent` turns the PDPA screen on, so the tests cannot get past the consent page.
 - Some expected results in F1 step 2, F2 steps 2–4, F4 and F5 come from reading the code; the parts tested on screen are the states of all 10 meetings, the login buttons, the PDPA screen, conflict page M6, the results page, the owner summary, and creating PDFs for M8. If a step differs from what you see, write it down and send it to me.
 - Documents in the registry (proxy A-103, A-201 title deed) are metadata only; there is no real file at the path.
 - Emails are not actually sent (`example.test` domain); invite rows have a sent status for display only.

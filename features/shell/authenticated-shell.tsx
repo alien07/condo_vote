@@ -10,6 +10,7 @@ import { needsPrivacyConsent } from "@/features/privacy/service";
 import { requireProfileWithRoles } from "@/lib/auth/permissions";
 import { createClient } from "@/lib/supabase/server";
 import { LanguageSwitcher } from "@/features/i18n/language-switcher";
+import { HelpLink } from "@/features/help/help-link";
 import { getI18n } from "@/lib/i18n/server";
 import { getStaffDictionary } from "@/lib/i18n/staff";
 import { StaffTextProvider } from "@/lib/i18n/staff/client";
@@ -51,6 +52,7 @@ export async function AuthenticatedShell({ children }: AuthenticatedShellProps) 
           </div>
 
           <div className="flex min-w-0 items-center gap-2 text-sm">
+            <HelpLink label={t.shell.help} />
             <LanguageSwitcher locale={locale} />
             <div className="min-w-0 text-right sm:rounded-md sm:border sm:border-[var(--border)] sm:bg-[var(--surface)] sm:px-3 sm:py-2 sm:text-left md:max-w-72">
               <div className="truncate font-medium">{profile.full_name}</div>
