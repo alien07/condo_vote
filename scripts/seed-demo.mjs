@@ -205,6 +205,21 @@ async function sessionFor(email) {
   return client;
 }
 
+// After `db reset` the API restarts and reloads its schema cache; wait for it.
+for (let attempt = 1; ; attempt += 1) {
+  const { error } = await db.from("meetings").select("id").limit(1);
+
+  if (!error) {
+    break;
+  }
+
+  if (attempt >= 60) {
+    fail(`Supabase API is not ready: ${error.message}`);
+  }
+
+  await new Promise((resolve) => setTimeout(resolve, 1000));
+}
+
 const existingDemo = await must(
   db.from("meetings").select("id").like("title", "DEMO %").limit(1),
   "check existing demo",
