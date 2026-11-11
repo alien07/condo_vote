@@ -62,8 +62,8 @@ $env:ENABLE_LOCAL_AUTH_BYPASS="1"; npm run start
 ### F1 · Owner A votes (~8 minutes)
 1. Log in as **Owner A**
    - ✓ Expected: Thai UI. The Vote page lists meetings by room: A-101, A-102 (owner) and A-103 (proxy)
-2. Open **DEMO M1 · room A-101** → choose "เห็นด้วย" for Q1 → choose 3 candidates for Q2
-   - ✓ Expected: the app does not allow a 3rd choice (max 2). There is an Abstain choice on each question
+2. Open **DEMO M1 · room A-101** → choose "เห็นด้วย" for Q1 → try to choose 3 candidates for Q2
+   - ✓ Expected: Q2 says "choose up to 2", and a 3rd choice is not accepted (cannot be selected, or an error on submit). There is an Abstain choice on each question
 3. Choose 2 candidates → submit
    - ✓ Expected: "ส่งแล้ว ฉบับที่ 1"
 4. Open M1 · A-101 again → change your answer → submit
@@ -78,7 +78,7 @@ $env:ENABLE_LOCAL_AUTH_BYPASS="1"; npm run start
 **Checkpoint F1:** log in as Demo Admin → Admin › Voting → M1: the online ballot count goes up by 2 (A-101, A-103). For M4, admin sees only totals, not per-room choices.
 
 ### F2 · Admin fixes M6 → generates the result → committee approves 2 times → published (~12 minutes)
-1. Log in as **Demo Admin** → Admin › Results → try **Generate result** for M6
+1. Log in as **Demo Admin** → Admin › Meetings → in row M6, click **Generate result**
    - ✓ Expected: refused, because of a pending paper-ballot identity
 2. Admin › Voting › Paper ballots → M6 · room **A-205** → link the voter to **Voter A-205** → save
    - ✓ Expected: status changes from pending to linked
@@ -86,7 +86,7 @@ $env:ENABLE_LOCAL_AUTH_BYPASS="1"; npm run start
    - ✓ Expected: both ballots shown side by side (online: agree; paper: disagree)
 4. Choose **paper** and give a reason, for example "เจ้าของยืนยันใช้บัตรกระดาษ" → save
    - ✓ Expected: status "chosen"
-5. Results → **Generate result** for M6
+5. Admin › Meetings → **Generate result** for M6 again
    - ✓ Expected: rooms that voted 4/20, ownership 19% → **quorum not met** (rule: 25%). A-201 counts as paper
 6. Log out → log in as **Demo Committee** → Committee → approve M6
    - ✓ Expected: "1/2", not yet published
@@ -114,10 +114,10 @@ $env:ENABLE_LOCAL_AUTH_BYPASS="1"; npm run start
    - ✓ Expected: the notice version goes up by 1
 2. Open another window (incognito) → log in as **New user**
    - ✓ Expected: goes to the PDPA screen first. Data pages cannot be opened until it is accepted
-3. Accept → submit the request to verify as an owner (room A-107)
-   - ✓ Expected: status pending approval
-4. Back in the admin window → Admin › People → approve the New user
-   - ✓ Expected: the New user can now see the Vote page (no meeting yet, because the snapshot was taken at publish time)
+3. Accept
+   - ✓ Expected: goes into the app with pending status (the header shows the email + role)
+4. Back in the admin window → Admin › People → open the New user → set the approval status to approved → save
+   - ✓ Expected: status changes to approved. The Vote page has no rooms yet, because this email is not in the owner register and the snapshot was taken at publish time
 5. Log in as **Owner A** again
    - ✓ Expected: must accept the new PDPA version (the version changed in step 1)
 
@@ -187,6 +187,7 @@ Then:
 - The RoomOwners/Owners Excel import stops at the first bad row, and the rows before it are already saved (no whole-file rollback).
 - A room with a scheduled ownership transfer (A-210: current owner has an end date, buyer starts next month) **drops out of the snapshot** when a meeting is published through the app, because publishing uses only links with no end date. The seeded meetings include A-210. This should go to the backlog.
 - The archived meeting (M10) shows in Owner A's Vote list as a meeting with no title.
+- Some expected results in F1 step 2, F2 steps 2–4, F4 and F5 come from reading the code; the parts tested on screen are the states of all 10 meetings, the login buttons, the PDPA screen, conflict page M6, the results page, the owner summary, and creating PDFs for M8. If a step differs from what you see, write it down and send it to me.
 - Documents in the registry (proxy A-103, A-201 title deed) are metadata only; there is no real file at the path.
 - Emails are not actually sent (`example.test` domain); invite rows have a sent status for display only.
 - Admin pages still show dates in English format.
