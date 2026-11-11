@@ -3,6 +3,8 @@ import { createClient, type User } from "@supabase/supabase-js";
 import { debugAction } from "@/lib/debug/action-log";
 import { ERROR_CODES } from "@/lib/error-codes";
 import type { Database } from "@/lib/supabase/database.types";
+import { getServiceRoleKey, isLocalBypassEnabled } from "@/lib/auth/local-bypass";
+import { findDemoPersona } from "@/lib/demo/personas";
 
 function getSafeNext(value: string | null) {
   const next = String(value ?? "").trim();
@@ -12,23 +14,6 @@ function getSafeNext(value: string | null) {
   }
 
   return next;
-}
-
-function getServiceRoleKey() {
-  return process.env.SUPABASE_SECRET_KEY ?? process.env.SUPABASE_SERVICE_ROLE_KEY;
-}
-
-function isPrivateHost(hostname: string) {
-  if (["localhost", "127.0.0.1", "0.0.0.0", "::1"].includes(hostname)) {
-    return true;
-  }
-
-  if (hostname.startsWith("192.168.") || hostname.startsWith("10.")) {
-    return true;
-  }
-
-  const match = hostname.match(/^172\.(\d+)\./);
-  return Boolean(match && Number(match[1]) >= 16 && Number(match[1]) <= 31);
 }
 
 async function findUserByEmail(
@@ -63,21 +48,27 @@ export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url);
   const next = getSafeNext(requestUrl.searchParams.get("next"));
   const serviceKey = getServiceRoleKey();
+  // ?as=<persona> signs in as a seeded demo persona (scripts/seed-demo.mjs)
+  // and leaves its profile and roles as the seed made them. Without it, the
+  // dev admin account gets admin + system admin roles.
+  const persona = findDemoPersona(requestUrl.searchParams.get("as"));
   const email = (
-    process.env.LOCAL_AUTH_BYPASS_EMAIL ?? "demo.admin@example.test"
+    persona?.email ??
+    process.env.LOCAL_AUTH_BYPASS_EMAIL ??
+    "demo.admin@example.test"
   ).toLowerCase();
-  const fullName = process.env.LOCAL_AUTH_BYPASS_NAME ?? "Demo Admin";
+  const fullName =
+    persona?.fullName ?? process.env.LOCAL_AUTH_BYPASS_NAME ?? "Demo Admin";
 
   debugAction("auth.local_bypass.start", {
     next,
+    persona: persona?.key ?? null,
   });
 
   if (
-    process.env.NODE_ENV === "production" ||
-    process.env.ENABLE_LOCAL_AUTH_BYPASS === "0" ||
     !process.env.NEXT_PUBLIC_SUPABASE_URL ||
     !serviceKey ||
-    !isPrivateHost(requestUrl.hostname)
+    !isLocalBypassEnabled(requestUrl.hostname)
   ) {
     debugAction("auth.local_bypass.disabled", { next });
     return NextResponse.redirect(
@@ -118,36 +109,38 @@ export async function GET(request: NextRequest) {
       throw new Error("Local bypass user was not created.");
     }
 
-    const { data: profile, error: profileError } = await supabase
-      .from("profiles")
-      .upsert(
-        {
-          auth_user_id: user.id,
-          email,
-          full_name: fullName,
-          approval_status: "approved",
-          default_status: "owner",
-        },
-        { onConflict: "auth_user_id" },
-      )
-      .select("id")
-      .single();
+    if (!persona) {
+      const { data: profile, error: profileError } = await supabase
+        .from("profiles")
+        .upsert(
+          {
+            auth_user_id: user.id,
+            email,
+            full_name: fullName,
+            approval_status: "approved",
+            default_status: "owner",
+          },
+          { onConflict: "auth_user_id" },
+        )
+        .select("id")
+        .single();
 
-    if (profileError) {
-      throw profileError;
-    }
+      if (profileError) {
+        throw profileError;
+      }
 
-    // The local demo user runs meetings and technical settings (D016).
-    const { error: roleError } = await supabase.from("app_roles").upsert(
-      [
-        { profile_id: profile.id, role: "admin" },
-        { profile_id: profile.id, role: "system_admin" },
-      ],
-      { onConflict: "profile_id,role" },
-    );
+      // The local demo user runs meetings and technical settings (D016).
+      const { error: roleError } = await supabase.from("app_roles").upsert(
+        [
+          { profile_id: profile.id, role: "admin" },
+          { profile_id: profile.id, role: "system_admin" },
+        ],
+        { onConflict: "profile_id,role" },
+      );
 
-    if (roleError) {
-      throw roleError;
+      if (roleError) {
+        throw roleError;
+      }
     }
 
     const { data: link, error: linkError } =

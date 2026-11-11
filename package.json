@@ -23,7 +23,9 @@
     "db:push:dev:dry": "supabase db push --dry-run",
     "demo:configure:local": "node scripts/configure-local-demo.mjs",
     "env:test": "node scripts/write-test-env.mjs",
-    "admin:grant:local": "node --env-file=.env.local scripts/grant-local-admin.mjs"
+    "admin:grant:local": "node --env-file=.env.local scripts/grant-local-admin.mjs",
+    "demo:seed": "node scripts/seed-demo.mjs",
+    "demo:excel": "python scripts/create-demo-excel.py"
   },
   "dependencies": {
     "@sparticuz/chromium": "153.0.0",

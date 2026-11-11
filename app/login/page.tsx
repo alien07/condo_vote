@@ -9,6 +9,7 @@ import { APP_VERSION } from "@/lib/app-config";
 import { LanguageSwitcher } from "@/features/i18n/language-switcher";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
 import { getI18n } from "@/lib/i18n/server";
+import { DEMO_PERSONAS } from "@/lib/demo/personas";
 
 type LoginPageProps = {
   searchParams: Promise<{
@@ -82,15 +83,36 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
           pendingLabel={t.signingIn}
         />
         {canUseLocalBypass ? (
-          <div className="mt-3">
-            <a
-              className="block w-full rounded-md border border-amber-300 bg-amber-50 px-4 py-2 text-center text-sm font-medium text-amber-900"
-              href={`/auth/local-demo?next=${encodeURIComponent(next)}`}
-            >
-              Local demo sign in
-            </a>
-            <p className="mt-2 text-xs leading-5 text-[var(--muted)]">
-              Development only. Uses the local demo admin account without Google.
+          <div className="mt-4 rounded-md border border-amber-300 bg-amber-50 p-3">
+            <p className="text-xs font-semibold text-amber-900">
+              Local demo sign in (no Google)
+            </p>
+            <ul className="mt-2 grid gap-1.5">
+              {DEMO_PERSONAS.map((persona) => (
+                <li key={persona.key}>
+                  <a
+                    className="block rounded border border-amber-200 bg-white px-3 py-1.5 text-sm text-amber-950 hover:border-amber-400"
+                    href={`/auth/local-demo?as=${persona.key}&next=${encodeURIComponent(next)}`}
+                  >
+                    <span className="block font-medium">{persona.fullName}</span>
+                    <span className="block text-xs text-amber-800">
+                      {persona.caseLabel}
+                    </span>
+                  </a>
+                </li>
+              ))}
+              <li>
+                <a
+                  className="block rounded px-3 py-1 text-xs text-amber-900 underline"
+                  href={`/auth/local-demo?next=${encodeURIComponent(next)}`}
+                >
+                  Dev admin (admin + system admin)
+                </a>
+              </li>
+            </ul>
+            <p className="mt-2 text-xs leading-5 text-amber-900">
+              Local only. Run <code>npm run demo:seed</code> first; see
+              docs/demo-script.md.
             </p>
           </div>
         ) : null}

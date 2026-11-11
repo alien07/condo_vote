@@ -86,6 +86,12 @@ jobs:
       - name: E2E smoke tests
         run: npx playwright test ${{ steps.specs.outputs.args }}
 
+      - name: Demo seed check
+        # Resets the database, so it runs after the e2e suite (docs/demo-script.md).
+        run: |
+          node scripts/seed-demo.mjs --reset --consent
+          DEMO_SEED=1 npx playwright test tests/e2e/demo-seed.spec.ts
+
       - name: Upload Playwright report
         if: failure()
         uses: actions/upload-artifact@v4
