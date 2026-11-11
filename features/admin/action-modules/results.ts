@@ -7,7 +7,6 @@ import {
   requiredText,
   requireAdmin,
   revalidateAdminPaths,
-  toNumber,
 } from "@/features/admin/action-modules/shared";
 import { writeAuditLog } from "@/lib/audit/business-audit";
 import { scheduleResultPdfs } from "@/features/results/pdf/schedule";
@@ -15,14 +14,7 @@ import {
   approvalMessage,
   approveResult,
 } from "@/features/results/committee-service";
-import {
-  describePassRule,
-  evaluateQuestion,
-  evaluateQuorum,
-  isPassBasis,
-  isPassOperator,
-  type PassRule,
-} from "@/features/results/pass-rules";
+import { buildResultPayload } from "@/features/results/snapshot-payload";
 
 export type ResultApprovalActionState = {
   error?: string;
@@ -224,256 +216,18 @@ export async function generateResultSnapshot(formData: FormData) {
     throw incidentsResult.error;
   }
 
-  const ownershipByRoom = new Map(
-    eligibleResult.data.map((eligible) => [
-      eligible.room_id,
-      toNumber(eligible.ownership_percent),
-    ]),
-  );
-  const onlineBallotByRoom = new Map(
-    ballotsResult.data.map((ballot) => [ballot.room_id, ballot]),
-  );
-  const manualBallotByRoom = new Map(
-    manualBallotsResult.data.map((manualBallot) => [
-      manualBallot.room_id,
-      manualBallot,
-    ]),
-  );
-  const onlineRoomIds = new Set(onlineBallotByRoom.keys());
-  const manualRoomIds = new Set(manualBallotByRoom.keys());
-  const resolutionByRoom = new Map(
-    voteSourceResolutionsResult.data.map((resolution) => [
-      resolution.room_id,
-      resolution,
-    ]),
-  );
-  const conflicts = [...manualRoomIds]
-    .filter((roomId) => onlineRoomIds.has(roomId))
-    .map((roomId) => {
-      const onlineBallot = onlineBallotByRoom.get(roomId);
-      const manualBallot = manualBallotByRoom.get(roomId);
-      const resolution = resolutionByRoom.get(roomId);
-      const matchingResolution =
-        resolution &&
-        onlineBallot &&
-        manualBallot &&
-        resolution.online_ballot_id === onlineBallot.id &&
-        resolution.manual_ballot_id === manualBallot.id
-          ? resolution
-          : null;
-
-      return {
-        room_id: roomId,
-        online_ballot_id: onlineBallot?.id ?? null,
-        manual_ballot_id: manualBallot?.id ?? null,
-        resolution: matchingResolution,
-      };
-    });
-  const unresolvedConflicts = conflicts.filter((conflict) => !conflict.resolution);
-
-  if (unresolvedConflicts.length > 0) {
-    throw new Error(
-      `Resolve ${unresolvedConflicts.length} manual/online vote conflict(s) before generating results.`,
-    );
-  }
-
-  const effectiveRoomSources = new Map<string, "online" | "manual">();
-
-  for (const roomId of onlineRoomIds) {
-    effectiveRoomSources.set(roomId, "online");
-  }
-
-  for (const roomId of manualRoomIds) {
-    effectiveRoomSources.set(roomId, "manual");
-  }
-
-  for (const conflict of conflicts) {
-    effectiveRoomSources.set(
-      conflict.room_id,
-      conflict.resolution?.chosen_source === "online" ? "online" : "manual",
-    );
-  }
-
-  const submittedRoomIds = new Set(effectiveRoomSources.keys());
-  // Record details: rooms that voted through a proxy (Condominium Act s.47),
-  // and online ballots by voting phase (advance or meeting day).
-  const voterTypeByRoom = new Map(
-    eligibleResult.data.map((eligible) => [eligible.room_id, eligible.voter_type]),
-  );
-  const proxyRooms = [...submittedRoomIds].filter(
-    (roomId) => voterTypeByRoom.get(roomId) === "proxy",
-  ).length;
-  const advanceEnds = meetingResult.data.advance_ends_at
-    ? Date.parse(meetingResult.data.advance_ends_at)
-    : null;
-  const effectiveOnlineBallots = ballotsResult.data.filter(
-    (ballot) => effectiveRoomSources.get(ballot.room_id) === "online",
-  );
-  const advanceOnlineBallots = effectiveOnlineBallots.filter(
-    (ballot) =>
-      advanceEnds !== null &&
-      ballot.submitted_at !== null &&
-      Date.parse(ballot.submitted_at) <= advanceEnds,
-  ).length;
-  const effectiveManualBallots = [...effectiveRoomSources.values()].filter(
-    (source) => source === "manual",
-  ).length;
-  const totalEligibleOwnership = [...ownershipByRoom.values()].reduce(
-    (sum, ownership) => sum + ownership,
-    0,
-  );
-  const submittedOwnership = [...submittedRoomIds].reduce(
-    (sum, roomId) => sum + (ownershipByRoom.get(roomId) ?? 0),
-    0,
-  );
-  const countsByChoice = new Map<
-    string,
-    {
-      voteCount: number;
-      ownership: number;
-    }
-  >();
-
-  for (const row of onlineTallyResult.data ?? []) {
-    countsByChoice.set(row.choice_id, {
-      voteCount: row.vote_count,
-      ownership: toNumber(row.ownership),
-    });
-  }
-
-  for (const manualBallot of manualBallotsResult.data) {
-    if (effectiveRoomSources.get(manualBallot.room_id) !== "manual") {
-      continue;
-    }
-
-    const ownership = ownershipByRoom.get(manualBallot.room_id) ?? 0;
-
-    for (const answer of manualBallot.manual_ballot_answers) {
-      const current = countsByChoice.get(answer.choice_id) ?? {
-        voteCount: 0,
-        ownership: 0,
-      };
-
-      countsByChoice.set(answer.choice_id, {
-        voteCount: current.voteCount + 1,
-        ownership: current.ownership + ownership,
-      });
-    }
-  }
-
-  const quorum = evaluateQuorum(
-    meetingResult.data.quorum_rule,
-    submittedOwnership,
-    totalEligibleOwnership,
-  );
-  const payload = {
+  const { payload, effectiveVoteRooms, sourceConflicts } = buildResultPayload({
     meeting: meetingResult.data,
     condo: condoProfileResult.data[0] ?? null,
     incidents: incidentsResult.data,
-    generated_at: new Date().toISOString(),
-    totals: {
-      proxy_rooms: proxyRooms,
-      advance_online_ballots: advanceOnlineBallots,
-      meeting_day_online_ballots: effectiveOnlineBallots.length - advanceOnlineBallots,
-      effective_manual_ballots: effectiveManualBallots,
-      quorum,
-      eligible_voters: eligibleResult.data.length,
-      submitted_ballots: submittedRoomIds.size,
-      online_ballots: ballotsResult.data.length,
-      manual_ballots: manualBallotsResult.data.length,
-      effective_vote_rooms: submittedRoomIds.size,
-      total_eligible_ownership: totalEligibleOwnership,
-      submitted_ownership: submittedOwnership,
-      source_conflicts: conflicts.length,
-      resolved_source_conflicts: conflicts.filter((conflict) => conflict.resolution)
-        .length,
-    },
-    vote_source_audit: {
-      online_room_ids: [...onlineRoomIds],
-      manual_room_ids: [...manualRoomIds],
-      effective_sources: [...effectiveRoomSources].map(([roomId, source]) => ({
-        room_id: roomId,
-        source,
-      })),
-      conflicts: conflicts.map((conflict) => ({
-        room_id: conflict.room_id,
-        online_ballot_id: conflict.online_ballot_id,
-        manual_ballot_id: conflict.manual_ballot_id,
-        chosen_source: conflict.resolution?.chosen_source ?? null,
-        chosen_ballot_id: conflict.resolution?.chosen_ballot_id ?? null,
-        conflict_remark: conflict.resolution?.conflict_remark ?? null,
-        resolved_at: conflict.resolution?.resolved_at ?? null,
-      })),
-    },
-    questions: questionsResult.data.map((question) => {
-      const passRule: PassRule = {
-        basis: isPassBasis(question.pass_basis) ? question.pass_basis : "voting_ownership",
-        operator: isPassOperator(question.pass_operator) ? question.pass_operator : "gt",
-        percent: toNumber(question.pass_percent),
-      };
-      const sortedChoices = [...question.meeting_choices].sort(
-        (left, right) => left.display_order - right.display_order,
-      );
-      const evaluation = evaluateQuestion({
-        rule: passRule,
-        questionType: question.question_type,
-        choices: sortedChoices.map((choice) => ({
-          id: choice.id,
-          isAbstain: choice.is_abstain,
-          ownership: countsByChoice.get(choice.id)?.ownership ?? 0,
-        })),
-        votingOwnership: submittedOwnership,
-        totalOwnership: totalEligibleOwnership,
-      });
-      const evaluationByChoice = new Map(
-        evaluation.choices.map((choice) => [choice.id, choice]),
-      );
-
-      return {
-      id: question.id,
-      agenda_no: question.agenda_no,
-      agenda_title: question.agenda_title,
-      text: question.question_text,
-      type: question.question_type,
-      resolution_type: question.resolution_type,
-      required_threshold: question.required_threshold,
-      requires_land_office_registration:
-        question.requires_land_office_registration,
-      legal_note: question.legal_note,
-      pass_rule: { ...passRule, label: describePassRule(passRule) },
-      outcome: evaluation.outcome,
-      basis_ownership: evaluation.basis_ownership,
-      passed_choice_ids: evaluation.passed_choice_ids,
-      decided_choice_id: evaluation.decided_choice_id,
-      choices: sortedChoices
-        .map((choice) => {
-          const count = countsByChoice.get(choice.id) ?? {
-            voteCount: 0,
-            ownership: 0,
-          };
-
-          return {
-            id: choice.id,
-            text: choice.choice_text,
-            is_abstain: choice.is_abstain,
-            meets_rule: evaluationByChoice.get(choice.id)?.meets_rule ?? false,
-            percent_of_basis: evaluationByChoice.get(choice.id)?.percent_of_basis ?? null,
-            vote_count: count.voteCount,
-            ownership: count.ownership,
-            percent_of_total_ownership:
-              totalEligibleOwnership > 0
-                ? (count.ownership / totalEligibleOwnership) * 100
-                : 0,
-            percent_of_submitted_ownership:
-              submittedOwnership > 0
-                ? (count.ownership / submittedOwnership) * 100
-                : 0,
-          };
-        }),
-      };
-    }),
-  };
-
+    questions: questionsResult.data,
+    eligible: eligibleResult.data,
+    ballots: ballotsResult.data,
+    manualBallots: manualBallotsResult.data,
+    resolutions: voteSourceResolutionsResult.data,
+    onlineTally: onlineTallyResult.data ?? [],
+    quorumRule: meetingResult.data.quorum_rule,
+  });
   const { data: snapshot, error: insertError } = await supabase
     .from("result_snapshots")
     .insert({
@@ -502,9 +256,9 @@ export async function generateResultSnapshot(formData: FormData) {
     action: "result_snapshot.generated",
     actorProfileId: generator.id,
     details: {
-      effective_vote_rooms: submittedRoomIds.size,
+      effective_vote_rooms: effectiveVoteRooms,
       meeting_id: meetingId,
-      source_conflicts: conflicts.length,
+      source_conflicts: sourceConflicts,
     },
     entityId: snapshot.id,
     entityType: "result_snapshot",
