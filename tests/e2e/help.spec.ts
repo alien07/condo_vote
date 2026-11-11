@@ -14,7 +14,12 @@ test.describe("help", () => {
 
     const screenshot = page.getByRole("img", { name: "Sign in with Google" });
     await expect(screenshot).toBeVisible();
-    expect(await screenshot.evaluate((img: HTMLImageElement) => img.naturalWidth)).toBeGreaterThan(0);
+    // The dev server optimizes the image on first request; wait for it to load.
+    await expect
+      .poll(() => screenshot.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth), {
+        timeout: 30_000,
+      })
+      .toBeGreaterThan(0);
   });
 
   test("a screenshot opens full size and closes", async ({ page }) => {
