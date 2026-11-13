@@ -3239,6 +3239,9 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
     });
 
     await expect(approvalDrawer).toBeVisible();
+    // The page opened at "commit": wait for it to load, so the button's
+    // confirm dialog is wired before the click.
+    await page.waitForLoadState("load");
     await approvalDrawer
       .locator('textarea[name="notes"]')
       .fill(`Approved through rollout test ${runId}`);
