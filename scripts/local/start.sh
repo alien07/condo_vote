@@ -68,16 +68,18 @@ mkdir -p "$root/.next"
 if [ "$dev" = 1 ]; then
   nohup npm run dev >"$log" 2>&1 &
 else
+  # Code state = commit + a hash of uncommitted changes to tracked files.
   head="$(git rev-parse HEAD 2>/dev/null || true)"
+  changes="$(git diff HEAD -- . ':(exclude)next-env.d.ts' 2>/dev/null | git hash-object --stdin 2>/dev/null || true)"
+  state="$head $changes"
   marker="$root/.next/local-build-head"
   built="$(cat "$marker" 2>/dev/null || true)"
-  dirty="$(git status --porcelain --untracked-files=no 2>/dev/null | grep -v next-env.d.ts || true)"
-  if [ "$build" = 1 ] || [ ! -f "$root/.next/BUILD_ID" ] || [ "$built" != "$head" ] || [ -n "$dirty" ]; then
+  if [ "$build" = 1 ] || [ ! -f "$root/.next/BUILD_ID" ] || [ "$built" != "$state" ]; then
     echo "Building (about a minute) ..."
     # Route types left by `next dev` on another branch break the type check.
     rm -rf "$root/.next/dev/types"
-    npm run build
-    echo "$head" >"$marker"
+    npm run build || { echo "Build failed; trying once more ..."; sleep 5; npm run build; }
+    echo "$state" >"$marker"
   else
     echo "Code unchanged since the last build; skipping build (use --build to force)."
   fi

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { CircleHelp } from "lucide-react";
 import { helpHrefForPath } from "@/lib/help";
+import { withFrom } from "@/features/help/help-top-bar";
 
 // "?" in the header: opens the help topic for the current page.
 export function HelpLink({ label }: { label: string }) {
@@ -13,7 +14,7 @@ export function HelpLink({ label }: { label: string }) {
     <Link
       aria-label={label}
       className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-md border border-[var(--border)] bg-[var(--surface)] text-[var(--muted)] hover:text-[var(--foreground)]"
-      href={helpHrefForPath(pathname)}
+      href={withFrom(helpHrefForPath(pathname), pathname)}
       title={label}
     >
       <CircleHelp aria-hidden size={18} />

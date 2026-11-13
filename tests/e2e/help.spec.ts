@@ -58,6 +58,20 @@ test.describe("help", () => {
     await expect(page).toHaveURL(/\/help\/owner$/);
   });
 
+  test("leads back to the page the help was opened from", async ({ page }) => {
+    await page.goto("/help/owner?from=%2Fsummary#results");
+    await expect(page.getByRole("link", { name: "Back to where you were" }).first()).toHaveAttribute(
+      "href",
+      "/summary",
+    );
+    await page.getByRole("link", { name: "All guides" }).first().click();
+    await expect(page).toHaveURL(/\/help\?from=%2Fsummary$/);
+
+    // Without a page to return to, it offers Home; outside links are ignored.
+    await page.goto("/help/owner?from=https%3A%2F%2Fexample.com");
+    await expect(page.getByRole("link", { name: "Home" }).first()).toHaveAttribute("href", "/");
+  });
+
   test("unknown guides return 404", async ({ request }) => {
     const response = await request.get("/help/does-not-exist");
     expect(response.status()).toBe(404);

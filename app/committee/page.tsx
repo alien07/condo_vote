@@ -16,17 +16,20 @@ import {
 } from "@/features/results/question-outcome";
 import { ChoiceResultsTable, type ChoiceResult } from "@/features/results/choice-results-table";
 import { ConfirmSubmitButton } from "@/features/admin/components/form-controls";
+import { Term } from "@/features/glossary/term";
+import { quorumText } from "@/features/results/thai-labels";
 
 // Approving can start the master PDF files (D021), which needs Chromium time.
 export const maxDuration = 60;
 
 type PendingPayload = {
   totals?: {
-    quorum?: { label?: string; met?: boolean | null } | null;
+    quorum?: { label?: string; required_percent?: number | null; met?: boolean | null } | null;
     eligible_voters?: number;
     submitted_ballots?: number;
   };
   questions?: (QuestionOutcomePayload & {
+    pass_rule?: { basis?: string } | null;
     agenda_no?: string | null;
     agenda_title?: string | null;
     text?: string;
@@ -75,11 +78,13 @@ export default async function CommitteePage() {
                 <div>
                   <div className="font-medium">{meeting.title}</div>
                   <div className="text-sm text-[var(--muted)]">
-                    {fill(t.closesAuto, {
-                      time: formatDateTime(meeting.ends_at),
-                      count: meeting.close_approvals,
-                      required: meeting.required_approvals,
-                    })}
+                    <Term k="approveClose" locale={locale}>
+                      {fill(t.closesAuto, {
+                        time: formatDateTime(meeting.ends_at),
+                        count: meeting.close_approvals,
+                        required: meeting.required_approvals,
+                      })}
+                    </Term>
                   </div>
                 </div>
                 {meeting.approved_by_me ? (
@@ -124,29 +129,37 @@ export default async function CommitteePage() {
                   {/* Read the result first, then approve (details above the form). */}
                   <h3 className="font-semibold">{result.title}</h3>
                   <p className="text-sm text-[var(--muted)]">
-                    {fill(t.generated, {
-                      time: formatDateTime(result.generated_at),
-                      count: result.approvals,
-                      required: result.required_approvals,
-                    })}
+                    <Term k="approvals" locale={locale}>
+                      {fill(t.generated, {
+                        time: formatDateTime(result.generated_at),
+                        count: result.approvals,
+                        required: result.required_approvals,
+                      })}
+                    </Term>
                   </p>
                   {payload.totals?.submitted_ballots !== undefined ? (
                     <p className="mt-1 text-sm">
-                      {fill(t.ballotsCounted, {
-                        count: payload.totals.submitted_ballots,
-                        eligible: payload.totals.eligible_voters ?? 0,
-                      })}
+                      <Term k="ballotsCounted" locale={locale}>
+                        {fill(t.ballotsCounted, {
+                          count: payload.totals.submitted_ballots,
+                          eligible: payload.totals.eligible_voters ?? 0,
+                        })}
+                      </Term>
                     </p>
                   ) : null}
                   {payload.totals?.quorum?.label ? (
                     <p className="text-sm">
-                      {t.quorum}: {payload.totals.quorum.label}:{" "}
+                      <Term k="quorum" locale={locale}>{t.quorum}</Term>:{" "}
                       <span className="font-medium">
-                        {payload.totals.quorum.met === null
-                          ? t.notEvaluated
-                          : payload.totals.quorum.met
-                            ? t.met
-                            : t.notMet}
+                        {payload.totals.quorum.required_percent === undefined
+                          ? `${payload.totals.quorum.label}: ${
+                              payload.totals.quorum.met === null
+                                ? t.notEvaluated
+                                : payload.totals.quorum.met
+                                  ? t.met
+                                  : t.notMet
+                            }`
+                          : quorumText(locale, payload.totals.quorum)}
                       </span>
                     </p>
                   ) : null}
@@ -165,7 +178,11 @@ export default async function CommitteePage() {
                             {question.agenda_title ?? question.text ?? "-"}
                           </div>
                           <QuestionOutcomeLine locale={locale} question={question} />
-                          <ChoiceResultsTable choices={question.choices} locale={locale} />
+                          <ChoiceResultsTable
+                            choices={question.choices}
+                            locale={locale}
+                            ruleBasis={question.pass_rule?.basis}
+                          />
                         </div>
                       ))
                     ) : (

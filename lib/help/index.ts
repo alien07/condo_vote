@@ -33,6 +33,8 @@ export const HELP_TEXT = {
     screenshotNote: "ภาพตัวอย่างจากข้อมูลทดสอบ หน้าจอจริงอาจมีชื่อการประชุมต่างกัน",
     comingSoon: "คู่มือผู้ดูแล คณะกรรมการ และการติดตั้งระบบ จะเพิ่มเร็ว ๆ นี้",
     enlarge: "ขยาย",
+    back: "กลับไปหน้าเดิม",
+    home: "หน้าหลัก",
     close: "ปิด",
   },
   en: {
@@ -49,6 +51,8 @@ export const HELP_TEXT = {
     screenshotNote: "Screenshots use test data; your meeting names will differ.",
     comingSoon: "Guides for admins, the committee, and system setup are coming soon.",
     enlarge: "Enlarge",
+    back: "Back to where you were",
+    home: "Home",
     close: "Close",
   },
 } satisfies Record<Locale, Record<string, unknown>>;

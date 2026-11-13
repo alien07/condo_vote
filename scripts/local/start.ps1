@@ -94,19 +94,27 @@ if ($Dev) {
   $command = "npm run dev"
 } else {
   # Rebuild when the code changed since the last local build.
+  # Code state = commit + a hash of uncommitted changes to tracked files.
   $head = (git rev-parse HEAD 2>$null)
+  $changes = (git diff HEAD -- . ":(exclude)next-env.d.ts" 2>$null | git hash-object --stdin 2>$null)
+  $state = "$head $changes"
   $marker = Join-Path $root ".next\local-build-head"
-  $builtHead = if (Test-Path $marker) { Get-Content $marker } else { "" }
+  $builtState = if (Test-Path $marker) { (Get-Content $marker -Raw).Trim() } else { "" }
   $hasBuild = Test-Path (Join-Path $root ".next\BUILD_ID")
-  $dirty = (git status --porcelain --untracked-files=no 2>$null | Where-Object { $_ -notmatch "next-env.d.ts" })
 
-  if ($Build -or -not $hasBuild -or $builtHead -ne $head -or $dirty) {
+  if ($Build -or -not $hasBuild -or $builtState -ne $state) {
     Write-Host "Building (about a minute) ..."
     # Route types left by `next dev` on another branch break the type check.
     Remove-Item -Recurse -Force (Join-Path $root ".next\dev\types") -ErrorAction SilentlyContinue
     npm run build
+    if ($LASTEXITCODE -ne 0) {
+      # A Next.js build worker sometimes crashes on Windows; one retry usually passes.
+      Write-Host "Build failed; trying once more ..."
+      Start-Sleep 5
+      npm run build
+    }
     if ($LASTEXITCODE -ne 0) { Fail "Build failed." }
-    Set-Content -Path $marker -Value $head
+    Set-Content -Path $marker -Value $state
   } else {
     Write-Host "Code unchanged since the last build; skipping build (use -Build to force)."
   }

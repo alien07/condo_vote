@@ -123,6 +123,20 @@ test.describe("demo seed", () => {
     await expect(page.getByText("DEMO M8", { exact: false }).first()).toBeVisible();
   });
 
+  test("result terms explain themselves", async ({ page }) => {
+    await signInAs(page, "ownerB", "/summary");
+    // M8 agenda 1 is decided on the ownership of rooms that voted.
+    const firstTable = page.locator("table").first();
+    await expect(firstTable.locator("th[data-deciding]")).toContainText("Decides this item");
+    await expect(firstTable.locator("th[data-deciding]")).toContainText("Of votes cast");
+
+    await firstTable.getByRole("button", { name: "What this means: Of votes cast" }).click();
+    const tip = page.getByRole("tooltip");
+    await expect(tip).toContainText("including rooms that abstained");
+    await page.keyboard.press("Escape");
+    await expect(tip).toBeHidden();
+  });
+
   test("committee sees M7 waiting for approval", async ({ page }) => {
     await signInAs(page, "committee", "/committee");
     await expect(page.getByText("DEMO M7", { exact: false }).first()).toBeVisible();
