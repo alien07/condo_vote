@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { DocumentStorageSettingsForm } from "@/features/admin/components/setup-settings-forms";
 import { PrivacySettingsForm } from "@/features/privacy/privacy-settings-form";
 import { getPrivacySettings } from "@/features/privacy/service";
-import { requireProfileWithRoles } from "@/lib/auth/permissions";
+import { DENIED_PATH, requireProfileWithRoles } from "@/lib/auth/permissions";
 import { createClient } from "@/lib/supabase/server";
 import { getStaffI18n } from "@/lib/i18n/server";
 
@@ -12,7 +12,7 @@ export default async function SystemPage() {
   const { roles } = await requireProfileWithRoles();
 
   if (!roles.includes("system_admin")) {
-    redirect("/summary");
+    redirect(DENIED_PATH);
   }
 
   const supabase = await createClient();

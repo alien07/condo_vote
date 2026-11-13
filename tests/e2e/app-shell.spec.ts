@@ -14,9 +14,15 @@ test.describe("@test:e2e app shell", () => {
       "href",
       "/login",
     );
-    await expect(page.getByRole("link", { name: /Admin/ })).toHaveAttribute(
+    // Signed out: only pages for everyone; staff cards need the role.
+    await expect(page.getByRole("link", { name: /Admin/ })).toHaveCount(0);
+    await expect(page.getByRole("link", { name: /^Results/ })).toHaveAttribute(
       "href",
-      "/admin",
+      "/summary",
+    );
+    await expect(page.getByRole("link", { name: /^Help/ })).toHaveAttribute(
+      "href",
+      "/help/owner",
     );
     await expect(page.getByRole("link", { name: /Vote/ })).toHaveAttribute(
       "href",

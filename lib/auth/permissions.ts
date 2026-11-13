@@ -114,23 +114,26 @@ export async function isSystemAdmin() {
   return hasAppRole(APP_ROLES.SYSTEM_ADMIN);
 }
 
+/** Signed in without the role a page needs: back home with a notice. */
+export const DENIED_PATH = "/?denied=1";
+
 // Technical settings belong to system admins (D016).
 export async function requireSystemAdmin() {
-  const allowed = await isSystemAdmin();
+  const profile = await requireProfile();
 
-  if (!allowed) {
-    redirect("/summary");
+  if (!(await isSystemAdmin())) {
+    redirect(DENIED_PATH);
   }
 
-  return requireProfile();
+  return profile;
 }
 
 export async function requireAdmin() {
-  const allowed = await isAdmin();
+  const profile = await requireProfile();
 
-  if (!allowed) {
-    redirect("/login");
+  if (!(await isAdmin())) {
+    redirect(DENIED_PATH);
   }
 
-  return requireProfile();
+  return profile;
 }

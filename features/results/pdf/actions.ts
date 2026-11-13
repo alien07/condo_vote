@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { generateResultPdfs } from "@/features/results/pdf/generate";
 import { pdfRequestContext } from "@/features/results/pdf/request";
-import { requireProfileWithRoles } from "@/lib/auth/permissions";
+import { DENIED_PATH, requireProfileWithRoles } from "@/lib/auth/permissions";
 import { writeAuditLog } from "@/lib/audit/business-audit";
 import { createClient } from "@/lib/supabase/server";
 
@@ -18,7 +18,7 @@ export async function createResultPdfs(formData: FormData) {
   const current = await requireProfileWithRoles();
 
   if (!current.roles.includes("admin") && !current.roles.includes("committee")) {
-    redirect("/summary");
+    redirect(DENIED_PATH);
   }
 
   const snapshotId = String(formData.get("result_snapshot_id") ?? "");
