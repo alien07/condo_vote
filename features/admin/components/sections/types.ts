@@ -20,6 +20,8 @@ export type AdminSection =
 
 export type AdminWorkspaceProps = {
   activeSection?: AdminSection | string;
+  /** Shown under the page heading, before the sections. */
+  intro?: import("react").ReactNode;
   auditFilters?: AuditLogFilters;
   committeeFilters?: CommitteeTableFilters;
   drawer?: {

@@ -96,8 +96,8 @@ export const GLOSSARY: Record<Locale, Record<GlossaryKey, Entry>> = {
       text: "ผลจะเผยแพร่เมื่อกรรมการอนุมัติครบตามจำนวนที่การประชุมกำหนด กรรมการแต่ละคนอนุมัติได้ครั้งเดียว",
     },
     approveClose: {
-      term: "อนุมัติปิดลงคะแนน",
-      text: "ปิดลงคะแนนก่อนเวลาที่กำหนด เมื่อกรรมการอนุมัติครบจำนวน ถ้าไม่มีใครอนุมัติ ระบบปิดเองตามเวลา",
+      term: "ปิดก่อนเวลา",
+      text: "กรรมการหรือผู้ดูแลเสนอปิดลงคะแนนก่อนเวลาพร้อมเหตุผล ปิดเมื่อกรรมการอนุมัติครบจำนวน และไม่ผ่านเมื่อคนที่ยังไม่ตอบมีไม่พอให้ครบ ถ้าไม่มีคำขอ ระบบปิดเองตามเวลา",
     },
     ballotsCounted: {
       term: "บัตรที่นับ",
@@ -182,8 +182,8 @@ export const GLOSSARY: Record<Locale, Record<GlossaryKey, Entry>> = {
       text: "The result is published when the number of committee approvals set for the meeting is reached. Each member approves once.",
     },
     approveClose: {
-      term: "Approve closing voting",
-      text: "Closes voting before the set time once enough committee members approve. Without approvals, voting closes on time by itself.",
+      term: "Close early",
+      text: "A member or admin proposes closing voting before the set time, with a reason. It closes when enough members approve, and fails when too few members are left to reach that number. Without a request, voting closes on time by itself.",
     },
     ballotsCounted: {
       term: "Ballots counted",
