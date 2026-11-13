@@ -6,10 +6,13 @@ import type { Locale } from "@/lib/i18n/locales";
 /** A label followed by its "i" explanation. */
 export function Term({
   children,
+  extra,
   k,
   locale,
 }: {
   children?: ReactNode;
+  /** Shown in the same tip, under the explanation (one "i", item 11). */
+  extra?: ReactNode;
   k: GlossaryKey;
   locale: Locale;
 }) {
@@ -18,7 +21,12 @@ export function Term({
   return (
     <span className="inline-flex items-center gap-1">
       {children ?? entry.term}
-      <InfoTip about={GLOSSARY_UI[locale].about} term={entry.term} text={entry.text} />
+      <InfoTip
+        about={GLOSSARY_UI[locale].about}
+        extra={extra}
+        term={entry.term}
+        text={entry.text}
+      />
     </span>
   );
 }

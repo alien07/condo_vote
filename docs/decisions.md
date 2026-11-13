@@ -111,15 +111,34 @@ may be offered. Abstain is reported as its own group and counts as voting
 "at least", because legal rules use both (more than half; at least 3/4).
 
 ### D014 - Committee Approval And Vote Closing
-Status: implemented (migration 0023, `/committee` page)
+Status: implemented (migrations 0023 and 0030, `/committee` page)
 
 - Admin sets a minimum number of committee approvals.
 - A result is published when its snapshot reaches that minimum. Each
   approval is a separate, immutable record.
-- Voting closes automatically at `ends_at`, or earlier when committee
-  approvals to close reach the same minimum.
+- Voting closes automatically at `ends_at`, or earlier through a
+  close-early request (migration 0030, demo review 2026-11-13): a committee
+  member or admin proposes it with a reason and a time (as soon as approved,
+  or a set time before `ends_at`). Every active committee member is emailed.
+  Members approve or object (an objection needs a reason). The same minimum
+  closes voting; the proposer's proposal counts as their approval when they
+  are a member. The request fails once the members who have not answered are
+  too few to reach the minimum. One open request per meeting; the proposer
+  can cancel; it lapses at `ends_at`. Approving to close without a request
+  is no longer possible.
 - Generating a result does not close voting. It is allowed only after
   voting has closed, so a single admin cannot end voting early.
+- Correction requests (migration 0030): a committee member asks the admin to
+  correct a result, by category, with a level. Levels: low (wording only),
+  medium (room data, voting rights, paper ballots, and "other"), high (pass
+  rule or quorum; needs a legal or by-law reference). The admin may raise a
+  level, never lower it, and answers every request; the requester cannot
+  answer their own. While a request is open, the admin may generate the
+  result again; approvals start from 0 on the new snapshot and members who
+  approved the old one are emailed. A high-level request needs every active
+  committee member to approve, and the official record shows it prominently.
+  An agenda item that fails the vote is still a correct result; approval
+  means the count is correct.
 - Store times in UTC; display in Asia/Bangkok.
 
 ### D015 - Ballot Secrecy Per Meeting

@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { expect, test, type Page } from "@playwright/test";
+import { confirmInApp } from "./confirm-dialog";
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/database.types";
 
@@ -641,10 +642,8 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
     });
     await expect(reviewProxyDrawer).toBeVisible({ timeout: 15_000 });
     await reviewProxyDrawer.locator('select[name="status"]').selectOption("approved");
-    page.once("dialog", async (dialog) => {
-      await dialog.accept().catch(() => undefined);
-    });
     await reviewProxyDrawer.getByRole("button", { name: "Save review" }).click();
+    await confirmInApp(page);
     await page.waitForTimeout(1_000);
     await gotoWithRetry(
       page,
@@ -778,10 +777,8 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
     await resolveIdentityDrawer
       .locator('select[name="voter_profile_id"]')
       .selectOption({ label: `${demoAdminName} (${demoAdminEmail})` });
-    page.once("dialog", async (dialog) => {
-      await dialog.accept().catch(() => undefined);
-    });
     await resolveIdentityDrawer.getByRole("button", { name: "Link profile" }).click();
+    await confirmInApp(page);
     await page.waitForURL(/\/admin\/voting\?[\s\S]*feedback=success/, {
       waitUntil: "domcontentloaded",
     });
@@ -828,17 +825,40 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
         .filter({ hasText: meetingTitle })
         .getByText("Voting open"),
     ).toBeVisible();
-    await page.goto(`${activeAppOrigin}/committee`);
-    // Closing voting asks for confirmation first.
-    page.once("dialog", (dialog) => dialog.accept());
-    await page
-      .locator("div[data-meeting-id]")
-      .filter({ hasText: meetingTitle })
-      // exact: the "i" tip next to it is "What this means: Approve closing voting".
-      .getByRole("button", { name: "Approve closing voting", exact: true })
-      .click();
-    await page.waitForURL(/\/committee\?[\s\S]*feedback=success/);
-    await expect(page.getByText("Voting closed", { exact: true })).toBeVisible();
+    // Closing early starts with a request (demo feedback item 10). The demo
+    // admin joins the committee for this step, so the proposal counts as the
+    // one approval this meeting needs.
+    const { data: adminProfile } = await supabase
+      .from("profiles")
+      .select("id")
+      .eq("email", demoAdminEmail)
+      .single();
+    await supabase
+      .from("app_roles")
+      .upsert({ profile_id: adminProfile!.id, role: "committee" }, { onConflict: "profile_id,role" });
+    const { data: closeMember } = await supabase
+      .from("committee_members")
+      .insert({ profile_id: adminProfile!.id, full_name: "Demo close member", position_title: "Member" })
+      .select("id")
+      .single();
+
+    try {
+      await page.goto(`${activeAppOrigin}/committee`);
+      const closeCard = page.locator("div[data-meeting-id]").filter({ hasText: meetingTitle });
+      await closeCard.getByText("Propose closing early").first().click();
+      await closeCard.locator('textarea[name="reason"]').fill("Every room has voted");
+      await closeCard.getByRole("button", { name: "Send request" }).click();
+      await confirmInApp(page);
+      await page.waitForURL(/\/committee\?[\s\S]*feedback=success/);
+      await expect(page.getByText("Approved: voting closes as requested")).toBeVisible();
+    } finally {
+      await supabase.from("committee_members").delete().eq("id", closeMember!.id);
+      await supabase
+        .from("app_roles")
+        .delete()
+        .eq("profile_id", adminProfile!.id)
+        .eq("role", "committee");
+    }
 
     await page.goto(
       `${activeAppOrigin}/admin/meetings?title=${encodeURIComponent(meetingTitle)}`,
@@ -878,10 +898,8 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
     ).toBeVisible();
     await resultRow.getByRole("link", { name: "Approve result" }).click();
     const approveResultDrawer = page.getByLabel("Approve result");
-    page.once("dialog", async (dialog) => {
-      await dialog.accept().catch(() => undefined);
-    });
     await approveResultDrawer.getByRole("button", { name: "Approve result" }).click();
+    await confirmInApp(page);
     await page.waitForURL(/\/admin\/results\?[\s\S]*feedback=success/, {
       waitUntil: "commit",
     });
@@ -1535,14 +1553,14 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
       await expect(memberRow.getByRole("cell", { name: updatedPosition })).toBeVisible();
       await expect(memberRow).toHaveClass(/border-l-\[var\(--primary\)\]/);
 
-      page.once("dialog", (dialog) => dialog.accept());
       await memberRow.getByRole("button", { name: "Deactivate" }).click();
+      await confirmInApp(page);
       await expect(
         memberRow.getByRole("button", { name: "Reactivate" }),
       ).toBeVisible({ timeout: 15_000 });
 
-      page.once("dialog", (dialog) => dialog.accept());
       await memberRow.getByRole("button", { name: "Reactivate" }).click();
+      await confirmInApp(page);
       await expect(
         memberRow.getByRole("button", { name: "Deactivate" }),
       ).toBeVisible({ timeout: 15_000 });
@@ -1845,8 +1863,8 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
       });
 
       await reviewDrawer.locator('select[name="status"]').selectOption("approved");
-      page.once("dialog", (dialog) => dialog.accept());
       await reviewDrawer.getByRole("button", { name: "Save review" }).click();
+      await confirmInApp(page);
       await page.waitForURL((url) => url.searchParams.get("focusProxyId") === proxyId);
       await expect(proxyRow).toContainText("approved", { timeout: 15_000 });
       await page.waitForFunction(
@@ -2021,8 +2039,8 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
       });
 
       await endDrawer.locator('input[name="ends_at"]').fill(yesterday);
-      page.once("dialog", (dialog) => dialog.accept());
       await endDrawer.getByRole("button", { name: "End Link" }).click();
+      await confirmInApp(page);
       await expect(ownershipRow).toContainText("Ended", { timeout: 15_000 });
     } finally {
       if (ownershipId) {
@@ -2224,16 +2242,16 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
         name: "Resolve manual vote identity",
       });
 
-      page.once("dialog", (dialog) => dialog.accept());
       await resolveDrawer.getByRole("button", { name: "Link profile" }).click();
+      await confirmInApp(page);
       await expect(resolveDrawer.getByText("Voter profile is required.")).toBeVisible();
       await expect(resolveDrawer.locator('select[name="voter_profile_id"]')).toBeFocused();
 
       await resolveDrawer
         .locator('select[name="voter_profile_id"]')
         .selectOption({ label: `${demoAdminName} (${demoAdminEmail})` });
-      page.once("dialog", (dialog) => dialog.accept());
       await resolveDrawer.getByRole("button", { name: "Link profile" }).click();
+      await confirmInApp(page);
 
       const resultRow = page.locator(
         `tr[data-manual-ballot-id="${manualBallotId}"]:visible`,
@@ -2896,8 +2914,8 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
     await resolveDrawer
       .locator('select[name="voter_profile_id"]')
       .selectOption(profile!.id);
-    page.once("dialog", (dialog) => dialog.accept());
     await resolveDrawer.getByRole("button", { name: "Link profile" }).click();
+    await confirmInApp(page);
 
     await expect(pendingPanel.getByRole("row").filter({ hasText: meetingTitle })).toHaveCount(0);
 
@@ -3210,13 +3228,10 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
     await approvalDrawer
       .locator('textarea[name="notes"]')
       .fill(`Approved through rollout test ${runId}`);
-    page.once("dialog", async (dialog) => {
-      expect(dialog.message()).toContain("locks the approved result snapshot");
-      await dialog.accept();
-    });
     await approvalDrawer
       .getByRole("button", { name: "Approve result" })
       .click({ noWaitAfter: true });
+    await confirmInApp(page, "locks the approved result snapshot");
 
     await expect
       .poll(async () => {

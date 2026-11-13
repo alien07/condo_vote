@@ -1,7 +1,7 @@
 -- Database tests for committee approvals and vote closing (D014).
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(13);
+select plan(14);
 
 \set admin_a  '''00000000-0000-4000-8000-0000000000f1'''
 \set member_b '''00000000-0000-4000-8000-0000000000f2'''
@@ -78,21 +78,28 @@ select ok(
 
 select throws_like(
   format($q$insert into public.result_snapshots (meeting_id, payload_json) values (%L, '{}')$q$, :closed_m),
-  '%after committee approval%', 'no new snapshot after approvals');
+  'Cannot generate result snapshots after%', 'no new snapshot after publishing');
 
--- Closing voting early -------------------------------------------------------
+-- Closing voting early (0030: through a request) -------------------------------
+insert into public.committee_members (profile_id, full_name, position_title) values
+  (:member_b, 'Member B', 'Chair'), (:member_c, 'Member C', 'Member');
+
 select pg_temp.act_as(:member_b);
 set local role authenticated;
 
+select throws_like(format($q$select public.approve_close_voting(%L)$q$, :open_m),
+  '%permission denied%', 'closing without a request is no longer possible');
+
 select is(
-  public.approve_close_voting(:open_m)->>'closed',
-  'false', 'first close approval keeps voting open');
+  public.propose_close_voting(:open_m, 'Everyone has voted', null)->>'status',
+  'open', 'the proposal counts as the first approval and keeps voting open');
 
 select pg_temp.act_as(:member_c);
 
 select is(
-  public.approve_close_voting(:open_m)->>'closed',
-  'true', 'second close approval closes voting');
+  public.answer_close_request(
+    (select id from public.meeting_close_requests where meeting_id = :open_m), 'approve', null)->>'status',
+  'approved', 'the second approval closes voting');
 
 reset role;
 

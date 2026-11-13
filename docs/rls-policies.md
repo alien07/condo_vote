@@ -94,6 +94,17 @@ function that changes only the caller's own profile. Admins change any
 profile's language through the existing admin update policy.
 Database tests: `supabase/tests/owner_language.test.sql`.
 
+## Committee Workflow
+Migration 0030 adds close-early requests (`meeting_close_requests`,
+`meeting_close_request_answers`) and `result_correction_requests`. Admin and
+committee read them; writes go only through security definer functions:
+`propose_close_voting`, `answer_close_request` (active committee members),
+`cancel_close_request` (the proposer), `request_result_correction`,
+`raise_correction_level` and `answer_correction_request` (admin, not the
+requester). `approve_close_voting` is no longer granted to signed-in users.
+`committee_overview()` returns approvers, objections and correction requests.
+Database tests: `supabase/tests/committee_workflow.test.sql`.
+
 ## Member Access
 Migration 0029 limits published results to approved members:
 `is_approved_member()` is true for an approved profile or any staff role

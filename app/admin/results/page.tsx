@@ -1,4 +1,5 @@
 import { AdminWorkspace } from "@/features/admin/components/admin-workspace";
+import { CorrectionAdminPanel } from "@/features/committee/correction-admin-panel";
 import { getStaffI18n } from "@/lib/i18n/server";
 import type { ResultTableFilters } from "@/features/admin/components/admin-workspace";
 
@@ -67,6 +68,7 @@ export default async function AdminResultsPage({
         type: params.type,
       }}
       focusedResultSnapshotId={params.focusResultSnapshotId}
+      intro={<CorrectionAdminPanel />}
       resultFilters={getResultFilters(params)}
       sections={["results"]}
       title={s.adminHome.pages.resultsTitle}

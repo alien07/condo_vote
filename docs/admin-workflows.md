@@ -58,7 +58,8 @@ These workflows define the admin-facing MVP behavior. Ask before implementing an
 
 ## Closing Voting
 - Voting closes automatically at `ends_at`.
-- Committee members can approve closing early. Voting closes when these approvals reach the configured minimum (D014).
+- Closing early starts with a request from a committee member or admin, with a reason. Committee members approve or object; voting closes when approvals reach the configured minimum, and the request fails when too few members are left to reach it (D014).
+- Committee members can ask for a result correction. Admin > Results lists open requests: answer each one, and raise the level when needed. While a request is open, the result can be generated again (D014).
 - Every close approval is audited.
 
 ## Private Document Registry

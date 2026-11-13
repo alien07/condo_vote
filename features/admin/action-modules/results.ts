@@ -101,8 +101,24 @@ export async function generateResultSnapshot(formData: FormData) {
     throw existingApprovalError;
   }
 
+  // After approvals, generating again is allowed only while a committee
+  // member's correction request is open (demo feedback item 12); the
+  // database checks the same rule.
   if (existingApprovals.length > 0) {
-    throw new Error("Cannot generate a new result after committee approval.");
+    const { data: openCorrections, error: correctionError } = await supabase
+      .from("result_correction_requests")
+      .select("id")
+      .eq("meeting_id", meetingId)
+      .eq("status", "open")
+      .limit(1);
+
+    if (correctionError) {
+      throw correctionError;
+    }
+
+    if (openCorrections.length === 0) {
+      throw new Error("Cannot generate a new result after committee approval.");
+    }
   }
 
   await assertNoPendingManualVoteIdentities(supabase, meetingId);

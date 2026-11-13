@@ -5,9 +5,13 @@ import { redirect } from "next/navigation";
 import { DENIED_PATH, requireProfileWithRoles } from "@/lib/auth/permissions";
 import { createClient } from "@/lib/supabase/server";
 import {
-  approveCloseVoting,
+  answerCloseRequest,
   approveResult,
+  cancelCloseRequest,
+  proposeCloseVoting,
+  requestResultCorrection,
 } from "@/features/results/committee-service";
+import { bangkokLocalToIso } from "@/lib/datetime";
 import { scheduleResultPdfs } from "@/features/results/pdf/schedule";
 import { getStaffI18n } from "@/lib/i18n/server";
 import { fill } from "@/lib/i18n/template";
@@ -56,23 +60,15 @@ export async function approveResultAsCommittee(formData: FormData) {
   redirect(href);
 }
 
-export async function approveCloseVotingAsCommittee(formData: FormData) {
+async function runAndRedirect(
+  work: (t: Awaited<ReturnType<typeof getStaffI18n>>["s"]["committee"]) => Promise<string>,
+) {
   await requireCommittee();
-  const supabase = await createClient();
   const t = (await getStaffI18n()).s.committee;
   let href: string;
 
   try {
-    const result = await approveCloseVoting(
-      supabase,
-      String(formData.get("meeting_id") ?? ""),
-    );
-    href = feedbackHref(
-      "success",
-      result.closed
-        ? t.closedMessage
-        : fill(t.closeRecorded, { count: result.approvals, required: result.required }),
-    );
+    href = feedbackHref("success", await work(t));
   } catch (error) {
     href = feedbackHref("error", error instanceof Error ? error.message : t.couldNotApprove);
   }
@@ -80,4 +76,73 @@ export async function approveCloseVotingAsCommittee(formData: FormData) {
   revalidatePath("/committee");
   revalidatePath("/vote");
   redirect(href);
+}
+
+function statusMessage(
+  t: Awaited<ReturnType<typeof getStaffI18n>>["s"]["committee"],
+  status: string,
+  fallback: string,
+) {
+  if (status === "approved") {
+    return t.requestApproved;
+  }
+
+  if (status === "failed") {
+    return t.requestFailed;
+  }
+
+  return fallback;
+}
+
+/** Propose closing voting early (demo feedback item 10). */
+export async function proposeCloseAsCommittee(formData: FormData) {
+  await runAndRedirect(async (t) => {
+    const supabase = await createClient();
+    const when = String(formData.get("when") ?? "now");
+    const result = await proposeCloseVoting(supabase, {
+      meetingId: String(formData.get("meeting_id") ?? ""),
+      reason: String(formData.get("reason") ?? "").trim(),
+      closeAt: when === "at" ? bangkokLocalToIso(String(formData.get("close_at") ?? "")) : null,
+    });
+
+    return statusMessage(t, result.status, t.proposed);
+  });
+}
+
+export async function answerCloseAsCommittee(formData: FormData) {
+  await runAndRedirect(async (t) => {
+    const supabase = await createClient();
+    const answer = formData.get("answer") === "object" ? "object" : "approve";
+    const result = await answerCloseRequest(supabase, {
+      requestId: String(formData.get("request_id") ?? ""),
+      answer,
+      reason: String(formData.get("reason") ?? "").trim() || null,
+    });
+
+    return statusMessage(t, result.status, t.answered);
+  });
+}
+
+export async function cancelCloseAsCommittee(formData: FormData) {
+  await runAndRedirect(async (t) => {
+    const supabase = await createClient();
+    await cancelCloseRequest(supabase, String(formData.get("request_id") ?? ""));
+
+    return t.requestCancelled;
+  });
+}
+
+/** Ask the admin to correct a result (demo feedback item 12). */
+export async function requestCorrectionAsCommittee(formData: FormData) {
+  await runAndRedirect(async (t) => {
+    const supabase = await createClient();
+    await requestResultCorrection(supabase, {
+      resultSnapshotId: String(formData.get("result_snapshot_id") ?? ""),
+      category: String(formData.get("category") ?? ""),
+      reason: String(formData.get("reason") ?? "").trim(),
+      legalReference: String(formData.get("legal_reference") ?? "").trim() || null,
+    });
+
+    return t.correctionSent;
+  });
 }
