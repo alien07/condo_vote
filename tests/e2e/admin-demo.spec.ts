@@ -945,11 +945,19 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
     await expect(page.getByText(`ผล: มีมติ: ${updatedChoiceText}`)).toBeVisible();
     await expect(page.getByText(publishedHash).first()).toBeVisible();
 
-    // The owner summary in Thai (D020); other specs browse in English.
-    const setLanguageCookie = (value: "th" | "en") =>
-      page.context().addCookies([
+    // The owner summary in Thai (D020); other specs browse in English. The
+    // signed-in profile's language comes first, so switch the profile.
+    const setLanguageCookie = async (value: "th" | "en") => {
+      const { error } = await supabase
+        .from("profiles")
+        .update({ preferred_language: value })
+        .eq("email", demoAdminEmail);
+
+      expect(error).toBeNull();
+      await page.context().addCookies([
         { name: "lang", value, url: activeAppOrigin },
       ]);
+    };
 
     await setLanguageCookie("th");
     await gotoWithRetry(page, `${activeAppOrigin}/summary/${persistedMeetingId}`, {
