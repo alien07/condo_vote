@@ -177,7 +177,7 @@ using (bucket_id = 'result-documents' and public.has_app_role('auditor'));
 -- Who still has access ------------------------------------------------------------------
 
 -- Approved, and for a proxy holder who is neither owner nor resident: holding
--- a proxy for a meeting that is still open (item 14d).
+-- a proxy or a ballot right for a meeting that is still open (item 14d).
 create or replace function public.profile_access_active(p_profile_id uuid)
 returns boolean
 language sql
@@ -199,6 +199,15 @@ as $$
           join public.meetings m on m.id = pa.meeting_id
           where pa.proxy_profile_id = p.id
             and pa.status = 'approved'
+            and m.status = 'published'
+            and m.ends_at > now()
+        )
+        -- or a ballot right in a meeting that is still open
+        or exists (
+          select 1
+          from public.eligible_voters_snapshot e
+          join public.meetings m on m.id = e.meeting_id
+          where e.profile_id = p.id
             and m.status = 'published'
             and m.ends_at > now()
         )
