@@ -14,6 +14,7 @@ const en = {
     signingOut: "Signing out...",
     back: "Back",
     dismiss: "Dismiss message",
+    help: "Help",
     user: "user",
     nav: {
       admin: "Admin",
@@ -41,6 +42,7 @@ const en = {
     google: "Continue with Google",
     signingIn: "Signing in...",
     version: "Version",
+    howTo: "How to vote online",
     failed: "Sign-in failed",
     errors: {
       missingOrigin: "Sign-in failed: missing request origin.",
@@ -191,6 +193,7 @@ const th: Dictionary = {
     signingOut: "กำลังออกจากระบบ...",
     back: "กลับ",
     dismiss: "ปิดข้อความ",
+    help: "ช่วยเหลือ",
     user: "ผู้ใช้",
     nav: {
       admin: "ผู้ดูแล",
@@ -218,6 +221,7 @@ const th: Dictionary = {
     google: "เข้าสู่ระบบด้วย Google",
     signingIn: "กำลังเข้าสู่ระบบ...",
     version: "เวอร์ชัน",
+    howTo: "วิธีลงคะแนนออนไลน์",
     failed: "เข้าสู่ระบบไม่สำเร็จ",
     errors: {
       missingOrigin: "เข้าสู่ระบบไม่สำเร็จ: ไม่พบต้นทางของคำขอ",

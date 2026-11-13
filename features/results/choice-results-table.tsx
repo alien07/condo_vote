@@ -3,10 +3,12 @@
 
 import { getDictionary } from "@/lib/i18n/dictionaries";
 import type { Locale } from "@/lib/i18n/locales";
+import { choiceLabel } from "@/lib/i18n/choice";
 
 export type ChoiceResult = {
   id?: string;
   text?: string;
+  is_abstain?: boolean;
   vote_count?: number;
   ownership?: number;
   percent_of_total_ownership?: number;
@@ -55,7 +57,7 @@ export function ChoiceResultsTable({
               className="border-b border-[var(--border)] last:border-0"
               key={choice.id ?? `${choice.text}-${index}`}
             >
-              <td className="py-2 pr-3">{choice.text ?? "-"}</td>
+              <td className="py-2 pr-3">{choiceLabel(choice.text, choice.is_abstain, locale)}</td>
               <td className="py-2 pr-3 text-right tabular-nums">{choice.vote_count ?? 0}</td>
               <td className="py-2 pr-3 text-right tabular-nums">
                 {formatPercent(choice.percent_of_total_ownership ?? choice.ownership)}

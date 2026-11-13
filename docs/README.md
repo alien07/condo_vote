@@ -16,6 +16,8 @@ This folder contains the working specification for condoVotes.
 - [Resolution rules](resolution-rules.md)
 - [Local development](local-development.md)
 - [Demo manual steps](demo-manual-steps.md)
+- [Demo script (live test)](demo-script.md)
+- [Help and user guides plan](help-outline.md)
 - [SQL schema draft](schema-draft.sql)
 - [Security and privacy](security-privacy.md)
 - [Compliance](compliance.md)

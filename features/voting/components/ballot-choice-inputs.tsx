@@ -4,6 +4,7 @@
 
 import { getDictionary } from "@/lib/i18n/dictionaries";
 import type { Locale } from "@/lib/i18n/locales";
+import { choiceLabel } from "@/lib/i18n/choice";
 
 type BallotChoice = {
   id: string;
@@ -69,7 +70,7 @@ export function BallotChoiceInputs({
             type={multiple ? "checkbox" : "radio"}
             value={choice.id}
           />
-          <span>{choice.choice_text}</span>
+          <span>{choiceLabel(choice.choice_text, choice.is_abstain, locale)}</span>
         </label>
       ))}
     </div>
