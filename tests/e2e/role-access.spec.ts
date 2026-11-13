@@ -206,7 +206,10 @@ test.describe("@test:e2e @test:auth @test:role role access", () => {
     // Signed in without the role: back home with a notice, not to sign-in.
     await page.goto("/admin");
     await expect(page).toHaveURL(/\/\?denied=1$/);
-    await expect(page.getByRole("alert")).toContainText("cannot open that page");
+    // Filter: Next.js's route announcer is an alert too.
+    await expect(
+      page.getByRole("alert").filter({ hasText: "cannot open that page" }),
+    ).toBeVisible();
     await expect(page.getByRole("link", { name: /Admin/ })).toHaveCount(0);
     // A resident without a room never votes, so there is no Vote card (item 1).
     await expect(page.getByRole("link", { name: /Vote/ })).toHaveCount(0);
