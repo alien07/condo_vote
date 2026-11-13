@@ -54,10 +54,14 @@ export function quorumText(locale: Locale, quorum: QuorumLike) {
   }
 
   const t = getDictionary(locale).results;
-  const rule =
-    quorum.required_percent === 0
-      ? t.quorumNotRequired
-      : t.quorumRule(percent(quorum.required_percent));
+
+  // A reconvened meeting needs no quorum, so "met" or "not met" means nothing
+  // there (demo feedback item 2). Participation shows in the totals instead.
+  if (quorum.required_percent === 0) {
+    return t.quorumNotRequired;
+  }
+
+  const rule = t.quorumRule(percent(quorum.required_percent));
   const result =
     quorum.met === null || quorum.met === undefined
       ? ""

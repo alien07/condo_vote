@@ -2,10 +2,12 @@ import Link from "next/link";
 import { FileText } from "lucide-react";
 import { ChoiceResultsTable } from "@/features/results/choice-results-table";
 import { outcomeText, passRuleText, quorumText } from "@/features/results/thai-labels";
+import { TranslationNote } from "@/features/i18n/translation-note";
 import { getDictionary } from "@/lib/i18n/dictionaries";
 import { formatDateTimeIn } from "@/lib/i18n/format";
 import type { Locale } from "@/lib/i18n/locales";
-import type { ApprovedSummary } from "@/features/summary/data";
+import type { ApprovedSummary, SummaryListItem } from "@/features/summary/data";
+import { formatDateIn } from "@/lib/i18n/format";
 import { documentFont } from "@/lib/fonts";
 import { GlossaryNotes, Term } from "@/features/glossary/term";
 import type { GlossaryKey } from "@/lib/i18n/glossary";
@@ -19,7 +21,9 @@ type SummaryPageProps = {
   historyLimit: number;
   locale: Locale;
   selected: ApprovedSummary | null;
-  history: ApprovedSummary[];
+  history: SummaryListItem[];
+  /** All published results, for the "See all results" link. */
+  totalCount: number;
 };
 
 function formatPercent(value: number | undefined) {
@@ -32,6 +36,7 @@ export function SummaryPage({
   locale,
   selected,
   history,
+  totalCount,
 }: SummaryPageProps) {
   const t = getDictionary(locale).summary;
   const formatDateTime = (value: string) => formatDateTimeIn(locale, value);
@@ -86,6 +91,10 @@ export function SummaryPage({
                   {condoProfile?.juristic_name ?? t.juristicPerson}
                 </p>
               </div>
+
+              {/* English summary: the Thai version prevails, said up front
+                  (demo feedback item 6a). */}
+              <TranslationNote text={t.translationNote} />
 
               <section className="mt-5 grid gap-3 text-sm md:grid-cols-2">
                 <div>
@@ -197,12 +206,6 @@ export function SummaryPage({
                 />
               </section>
 
-              {t.translationNote ? (
-                <p className="mt-5 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
-                  {t.translationNote}
-                </p>
-              ) : null}
-
               <section className="mt-5 border-t border-[var(--border)] pt-4 text-sm">
                 <h3 className="font-semibold">
                   <Term k="summaryVsOfficial" locale={locale}>{t.verifyTitle}</Term>
@@ -253,7 +256,7 @@ export function SummaryPage({
               <div className="mt-4 grid gap-2">
                 {history.map((summary) => {
                   // The result shown on the left is marked in the history.
-                  const current = summary.id === selected.id;
+                  const current = summary.meetingId === selected.meetingId;
 
                   return (
                     <Link
@@ -272,16 +275,25 @@ export function SummaryPage({
                           {t.showing}
                         </div>
                       ) : null}
-                      <div className="font-medium">
-                        {summary.payload.meeting?.title ?? t.approvedResult}
-                      </div>
-                      <div className="text-[var(--muted)]">
-                        {formatDateTime(summary.approvedAt)}
+                      <div className="font-medium">{summary.title ?? t.approvedResult}</div>
+                      {summary.meetingStartsAt ? (
+                        <div className="text-[var(--muted)]">
+                          {t.meetingOn(formatDateIn(locale, summary.meetingStartsAt))}
+                        </div>
+                      ) : null}
+                      <div className="text-xs text-[var(--muted)]">
+                        {t.publishedOn(formatDateIn(locale, summary.publishedAt))}
                       </div>
                     </Link>
                   );
                 })}
               </div>
+              <Link
+                className="mt-4 inline-flex min-h-11 w-full items-center justify-center rounded-md border border-[var(--border)] px-3 py-2 text-sm font-medium hover:border-[var(--primary)]"
+                href="/summary/archive"
+              >
+                {t.seeAll(totalCount)}
+              </Link>
             </aside>
           </div>
         )}

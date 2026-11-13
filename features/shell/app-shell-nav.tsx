@@ -12,6 +12,7 @@ type NavLabels = {
   summary: string;
   ballot: string;
   resultDetail: string;
+  archive: string;
   back: string;
   /** Admin area names for the breadcrumb (staff only). */
   adminSections?: Record<string, string>;
@@ -94,7 +95,12 @@ function getBreadcrumbs(pathname: string, labels: NavLabels) {
   if (parts[0] === "summary") {
     return [
       { href: "/summary", label: labels.summary },
-      parts.length > 1 ? { href: pathname, label: labels.resultDetail } : null,
+      parts.length > 1
+        ? {
+            href: pathname,
+            label: parts[1] === "archive" ? labels.archive : labels.resultDetail,
+          }
+        : null,
     ].filter((item): item is { href: string; label: string } => Boolean(item));
   }
 
