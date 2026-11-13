@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { ConfirmButton } from "@/features/ui/confirm-button";
+import { grantCoOwnerVote } from "@/features/voting/co-owner-actions";
 import type { getVotingDashboardData } from "@/features/voting/data";
 import { describeVoterRoom, describeVotingWindow } from "@/features/voting/display";
 import { VotingStatusBadge } from "@/features/voting/status-badge";
@@ -24,6 +26,10 @@ export function VoteRowCard({
 }) {
   const meeting = row.meetings;
   const votingStatus = getVotingWindowStatus(meeting);
+  // The owner of record may let a co-owner vote, before the room has a ballot
+  // and while voting has not ended (item 15).
+  const canLetCoOwnerVote =
+    row.voter_type === "owner" && !ballot && votingStatus.label !== "Closed" && votingStatus.label !== "Unavailable";
 
   return (
     <section
@@ -66,6 +72,38 @@ export function VoteRowCard({
           </Link>
         </div>
       </div>
+      {canLetCoOwnerVote ? (
+        <details className="mt-3 text-sm" data-co-owner>
+          <summary className="inline-flex min-h-11 cursor-pointer items-center font-medium text-[var(--primary)]">
+            {t.coOwnerTitle}
+          </summary>
+          <form action={grantCoOwnerVote} className="mt-2 grid gap-2 sm:max-w-md">
+            <p className="text-[var(--muted)]">{t.coOwnerText}</p>
+            <input name="meeting_id" type="hidden" value={row.meeting_id} />
+            <input name="room_id" type="hidden" value={row.room_id} />
+            <label className="grid gap-1 font-medium">
+              {t.coOwnerEmail}
+              <input
+                autoComplete="off"
+                className="min-h-11 rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 font-normal"
+                name="email"
+                required
+                type="email"
+              />
+            </label>
+            <ConfirmButton
+              cancelLabel={t.cancel}
+              className="min-h-11 w-fit rounded-md border border-[var(--border)] bg-[var(--surface)] px-4 py-2 font-medium"
+              confirmLabel={t.confirm}
+              confirmMessage={t.confirmCoOwner(row.rooms?.room_number ?? "-", meeting?.title ?? t.meeting)}
+              confirmTitle={t.confirmTitle}
+              tone="primary"
+            >
+              {t.coOwnerSend}
+            </ConfirmButton>
+          </form>
+        </details>
+      ) : null}
     </section>
   );
 }

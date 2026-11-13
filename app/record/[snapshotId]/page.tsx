@@ -48,7 +48,8 @@ function cssString(value: string) {
 export default async function OfficialRecordPage({ params }: RecordPageProps) {
   const { roles } = await requireProfileWithRoles();
 
-  if (!roles.includes("admin") && !roles.includes("committee")) {
+  // Auditors read official records too (item 14b).
+  if (!roles.includes("admin") && !roles.includes("committee") && !roles.includes("auditor")) {
     redirect(DENIED_PATH);
   }
 

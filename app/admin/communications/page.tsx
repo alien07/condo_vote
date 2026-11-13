@@ -1,5 +1,6 @@
 import { AdminWorkspace } from "@/features/admin/components/admin-workspace";
 import { getStaffI18n } from "@/lib/i18n/server";
+import { requireAdmin } from "@/lib/auth/permissions";
 import type { EmailTableFilters } from "@/features/admin/components/admin-workspace";
 
 type AdminCommunicationsPageProps = {
@@ -52,6 +53,8 @@ function getEmailFilters(
 export default async function AdminCommunicationsPage({
   searchParams,
 }: AdminCommunicationsPageProps) {
+  // Manager only: office staff do data entry elsewhere (item 14c).
+  await requireAdmin();
   const { s } = await getStaffI18n();
   const params = await searchParams;
 

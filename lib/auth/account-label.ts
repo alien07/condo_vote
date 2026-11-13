@@ -4,7 +4,7 @@ type LabelText = {
   user: string;
 };
 
-const ROLE_ORDER = ["admin", "committee", "system_admin"];
+const ROLE_ORDER = ["admin", "staff", "committee", "auditor", "system_admin"];
 
 /** Header label: job roles first, then member status, e.g.
  * "Committee · Resident" (demo feedback item 14e). */

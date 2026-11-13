@@ -12,6 +12,7 @@ import {
   requiredNumber,
   requiredText,
   requireAdmin,
+  requireOfficeStaff,
   revalidateAdminPaths,
 } from "@/features/admin/action-modules/shared";
 import { writeAuditLog } from "@/lib/audit/business-audit";
@@ -276,7 +277,7 @@ function validateOwnershipEnd(values: Record<string, string>) {
 }
 
 export async function createRoom(formData: FormData) {
-  await requireAdmin();
+  await requireOfficeStaff();
 
   const supabase = await createClient();
   const { error } = await supabase.from("rooms").insert({
@@ -298,7 +299,7 @@ export async function createRoom(formData: FormData) {
 }
 
 async function createRoomFromForm(formData: FormData) {
-  await requireAdmin();
+  await requireOfficeStaff();
 
   const values = formValues(formData, [
     "room_number",
@@ -362,7 +363,7 @@ export async function updateRoomWithState(
   formData: FormData,
 ): Promise<PeopleActionState> {
   try {
-    await requireAdmin();
+    await requireOfficeStaff();
 
     const values = formValues(formData, [
       "id",
@@ -419,7 +420,7 @@ export async function updateRoomWithState(
 }
 
 export async function importRoomsExcel(formData: FormData) {
-  await requireAdmin();
+  await requireOfficeStaff();
 
   const { rows, value } = await readExcelSheetUpload(formData, "Rooms");
   const importedRows = rows
@@ -517,7 +518,7 @@ export async function importRoomsExcelWithState(
 }
 
 export async function deactivateRoom(formData: FormData) {
-  await requireAdmin();
+  await requireOfficeStaff();
 
   const id = requiredText(formData.get("id"), "Room ID");
   const supabase = await createClient();
@@ -534,7 +535,7 @@ export async function deactivateRoom(formData: FormData) {
 }
 
 export async function reactivateRoom(formData: FormData) {
-  await requireAdmin();
+  await requireOfficeStaff();
 
   const id = requiredText(formData.get("id"), "Room ID");
   const supabase = await createClient();
@@ -551,7 +552,7 @@ export async function reactivateRoom(formData: FormData) {
 }
 
 export async function createOwner(formData: FormData) {
-  await requireAdmin();
+  await requireOfficeStaff();
 
   const supabase = await createClient();
   const { error } = await supabase.from("owners").insert({
@@ -569,7 +570,7 @@ export async function createOwner(formData: FormData) {
 }
 
 async function createOwnerFromForm(formData: FormData) {
-  await requireAdmin();
+  await requireOfficeStaff();
 
   const values = formValues(formData, ["full_name", "email", "phone", "line_id"]);
   const errors: Record<string, string> = {};
@@ -614,7 +615,7 @@ export async function updateOwnerWithState(
   formData: FormData,
 ): Promise<PeopleActionState> {
   try {
-    await requireAdmin();
+    await requireOfficeStaff();
 
     const values = formValues(formData, [
       "id",
@@ -657,7 +658,7 @@ export async function updateOwnerWithState(
 }
 
 export async function importOwnersExcel(formData: FormData) {
-  await requireAdmin();
+  await requireOfficeStaff();
 
   const { rows, value } = await readExcelSheetUpload(formData, "Owners");
   const importedRows = rows
@@ -723,7 +724,7 @@ export async function importOwnersExcelWithState(
 }
 
 export async function importRoomOwnersExcel(formData: FormData) {
-  await requireAdmin();
+  await requireOfficeStaff();
 
   const { rows, value } = await readExcelSheetUpload(formData, "RoomOwners");
   const importedRows = rows
@@ -827,7 +828,7 @@ export async function importRoomOwnersExcelWithState(
 }
 
 export async function deactivateOwner(formData: FormData) {
-  await requireAdmin();
+  await requireOfficeStaff();
 
   const id = requiredText(formData.get("id"), "Owner ID");
   const supabase = await createClient();
@@ -844,7 +845,7 @@ export async function deactivateOwner(formData: FormData) {
 }
 
 export async function reactivateOwner(formData: FormData) {
-  await requireAdmin();
+  await requireOfficeStaff();
 
   const id = requiredText(formData.get("id"), "Owner ID");
   const supabase = await createClient();
@@ -861,7 +862,7 @@ export async function reactivateOwner(formData: FormData) {
 }
 
 async function linkRoomOwnerImpl(formData: FormData) {
-  await requireAdmin();
+  await requireOfficeStaff();
 
   const roomId = requiredText(formData.get("room_id"), "Room");
   const ownerId = requiredText(formData.get("owner_id"), "Owner");
@@ -945,7 +946,7 @@ export async function linkRoomOwnerWithState(
 }
 
 async function endRoomOwnerLinkImpl(formData: FormData) {
-  const admin = await requireAdmin();
+  const admin = await requireOfficeStaff();
 
   const id = requiredText(formData.get("id"), "Room owner link ID");
   const endsAt = optionalDate(formData.get("ends_at")) ?? todayDate();
@@ -1026,7 +1027,7 @@ export async function endRoomOwnerLinkWithState(
 }
 
 async function updateRoomOwnerDatesImpl(formData: FormData) {
-  const admin = await requireAdmin();
+  const admin = await requireOfficeStaff();
 
   const id = requiredText(formData.get("id"), "Room owner link ID");
   const startsAt = optionalDate(formData.get("starts_at"));
@@ -1110,7 +1111,7 @@ export async function updateRoomOwnerDatesWithState(
 }
 
 async function cancelRoomOwnerLinkImpl(formData: FormData) {
-  const admin = await requireAdmin();
+  const admin = await requireOfficeStaff();
 
   const id = requiredText(formData.get("id"), "Room owner link ID");
   const supabase = await createClient();

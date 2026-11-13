@@ -6,6 +6,7 @@ import {
   LifeBuoy,
   Server,
   Settings,
+  ScrollText,
   ShieldAlert,
 } from "lucide-react";
 import { HomeAuthControls } from "@/features/auth/home-auth-controls";
@@ -67,7 +68,15 @@ export default async function HomePage({ searchParams }: HomePageProps) {
       label: t.adminTitle,
       description: t.adminText,
       icon: Settings,
-      show: roles.includes("admin"),
+      show: roles.includes("admin") || roles.includes("staff"),
+    },
+    {
+      href: "/audit",
+      debugName: "audit",
+      label: t.auditTitle,
+      description: t.auditText,
+      icon: ScrollText,
+      show: roles.includes("auditor") || roles.includes("admin"),
     },
     {
       href: "/system",
