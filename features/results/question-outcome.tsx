@@ -3,6 +3,7 @@
 
 import { outcomeText, passRuleText } from "@/features/results/thai-labels";
 import type { Locale } from "@/lib/i18n/locales";
+import { Term } from "@/features/glossary/term";
 
 export type QuestionOutcomePayload = {
   pass_rule?: { label?: string; basis?: string; operator?: string; percent?: number } | null;
@@ -28,9 +29,13 @@ export function QuestionOutcomeLine({
   if (locale === "th") {
     return (
       <p className="mt-1 text-sm">
-        <span className="text-[var(--muted)]">เกณฑ์: {passRuleText("th", question.pass_rule)} </span>
+        <span className="text-[var(--muted)]">
+          <Term k="rule" locale="th">เกณฑ์</Term>: {passRuleText("th", question.pass_rule)}{" "}
+        </span>
         <span className="font-medium" data-outcome={question.outcome}>
-          {outcomeText("th", question.outcome, passedTexts)}
+          <Term k={question.outcome === "informational" ? "informational" : "outcome"} locale="th">
+            {outcomeText("th", question.outcome, passedTexts)}
+          </Term>
         </span>
       </p>
     );
@@ -45,9 +50,13 @@ export function QuestionOutcomeLine({
 
   return (
     <p className="mt-1 text-sm">
-      <span className="text-[var(--muted)]">Pass rule: {question.pass_rule.label}. </span>
+      <span className="text-[var(--muted)]">
+        <Term k="rule" locale="en">Pass rule</Term>: {question.pass_rule.label}.{" "}
+      </span>
       <span className="font-medium" data-outcome={question.outcome}>
-        {outcome}
+        <Term k={question.outcome === "informational" ? "informational" : "outcome"} locale="en">
+          {outcome}
+        </Term>
       </span>
     </p>
   );

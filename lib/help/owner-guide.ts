@@ -1,5 +1,13 @@
 import type { Locale } from "@/lib/i18n/locales";
 import type { HelpGuide } from "@/lib/help/types";
+import { GLOSSARY, type GlossaryKey } from "@/lib/i18n/glossary";
+
+// "How to read the result table": the same words as the "i" tips.
+const TABLE_TERMS: GlossaryKey[] = ["rooms", "shareOfAll", "shareOfCast", "abstain", "rule"];
+
+function tableTerms(locale: Locale) {
+  return TABLE_TERMS.map((key) => `${GLOSSARY[locale][key].term}: ${GLOSSARY[locale][key].text}`).join(" · ");
+}
 
 // Owner and proxy quick guide (help plan, docs/help-outline.md).
 // Screenshots: public/help/<locale>/<image>.png, made by
@@ -76,6 +84,10 @@ export const ownerGuide: Record<Locale, HelpGuide> = {
       {
         q: "\"ลงคะแนนล่วงหน้า\" คืออะไร",
         a: "บางการประชุมเปิดให้ลงคะแนนก่อนวันประชุม ระหว่างช่วงล่วงหน้ากับวันประชุมจะลงคะแนนไม่ได้ชั่วคราว รายการจะแสดงเวลาที่เปิดครั้งถัดไป",
+      },
+      {
+        q: "อ่านตารางผลรายวาระอย่างไร",
+        a: tableTerms("th"),
       },
       {
         q: "ทำไมยังไม่เห็นผล",
@@ -158,6 +170,10 @@ export const ownerGuide: Record<Locale, HelpGuide> = {
       {
         q: "What is advance voting?",
         a: "Some meetings open voting before the meeting day. Between the advance window and the meeting day, voting is paused; the item shows when it opens next.",
+      },
+      {
+        q: "How do I read the result table?",
+        a: tableTerms("en"),
       },
       {
         q: "Why can't I see the results yet?",

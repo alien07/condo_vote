@@ -16,6 +16,8 @@ import type { SummaryPayload } from "@/features/summary/data";
 import { requireProfileWithRoles } from "@/lib/auth/permissions";
 import { formatThaiDateTime } from "@/lib/datetime";
 import { choiceLabel } from "@/lib/i18n/choice";
+import { GlossaryNotes } from "@/features/glossary/term";
+import { decidingColumn } from "@/lib/i18n/glossary";
 import { createClient } from "@/lib/supabase/server";
 
 type RecordPageProps = {
@@ -217,6 +219,7 @@ export default async function OfficialRecordPage({ params }: RecordPageProps) {
             <Row label="องค์ประชุม">{thaiQuorum(totals.quorum)}</Row>
           </tbody>
         </table>
+        <GlossaryNotes keys={["votedOwnership", "quorum"]} locale="th" />
       </section>
 
       <section className="mt-5">
@@ -241,6 +244,7 @@ export default async function OfficialRecordPage({ params }: RecordPageProps) {
             </Row>
           </tbody>
         </table>
+        <GlossaryNotes keys={["manualBallots", "bothChannels", "trafficLog"]} locale="th" />
         {conflicts.length > 0 ? (
           <ol className="mt-2 list-decimal pl-6">
             {conflicts.map((conflict, index) => (
@@ -278,8 +282,12 @@ export default async function OfficialRecordPage({ params }: RecordPageProps) {
                   <tr className="border-b border-black/20 text-left">
                     <th className="py-1 pr-3">ตัวเลือก</th>
                     <th className="py-1 pr-3 text-right">ห้อง</th>
-                    <th className="py-1 pr-3 text-right">% ของทั้งอาคาร</th>
-                    <th className="py-1 text-right">% ของผู้ลงคะแนน</th>
+                    <th className="py-1 pr-3 text-right">
+                      % ของทั้งอาคาร{decidingColumn(question.pass_rule?.basis) === "shareOfAll" ? " *" : ""}
+                    </th>
+                    <th className="py-1 text-right">
+                      % ของผู้ลงคะแนน{decidingColumn(question.pass_rule?.basis) === "shareOfCast" ? " *" : ""}
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -302,6 +310,12 @@ export default async function OfficialRecordPage({ params }: RecordPageProps) {
             </div>
           );
         })}
+        <p className="mt-3 text-xs">* คอลัมน์ที่ใช้เทียบกับเกณฑ์ของวาระนั้น</p>
+        <GlossaryNotes
+          className="mt-1"
+          keys={["rooms", "shareOfAll", "shareOfCast", "abstain", "rule", "outcome"]}
+          locale="th"
+        />
       </section>
 
       <section className="mt-5">

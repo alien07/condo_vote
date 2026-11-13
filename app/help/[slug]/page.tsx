@@ -1,8 +1,7 @@
 import Image from "next/image";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Download, Lightbulb } from "lucide-react";
-import { LanguageSwitcher } from "@/features/i18n/language-switcher";
+import { HelpNav, HelpTopBar, safeFrom } from "@/features/help/help-top-bar";
 import { ScreenshotZoom } from "@/features/help/screenshot-zoom";
 import { findGuide, HELP_CHECKED_FOR, HELP_TEXT } from "@/lib/help";
 import type { HelpGuide } from "@/lib/help/types";
@@ -11,7 +10,7 @@ import { getLocale } from "@/lib/i18n/server";
 
 type GuidePageProps = {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ print?: string }>;
+  searchParams: Promise<{ print?: string; from?: string }>;
 };
 
 // Screenshots are phone-sized: 390 x 844 CSS pixels (help:screenshots).
@@ -24,7 +23,7 @@ function screenshot(locale: Locale, name: string) {
 // Public guide page. `?print=1` is the compact layout that
 // `npm run help:pdf` turns into the quick guide PDF.
 export default async function HelpGuidePage({ params, searchParams }: GuidePageProps) {
-  const [{ slug }, { print }] = await Promise.all([params, searchParams]);
+  const [{ slug }, { print, from }] = await Promise.all([params, searchParams]);
   const locale = await getLocale();
   const guide = findGuide(slug, locale);
 
@@ -35,21 +34,24 @@ export default async function HelpGuidePage({ params, searchParams }: GuidePageP
   return print ? (
     <PrintGuide guide={guide} locale={locale} />
   ) : (
-    <WebGuide guide={guide} locale={locale} />
+    <WebGuide from={safeFrom(from)} guide={guide} locale={locale} />
   );
 }
 
-function WebGuide({ guide, locale }: { guide: HelpGuide; locale: Locale }) {
+function WebGuide({
+  from,
+  guide,
+  locale,
+}: {
+  from: string | null;
+  guide: HelpGuide;
+  locale: Locale;
+}) {
   const t = HELP_TEXT[locale];
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-8 md:px-6" lang={locale}>
-      <div className="mb-2 flex items-center justify-between gap-3">
-        <Link className="text-sm text-[var(--muted)] underline" href="/help">
-          {t.allGuides}
-        </Link>
-        <LanguageSwitcher locale={locale} />
-      </div>
+      <HelpTopBar from={from} locale={locale} showAllGuides />
       <h1 className="text-2xl font-semibold">{guide.title}</h1>
       <p className="mt-1 text-sm text-[var(--muted)]">
         {t.for} {guide.audience}
@@ -131,7 +133,10 @@ function WebGuide({ guide, locale }: { guide: HelpGuide; locale: Locale }) {
         </div>
       </section>
 
-      <footer className="mt-10 border-t border-[var(--border)] pt-4 text-sm text-[var(--muted)]">
+      <div className="mt-10">
+        <HelpNav from={from} locale={locale} showAllGuides />
+      </div>
+      <footer className="mt-4 border-t border-[var(--border)] pt-4 text-sm text-[var(--muted)]">
         <p>{guide.contact}</p>
         <p className="mt-1">
           {t.screenshotNote} · {t.checkedFor(HELP_CHECKED_FOR)}

@@ -7,6 +7,8 @@ import { formatDateTimeIn } from "@/lib/i18n/format";
 import type { Locale } from "@/lib/i18n/locales";
 import type { ApprovedSummary } from "@/features/summary/data";
 import { documentFont } from "@/lib/fonts";
+import { GlossaryNotes, Term } from "@/features/glossary/term";
+import type { GlossaryKey } from "@/lib/i18n/glossary";
 
 type SummaryPageProps = {
   condoProfile: {
@@ -118,20 +120,26 @@ export function SummaryPage({
                     </span>
                   </p>
                   <p className="text-[var(--muted)]">
-                    {quorumText(locale, payload.totals?.quorum)}
+                    <Term k="quorum" locale={locale}>
+                      {quorumText(locale, payload.totals?.quorum)}
+                    </Term>
                   </p>
                 </div>
               </section>
 
               <section className="mt-5 grid gap-3 text-sm md:grid-cols-4">
-                {[
-                  [t.eligibleRooms, String(payload.totals?.eligible_voters ?? 0)],
-                  [t.votedRooms, String(payload.totals?.submitted_ballots ?? 0)],
-                  [t.votedOwnership, formatPercent(payload.totals?.submitted_ownership)],
-                  [t.totalOwnership, formatPercent(payload.totals?.total_eligible_ownership)],
-                ].map(([label, value]) => (
-                  <div className="rounded-md border border-[var(--border)] p-3" key={label}>
-                    <div className="text-[var(--muted)]">{label}</div>
+                {(
+                  [
+                    ["eligibleRooms", t.eligibleRooms, String(payload.totals?.eligible_voters ?? 0)],
+                    ["votedRooms", t.votedRooms, String(payload.totals?.submitted_ballots ?? 0)],
+                    ["votedOwnership", t.votedOwnership, formatPercent(payload.totals?.submitted_ownership)],
+                    ["totalOwnership", t.totalOwnership, formatPercent(payload.totals?.total_eligible_ownership)],
+                  ] satisfies [GlossaryKey, string, string][]
+                ).map(([key, label, value]) => (
+                  <div className="rounded-md border border-[var(--border)] p-3" key={key}>
+                    <div className="text-[var(--muted)]">
+                      <Term k={key} locale={locale}>{label}</Term>
+                    </div>
                     <div className="text-lg font-semibold">{value}</div>
                   </div>
                 ))}
@@ -161,16 +169,32 @@ export function SummaryPage({
                           <p className="mt-1 text-sm">{question.text}</p>
                         ) : null}
                         <p className="mt-1 text-sm text-[var(--muted)]">
-                          {t.rule}: {passRuleText(locale, question.pass_rule)}
+                          <Term k="rule" locale={locale}>{t.rule}</Term>:{" "}
+                          {passRuleText(locale, question.pass_rule)}
                         </p>
                         <p className="mt-1 text-sm font-semibold" data-outcome={question.outcome ?? undefined}>
-                          {outcomeText(locale, question.outcome, decided)}
+                          <Term
+                            k={question.outcome === "informational" ? "informational" : "outcome"}
+                            locale={locale}
+                          >
+                            {outcomeText(locale, question.outcome, decided)}
+                          </Term>
                         </p>
-                        <ChoiceResultsTable choices={question.choices} locale={locale} />
+                        <ChoiceResultsTable
+                          choices={question.choices}
+                          locale={locale}
+                          ruleBasis={question.pass_rule?.basis}
+                        />
                       </section>
                     );
                   })}
                 </div>
+                {/* Printed summary and PDF: the "i" tips as notes. */}
+                <GlossaryNotes
+                  keys={["rooms", "shareOfAll", "shareOfCast", "rule", "outcome", "abstain", "quorum"]}
+                  locale={locale}
+                  printOnly
+                />
               </section>
 
               {t.translationNote ? (
@@ -180,16 +204,20 @@ export function SummaryPage({
               ) : null}
 
               <section className="mt-5 border-t border-[var(--border)] pt-4 text-sm">
-                <h3 className="font-semibold">{t.verifyTitle}</h3>
+                <h3 className="font-semibold">
+                  <Term k="summaryVsOfficial" locale={locale}>{t.verifyTitle}</Term>
+                </h3>
                 <p className="mt-1 text-[var(--muted)]">
                   {t.verifyText}
                 </p>
                 <p className="mt-2">
-                  {t.reference} <span className="font-mono text-xs">{selected.snapshotId}</span>
+                  <Term k="reference" locale={locale}>{t.reference}</Term>{" "}
+                  <span className="font-mono text-xs">{selected.snapshotId}</span>
                 </p>
                 {selected.payloadSha256 ? (
                   <p className="break-all">
-                    SHA-256 <span className="font-mono text-xs">{selected.payloadSha256}</span>
+                    <Term k="sha256" locale={locale}>SHA-256</Term>{" "}
+                    <span className="font-mono text-xs">{selected.payloadSha256}</span>
                   </p>
                 ) : null}
                 <div className="mt-2 flex flex-wrap gap-x-4 print:hidden">
