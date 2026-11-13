@@ -40,6 +40,9 @@ const condoProfileFields = [
   "document_footer",
   "summary_history_limit",
   "result_notice_days",
+  "project_name_en",
+  "juristic_name_en",
+  "bilingual_documents",
 ];
 
 // Who signs the official result record. The regulations decide; the lawyer
@@ -134,6 +137,10 @@ function condoProfilePayload(values: Record<string, string>) {
     result_notice_days: values.result_notice_days?.trim()
       ? Number(values.result_notice_days)
       : null,
+    // Two-language documents (item 6b).
+    project_name_en: optionalText(values.project_name_en),
+    juristic_name_en: optionalText(values.juristic_name_en),
+    bilingual_documents: values.bilingual_documents === "on",
   };
 }
 

@@ -1,0 +1,88 @@
+// English text of a meeting (D020, demo feedback item 6b).
+const en = {
+  title: "English text",
+  intro:
+    "English next to the Thai text owners see. Translate drafts it; check and edit every line, then tick \"I checked the English\". The Thai version prevails.",
+  afterPublish:
+    "This meeting is published: only the English can change here, Thai stays locked, and the change is logged.",
+  meeting: "Meeting",
+  titleField: "Meeting title",
+  locationField: "Venue",
+  agenda: "Agenda {no}",
+  agendaTitle: "Agenda title",
+  question: "Question",
+  legalNote: "Legal note",
+  choice: "Choice",
+  thai: "Thai",
+  english: "English",
+  translate: "Translate",
+  translating: "Translating...",
+  translateAll: "Translate all empty fields",
+  provider: "Translation: {provider}",
+  providerMock: "demo list (no outside service)",
+  providerAzure: "Azure AI Translator",
+  noDemo: "Lines marked [no demo translation] need English typed by hand.",
+  checked: "I checked the English",
+  checkedAt: "Checked {time}",
+  notChecked: "Not checked yet",
+  save: "Save English",
+  saving: "Saving...",
+  saved: "English saved",
+  missing: "English missing",
+  needsCheck: "English not checked",
+  openEditor: "English text",
+  publishBlocked:
+    "This condo publishes in two languages. Fill in and check the English text of this meeting before publishing.",
+  bilingualSwitch: "Bilingual documents (Thai and English)",
+  bilingualHelp:
+    "Meetings need English text, checked by an admin, before publishing. Results already generated keep their text.",
+  projectNameEn: "Project name (English)",
+  juristicNameEn: "Juristic person name (English)",
+  overviewTitle: "Meetings missing English",
+  overviewText: "Two-language documents are on. These meetings need English text or a check.",
+};
+
+const th: typeof en = {
+  title: "ข้อความภาษาอังกฤษ",
+  intro:
+    "ภาษาอังกฤษคู่กับข้อความภาษาไทยที่เจ้าของร่วมเห็น ปุ่มแปลช่วยร่างให้ โปรดตรวจและแก้ทุกบรรทัด แล้วติ๊ก \"ตรวจภาษาอังกฤษแล้ว\" ฉบับภาษาไทยมีผลบังคับ",
+  afterPublish:
+    "การประชุมนี้เผยแพร่แล้ว แก้ได้เฉพาะภาษาอังกฤษ ข้อความภาษาไทยยังล็อกอยู่ และระบบบันทึกการแก้ไขไว้",
+  meeting: "การประชุม",
+  titleField: "ชื่อการประชุม",
+  locationField: "สถานที่",
+  agenda: "วาระที่ {no}",
+  agendaTitle: "ชื่อวาระ",
+  question: "คำถาม",
+  legalNote: "หมายเหตุทางกฎหมาย",
+  choice: "ตัวเลือก",
+  thai: "ไทย",
+  english: "อังกฤษ",
+  translate: "แปล",
+  translating: "กำลังแปล...",
+  translateAll: "แปลทุกช่องที่ยังว่าง",
+  provider: "บริการแปล: {provider}",
+  providerMock: "รายการสำหรับ demo (ไม่ส่งข้อมูลออก)",
+  providerAzure: "Azure AI Translator",
+  noDemo: "บรรทัดที่มี [no demo translation] ต้องพิมพ์ภาษาอังกฤษเอง",
+  checked: "ตรวจภาษาอังกฤษแล้ว",
+  checkedAt: "ตรวจเมื่อ {time}",
+  notChecked: "ยังไม่ได้ตรวจ",
+  save: "บันทึกภาษาอังกฤษ",
+  saving: "กำลังบันทึก...",
+  saved: "บันทึกภาษาอังกฤษแล้ว",
+  missing: "ยังไม่มีภาษาอังกฤษ",
+  needsCheck: "ยังไม่ได้ตรวจภาษาอังกฤษ",
+  openEditor: "ข้อความภาษาอังกฤษ",
+  publishBlocked:
+    "อาคารนี้ใช้เอกสารสองภาษา โปรดกรอกและตรวจข้อความภาษาอังกฤษของการประชุมนี้ก่อนเผยแพร่",
+  bilingualSwitch: "เอกสารสองภาษา (ไทยและอังกฤษ)",
+  bilingualHelp:
+    "การประชุมต้องมีข้อความภาษาอังกฤษที่ผู้ดูแลตรวจแล้วก่อนเผยแพร่ ผลที่สร้างไว้แล้วคงข้อความเดิม",
+  projectNameEn: "ชื่อโครงการ (ภาษาอังกฤษ)",
+  juristicNameEn: "ชื่อนิติบุคคล (ภาษาอังกฤษ)",
+  overviewTitle: "การประชุมที่ยังขาดภาษาอังกฤษ",
+  overviewText: "เปิดใช้เอกสารสองภาษาอยู่ การประชุมเหล่านี้ยังต้องกรอกหรือตรวจภาษาอังกฤษ",
+};
+
+export const englishText = { en, th };

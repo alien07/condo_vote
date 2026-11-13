@@ -13,6 +13,7 @@ import {
   Vote,
 } from "lucide-react";
 import { getAdminDashboardData } from "@/features/admin/data";
+import { MissingEnglishPanel } from "@/features/english/missing-english-panel";
 import { getStaffI18n } from "@/lib/i18n/server";
 import { fill } from "@/lib/i18n/template";
 
@@ -358,6 +359,8 @@ export default async function AdminDashboardPage() {
             {t.intro}
           </p>
         </div>
+
+        <MissingEnglishPanel />
 
         <section>
           <div className="mb-4">

@@ -5,6 +5,7 @@ import {
 import { notFound } from "next/navigation";
 import { Vote } from "lucide-react";
 import { choiceLabel } from "@/lib/i18n/choice";
+import { localized } from "@/lib/i18n/content";
 import { RequiredMark } from "@/features/admin/components/field-label";
 import { PendingSubmitButton } from "@/features/debug/tracked-submit-button";
 import { submitBallot } from "@/features/voting/actions";
@@ -72,12 +73,15 @@ export default async function VoteDetailPage({ params }: VoteDetailPageProps) {
     questions.flatMap((question) =>
       question.meeting_choices.map((choice) => [
         choice.id,
-        choiceLabel(choice.choice_text, choice.is_abstain, locale),
+        choiceLabel(localized(locale, choice.choice_text, choice.choice_text_en), choice.is_abstain, locale),
       ]),
     ),
   );
   const questionTextById = new Map(
-    questions.map((question) => [question.id, question.question_text]),
+    questions.map((question) => [
+      question.id,
+      localized(locale, question.question_text, question.question_text_en),
+    ]),
   );
   const ballotVersions = [...(ballot?.ballot_versions ?? [])].sort(
     (left, right) => right.version_number - left.version_number,
@@ -90,7 +94,7 @@ export default async function VoteDetailPage({ params }: VoteDetailPageProps) {
           <Vote className="mt-1 shrink-0 text-[var(--primary)]" size={26} />
           <div>
             <h1 className="text-2xl font-semibold">
-              {meeting?.title ?? t.title}
+              {meeting ? localized(locale, meeting.title, meeting.title_en) : t.title}
             </h1>
             <p className="text-sm text-[var(--muted)]">
               {describeVoterRoom(
@@ -168,14 +172,14 @@ export default async function VoteDetailPage({ params }: VoteDetailPageProps) {
                       <span className="block text-xs font-medium text-[var(--muted)]">
                         {[
                           question.agenda_no ? t.agenda(question.agenda_no) : null,
-                          question.agenda_title,
+                          localized(locale, question.agenda_title, question.agenda_title_en),
                         ]
                           .filter(Boolean)
                           .join(" · ")}
                       </span>
                     ) : null}
                     <span className="mt-1 block text-base font-semibold">
-                      {question.question_text}
+                      {localized(locale, question.question_text, question.question_text_en)}
                       {question.required ? (
                         <>
                           {" "}

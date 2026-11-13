@@ -7,7 +7,7 @@ export async function fetchSetupData(supabase: SupabaseServerClient) {
     supabase
       .from("condo_profiles")
       .select(
-        "id, juristic_name, project_name, registration_no, tax_id, address, phone, email, manager_name, document_footer, summary_history_limit, record_signatories, result_notice_days",
+        "id, juristic_name, project_name, registration_no, tax_id, address, phone, email, manager_name, document_footer, summary_history_limit, record_signatories, result_notice_days, project_name_en, juristic_name_en, bilingual_documents",
       )
       .order("created_at", { ascending: false })
       .limit(1),

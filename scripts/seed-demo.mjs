@@ -25,6 +25,9 @@ const jiti = createJiti(import.meta.url, { alias: { "@": root } });
 const tsModule = (file) => jiti.import(pathToFileURL(path.join(root, file)).href);
 const { DEMO_PERSONAS, DEMO_SYSTEM_ADMIN } = await tsModule("lib/demo/personas.ts");
 const { buildResultPayload } = await tsModule("features/results/snapshot-payload.ts");
+// English for the demo content, the same list the demo translator uses (6b).
+const { DEMO_TRANSLATIONS } = await tsModule("lib/translation/demo-translations.ts");
+const en = (thai) => (thai ? (DEMO_TRANSLATIONS[thai] ?? null) : null);
 
 // ---------------------------------------------------------------- env
 
@@ -406,6 +409,10 @@ if (condo.length === 0) {
     db.from("condo_profiles").insert({
       project_name: "DEMO Condo (ข้อมูลทดสอบ)",
       juristic_name: "นิติบุคคลอาคารชุด เดโม่ คอนโด",
+      project_name_en: en("DEMO Condo (ข้อมูลทดสอบ)"),
+      juristic_name_en: en("นิติบุคคลอาคารชุด เดโม่ คอนโด"),
+      // Two-language documents on, so the English pages show English (6b).
+      bilingual_documents: true,
       registration_no: "DEMO-0001",
       tax_id: "0000000000000",
       address: "99 ถนนทดสอบ แขวงตัวอย่าง เขตเดโม่ กรุงเทพฯ 10000",
@@ -525,6 +532,9 @@ async function createMeeting(spec) {
         meeting_number: spec.meeting_number ?? null,
         fiscal_year: "2569",
         location: "ห้องประชุมชั้น 1 และออนไลน์",
+        title_en: en(spec.title),
+        location_en: en("ห้องประชุมชั้น 1 และออนไลน์"),
+        english_checked_at: new Date().toISOString(),
         chairperson_name: DEMO_PERSONAS.find((p) => p.key === "committee").fullName,
         quorum_rule: spec.quorum_rule ?? "one_fourth_total_ownership",
         ballot_secrecy: spec.ballot_secrecy ?? "open",
@@ -560,6 +570,9 @@ async function createMeeting(spec) {
           ...PRESETS[question.required_threshold],
           requires_land_office_registration: question.land_office ?? false,
           legal_note: question.legal_note ?? null,
+          agenda_title_en: en(question.agenda_title),
+          question_text_en: en(question.question_text),
+          legal_note_en: en(question.legal_note),
           display_order: index + 1,
           required: true,
         })
@@ -572,6 +585,7 @@ async function createMeeting(spec) {
         question.choices.map((text, order) => ({
           question_id: row.id,
           choice_text: text,
+          choice_text_en: en(text),
           display_order: order + 1,
         })),
       ),
@@ -971,13 +985,13 @@ const sysSession = await sessionFor(DEMO_SYSTEM_ADMIN.email);
 async function generateResult(meetingId) {
   const [meeting, questions, eligible, ballots, manualBallots, resolutions, condoRows, incidents] =
     await Promise.all([
-      must(db.from("meetings").select("id, title, starts_at, ends_at, status, meeting_number, meeting_type, fiscal_year, location, chairperson_name, quorum_rule, ballot_secrecy, advance_starts_at, advance_ends_at, notice_sent_at, meeting_round, identity_method, recording_reference, traffic_log_reference").eq("id", meetingId).single(), "meeting"),
-      must(db.from("meeting_questions").select("id, agenda_no, agenda_title, question_text, question_type, resolution_type, required_threshold, pass_basis, pass_operator, pass_percent, requires_land_office_registration, legal_note, display_order, meeting_choices(id, choice_text, display_order, is_abstain)").eq("meeting_id", meetingId).order("display_order"), "questions"),
+      must(db.from("meetings").select("id, title, starts_at, ends_at, status, meeting_number, meeting_type, fiscal_year, location, chairperson_name, quorum_rule, ballot_secrecy, advance_starts_at, advance_ends_at, notice_sent_at, meeting_round, identity_method, recording_reference, traffic_log_reference, title_en, location_en").eq("id", meetingId).single(), "meeting"),
+      must(db.from("meeting_questions").select("id, agenda_no, agenda_title, question_text, question_type, resolution_type, required_threshold, pass_basis, pass_operator, pass_percent, requires_land_office_registration, legal_note, display_order, agenda_title_en, question_text_en, legal_note_en, meeting_choices(id, choice_text, choice_text_en, display_order, is_abstain)").eq("meeting_id", meetingId).order("display_order"), "questions"),
       must(db.from("eligible_voters_snapshot").select("room_id, ownership_percent, voter_type").eq("meeting_id", meetingId), "eligible"),
       must(db.from("ballots").select("id, room_id, status, submitted_at").eq("meeting_id", meetingId).eq("status", "submitted"), "ballots"),
       must(db.from("manual_ballots").select("id, room_id, source_label, audit_note, identity_status, voter_profile_id, voter_identity_text, manual_ballot_answers(question_id, choice_id)").eq("meeting_id", meetingId).eq("status", "submitted").neq("identity_status", "pending"), "manual"),
       must(db.from("vote_source_resolutions").select("room_id, online_ballot_id, manual_ballot_id, chosen_source, chosen_ballot_id, conflict_remark, resolved_at").eq("meeting_id", meetingId), "resolutions"),
-      must(db.from("condo_profiles").select("project_name, juristic_name, registration_no, tax_id, address, manager_name").order("created_at", { ascending: false }).limit(1), "condo"),
+      must(db.from("condo_profiles").select("project_name, juristic_name, registration_no, tax_id, address, manager_name, project_name_en, juristic_name_en").order("created_at", { ascending: false }).limit(1), "condo"),
       must(db.from("meeting_incidents").select("started_at, ended_at, description, action_taken").eq("meeting_id", meetingId).order("started_at"), "incidents"),
     ]);
   const onlineTally = await must(

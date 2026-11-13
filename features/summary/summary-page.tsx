@@ -3,6 +3,7 @@ import { FileText } from "lucide-react";
 import { ChoiceResultsTable } from "@/features/results/choice-results-table";
 import { outcomeText, passRuleText, quorumText } from "@/features/results/thai-labels";
 import { TranslationNote } from "@/features/i18n/translation-note";
+import { localized } from "@/lib/i18n/content";
 import { getDictionary } from "@/lib/i18n/dictionaries";
 import { formatDateTimeIn } from "@/lib/i18n/format";
 import type { Locale } from "@/lib/i18n/locales";
@@ -16,6 +17,8 @@ type SummaryPageProps = {
   condoProfile: {
     project_name: string;
     juristic_name: string;
+    project_name_en?: string | null;
+    juristic_name_en?: string | null;
     document_footer: string | null;
   } | null;
   historyLimit: number;
@@ -83,12 +86,13 @@ export function SummaryPage({
               <div className="border-b border-[var(--border)] pb-4 text-center">
                 <p className="text-sm text-[var(--muted)]">{t.documentTitle}</p>
                 <h2 className="mt-2 text-xl font-semibold">
-                  {condoProfile?.project_name ??
-                    payload.meeting?.title ??
+                  {(condoProfile ? localized(locale, condoProfile.project_name, condoProfile.project_name_en) : null) ??
+                    localized(locale, payload.meeting?.title, payload.meeting?.title_en) ??
                     t.approvedResult}
                 </h2>
                 <p className="mt-1 text-sm text-[var(--muted)]">
-                  {condoProfile?.juristic_name ?? t.juristicPerson}
+                  {(condoProfile ? localized(locale, condoProfile.juristic_name, condoProfile.juristic_name_en) : null) ??
+                    t.juristicPerson}
                 </p>
               </div>
 
@@ -99,7 +103,7 @@ export function SummaryPage({
               <section className="mt-5 grid gap-3 text-sm md:grid-cols-2">
                 <div>
                   <h3 className="font-semibold">
-                    {payload.meeting?.title ?? t.meeting}
+                    {localized(locale, payload.meeting?.title, payload.meeting?.title_en) ?? t.meeting}
                   </h3>
                   {payload.meeting?.meeting_number || payload.meeting?.fiscal_year ? (
                     <p className="mt-1 text-[var(--muted)]">
@@ -117,7 +121,7 @@ export function SummaryPage({
                   ) : null}
                   {payload.meeting?.location ? (
                     <p className="text-[var(--muted)]">
-                      {t.location(payload.meeting.location)}
+                      {t.location(localized(locale, payload.meeting.location, payload.meeting.location_en))}
                     </p>
                   ) : null}
                 </div>
@@ -163,7 +167,9 @@ export function SummaryPage({
                   {payload.questions?.map((question, index) => {
                     const decided = (question.choices ?? [])
                       .filter((choice) => choice.id && question.passed_choice_ids?.includes(choice.id))
-                      .map((choice) => choice.text ?? "-");
+                      .map((choice) => localized(locale, choice.text, choice.text_en) ?? "-");
+                    const questionText = localized(locale, question.text, question.text_en);
+                    const agendaTitle = localized(locale, question.agenda_title, question.agenda_title_en);
 
                     return (
                       <section
@@ -172,10 +178,10 @@ export function SummaryPage({
                       >
                         <h4 className="font-medium">
                           {t.agendaItem(String(question.agenda_no ?? index + 1))}{" "}
-                          {question.agenda_title ?? question.text ?? "-"}
+                          {agendaTitle ?? questionText ?? "-"}
                         </h4>
-                        {question.agenda_title && question.text ? (
-                          <p className="mt-1 text-sm">{question.text}</p>
+                        {agendaTitle && questionText ? (
+                          <p className="mt-1 text-sm">{questionText}</p>
                         ) : null}
                         <p className="mt-1 text-sm text-[var(--muted)]">
                           <Term k="rule" locale={locale}>{t.rule}</Term>:{" "}
@@ -190,7 +196,10 @@ export function SummaryPage({
                           </Term>
                         </p>
                         <ChoiceResultsTable
-                          choices={question.choices}
+                          choices={question.choices?.map((choice) => ({
+                            ...choice,
+                            text: localized(locale, choice.text, choice.text_en) ?? undefined,
+                          }))}
                           locale={locale}
                           ruleBasis={question.pass_rule?.basis}
                         />
