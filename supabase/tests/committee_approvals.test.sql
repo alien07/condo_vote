@@ -84,11 +84,12 @@ select throws_like(
 insert into public.committee_members (profile_id, full_name, position_title) values
   (:member_b, 'Member B', 'Chair'), (:member_c, 'Member C', 'Member');
 
+select is(
+  has_function_privilege('authenticated', 'public.approve_close_voting(uuid)', 'execute'),
+  false, 'closing without a request is no longer possible');
+
 select pg_temp.act_as(:member_b);
 set local role authenticated;
-
-select throws_like(format($q$select public.approve_close_voting(%L)$q$, :open_m),
-  '%permission denied%', 'closing without a request is no longer possible');
 
 select is(
   public.propose_close_voting(:open_m, 'Everyone has voted', null)->>'status',
