@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useRef, type ComponentProps } from "react";
+import { useEffect, useId, useRef, useState, type ComponentProps } from "react";
 import { PendingSubmitButton } from "@/features/debug/tracked-submit-button";
 
 type ConfirmButtonProps = ComponentProps<"button"> & {
@@ -33,6 +33,15 @@ export function ConfirmButton({
   const confirmedRef = useRef(false);
   const titleId = useId();
   const messageId = useId();
+  // The dialog's words exist only while it is open, so a closed dialog adds
+  // no hidden copy of the message to the page.
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    if (open && !dialogRef.current?.open) {
+      dialogRef.current?.showModal();
+    }
+  }, [open]);
 
   function confirmAndSubmit() {
     dialogRef.current?.close();
@@ -61,7 +70,7 @@ export function ConfirmButton({
           }
 
           event.preventDefault();
-          dialogRef.current?.showModal();
+          setOpen(true);
         }}
         pendingLabel={pendingLabel}
         ref={buttonRef}
@@ -71,9 +80,11 @@ export function ConfirmButton({
         aria-describedby={messageId}
         aria-labelledby={titleId}
         className="m-auto w-[min(28rem,calc(100vw-2rem))] rounded-lg border border-[var(--border)] bg-[var(--surface)] p-0 text-[var(--foreground)] shadow-xl backdrop:bg-black/40"
+        onClose={() => setOpen(false)}
         ref={dialogRef}
         role="alertdialog"
       >
+        {open ? (
         <div className="grid gap-3 p-5">
           <h2 className="text-lg font-semibold" id={titleId}>
             {confirmTitle}
@@ -101,6 +112,7 @@ export function ConfirmButton({
             </button>
           </div>
         </div>
+        ) : null}
       </dialog>
     </>
   );
