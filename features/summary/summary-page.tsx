@@ -223,20 +223,36 @@ export function SummaryPage({
                 {t.historyText(historyLimit)}
               </p>
               <div className="mt-4 grid gap-2">
-                {history.map((summary) => (
-                  <Link
-                    className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-                    href={`/summary/${summary.meetingId}`}
-                    key={summary.id}
-                  >
-                    <div className="font-medium">
-                      {summary.payload.meeting?.title ?? t.approvedResult}
-                    </div>
-                    <div className="text-[var(--muted)]">
-                      {formatDateTime(summary.approvedAt)}
-                    </div>
-                  </Link>
-                ))}
+                {history.map((summary) => {
+                  // The result shown on the left is marked in the history.
+                  const current = summary.id === selected.id;
+
+                  return (
+                    <Link
+                      aria-current={current ? "page" : undefined}
+                      className={[
+                        "rounded-md border px-3 py-2 text-sm",
+                        current
+                          ? "border-[var(--primary)] bg-[var(--primary)]/10 shadow-[inset_4px_0_0_var(--primary)]"
+                          : "border-[var(--border)] hover:border-[var(--primary)]",
+                      ].join(" ")}
+                      href={`/summary/${summary.meetingId}`}
+                      key={summary.id}
+                    >
+                      {current ? (
+                        <div className="mb-1 text-xs font-semibold text-[var(--primary)]">
+                          {t.showing}
+                        </div>
+                      ) : null}
+                      <div className="font-medium">
+                        {summary.payload.meeting?.title ?? t.approvedResult}
+                      </div>
+                      <div className="text-[var(--muted)]">
+                        {formatDateTime(summary.approvedAt)}
+                      </div>
+                    </Link>
+                  );
+                })}
               </div>
             </aside>
           </div>

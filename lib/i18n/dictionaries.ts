@@ -141,6 +141,7 @@ const en = {
     reference: "Reference",
     verifyLink: "Verify this reference",
     historyTitle: "History",
+    showing: "Showing now",
     historyText: (limit: number) => `Showing latest ${limit} approved summaries.`,
     translationNote:
       "English translation. If it differs from the Thai version, the Thai version prevails.",
@@ -319,6 +320,7 @@ const th: Dictionary = {
     reference: "เลขอ้างอิง",
     verifyLink: "ตรวจสอบเลขอ้างอิงนี้",
     historyTitle: "ประวัติ",
+    showing: "กำลังแสดง",
     historyText: (limit: number) => `แสดงผลที่อนุมัติแล้ว ${limit} รายการล่าสุด`,
     translationNote: "",
     downloadPdf: "ดาวน์โหลด PDF",

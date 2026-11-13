@@ -119,8 +119,16 @@ test.describe("demo seed", () => {
   });
 
   test("owner B sees the published M8 result", async ({ page }) => {
-    await signInAs(page, "ownerB", "/summary");
+    const origin = await signInAs(page, "ownerB", "/summary");
     await expect(page.getByText("DEMO M8", { exact: false }).first()).toBeVisible();
+
+    // The history marks the result on screen, and follows the choice.
+    const current = page.locator('aside a[aria-current="page"]');
+    await expect(current).toHaveCount(1);
+    await expect(current).toContainText("DEMO M8");
+    await page.goto(`${origin}/summary`);
+    await page.locator("aside a", { hasText: "DEMO M9" }).click();
+    await expect(page.locator('aside a[aria-current="page"]')).toContainText("DEMO M9");
   });
 
   test("committee sees M7 waiting for approval", async ({ page }) => {
