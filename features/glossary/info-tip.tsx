@@ -8,8 +8,27 @@ type Position = { top: number; left: number; width: number; above: boolean };
 const TIP_WIDTH = 280;
 const GAP = 6;
 
+/** Where the tip goes for a button; null when the button is off screen. */
+function computePosition(button: HTMLElement | null): Position | null {
+  const rect = button?.getBoundingClientRect();
+
+  if (!rect || rect.bottom < 0 || rect.top > window.innerHeight) {
+    return null;
+  }
+
+  const width = Math.min(TIP_WIDTH, window.innerWidth - 16);
+  const left = Math.min(
+    Math.max(8, rect.left + rect.width / 2 - width / 2),
+    window.innerWidth - width - 8,
+  );
+  const above = rect.bottom + 140 > window.innerHeight && rect.top > 160;
+
+  return { top: above ? rect.top - GAP : rect.bottom + GAP, left, width, above };
+}
+
 // Small "i" after a term. Tap or click pins the explanation; a mouse hover or
-// keyboard focus shows it too. Esc, a click elsewhere, or scrolling closes it.
+// keyboard focus shows it too. Esc or a click elsewhere closes it; it follows
+// the button when the page scrolls and closes once the button leaves the screen.
 // Fixed positioning, so tables with overflow do not clip it. Hidden in print:
 // printed pages show the same text as notes (GlossaryNotes).
 export function InfoTip({ about, term, text }: { about: string; term: string; text: string }) {
@@ -22,20 +41,7 @@ export function InfoTip({ about, term, text }: { about: string; term: string; te
   const open = (pinned || hovered) && position !== null;
 
   function place() {
-    const rect = buttonRef.current?.getBoundingClientRect();
-
-    if (!rect) {
-      return;
-    }
-
-    const width = Math.min(TIP_WIDTH, window.innerWidth - 16);
-    const left = Math.min(
-      Math.max(8, rect.left + rect.width / 2 - width / 2),
-      window.innerWidth - width - 8,
-    );
-    const above = rect.bottom + 140 > window.innerHeight && rect.top > 160;
-
-    setPosition({ top: above ? rect.top - GAP : rect.bottom + GAP, left, width, above });
+    setPosition(computePosition(buttonRef.current));
   }
 
   useEffect(() => {
@@ -62,16 +68,27 @@ export function InfoTip({ about, term, text }: { about: string; term: string; te
       }
     }
 
+    // Follow the button; close once it is off screen.
+    function follow() {
+      const next = computePosition(buttonRef.current);
+
+      if (next) {
+        setPosition(next);
+      } else {
+        close();
+      }
+    }
+
     document.addEventListener("keydown", onKey);
     document.addEventListener("pointerdown", onPointerDown);
-    window.addEventListener("scroll", close, true);
-    window.addEventListener("resize", close);
+    window.addEventListener("scroll", follow, true);
+    window.addEventListener("resize", follow);
 
     return () => {
       document.removeEventListener("keydown", onKey);
       document.removeEventListener("pointerdown", onPointerDown);
-      window.removeEventListener("scroll", close, true);
-      window.removeEventListener("resize", close);
+      window.removeEventListener("scroll", follow, true);
+      window.removeEventListener("resize", follow);
     };
   }, [pinned, hovered]);
 
