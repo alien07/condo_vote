@@ -9,6 +9,10 @@
   --surface: #ffffff;
   --primary: #0f766e;
   --primary-foreground: #ffffff;
+  /* Required marks and errors: #b91c1c is 6.4:1 on white and 6.0:1 on
+     --background; the error surface keeps it above 4.5:1. */
+  --danger: #b91c1c;
+  --danger-surface: #fef2f2;
 }
 
 /* Base rules live in a layer so Tailwind utilities (text colors on links,
@@ -25,4 +29,12 @@
     color: inherit;
     text-decoration: none;
   }
+}
+
+/* The one required mark (demo feedback item 9). */
+.required-mark {
+  color: var(--danger);
+  font-weight: 700;
+  font-size: 1.1em;
+  line-height: 1;
 }

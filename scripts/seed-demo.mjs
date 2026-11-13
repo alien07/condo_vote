@@ -1014,8 +1014,8 @@ async function approve(session, snapshotId, notes) {
   );
 }
 
-// Oldest first: the owner summary page opens on the latest publication, so
-// M8 is published last.
+// Oldest first, so publication times follow the meetings. The owner summary
+// opens on the newest meeting (M9) and lists the history by meeting date.
 const m10 = await generateResult(meetingIds.M10);
 await approve(committeeSession, m10, null);
 

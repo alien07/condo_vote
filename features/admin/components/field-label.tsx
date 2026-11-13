@@ -3,9 +3,12 @@
 import type { ReactNode } from "react";
 import { useStaffText } from "@/lib/i18n/staff/client";
 
+// One required mark for every form (demo feedback item 9): a darker red that
+// keeps more than 4.5:1 contrast on white and on the light surfaces, bold so
+// it stands out. Screen readers hear "required" from the field itself.
 export function RequiredMark() {
   return (
-    <span aria-hidden="true" className="text-red-600">
+    <span aria-hidden="true" className="required-mark">
       *
     </span>
   );

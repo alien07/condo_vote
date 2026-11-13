@@ -18,6 +18,7 @@ import { getVotingAssignmentData } from "@/features/voting/data";
 import { VotingStatusBadge } from "@/features/voting/status-badge";
 import { getVotingWindowStatus } from "@/features/voting/status";
 import { getI18n } from "@/lib/i18n/server";
+import { TranslationNote } from "@/features/i18n/translation-note";
 
 type VoteDetailPageProps = {
   params: Promise<{
@@ -106,6 +107,9 @@ export default async function VoteDetailPage({ params }: VoteDetailPageProps) {
             ) : null}
           </div>
         </div>
+        {/* English ballot: meeting content is Thai and the Thai text
+            prevails (demo feedback item 6a). */}
+        <TranslationNote className="mb-4" text={t.translationNote} />
 
         <section className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-5">
           <div className="flex flex-col gap-2 border-b border-[var(--border)] pb-4 md:flex-row md:items-start md:justify-between">
@@ -143,13 +147,17 @@ export default async function VoteDetailPage({ params }: VoteDetailPageProps) {
             </p>
           ) : (
             <BallotForm action={submitBallot} className="mt-4 grid gap-5">
-              <p className="text-xs text-[var(--muted)]">{t.requiredNote}</p>
+              <p className="text-xs text-[var(--muted)]">
+                {t.requiredNote.split("{mark}")[0]}
+                <RequiredMark />
+                {t.requiredNote.split("{mark}")[1]}
+              </p>
               <input name="meeting_id" type="hidden" value={eligible.meeting_id} />
               <input name="room_id" type="hidden" value={eligible.room_id} />
               {questions.map((question) => (
                 <fieldset
                   aria-describedby={`question-error-${question.id}`}
-                  className="scroll-mt-28 rounded-md border border-[var(--border)] p-4"
+                  className="scroll-mt-28 rounded-md border border-[var(--border)] p-4 aria-[invalid=true]:border-2 aria-[invalid=true]:border-[var(--danger)] aria-[invalid=true]:bg-[var(--danger-surface)]"
                   data-required={question.required ? "true" : "false"}
                   key={question.id}
                 >
@@ -177,7 +185,7 @@ export default async function VoteDetailPage({ params }: VoteDetailPageProps) {
                     </span>
                   </legend>
                   <p
-                    className="clear-both pt-2 text-sm font-medium text-red-700"
+                    className="clear-both pt-2 text-sm font-medium text-[var(--danger)]"
                     data-question-error
                     hidden
                     id={`question-error-${question.id}`}

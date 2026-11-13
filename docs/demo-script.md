@@ -100,8 +100,9 @@ $env:ENABLE_LOCAL_AUTH_BYPASS="1"; npm run start
 ### F3 · Owner B reads the English summary (~5 minutes)
 1. Log in as **Owner B**
    - ✓ Expected: English UI (the profile language is en)
-2. Summary → the latest summary (M6 if F2 is done, otherwise M8)
-   - ✓ Expected: English table, with the note "If it differs from the Thai version, the Thai version prevails"
+2. Summary → the result of the newest meeting (M6 if F2 is done, otherwise M9)
+   - ✓ Expected: English table, with the note "If it differs from the Thai version, the Thai version prevails" at the top
+   - ✓ Expected: History lists the newest meeting first; each card shows the meeting date and the publication date; "See all results" opens the archive by fiscal year
 3. Open M8 → download the PDF summary (EN)
    - ✓ Expected: an English PDF with the same numbers as the page
 4. Click **Verify this reference**
