@@ -372,10 +372,10 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
       .getByRole("heading", { name: "Juristic Person" })
       .locator("xpath=ancestor::section[1]");
     await juristicSection
-      .getByRole("textbox", { name: "Juristic person name" })
+      .getByRole("textbox", { exact: true, name: "Juristic person name" })
       .fill("Demo Juristic Person");
     await juristicSection
-      .getByRole("textbox", { name: "Project name" })
+      .getByRole("textbox", { exact: true, name: "Project name" })
       .fill("Demo Condo");
     await juristicSection
       .getByRole("textbox", { name: "Registration no." })
