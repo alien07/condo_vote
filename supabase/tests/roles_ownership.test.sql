@@ -104,8 +104,9 @@ select is(
   (public.my_member_access()->'delegated_rooms'->0->>'can_cancel')::boolean, true,
   'the owner sees the room and can take it back');
 select lives_ok(
+  -- Owners cannot read proxy_authorizations; the id comes from their access.
   format($q$select public.cancel_co_owner_vote(%L)$q$,
-    (select id from public.proxy_authorizations where meeting_id = :open_m and room_id = :room_a and kind = 'co_owner')),
+    public.my_member_access()->'delegated_rooms'->0->>'id'),
   'the owner takes it back before the co-owner votes');
 
 reset role;
