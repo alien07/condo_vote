@@ -5,6 +5,7 @@ import { LogOut } from "lucide-react";
 import { signOut } from "@/features/auth/actions";
 import { TrackedLink } from "@/features/debug/tracked-link";
 import { TrackedSubmitButton } from "@/features/debug/tracked-submit-button";
+import { accountLabel } from "@/lib/auth/account-label";
 
 type HomeAuthState = {
   profile: {
@@ -17,7 +18,14 @@ type HomeAuthState = {
 
 type HomeAuthControlsProps = {
   initialCurrent: HomeAuthState | null;
-  labels: { signIn: string; signOut: string; signingOut: string; user: string };
+  labels: {
+    signIn: string;
+    signOut: string;
+    signingOut: string;
+    user: string;
+    roles: Record<string, string>;
+    statuses: Record<string, string>;
+  };
 };
 
 export function HomeAuthControls({ initialCurrent, labels }: HomeAuthControlsProps) {
@@ -71,14 +79,14 @@ export function HomeAuthControls({ initialCurrent, labels }: HomeAuthControlsPro
     );
   }
 
-  const roleLabel = current.roles.length > 0 ? current.roles.join(", ") : labels.user;
+  const label = accountLabel(current.roles, current.profile.default_status, labels);
 
   return (
     <div className="flex min-w-0 flex-col gap-2 text-sm sm:flex-row sm:items-center">
       <div className="min-w-0 rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2">
         <div className="truncate font-medium">{current.profile.full_name}</div>
         <div className="truncate text-xs text-[var(--muted)]">
-          {current.profile.email} / {current.profile.default_status} / {roleLabel}
+          {label} · {current.profile.email}
         </div>
       </div>
       <form action={signOut}>

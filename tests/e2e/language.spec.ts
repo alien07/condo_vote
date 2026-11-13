@@ -39,7 +39,8 @@ const serviceKey =
   localEnv.SUPABASE_SECRET_KEY ||
   localEnv.SUPABASE_SERVICE_ROLE_KEY;
 
-// D020: owner pages default to Thai; the switch is saved to the profile.
+// D020: owner pages default to Thai; the switch is saved to the profile,
+// and a signed-in profile's language comes before the browser cookie.
 async function createOwner(supabase: ReturnType<typeof createClient<Database>>) {
   const stamp = Date.now();
   const email = `language-${stamp}@example.local`;
@@ -146,6 +147,34 @@ test.describe("@test:e2e @test:language owner language", () => {
     await expect(
       page.getByRole("heading", { name: "Result Summary", level: 1 }),
     ).toBeVisible();
+  });
+
+  test("the profile language wins over a cookie left in a shared browser", async ({
+    page,
+  }) => {
+    test.setTimeout(120_000);
+
+    const supabase = createClient<Database>(supabaseUrl!, serviceKey!, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    });
+    const owner = await createOwner(supabase);
+    const { error } = await supabase
+      .from("profiles")
+      .update({ preferred_language: "en" })
+      .eq("id", owner.profileId);
+
+    expect(error).toBeNull();
+
+    // Someone else chose Thai in this browser before.
+    await page.context().clearCookies();
+    await page.context().addCookies([
+      { name: "lang", value: "th", domain: "127.0.0.1", path: "/" },
+      { name: "lang", value: "th", domain: "localhost", path: "/" },
+    ]);
+    await signIn(page, supabase, owner.email);
+    await page.goto("/vote");
+    await expect(page.getByRole("heading", { name: "Vote", level: 1 })).toBeVisible();
+    await expect(page.locator("html")).toHaveAttribute("lang", "en");
   });
 
   test("staff pages follow the same language rule", async ({ page }) => {

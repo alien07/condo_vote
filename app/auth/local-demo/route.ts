@@ -5,6 +5,7 @@ import { ERROR_CODES } from "@/lib/error-codes";
 import type { Database } from "@/lib/supabase/database.types";
 import { getServiceRoleKey, isLocalBypassEnabled } from "@/lib/auth/local-bypass";
 import { findDemoPersona } from "@/lib/demo/personas";
+import { getRequestOrigin } from "@/lib/auth/request-origin";
 
 function getSafeNext(value: string | null) {
   const next = String(value ?? "").trim();
@@ -46,6 +47,8 @@ async function findUserByEmail(
 
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url);
+  // Redirect back to the host the browser used, e.g. a phone on the LAN.
+  const origin = getRequestOrigin(request.headers, request.url);
   const next = getSafeNext(requestUrl.searchParams.get("next"));
   const serviceKey = getServiceRoleKey();
   // ?as=<persona> signs in as a seeded demo persona (scripts/seed-demo.mjs)
@@ -68,11 +71,11 @@ export async function GET(request: NextRequest) {
   if (
     !process.env.NEXT_PUBLIC_SUPABASE_URL ||
     !serviceKey ||
-    !isLocalBypassEnabled(requestUrl.hostname)
+    !isLocalBypassEnabled(new URL(origin).hostname)
   ) {
     debugAction("auth.local_bypass.disabled", { next });
     return NextResponse.redirect(
-      new URL(`/login?error=${ERROR_CODES.AUTH_LOCAL_BYPASS_DISABLED}`, requestUrl),
+      new URL(`/login?error=${ERROR_CODES.AUTH_LOCAL_BYPASS_DISABLED}`, origin),
     );
   }
 
@@ -148,7 +151,7 @@ export async function GET(request: NextRequest) {
         type: "magiclink",
         email,
         options: {
-          redirectTo: `${requestUrl.origin}/auth/callback?next=${encodeURIComponent(
+          redirectTo: `${origin}/auth/callback?next=${encodeURIComponent(
             next,
           )}`,
         },
@@ -170,13 +173,13 @@ export async function GET(request: NextRequest) {
         )}&type=${encodeURIComponent(
           link.properties.verification_type,
         )}&next=${encodeURIComponent(next)}`,
-        requestUrl,
+        origin,
       ),
     );
   } catch (error) {
     console.error(ERROR_CODES.AUTH_LOCAL_BYPASS_FAILED, { error, next });
     return NextResponse.redirect(
-      new URL(`/login?error=${ERROR_CODES.AUTH_LOCAL_BYPASS_FAILED}`, requestUrl),
+      new URL(`/login?error=${ERROR_CODES.AUTH_LOCAL_BYPASS_FAILED}`, origin),
     );
   }
 }

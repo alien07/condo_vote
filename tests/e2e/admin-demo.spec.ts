@@ -134,6 +134,7 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
           full_name: demoAdminName,
           approval_status: "approved",
           default_status: "owner",
+          preferred_language: "en",
         },
         { onConflict: "auth_user_id" },
       )
@@ -1061,6 +1062,7 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
           full_name: demoAdminName,
           approval_status: "approved",
           default_status: "owner",
+          preferred_language: "en",
         },
         { onConflict: "auth_user_id" },
       )
@@ -1247,6 +1249,7 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
           full_name: demoAdminName,
           approval_status: "approved",
           default_status: "owner",
+          preferred_language: "en",
         },
         { onConflict: "auth_user_id" },
       )
@@ -1411,6 +1414,7 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
           full_name: demoAdminName,
           approval_status: "approved",
           default_status: "owner",
+          preferred_language: "en",
         },
         { onConflict: "auth_user_id" },
       )
@@ -1572,6 +1576,7 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
           full_name: demoAdminName,
           approval_status: "approved",
           default_status: "owner",
+          preferred_language: "en",
         },
         { onConflict: "auth_user_id" },
       )
@@ -1713,6 +1718,7 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
           full_name: demoAdminName,
           approval_status: "approved",
           default_status: "owner",
+          preferred_language: "en",
         },
         { onConflict: "auth_user_id" },
       )
@@ -1892,6 +1898,7 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
           full_name: demoAdminName,
           approval_status: "approved",
           default_status: "owner",
+          preferred_language: "en",
         },
         { onConflict: "auth_user_id" },
       )
@@ -2058,6 +2065,7 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
           full_name: demoAdminName,
           approval_status: "approved",
           default_status: "owner",
+          preferred_language: "en",
         },
         { onConflict: "auth_user_id" },
       )
@@ -2284,6 +2292,7 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
           full_name: demoAdminName,
           approval_status: "approved",
           default_status: "owner",
+          preferred_language: "en",
         },
         { onConflict: "auth_user_id" },
       )
@@ -2575,6 +2584,7 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
           full_name: demoAdminName,
           approval_status: "approved",
           default_status: "owner",
+          preferred_language: "en",
         },
         { onConflict: "auth_user_id" },
       )
@@ -2718,6 +2728,7 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
           approval_status: "approved",
           auth_user_id: user!.id,
           default_status: "owner",
+          preferred_language: "en",
           email: demoAdminEmail,
           full_name: demoAdminName,
         },
@@ -3082,6 +3093,7 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
           approval_status: "approved",
           auth_user_id: user!.id,
           default_status: "owner",
+          preferred_language: "en",
           email: demoAdminEmail,
           full_name: demoAdminName,
         },
@@ -3302,6 +3314,7 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
           approval_status: "approved",
           auth_user_id: user!.id,
           default_status: "owner",
+          preferred_language: "en",
           email: demoAdminEmail,
           full_name: demoAdminName,
         },
@@ -3441,6 +3454,7 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
           approval_status: "approved",
           auth_user_id: user!.id,
           default_status: "owner",
+          preferred_language: "en",
           email: demoAdminEmail,
           full_name: demoAdminName,
         },
@@ -3567,6 +3581,7 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
           approval_status: "approved",
           auth_user_id: user!.id,
           default_status: "owner",
+          preferred_language: "en",
           email: demoAdminEmail,
           full_name: demoAdminName,
         },

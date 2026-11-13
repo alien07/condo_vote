@@ -18,22 +18,23 @@ export default async function VerifyPage({ params }: VerifyPageProps) {
   const { locale, t: dict } = await getI18n();
   const t = dict.verify;
   const supabase = await createClient();
-  const [snapshotResult, publicationResult] = UUID.test(snapshotId)
-    ? await Promise.all([
-        supabase
-          .from("result_snapshots")
-          .select("id, generated_at, payload_sha256, meetings(title)")
-          .eq("id", snapshotId)
-          .maybeSingle(),
-        supabase
-          .from("result_publications")
-          .select("published_at, approvals_count")
-          .eq("result_snapshot_id", snapshotId)
-          .maybeSingle(),
-      ])
-    : [null, null];
-  const snapshot = snapshotResult?.data ?? null;
-  const publication = publicationResult?.data ?? null;
+  // Hash and publication only, through verify_result_reference() (0029), so
+  // the check works for every signed-in account without exposing results.
+  const { data } = UUID.test(snapshotId)
+    ? await supabase.rpc("verify_result_reference", { p_snapshot_id: snapshotId })
+    : { data: null };
+  const reference = (data ?? null) as unknown as {
+    meeting_title: string | null;
+    payload_sha256: string | null;
+    published_at: string;
+    approvals_count: number;
+  } | null;
+  const snapshot = reference
+    ? { meetings: { title: reference.meeting_title }, payload_sha256: reference.payload_sha256 }
+    : null;
+  const publication = reference
+    ? { published_at: reference.published_at, approvals_count: reference.approvals_count }
+    : null;
 
   return (
     <main className="mx-auto max-w-2xl px-6 py-8 text-sm" lang={locale}>

@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
-import { cookies } from "next/headers";
-import { DEFAULT_LOCALE, isLocale, LOCALE_COOKIE } from "@/lib/i18n/locales";
+import { getLocale } from "@/lib/i18n/server";
 import { APP_TITLE } from "@/lib/app-config";
 import "./globals.css";
 
@@ -14,11 +13,11 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  // Pages set their own language; this is the browser's chosen one (D020).
-  const cookieLocale = (await cookies()).get(LOCALE_COOKIE)?.value;
+  // Same rule as the pages: profile, then cookie, then Thai (D020).
+  const locale = await getLocale();
 
   return (
-    <html lang={isLocale(cookieLocale) ? cookieLocale : DEFAULT_LOCALE}>
+    <html lang={locale}>
       <body>{children}</body>
     </html>
   );

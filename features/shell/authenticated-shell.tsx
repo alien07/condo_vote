@@ -9,6 +9,8 @@ import { ApprovalNotice } from "@/features/shell/approval-notice";
 import { APP_NAME, APP_VERSION } from "@/lib/app-config";
 import { needsPrivacyConsent } from "@/features/privacy/service";
 import { requireProfileWithRoles } from "@/lib/auth/permissions";
+import { accountLabel } from "@/lib/auth/account-label";
+import { getMemberAccess } from "@/lib/auth/access";
 import { createClient } from "@/lib/supabase/server";
 import { LanguageSwitcher } from "@/features/i18n/language-switcher";
 import { HelpLink } from "@/features/help/help-link";
@@ -32,7 +34,8 @@ export async function AuthenticatedShell({ children }: AuthenticatedShellProps) 
   const isAdmin = roles.includes("admin");
   // Staff pages get their words in the client too (D020).
   const isStaff = isAdmin || roles.includes("committee") || roles.includes("system_admin");
-  const roleLabel = roles.length > 0 ? roles.join(", ") : t.shell.user;
+  const label = accountLabel(roles, profile.default_status, t.shell);
+  const access = await getMemberAccess();
 
   return (
     <>
@@ -58,7 +61,7 @@ export async function AuthenticatedShell({ children }: AuthenticatedShellProps) 
             <div className="min-w-0 text-right sm:rounded-md sm:border sm:border-[var(--border)] sm:bg-[var(--surface)] sm:px-3 sm:py-2 sm:text-left md:max-w-72">
               <div className="truncate font-medium">{profile.full_name}</div>
               <div className="hidden truncate text-xs text-[var(--muted)] sm:block">
-                {profile.email} / {profile.default_status} / {roleLabel}
+                {label} · {profile.email}
               </div>
             </div>
             <form action={signOut}>
@@ -85,6 +88,8 @@ export async function AuthenticatedShell({ children }: AuthenticatedShellProps) 
           isAdmin={isAdmin}
           isCommittee={roles.includes("committee")}
           isSystemAdmin={roles.includes("system_admin")}
+          canVote={access.canVote}
+          canViewResults={access.canViewResults}
         />
       </header>
       <div className="print:hidden">

@@ -68,6 +68,7 @@ async function ensureTestProfile(
       full_name: fullName,
       approval_status: "approved",
       default_status: role === "admin" ? "owner" : "resident",
+      preferred_language: "en",
     })
     .select("id")
     .single();
@@ -139,7 +140,7 @@ test.describe("@test:e2e @test:auth @test:role role access", () => {
       page.getByRole("heading", { name: "Admin", exact: true }),
     ).toBeVisible();
     await expect(page.getByText(admin.email)).toBeVisible();
-    await expect(page.getByText(/owner \/ admin/)).toBeVisible();
+    await expect(page.getByText(/Admin · Owner/)).toBeVisible();
     const primaryNav = page.getByRole("navigation", {
       name: "Primary navigation",
     });
@@ -151,7 +152,7 @@ test.describe("@test:e2e @test:auth @test:role role access", () => {
 
     await page.goto("/");
     await expect(page.getByText(admin.email)).toBeVisible();
-    await expect(page.getByText(/owner \/ admin/)).toBeVisible();
+    await expect(page.getByText(/Admin · Owner/)).toBeVisible();
     await expect(page.getByRole("button", { name: "Sign out" })).toBeVisible();
     await expect(page.getByRole("link", { name: "Sign in" })).toHaveCount(0);
 
@@ -187,7 +188,7 @@ test.describe("@test:e2e @test:auth @test:role role access", () => {
     await expect(page).toHaveURL(/\/login$/);
   });
 
-  test("resident cannot access admin pages but can access summary", async ({
+  test("resident cannot access admin or vote pages but can access summary", async ({
     page,
   }) => {
     test.setTimeout(120_000);
@@ -207,7 +208,9 @@ test.describe("@test:e2e @test:auth @test:role role access", () => {
     await expect(page).toHaveURL(/\/\?denied=1$/);
     await expect(page.getByRole("alert")).toContainText("cannot open that page");
     await expect(page.getByRole("link", { name: /Admin/ })).toHaveCount(0);
-    await expect(page.getByRole("link", { name: /Vote/ })).toBeVisible();
+    // A resident without a room never votes, so there is no Vote card (item 1).
+    await expect(page.getByRole("link", { name: /Vote/ })).toHaveCount(0);
+    await expect(page.getByRole("link", { name: /^Results/ })).toBeVisible();
 
     await page.goto("/admin/communications");
     await expect(page).toHaveURL(/\/\?denied=1$/);
@@ -217,7 +220,7 @@ test.describe("@test:e2e @test:auth @test:role role access", () => {
       page.getByRole("heading", { exact: true, name: "Result Summary" }),
     ).toBeVisible();
     await expect(page.getByText(resident.email)).toBeVisible();
-    await expect(page.getByText(/resident \/ user/)).toBeVisible();
+    await expect(page.getByText(/Resident ·/)).toBeVisible();
     const primaryNav = page.getByRole("navigation", {
       name: "Primary navigation",
     });
@@ -225,7 +228,8 @@ test.describe("@test:e2e @test:auth @test:role role access", () => {
     await expect(
       primaryNav.getByRole("link", { name: "Committee" }),
     ).toHaveCount(0);
-    await expect(primaryNav.getByRole("link", { name: "Vote" })).toBeVisible();
+    await expect(primaryNav.getByRole("link", { name: "Vote" })).toHaveCount(0);
+    await expect(primaryNav.getByRole("link", { name: "Summary" })).toBeVisible();
 
     await page.goto("/committee");
     await expect(page).toHaveURL(/\/\?denied=1$/);
@@ -237,9 +241,38 @@ test.describe("@test:e2e @test:auth @test:role role access", () => {
     await expect(page).toHaveURL(/\/\?denied=1$/);
 
     await page.goto("/vote");
-    await expect(page.getByRole("heading", { name: "Vote" })).toBeVisible();
-    await expect(
-      page.getByRole("heading", { name: "No eligible voting assignments" }),
-    ).toBeVisible();
+    await expect(page).toHaveURL(/\/\?denied=1$/);
+  });
+
+  test("pending and rejected accounts see no results (item 4)", async ({ page }) => {
+    test.setTimeout(120_000);
+
+    const supabase = createClient<Database>(supabaseUrl!, serviceKey!, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+    });
+
+    for (const status of ["pending", "rejected"] as const) {
+      const account = await ensureTestProfile(supabase, "resident");
+      const { error } = await supabase
+        .from("profiles")
+        .update({ approval_status: status })
+        .eq("id", account.profileId);
+
+      expect(error).toBeNull();
+      await page.context().clearCookies({ name: /^(?!lang$)/ });
+      await signInByGeneratedLink(page, supabase, account.email);
+
+      await expect(page.getByRole("link", { name: /^Results/ })).toHaveCount(0);
+      await expect(page.getByRole("link", { name: /Vote/ })).toHaveCount(0);
+      await expect(page.getByRole("link", { name: /^Help/ })).toBeVisible();
+
+      await page.goto("/summary");
+      await expect(page).toHaveURL(/\/\?denied=1$/);
+      await page.goto("/vote");
+      await expect(page).toHaveURL(/\/\?denied=1$/);
+    }
   });
 });

@@ -1592,6 +1592,7 @@ export type Database = {
       committee_overview: { Args: never; Returns: Json }
       current_profile_id: { Args: never; Returns: string }
       has_app_role: { Args: { required_role: string }; Returns: boolean }
+      is_approved_member: { Args: never; Returns: boolean }
       meeting_online_tally: {
         Args: { p_meeting_id: string }
         Returns: {
@@ -1600,6 +1601,7 @@ export type Database = {
           vote_count: number
         }[]
       }
+      my_member_access: { Args: never; Returns: Json }
       needs_privacy_consent: { Args: never; Returns: boolean }
       queue_result_approved_emails: {
         Args: { p_meeting_id: string }
@@ -1638,6 +1640,10 @@ export type Database = {
           choice_id: string
           question_id: string
         }[]
+      }
+      verify_result_reference: {
+        Args: { p_snapshot_id: string }
+        Returns: Json
       }
     }
     Enums: {

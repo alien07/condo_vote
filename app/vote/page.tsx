@@ -5,8 +5,10 @@ import { describeVoterRoom, describeVotingWindow } from "@/features/voting/displ
 import { VotingStatusBadge } from "@/features/voting/status-badge";
 import { getVotingWindowStatus } from "@/features/voting/status";
 import { getI18n } from "@/lib/i18n/server";
+import { requireVoteAccess } from "@/lib/auth/access";
 
 export default async function VotePage() {
+  const access = await requireVoteAccess();
   const { eligibleRows, ballotsByMeetingRoom } = await getVotingDashboardData();
   const { locale, t: dict } = await getI18n();
   const t = dict.vote;
@@ -23,6 +25,22 @@ export default async function VotePage() {
             </p>
           </div>
         </div>
+
+        {access.delegatedRooms.length > 0 ? (
+          <section
+            className="mb-4 rounded-lg border border-[var(--border)] bg-[var(--surface)] p-4 text-sm"
+            data-testid="delegated-rooms"
+          >
+            <h2 className="font-semibold">{t.delegatedTitle}</h2>
+            <ul className="mt-2 grid gap-1 text-[var(--muted)]">
+              {access.delegatedRooms.map((room) => (
+                <li key={`${room.meeting_title}:${room.room_number}`}>
+                  {t.delegated(room.room_number, room.proxy_name, room.meeting_title)}
+                </li>
+              ))}
+            </ul>
+          </section>
+        ) : null}
 
         {eligibleRows.length === 0 ? (
           <section className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-5 text-sm">
