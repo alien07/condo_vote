@@ -833,7 +833,8 @@ test.describe("@test:e2e @test:auth @test:admin admin demo", () => {
     await page
       .locator("div[data-meeting-id]")
       .filter({ hasText: meetingTitle })
-      .getByRole("button", { name: "Approve closing voting" })
+      // exact: the "i" tip next to it is "What this means: Approve closing voting".
+      .getByRole("button", { name: "Approve closing voting", exact: true })
       .click();
     await page.waitForURL(/\/committee\?[\s\S]*feedback=success/);
     await expect(page.getByText("Voting closed", { exact: true })).toBeVisible();
