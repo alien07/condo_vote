@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { requireProfileWithRoles } from "@/lib/auth/permissions";
+import { DENIED_PATH, requireProfileWithRoles } from "@/lib/auth/permissions";
 import { createClient } from "@/lib/supabase/server";
 import {
   approveCloseVoting,
@@ -20,7 +20,7 @@ async function requireCommittee() {
   const current = await requireProfileWithRoles();
 
   if (!current.roles.includes("committee") && !current.roles.includes("admin")) {
-    redirect("/summary");
+    redirect(DENIED_PATH);
   }
 }
 

@@ -3,7 +3,7 @@ import { getStaffI18n } from "@/lib/i18n/server";
 import { fill } from "@/lib/i18n/template";
 import { redirect } from "next/navigation";
 import { Gavel } from "lucide-react";
-import { requireProfileWithRoles } from "@/lib/auth/permissions";
+import { DENIED_PATH, requireProfileWithRoles } from "@/lib/auth/permissions";
 import { createClient } from "@/lib/supabase/server";
 import { getCommitteeOverview } from "@/features/results/committee-service";
 import {
@@ -42,7 +42,7 @@ export default async function CommitteePage() {
   const current = await requireProfileWithRoles();
 
   if (!current.roles.includes("committee") && !current.roles.includes("admin")) {
-    redirect("/summary");
+    redirect(DENIED_PATH);
   }
 
   const supabase = await createClient();

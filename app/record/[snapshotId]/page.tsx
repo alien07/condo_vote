@@ -13,7 +13,7 @@ import {
   thaiQuorum,
 } from "@/features/results/thai-labels";
 import type { SummaryPayload } from "@/features/summary/data";
-import { requireProfileWithRoles } from "@/lib/auth/permissions";
+import { DENIED_PATH, requireProfileWithRoles } from "@/lib/auth/permissions";
 import { formatThaiDateTime } from "@/lib/datetime";
 import { choiceLabel } from "@/lib/i18n/choice";
 import { GlossaryNotes } from "@/features/glossary/term";
@@ -49,7 +49,7 @@ export default async function OfficialRecordPage({ params }: RecordPageProps) {
   const { roles } = await requireProfileWithRoles();
 
   if (!roles.includes("admin") && !roles.includes("committee")) {
-    redirect("/summary");
+    redirect(DENIED_PATH);
   }
 
   const { snapshotId } = await params;

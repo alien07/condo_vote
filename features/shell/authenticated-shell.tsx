@@ -5,6 +5,7 @@ import { signOut } from "@/features/auth/actions";
 import { TrackedSubmitButton } from "@/features/debug/tracked-submit-button";
 import { AppFeedbackBanner } from "@/features/shell/app-feedback-banner";
 import { AppShellNav } from "@/features/shell/app-shell-nav";
+import { ApprovalNotice } from "@/features/shell/approval-notice";
 import { APP_NAME, APP_VERSION } from "@/lib/app-config";
 import { needsPrivacyConsent } from "@/features/privacy/service";
 import { requireProfileWithRoles } from "@/lib/auth/permissions";
@@ -88,6 +89,11 @@ export async function AuthenticatedShell({ children }: AuthenticatedShellProps) 
       </header>
       <div className="print:hidden">
         <AppFeedbackBanner dismissLabel={t.shell.dismiss} locale={locale} />
+        {profile.approval_status !== "approved" ? (
+          <div className="mx-auto max-w-6xl px-4 pt-3 md:px-6">
+            <ApprovalNotice status={profile.approval_status} text={t.shell} />
+          </div>
+        ) : null}
       </div>
       {isStaff ? (
         <StaffTextProvider locale={locale} s={getStaffDictionary(locale)}>

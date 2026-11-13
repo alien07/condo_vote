@@ -14,6 +14,9 @@ const en = {
     signingOut: "Signing out...",
     back: "Back",
     dismiss: "Dismiss message",
+    pending:
+      "Your account is waiting for approval by the juristic person office. You cannot vote until it is approved. If it takes long, contact the office.",
+    rejected: "Your account was not approved. Contact the juristic person office.",
     help: "Help",
     user: "user",
     nav: {
@@ -35,6 +38,15 @@ const en = {
     adminText: "Manage rooms, owners, meetings, approvals, and results.",
     voteTitle: "Vote",
     voteText: "Open eligible meetings and submit or update ballots.",
+    summaryTitle: "Results",
+    summaryText: "Read results approved by the committee.",
+    committeeTitle: "Committee",
+    committeeText: "Approve closing voting early and approve results.",
+    systemTitle: "System",
+    systemText: "Privacy notice, retention, and technical settings.",
+    helpTitle: "Help",
+    helpText: "Step-by-step guide to voting online.",
+    denied: "Your account cannot open that page, so you were brought back here.",
   },
   login: {
     title: "Sign in",
@@ -193,6 +205,9 @@ const th: Dictionary = {
     signingOut: "กำลังออกจากระบบ...",
     back: "กลับ",
     dismiss: "ปิดข้อความ",
+    pending:
+      "บัญชีของท่านรอนิติบุคคลอนุมัติ ระหว่างนี้ยังลงคะแนนไม่ได้ ถ้ารอนานเกินไป โปรดติดต่อสำนักงานนิติบุคคล",
+    rejected: "บัญชีของท่านไม่ได้รับอนุมัติ โปรดติดต่อสำนักงานนิติบุคคล",
     help: "ช่วยเหลือ",
     user: "ผู้ใช้",
     nav: {
@@ -214,6 +229,15 @@ const th: Dictionary = {
     adminText: "จัดการห้อง เจ้าของร่วม การประชุม การอนุมัติ และผลการลงมติ",
     voteTitle: "ลงคะแนน",
     voteText: "เปิดการประชุมที่มีสิทธิ์ แล้วลงหรือแก้ไขคะแนน",
+    summaryTitle: "ผลการลงมติ",
+    summaryText: "ดูผลที่คณะกรรมการอนุมัติแล้ว",
+    committeeTitle: "คณะกรรมการ",
+    committeeText: "อนุมัติปิดลงคะแนนก่อนเวลาและอนุมัติผลการลงมติ",
+    systemTitle: "ระบบ",
+    systemText: "ประกาศความเป็นส่วนตัว ระยะเวลาเก็บข้อมูล และการตั้งค่าทางเทคนิค",
+    helpTitle: "ช่วยเหลือ",
+    helpText: "วิธีลงคะแนนออนไลน์ทีละขั้น",
+    denied: "บัญชีนี้ไม่มีสิทธิ์เข้าหน้านั้น จึงพากลับมาที่หน้าแรก",
   },
   login: {
     title: "เข้าสู่ระบบ",

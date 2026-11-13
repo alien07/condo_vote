@@ -202,11 +202,15 @@ test.describe("@test:e2e @test:auth @test:role role access", () => {
 
     await signInByGeneratedLink(page, supabase, resident.email);
 
+    // Signed in without the role: back home with a notice, not to sign-in.
     await page.goto("/admin");
-    await expect(page).toHaveURL(/\/login$/);
+    await expect(page).toHaveURL(/\/\?denied=1$/);
+    await expect(page.getByRole("alert")).toContainText("cannot open that page");
+    await expect(page.getByRole("link", { name: /Admin/ })).toHaveCount(0);
+    await expect(page.getByRole("link", { name: /Vote/ })).toBeVisible();
 
     await page.goto("/admin/communications");
-    await expect(page).toHaveURL(/\/login$/);
+    await expect(page).toHaveURL(/\/\?denied=1$/);
 
     await page.goto("/summary");
     await expect(
@@ -224,14 +228,13 @@ test.describe("@test:e2e @test:auth @test:role role access", () => {
     await expect(primaryNav.getByRole("link", { name: "Vote" })).toBeVisible();
 
     await page.goto("/committee");
-    await expect(page).toHaveURL(/\/summary$/);
-    await expect(
-      primaryNav.getByRole("link", { name: "Summary" }),
-    ).toBeVisible();
+    await expect(page).toHaveURL(/\/\?denied=1$/);
+    await expect(page.getByRole("link", { name: /^Committee/ })).toHaveCount(0);
+    await expect(page.getByRole("link", { name: /^Results/ })).toBeVisible();
 
     // The official result record is for admin and committee only (D019).
     await page.goto("/record/00000000-0000-0000-0000-000000000000");
-    await expect(page).toHaveURL(/\/summary$/);
+    await expect(page).toHaveURL(/\/\?denied=1$/);
 
     await page.goto("/vote");
     await expect(page.getByRole("heading", { name: "Vote" })).toBeVisible();

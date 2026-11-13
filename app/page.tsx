@@ -1,31 +1,87 @@
-import { Building2, ClipboardCheck, Settings } from "lucide-react";
+import {
+  BarChart3,
+  Building2,
+  ClipboardCheck,
+  Gavel,
+  LifeBuoy,
+  Server,
+  Settings,
+  ShieldAlert,
+} from "lucide-react";
 import { HomeAuthControls } from "@/features/auth/home-auth-controls";
 import { TrackedLink } from "@/features/debug/tracked-link";
 import { APP_NAME, APP_VERSION } from "@/lib/app-config";
 import { LanguageSwitcher } from "@/features/i18n/language-switcher";
 import { getI18n } from "@/lib/i18n/server";
+import { getCurrentProfileWithRoles } from "@/lib/auth/permissions";
+import { ApprovalNotice } from "@/features/shell/approval-notice";
 
 export const dynamic = "force-dynamic";
 
-export default async function HomePage() {
-  const { locale, t: dict } = await getI18n();
+type HomePageProps = {
+  searchParams: Promise<{ denied?: string }>;
+};
+
+// Cards follow the signed-in user's roles; every page still checks access on
+// the server. `?denied=1` comes from a page the account cannot open.
+export default async function HomePage({ searchParams }: HomePageProps) {
+  const [{ locale, t: dict }, { denied }, current] = await Promise.all([
+    getI18n(),
+    searchParams,
+    getCurrentProfileWithRoles(),
+  ]);
   const t = dict.home;
+  const roles = current?.roles ?? [];
   const sections = [
-    {
-      href: "/admin",
-      debugName: "admin",
-      label: t.adminTitle,
-      description: t.adminText,
-      icon: Settings,
-    },
     {
       href: "/vote",
       debugName: "vote",
       label: t.voteTitle,
       description: t.voteText,
       icon: ClipboardCheck,
+      show: true,
     },
-  ];
+    {
+      href: "/summary",
+      debugName: "summary",
+      label: t.summaryTitle,
+      description: t.summaryText,
+      icon: BarChart3,
+      show: true,
+    },
+    {
+      href: "/committee",
+      debugName: "committee",
+      label: t.committeeTitle,
+      description: t.committeeText,
+      icon: Gavel,
+      show: roles.includes("committee") || roles.includes("admin"),
+    },
+    {
+      href: "/admin",
+      debugName: "admin",
+      label: t.adminTitle,
+      description: t.adminText,
+      icon: Settings,
+      show: roles.includes("admin"),
+    },
+    {
+      href: "/system",
+      debugName: "system",
+      label: t.systemTitle,
+      description: t.systemText,
+      icon: Server,
+      show: roles.includes("system_admin"),
+    },
+    {
+      href: "/help/owner",
+      debugName: "help",
+      label: t.helpTitle,
+      description: t.helpText,
+      icon: LifeBuoy,
+      show: true,
+    },
+  ].filter((section) => section.show);
 
   return (
     <main className="min-h-screen px-6 py-8" lang={locale}>
@@ -45,7 +101,18 @@ export default async function HomePage() {
           <div className="flex flex-wrap items-center gap-2">
             <LanguageSwitcher locale={locale} />
             <HomeAuthControls
-              initialCurrent={null}
+              initialCurrent={
+                current
+                  ? {
+                      profile: {
+                        default_status: current.profile.default_status,
+                        email: current.profile.email,
+                        full_name: current.profile.full_name,
+                      },
+                      roles: current.roles,
+                    }
+                  : null
+              }
               labels={{
                 signIn: t.signIn,
                 signOut: dict.shell.signOut,
@@ -56,6 +123,16 @@ export default async function HomePage() {
           </div>
         </header>
 
+        {denied && current ? (
+          <p
+            className="flex items-start gap-2 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800"
+            role="alert"
+          >
+            <ShieldAlert aria-hidden className="mt-0.5 shrink-0" size={16} />
+            <span>{t.denied}</span>
+          </p>
+        ) : null}
+        <ApprovalNotice status={current?.profile.approval_status} text={dict.shell} />
         <section className="grid gap-4 md:grid-cols-2">
           {sections.map((section) => {
             const Icon = section.icon;

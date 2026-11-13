@@ -169,7 +169,7 @@ test.describe("@test:e2e @test:auth @test:privacy privacy and system settings", 
 
     await signInByGeneratedLink(page, supabase, admin.email);
     await page.goto("/system");
-    await expect(page).toHaveURL(/\/summary$/);
+    await expect(page).toHaveURL(/\/\?denied=1$/);
     await expect(primaryNav.getByRole("link", { name: "System" })).toHaveCount(0);
 
     await page.goto("/admin/setup?tab=storage");
