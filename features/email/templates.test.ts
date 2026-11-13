@@ -22,6 +22,7 @@ describe("committee workflow emails", () => {
       "result_correction",
       "result_correction_answered",
       "result_review_again",
+      "co_owner_vote",
     ] as const) {
       expect(renderEmail(name, "th", { meetingTitle: "M1" }).subject).toContain("M1");
       expect(renderEmail(name, "en", { meetingTitle: "M1" }).subject).toContain("M1");

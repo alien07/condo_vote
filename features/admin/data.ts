@@ -1,4 +1,4 @@
-import { requireAdmin } from "@/lib/auth/permissions";
+import { requireOfficeStaff } from "@/lib/auth/permissions";
 import { createClient } from "@/lib/supabase/server";
 import { fetchCommunicationsData } from "@/features/admin/data-modules/communications";
 import { fetchDocumentData } from "@/features/admin/data-modules/documents";
@@ -16,7 +16,8 @@ type AdminDashboardDataOptions = {
 export async function getAdminDashboardData(
   options: AdminDashboardDataOptions = {},
 ) {
-  await requireAdmin();
+  // Office staff open the data-entry pages; manager pages add requireAdmin().
+  await requireOfficeStaff();
 
   const supabase = await createClient();
   const [setup, people, meetings, voting, results, communications, documents] =

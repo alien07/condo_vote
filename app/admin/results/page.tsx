@@ -1,6 +1,7 @@
 import { AdminWorkspace } from "@/features/admin/components/admin-workspace";
 import { CorrectionAdminPanel } from "@/features/committee/correction-admin-panel";
 import { getStaffI18n } from "@/lib/i18n/server";
+import { requireAdmin } from "@/lib/auth/permissions";
 import type { ResultTableFilters } from "@/features/admin/components/admin-workspace";
 
 // Approving can start the master PDF files (D021), which needs Chromium time.
@@ -56,6 +57,8 @@ function getResultFilters(
 export default async function AdminResultsPage({
   searchParams,
 }: AdminResultsPageProps) {
+  // Manager only: office staff do data entry elsewhere (item 14c).
+  await requireAdmin();
   const { s } = await getStaffI18n();
   const params = await searchParams;
 

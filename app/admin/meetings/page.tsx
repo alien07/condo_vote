@@ -1,5 +1,6 @@
 import { AdminWorkspace } from "@/features/admin/components/admin-workspace";
 import { getStaffI18n } from "@/lib/i18n/server";
+import { requireAdmin } from "@/lib/auth/permissions";
 import type { MeetingTableFilters } from "@/features/admin/components/admin-workspace";
 
 type AdminMeetingsPageProps = {
@@ -55,6 +56,8 @@ function getMeetingFilters(
 export default async function AdminMeetingsPage({
   searchParams,
 }: AdminMeetingsPageProps) {
+  // Manager only: office staff do data entry elsewhere (item 14c).
+  await requireAdmin();
   const { s } = await getStaffI18n();
   const params = await searchParams;
 

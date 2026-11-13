@@ -128,6 +128,17 @@ export async function requireSystemAdmin() {
   return profile;
 }
 
+/** Admin or office staff: the data-entry admin pages (item 14c). */
+export async function requireOfficeStaff() {
+  const current = await requireProfileWithRoles();
+
+  if (!current.roles.includes("admin") && !current.roles.includes("staff")) {
+    redirect(DENIED_PATH);
+  }
+
+  return current.profile;
+}
+
 export async function requireAdmin() {
   const profile = await requireProfile();
 

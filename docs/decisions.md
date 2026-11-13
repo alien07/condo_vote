@@ -243,3 +243,31 @@ Status: implemented (migration 0028)
 - Chromium: on Vercel `@sparticuz/chromium`; elsewhere the Chromium that
   Playwright installed, or `CHROMIUM_EXECUTABLE_PATH`.
 - Google Drive backup of the files is planned later.
+
+### D022 - Roles, Separation Of Duties, And One Owner Of Record
+Status: implemented (migration 0031), decided in the demo review 2026-11-13
+
+- Separation of duties: whoever generated a result snapshot, or answered a
+  correction request of that meeting as fixed, cannot approve that result.
+  A requester cannot answer their own correction request (D014). Enforced
+  in the database functions.
+- Auditor (`auditor` role): read only. Published results, official records,
+  committee requests, correction requests and the audit log (`/audit`).
+- Office staff (`staff` role): data entry only. Rooms, owners, ownership
+  links, Excel import, paper ballots. Admin ("manager") keeps publishing
+  meetings, results, corrections, proxies, documents, communications,
+  setup and roles. A building with one officer gives both roles to the
+  same person.
+- `proxy` as a member status means an external proxy holder (neither owner
+  nor resident). Their access lasts while they hold an approved proxy for a
+  meeting that is still open; proxies stay per meeting.
+- One owner of record per room: `co_owner` links ended in migration 0031,
+  and a second open-ended active owner link is refused. A co-owner is
+  registered as a resident. The owner of record lets them vote for one
+  meeting in the app (Vote page), and can take it back until they vote. It
+  is stored as a `co_owner` proxy authorization, logged, emailed, and does
+  not count toward the three-room proxy limit. An owner who does not use
+  the app gives a normal proxy through the office.
+- The app has no record of which resident lives in which room, so the
+  co-owner check is "an approved resident account with this email".
+- The header shows job roles first, then the member status.

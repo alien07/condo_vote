@@ -7,6 +7,7 @@ import {
   optionalText,
   requiredText,
   requireAdmin,
+  requireOfficeStaff,
   revalidateAdminPaths,
 } from "@/features/admin/action-modules/shared";
 import { writeAuditLog } from "@/lib/audit/business-audit";
@@ -359,7 +360,7 @@ export async function reviewProxyAuthorization(formData: FormData) {
 }
 
 export async function importManualVoteEntry(formData: FormData) {
-  const importer = await requireAdmin();
+  const importer = await requireOfficeStaff();
 
   const meetingId = requiredText(formData.get("meeting_id"), "Meeting");
   const roomId = requiredText(formData.get("room_id"), "Room");
@@ -440,7 +441,7 @@ export async function importManualVoteEntry(formData: FormData) {
 }
 
 export async function startManualVoteImport(formData: FormData) {
-  await requireAdmin();
+  await requireOfficeStaff();
 
   const meetingId = requiredText(formData.get("meeting_id"), "Meeting");
   const roomId = requiredText(formData.get("room_id"), "Room");
@@ -473,7 +474,7 @@ export async function startManualVoteImportWithState(
   const values = manualVoteImportValues(formData);
 
   try {
-    await requireAdmin();
+    await requireOfficeStaff();
     const validation = manualVoteValidationState(
       validateManualVoteImport(values),
       values,
@@ -509,7 +510,7 @@ export async function startManualVoteImportWithState(
 }
 
 export async function submitManualBallot(formData: FormData) {
-  await requireAdmin();
+  await requireOfficeStaff();
   const meetingId = requiredText(formData.get("meeting_id"), "Meeting");
   const roomId = requiredText(formData.get("room_id"), "Room");
   const voterProfileId = optionalText(formData.get("voter_profile_id"));
@@ -536,7 +537,7 @@ export async function submitManualBallot(formData: FormData) {
 }
 
 export async function resolveManualBallotIdentity(formData: FormData) {
-  const resolver = await requireAdmin();
+  const resolver = await requireOfficeStaff();
 
   const id = requiredText(formData.get("id"), "Manual ballot");
   const voterProfileId = requiredText(formData.get("voter_profile_id"), "Voter profile");
@@ -606,7 +607,7 @@ export async function resolveManualBallotIdentityWithState(
   const values = manualVoteIdentityValues(formData);
 
   try {
-    const resolver = await requireAdmin();
+    const resolver = await requireOfficeStaff();
     const validation = manualVoteValidationState(
       validateManualVoteIdentity(values),
       values,

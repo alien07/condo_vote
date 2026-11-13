@@ -1285,7 +1285,9 @@ export type Database = {
       proxy_authorizations: {
         Row: {
           created_at: string
+          granted_by_owner_profile_id: string | null
           id: string
+          kind: string
           meeting_id: string
           owner_id: string | null
           proxy_profile_id: string
@@ -1298,7 +1300,9 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          granted_by_owner_profile_id?: string | null
           id?: string
+          kind?: string
           meeting_id: string
           owner_id?: string | null
           proxy_profile_id: string
@@ -1311,7 +1315,9 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          granted_by_owner_profile_id?: string | null
           id?: string
+          kind?: string
           meeting_id?: string
           owner_id?: string | null
           proxy_profile_id?: string
@@ -1784,9 +1790,18 @@ export type Database = {
       }
       can_approve_as_committee: { Args: never; Returns: boolean }
       cancel_close_request: { Args: { p_request_id: string }; Returns: undefined }
+      cancel_co_owner_vote: {
+        Args: { p_authorization_id: string }
+        Returns: undefined
+      }
       committee_overview: { Args: never; Returns: Json }
       current_profile_id: { Args: never; Returns: string }
+      grant_co_owner_vote: {
+        Args: { p_co_owner_email: string; p_meeting_id: string; p_room_id: string }
+        Returns: string
+      }
       has_app_role: { Args: { required_role: string }; Returns: boolean }
+      is_office_staff: { Args: never; Returns: boolean }
       is_approved_member: { Args: never; Returns: boolean }
       meeting_early_close: { Args: { p_meeting_id: string }; Returns: string }
       meeting_online_tally: {

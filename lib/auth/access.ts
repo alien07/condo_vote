@@ -5,6 +5,11 @@ import { DENIED_PATH, requireProfile } from "@/lib/auth/permissions";
 import { createClient } from "@/lib/supabase/server";
 
 export type DelegatedRoom = {
+  /** proxy_authorizations.id (0031). */
+  id?: string;
+  kind?: "proxy" | "co_owner";
+  /** The owner let a co-owner vote and the room has no ballot yet. */
+  can_cancel?: boolean;
   room_number: string;
   meeting_title: string;
   proxy_name: string;

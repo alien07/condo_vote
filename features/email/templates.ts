@@ -16,7 +16,9 @@ export type EmailTemplateName =
   | "close_request_failed"
   | "result_correction"
   | "result_correction_answered"
-  | "result_review_again";
+  | "result_review_again"
+  // The owner lets a co-owner vote (migration 0031, item 15).
+  | "co_owner_vote";
 
 type EmailContent = { subject: string; body: string };
 
@@ -101,6 +103,18 @@ const templates: Record<EmailTemplateName, Record<Locale, EmailContent>> = {
       subject: "Please review the result again: {meetingTitle}",
       body:
         "The result of {meetingTitle} was generated again after a correction request. Earlier approvals do not carry over.\nPlease review and approve the new result on the Committee page: {link}",
+    },
+  },
+  co_owner_vote: {
+    th: {
+      subject: "ท่านได้รับสิทธิ์ลงคะแนนแทนเจ้าของ: {meetingTitle}",
+      body:
+        "เจ้าของห้องให้ท่านลงคะแนนแทนในการประชุม {meetingTitle}\nเข้าสู่ระบบด้วยบัญชี Google เพื่อลงคะแนน: {link}\n\nนิติบุคคลอาคารชุด {projectName}",
+    },
+    en: {
+      subject: "You can vote for a room: {meetingTitle}",
+      body:
+        "The owner of record lets you vote for their room in {meetingTitle}.\nSign in with your Google account to vote: {link}\n\n{projectName} juristic person",
     },
   },
   result_approved: {

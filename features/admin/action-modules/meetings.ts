@@ -720,10 +720,14 @@ export async function publishMeeting(formData: FormData) {
       .from("profiles")
       .select("id, email, default_status, approval_status")
       .eq("approval_status", "approved"),
+    // One owner of record per room (item 15); the oldest link first, so the
+    // same owner is picked every time.
     supabase
       .from("room_owners")
       .select("room_id, owners(email)")
-      .is("ends_at", null),
+      .is("ends_at", null)
+      .eq("ownership_role", "owner")
+      .order("created_at", { ascending: true }),
     supabase
       .from("proxy_authorizations")
       .select("room_id, proxy_profile_id, rooms(ownership_percent)")

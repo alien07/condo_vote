@@ -105,6 +105,20 @@ requester). `approve_close_voting` is no longer granted to signed-in users.
 `committee_overview()` returns approvers, objections and correction requests.
 Database tests: `supabase/tests/committee_workflow.test.sql`.
 
+## Roles And Ownership (D022)
+Migration 0031 adds the `staff` and `auditor` roles. `is_office_staff()`
+(admin or staff) replaces the admin check on every policy of `rooms`,
+`owners`, `room_owners`, `manual_ballots` and `manual_ballot_answers`, and on
+the select policies of the tables those forms read; `submit_manual_ballot`
+accepts staff. Auditors get select policies on the audit log, meetings,
+profiles, committee requests, correction requests and official result
+files. `approve_result_snapshot` refuses the generator of a snapshot and
+whoever answered its correction as fixed. `profile_access_active()` limits
+external proxy holders to the time they hold an open proxy.
+`grant_co_owner_vote` and `cancel_co_owner_vote` let the owner of record
+hand one room to a resident co-owner for one meeting.
+Database tests: `supabase/tests/roles_ownership.test.sql`.
+
 ## Member Access
 Migration 0029 limits published results to approved members:
 `is_approved_member()` is true for an approved profile or any staff role

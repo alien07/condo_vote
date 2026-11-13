@@ -5,6 +5,8 @@ import { groupVoteRows } from "@/features/voting/grouping";
 import { VoteRowCard } from "@/features/voting/components/vote-row-card";
 import { getI18n } from "@/lib/i18n/server";
 import { requireVoteAccess } from "@/lib/auth/access";
+import { ConfirmButton } from "@/features/ui/confirm-button";
+import { cancelCoOwnerVote } from "@/features/voting/co-owner-actions";
 
 /** Closed meetings shown before "Show all" (demo feedback item 7). */
 const CLOSED_PREVIEW = 3;
@@ -72,8 +74,28 @@ export default async function VotePage({ searchParams }: VotePageProps) {
             <h2 className="font-semibold">{t.delegatedTitle}</h2>
             <ul className="mt-2 grid gap-1 text-[var(--muted)]">
               {access.delegatedRooms.map((room) => (
-                <li key={`${room.meeting_title}:${room.room_number}`}>
-                  {t.delegated(room.room_number, room.proxy_name, room.meeting_title)}
+                <li className="flex flex-wrap items-center gap-2" key={`${room.meeting_title}:${room.room_number}`}>
+                  <span>
+                    {t.delegated(
+                      room.room_number,
+                      room.kind === "co_owner" ? `${room.proxy_name} (${t.coOwnerLabel})` : room.proxy_name,
+                      room.meeting_title,
+                    )}
+                  </span>
+                  {room.can_cancel && room.id ? (
+                    <form action={cancelCoOwnerVote}>
+                      <input name="id" type="hidden" value={room.id} />
+                      <ConfirmButton
+                        cancelLabel={t.cancel}
+                        className="min-h-11 rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-1 font-medium text-[var(--foreground)]"
+                        confirmLabel={t.confirm}
+                        confirmMessage={t.confirmCoOwnerCancel}
+                        confirmTitle={t.confirmTitle}
+                      >
+                        {t.coOwnerCancel}
+                      </ConfirmButton>
+                    </form>
+                  ) : null}
                 </li>
               ))}
             </ul>
