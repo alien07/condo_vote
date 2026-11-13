@@ -213,7 +213,24 @@ Status: implemented (migration 0027)
   viewer's language through `translateMessage()` (`lib/i18n/staff/messages.ts`).
   A message without a Thai entry shows in English.
 - The official result record is always Thai. The English owner summary
-  says the Thai version prevails.
+  and the English ballot say the Thai version prevails, near the top.
+- English versions of admin-typed content (migration 0032, demo review
+  2026-11-13): a per-condo switch in Setup (`bilingual_documents`) asks for
+  English next to the Thai meeting title, venue, agenda titles, questions,
+  legal notes and choices, and English condo and juristic person names.
+  Admin > Meetings > English text shows Thai beside English with a Translate
+  button per line and "Translate all". Machine drafts use a fixed glossary
+  of legal terms (`lib/translation/glossary.ts`); person names are
+  transliterated. The admin ticks "I checked the English" before publishing;
+  publishing is blocked until English is filled and checked (checked at
+  publish time, not when saving a draft). After publishing only English can
+  change, and the change is audited; the overview lists meetings missing
+  English, and nothing blocks voting. Result snapshots copy the English;
+  older ones fall back to Thai. Translation runs only when an admin presses
+  the button, from the server: Azure AI Translator (free tier F0) in real
+  use, or the demo list (`TRANSLATION_PROVIDER=mock`, the default without a
+  key), which marks unknown text "[no demo translation]". The privacy notice
+  should mention that meeting text may be sent to the translation service.
 - Queued emails store the recipient's language in `email_logs.language`;
   recipients without a profile get Thai. Email text lives in
   `features/email/templates.ts` until admin-editable templates (V2).

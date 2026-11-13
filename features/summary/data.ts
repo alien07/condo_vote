@@ -15,6 +15,9 @@ export type SummaryPayload = {
   } | null;
   meeting?: {
     title?: string;
+    /** English text (item 6b); older snapshots have none. */
+    title_en?: string | null;
+    location_en?: string | null;
     meeting_number?: string | null;
     meeting_type?: string | null;
     fiscal_year?: string | null;
@@ -40,7 +43,9 @@ export type SummaryPayload = {
   questions?: {
     agenda_no?: string | null;
     agenda_title?: string | null;
+    agenda_title_en?: string | null;
     text?: string;
+    text_en?: string | null;
     resolution_type?: string;
     legal_note?: string | null;
     requires_land_office_registration?: boolean | null;
@@ -50,6 +55,7 @@ export type SummaryPayload = {
     choices?: {
       id?: string;
       text?: string;
+      text_en?: string | null;
       is_abstain?: boolean;
       vote_count?: number;
       ownership?: number;
@@ -209,7 +215,7 @@ async function getCondoProfile() {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("condo_profiles")
-    .select("project_name, juristic_name, document_footer, summary_history_limit")
+    .select("project_name, juristic_name, document_footer, summary_history_limit, project_name_en, juristic_name_en")
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();

@@ -431,15 +431,18 @@ export type Database = {
       condo_profiles: {
         Row: {
           address: string | null
+          bilingual_documents: boolean
           created_at: string
           document_footer: string | null
           email: string | null
           id: string
           juristic_name: string
+          juristic_name_en: string | null
           logo_storage_path: string | null
           manager_name: string | null
           phone: string | null
           project_name: string
+          project_name_en: string | null
           record_signatories: string[]
           registration_no: string | null
           result_notice_days: number | null
@@ -450,15 +453,18 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          bilingual_documents?: boolean
           created_at?: string
           document_footer?: string | null
           email?: string | null
           id?: string
           juristic_name: string
+          juristic_name_en?: string | null
           logo_storage_path?: string | null
           manager_name?: string | null
           phone?: string | null
           project_name: string
+          project_name_en?: string | null
           record_signatories?: string[]
           registration_no?: string | null
           result_notice_days?: number | null
@@ -469,15 +475,18 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          bilingual_documents?: boolean
           created_at?: string
           document_footer?: string | null
           email?: string | null
           id?: string
           juristic_name?: string
+          juristic_name_en?: string | null
           logo_storage_path?: string | null
           manager_name?: string | null
           phone?: string | null
           project_name?: string
+          project_name_en?: string | null
           record_signatories?: string[]
           registration_no?: string | null
           result_notice_days?: number | null
@@ -767,6 +776,7 @@ export type Database = {
       meeting_choices: {
         Row: {
           choice_text: string
+          choice_text_en: string | null
           created_at: string
           display_order: number
           id: string
@@ -775,6 +785,7 @@ export type Database = {
         }
         Insert: {
           choice_text: string
+          choice_text_en?: string | null
           created_at?: string
           display_order?: number
           id?: string
@@ -783,6 +794,7 @@ export type Database = {
         }
         Update: {
           choice_text?: string
+          choice_text_en?: string | null
           created_at?: string
           display_order?: number
           id?: string
@@ -980,16 +992,19 @@ export type Database = {
         Row: {
           agenda_no: string | null
           agenda_title: string | null
+          agenda_title_en: string | null
           created_at: string
           display_order: number
           id: string
           legal_note: string | null
+          legal_note_en: string | null
           max_choices: number | null
           meeting_id: string
           pass_basis: string
           pass_operator: string
           pass_percent: number
           question_text: string
+          question_text_en: string | null
           question_type: string
           required: boolean
           required_threshold: string
@@ -999,16 +1014,19 @@ export type Database = {
         Insert: {
           agenda_no?: string | null
           agenda_title?: string | null
+          agenda_title_en?: string | null
           created_at?: string
           display_order?: number
           id?: string
           legal_note?: string | null
+          legal_note_en?: string | null
           max_choices?: number | null
           meeting_id: string
           pass_basis?: string
           pass_operator?: string
           pass_percent?: number
           question_text: string
+          question_text_en?: string | null
           question_type?: string
           required?: boolean
           required_threshold?: string
@@ -1018,16 +1036,19 @@ export type Database = {
         Update: {
           agenda_no?: string | null
           agenda_title?: string | null
+          agenda_title_en?: string | null
           created_at?: string
           display_order?: number
           id?: string
           legal_note?: string | null
+          legal_note_en?: string | null
           max_choices?: number | null
           meeting_id?: string
           pass_basis?: string
           pass_operator?: string
           pass_percent?: number
           question_text?: string
+          question_text_en?: string | null
           question_type?: string
           required?: boolean
           required_threshold?: string
@@ -1054,10 +1075,13 @@ export type Database = {
           created_at: string
           description: string | null
           ends_at: string
+          english_checked_at: string | null
+          english_checked_by: string | null
           fiscal_year: string | null
           id: string
           identity_method: string | null
           location: string | null
+          location_en: string | null
           meeting_number: string | null
           meeting_round: string
           meeting_type: string
@@ -1069,6 +1093,7 @@ export type Database = {
           starts_at: string
           status: string
           title: string
+          title_en: string | null
           traffic_log_reference: string | null
           transcript: string | null
           updated_at: string
@@ -1083,10 +1108,13 @@ export type Database = {
           created_at?: string
           description?: string | null
           ends_at: string
+          english_checked_at?: string | null
+          english_checked_by?: string | null
           fiscal_year?: string | null
           id?: string
           identity_method?: string | null
           location?: string | null
+          location_en?: string | null
           meeting_number?: string | null
           meeting_round?: string
           meeting_type?: string
@@ -1098,6 +1126,7 @@ export type Database = {
           starts_at: string
           status?: string
           title: string
+          title_en?: string | null
           traffic_log_reference?: string | null
           transcript?: string | null
           updated_at?: string
@@ -1112,10 +1141,13 @@ export type Database = {
           created_at?: string
           description?: string | null
           ends_at?: string
+          english_checked_at?: string | null
+          english_checked_by?: string | null
           fiscal_year?: string | null
           id?: string
           identity_method?: string | null
           location?: string | null
+          location_en?: string | null
           meeting_number?: string | null
           meeting_round?: string
           meeting_type?: string
@@ -1127,6 +1159,7 @@ export type Database = {
           starts_at?: string
           status?: string
           title?: string
+          title_en?: string | null
           traffic_log_reference?: string | null
           transcript?: string | null
           updated_at?: string
@@ -1852,6 +1885,10 @@ export type Database = {
         Returns: Json
       }
       result_required_approvals: { Args: { p_meeting_id: string }; Returns: number }
+      save_meeting_english: {
+        Args: { p_checked: boolean; p_meeting_id: string; p_text: Json }
+        Returns: Json
+      }
       set_preferred_language: { Args: { language: string }; Returns: undefined }
       submit_ballot: {
         Args: { p_answers: Json; p_meeting_id: string; p_room_id: string }

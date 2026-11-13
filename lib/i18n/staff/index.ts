@@ -4,6 +4,7 @@ import { commonText } from "@/lib/i18n/staff/common";
 import { committeeText } from "@/lib/i18n/staff/committee";
 import { communicationsText } from "@/lib/i18n/staff/communications";
 import { documentsText } from "@/lib/i18n/staff/documents";
+import { englishText } from "@/lib/i18n/staff/english";
 import { meetingsText } from "@/lib/i18n/staff/meetings";
 import { ownershipText } from "@/lib/i18n/staff/ownership";
 import { peopleText } from "@/lib/i18n/staff/people";
@@ -26,6 +27,7 @@ const areas = {
   system: systemText,
   setup: setupText,
   documents: documentsText,
+  english: englishText,
   people: peopleText,
   ownership: ownershipText,
   meetings: meetingsText,

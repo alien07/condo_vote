@@ -7,7 +7,7 @@ export async function getVotingDashboardData() {
   const { data: snapshotRows, error: eligibleError } = await supabase
     .from("eligible_voters_snapshot")
     .select(
-      "id, meeting_id, room_id, voter_type, ownership_percent, source, meetings(id, title, description, starts_at, ends_at, status, meeting_number, meeting_type, ballot_secrecy, closed_at, advance_starts_at, advance_ends_at), rooms(id, room_number, ownership_percent)",
+      "id, meeting_id, room_id, voter_type, ownership_percent, source, meetings(id, title, title_en, description, starts_at, ends_at, status, meeting_number, meeting_type, ballot_secrecy, closed_at, advance_starts_at, advance_ends_at), rooms(id, room_number, ownership_percent)",
     )
     .eq("profile_id", profile.id)
     .order("created_at", { ascending: false });
@@ -35,7 +35,7 @@ export async function getVotingDashboardData() {
     supabase
       .from("meeting_questions")
       .select(
-        "id, meeting_id, agenda_no, agenda_title, question_text, question_type, max_choices, display_order, required, meeting_choices(id, choice_text, display_order, is_abstain)",
+        "id, meeting_id, agenda_no, agenda_title, agenda_title_en, question_text, question_text_en, question_type, max_choices, display_order, required, meeting_choices(id, choice_text, choice_text_en, display_order, is_abstain)",
       )
       .in("meeting_id", meetingIds)
       .order("display_order", { ascending: true }),
@@ -87,7 +87,7 @@ export async function getVotingAssignmentData(meetingId: string, roomId: string)
   const { data: eligible, error: eligibleError } = await supabase
     .from("eligible_voters_snapshot")
     .select(
-      "id, meeting_id, room_id, voter_type, ownership_percent, source, meetings(id, title, description, starts_at, ends_at, status, meeting_number, meeting_type, ballot_secrecy, closed_at, advance_starts_at, advance_ends_at), rooms(id, room_number, ownership_percent)",
+      "id, meeting_id, room_id, voter_type, ownership_percent, source, meetings(id, title, title_en, description, starts_at, ends_at, status, meeting_number, meeting_type, ballot_secrecy, closed_at, advance_starts_at, advance_ends_at), rooms(id, room_number, ownership_percent)",
     )
     .eq("profile_id", profile.id)
     .eq("meeting_id", meetingId)
@@ -111,7 +111,7 @@ export async function getVotingAssignmentData(meetingId: string, roomId: string)
     supabase
       .from("meeting_questions")
       .select(
-        "id, meeting_id, agenda_no, agenda_title, question_text, question_type, max_choices, display_order, required, meeting_choices(id, choice_text, display_order, is_abstain)",
+        "id, meeting_id, agenda_no, agenda_title, agenda_title_en, question_text, question_text_en, question_type, max_choices, display_order, required, meeting_choices(id, choice_text, choice_text_en, display_order, is_abstain)",
       )
       .eq("meeting_id", meetingId)
       .order("display_order", { ascending: true }),

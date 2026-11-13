@@ -7,6 +7,7 @@ import { VotingStatusBadge } from "@/features/voting/status-badge";
 import { getVotingWindowStatus } from "@/features/voting/status";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
 import type { Locale } from "@/lib/i18n/locales";
+import { localized } from "@/lib/i18n/content";
 
 export type VoteRow = Awaited<ReturnType<typeof getVotingDashboardData>>["eligibleRows"][number];
 
@@ -38,7 +39,9 @@ export function VoteRowCard({
     >
       <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
         <div>
-          <h3 className="text-lg font-semibold">{meeting?.title ?? t.meeting}</h3>
+          <h3 className="text-lg font-semibold">
+            {meeting ? localized(locale, meeting.title, meeting.title_en) : t.meeting}
+          </h3>
           <p className="mt-1 text-sm text-[var(--muted)]">
             {describeVoterRoom(
               row.rooms?.room_number,

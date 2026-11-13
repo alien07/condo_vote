@@ -26,6 +26,9 @@ type CondoProfile = {
   tax_id: string | null;
   record_signatories?: string[];
   result_notice_days?: number | null;
+  project_name_en?: string | null;
+  juristic_name_en?: string | null;
+  bilingual_documents?: boolean;
 } | null;
 
 type AppSettings = {
@@ -179,6 +182,39 @@ export function JuristicProfileForm({
           required
         />
         <FieldError fieldName="project_name" prefix="condo-profile" state={state} />
+      </label>
+      {/* Two-language documents (demo feedback item 6b). */}
+      <label className="grid gap-1 text-sm font-medium">
+        {s.english.juristicNameEn}
+        <input
+          className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+          defaultValue={stateValue(state, "juristic_name_en", condoProfile?.juristic_name_en ?? "")}
+          lang="en"
+          name="juristic_name_en"
+        />
+      </label>
+      <label className="grid gap-1 text-sm font-medium">
+        {s.english.projectNameEn}
+        <input
+          className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+          defaultValue={stateValue(state, "project_name_en", condoProfile?.project_name_en ?? "")}
+          lang="en"
+          name="project_name_en"
+        />
+      </label>
+      <label className="flex items-start gap-2 text-sm font-medium md:col-span-2">
+        <input
+          className="mt-1"
+          defaultChecked={
+            state?.values ? state.values.bilingual_documents === "on" : Boolean(condoProfile?.bilingual_documents)
+          }
+          name="bilingual_documents"
+          type="checkbox"
+        />
+        <span>
+          {s.english.bilingualSwitch}
+          <span className="block font-normal text-[var(--muted)]">{s.english.bilingualHelp}</span>
+        </span>
       </label>
       <input
         className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"

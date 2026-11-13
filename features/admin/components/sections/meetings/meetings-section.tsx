@@ -3,6 +3,7 @@ import { codeLabel, fill } from "@/lib/i18n/template";
 import { CalendarDays } from "lucide-react";
 import { PerPageSelect } from "@/features/admin/components/table-controls";
 import { archiveMeeting, generateResultSnapshot, publishMeeting } from "@/features/admin/actions";
+import { createClient } from "@/lib/supabase/server";
 import { PendingSubmitButton } from "@/features/debug/tracked-submit-button";
 import { ConfirmSubmitButton } from "@/features/admin/components/form-controls";
 import { MeetingCrudDrawer, MeetingRowFocus } from "@/features/admin/components/meeting-crud-drawer";
@@ -48,6 +49,14 @@ export async function MeetingsSection({
   hidden,
 }: MeetingsSectionProps) {
   const { s } = await getStaffI18n();
+  // Two-language documents (item 6b): mark meetings still missing English.
+  const { data: condoSettings } = await (await createClient())
+    .from("condo_profiles")
+    .select("bilingual_documents")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const bilingual = Boolean(condoSettings?.bilingual_documents);
   const meetingTableFilters: Required<MeetingTableFilters> = {
     dir: meetingFilters?.dir ?? "asc",
     noType: meetingFilters?.noType ?? "",
@@ -367,6 +376,19 @@ export async function MeetingsSection({
                             </PendingSubmitButton>
                           </form>
                         </>
+                      ) : null}
+                      {meeting.status !== "archived" ? (
+                        <a
+                          className="rounded-md border border-[var(--border)] px-3 py-1 text-sm font-medium text-[var(--primary)]"
+                          href={`/admin/meetings/${meeting.id}/english`}
+                        >
+                          {s.english.openEditor}
+                          {bilingual && (!meeting.title_en || !meeting.english_checked_at) ? (
+                            <span className="ml-2 rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-900">
+                              {!meeting.title_en ? s.english.missing : s.english.needsCheck}
+                            </span>
+                          ) : null}
+                        </a>
                       ) : null}
                       {meeting.status !== "archived" ? (
                         <form action={archiveMeeting}>
