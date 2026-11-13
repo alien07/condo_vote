@@ -19,6 +19,16 @@ const en = {
     rejected: "Your account was not approved. Contact the juristic person office.",
     help: "Help",
     user: "user",
+    roles: {
+      admin: "Admin",
+      committee: "Committee",
+      system_admin: "System admin",
+    } as Record<string, string>,
+    statuses: {
+      owner: "Owner",
+      resident: "Resident",
+      proxy: "Proxy holder",
+    } as Record<string, string>,
     nav: {
       admin: "Admin",
       committee: "Committee",
@@ -78,9 +88,12 @@ const en = {
   vote: {
     title: "Vote",
     intro: "Select an eligible meeting and room to submit or edit a ballot.",
-    emptyTitle: "No eligible voting assignments",
+    emptyTitle: "No meeting is open for your rooms",
     emptyText:
-      "Your profile is signed in, but no published owner/proxy voting assignment is available yet. Check Summary for approved results or contact the admin if you expect voting access.",
+      "There is no ballot for you right now. When the office opens a meeting, your rooms appear here. Contact the office if you expected to vote.",
+    delegatedTitle: "Rooms held by a proxy",
+    delegated: (room: string, proxy: string, meeting: string) =>
+      `${room} is held by ${proxy} for ${meeting}. You cannot vote for this room in that meeting.`,
     openSummary: "Open summary",
     openBallot: "Open ballot",
     meeting: "Meeting",
@@ -211,6 +224,16 @@ const th: Dictionary = {
     rejected: "บัญชีของท่านไม่ได้รับอนุมัติ โปรดติดต่อสำนักงานนิติบุคคล",
     help: "ช่วยเหลือ",
     user: "ผู้ใช้",
+    roles: {
+      admin: "ผู้ดูแล",
+      committee: "คณะกรรมการ",
+      system_admin: "ผู้ดูแลระบบเทคนิค",
+    } as Record<string, string>,
+    statuses: {
+      owner: "เจ้าของร่วม",
+      resident: "ผู้อยู่อาศัย",
+      proxy: "ผู้รับมอบฉันทะ",
+    } as Record<string, string>,
     nav: {
       admin: "ผู้ดูแล",
       committee: "คณะกรรมการ",
@@ -270,9 +293,12 @@ const th: Dictionary = {
   vote: {
     title: "ลงคะแนน",
     intro: "เลือกการประชุมและห้องที่มีสิทธิ์ เพื่อลงหรือแก้ไขคะแนน",
-    emptyTitle: "ยังไม่มีการประชุมที่ท่านมีสิทธิ์ลงคะแนน",
+    emptyTitle: "ยังไม่มีการประชุมที่เปิดให้ห้องของท่านลงคะแนน",
     emptyText:
-      "ท่านเข้าสู่ระบบแล้ว แต่ยังไม่มีการประชุมที่เปิดให้ท่านลงคะแนนในฐานะเจ้าของหรือผู้รับมอบฉันทะ ดูผลที่อนุมัติแล้วได้ที่หน้าผลการลงมติ หรือติดต่อผู้ดูแลถ้าท่านควรมีสิทธิ์",
+      "ตอนนี้ยังไม่มีบัตรลงคะแนนสำหรับท่าน เมื่อนิติบุคคลเปิดการประชุม ห้องของท่านจะแสดงที่นี่ ถ้าท่านควรได้ลงคะแนน โปรดติดต่อสำนักงานนิติบุคคล",
+    delegatedTitle: "ห้องที่มอบฉันทะแล้ว",
+    delegated: (room: string, proxy: string, meeting: string) =>
+      `ห้อง ${room} มอบฉันทะให้ ${proxy} ใน ${meeting} ท่านลงคะแนนห้องนี้เองในการประชุมนั้นไม่ได้`,
     openSummary: "ดูผลการลงมติ",
     openBallot: "เปิดบัตรลงคะแนน",
     meeting: "การประชุม",

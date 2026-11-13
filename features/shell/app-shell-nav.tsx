@@ -22,6 +22,10 @@ type AppShellNavProps = {
   isAdmin: boolean;
   isCommittee?: boolean;
   isSystemAdmin?: boolean;
+  /** Owners, proxies and anyone holding a ballot right (my_member_access). */
+  canVote?: boolean;
+  /** Approved members and staff. */
+  canViewResults?: boolean;
 };
 
 const navItems = [
@@ -50,12 +54,14 @@ const navItems = [
     key: "vote",
     icon: CheckSquare,
     adminOnly: false,
+    voterOnly: true,
   },
   {
     href: "/summary",
     key: "summary",
     icon: BarChart3,
     adminOnly: false,
+    memberOnly: true,
   },
 ] as const;
 
@@ -116,6 +122,8 @@ export function AppShellNav({
   isAdmin,
   isCommittee = false,
   isSystemAdmin = false,
+  canVote = false,
+  canViewResults = false,
 }: AppShellNavProps) {
   const pathname = usePathname();
   const breadcrumbs = getBreadcrumbs(pathname, labels);
@@ -132,6 +140,8 @@ export function AppShellNav({
             .filter((item) => !item.adminOnly || isAdmin)
             .filter((item) => !("committeeOnly" in item) || isAdmin || isCommittee)
             .filter((item) => !("systemAdminOnly" in item) || isSystemAdmin)
+            .filter((item) => !("voterOnly" in item) || canVote)
+            .filter((item) => !("memberOnly" in item) || canViewResults)
             .map((item) => {
               const Icon = item.icon;
               const active =

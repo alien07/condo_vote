@@ -177,9 +177,12 @@ Status: implemented (migration 0026)
 Status: implemented (migration 0027)
 
 - `profiles.preferred_language` is `th` or `en`; Thai is the default.
-- Language for a request: the switcher cookie (`lang`), then the signed-in
-  profile, then Thai. The switcher (ไทย / EN) sets the cookie and saves the
-  profile through `set_preferred_language()`.
+- Language for a request: the signed-in profile, then the switcher cookie
+  (`lang`), then Thai. Changed 2026-11-13 after the demo review: before, the
+  cookie came first, so a person signing in on a browser someone else had
+  switched saw the other person's language. The switcher (ไทย / EN) sets the
+  cookie and saves the profile through `set_preferred_language()`, so it
+  still takes effect at once. A new profile starts in the cookie's language.
 - Owner-facing pages use it: home, login, consent, vote list and ballot,
   owner summary, verify page, header and navigation.
 - Staff pages (admin, committee, system) follow the same rule, in three

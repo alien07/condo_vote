@@ -66,6 +66,7 @@ async function createProfile(supabase: SupabaseAdmin, voterType: VoterType) {
       full_name: fullName,
       approval_status: "approved",
       default_status: voterType,
+      preferred_language: "en",
     })
     .select("id")
     .single();

@@ -94,6 +94,20 @@ function that changes only the caller's own profile. Admins change any
 profile's language through the existing admin update policy.
 Database tests: `supabase/tests/owner_language.test.sql`.
 
+## Member Access
+Migration 0029 limits published results to approved members:
+`is_approved_member()` is true for an approved profile or any staff role
+(admin, committee, system admin). `result_snapshots`, `result_publications`,
+`committee_approvals`, and summary files in `result_documents` and the
+`result-documents` bucket require it, so a pending or rejected account (anyone
+with a Google account can become one) reads no results.
+`verify_result_reference(snapshot)` returns only the meeting title, hash, and
+publication of a published result, so the verify page works for every
+signed-in account. `my_member_access()` returns what the app shows: results,
+the Vote menu (approved owner, proxy, or ballot right), and own rooms a proxy
+holds in an open meeting.
+Database tests: `supabase/tests/member_access.test.sql`.
+
 ## Master PDF Files (D021)
 Migration 0028: `result_documents` rows and files in the `result-documents`
 bucket are added only for published results, by admin or committee. Admin

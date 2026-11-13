@@ -86,6 +86,7 @@ async function createUser(supabase: Supabase, label: string, roles: string[] = [
       full_name: `${label} ${stamp}`,
       approval_status: "approved",
       default_status: "resident",
+      preferred_language: "en",
     })
     .select("id")
     .single();
@@ -141,8 +142,11 @@ test.describe("@test:e2e @test:auth @test:privacy privacy and system settings", 
       await page.getByRole("button", { name: "I accept" }).click();
       await expect(page).toHaveURL(/:3000\/$/);
 
-      await page.goto("/vote");
-      await expect(page.getByRole("heading", { name: "Vote" })).toBeVisible();
+      // A resident has no Vote page; results are the page to land on.
+      await page.goto("/summary");
+      await expect(
+        page.getByRole("heading", { exact: true, name: "Result Summary" }),
+      ).toBeVisible();
 
       const { data: consents } = await supabase
         .from("profile_consents")

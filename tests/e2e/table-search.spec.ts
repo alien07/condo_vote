@@ -79,6 +79,7 @@ test.describe("@test:e2e @test:admin @test:table-search table search", () => {
           approval_status: "approved",
           auth_user_id: user!.id,
           default_status: "owner",
+          preferred_language: "en",
           email: demoAdminEmail,
           full_name: demoAdminName,
         },

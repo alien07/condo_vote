@@ -191,4 +191,5 @@ Then:
 - Documents in the registry (proxy A-103, A-201 title deed) are metadata only; there is no real file at the path.
 - Emails are not actually sent (`example.test` domain); invite rows have a sent status for display only.
 - Admin pages still show dates in English format.
+- On a phone on the same Wi-Fi, open `http://<PC IP>:3000` and use the demo persona buttons; sign-in now returns to the PC's IP. **Sign in with Google does not work from a phone over a LAN IP**, because Google accepts only localhost or https addresses as redirect targets. To test Google on a real phone, use a temporary https tunnel or a preview deployment.
 - The bypass buttons appear only on localhost/LAN. `next start` additionally needs `ENABLE_LOCAL_AUTH_BYPASS=1` and a local Supabase URL.

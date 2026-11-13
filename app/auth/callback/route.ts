@@ -4,6 +4,7 @@ import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import type { EmailOtpType } from "@supabase/supabase-js";
 import { ensureProfile } from "@/features/auth/profile";
 import { ERROR_CODES, type ErrorCode } from "@/lib/error-codes";
+import { getRequestOrigin } from "@/lib/auth/request-origin";
 import type { Database } from "@/lib/supabase/database.types";
 
 function getSummaryPath(meetingId: string | null) {
@@ -25,6 +26,8 @@ function parseVoteNext(next: string) {
 
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url);
+  // The host the browser used (a phone on the LAN), not the server's own.
+  const origin = getRequestOrigin(request.headers, request.url);
   const code = requestUrl.searchParams.get("code");
   const tokenHash = requestUrl.searchParams.get("token_hash");
   const type = requestUrl.searchParams.get("type") as EmailOtpType | null;
@@ -61,7 +64,7 @@ export async function GET(request: NextRequest) {
     },
   );
   const redirectWithCookies = (path: string) => {
-    const response = NextResponse.redirect(new URL(path, requestUrl.origin));
+    const response = NextResponse.redirect(new URL(path, origin));
 
     pendingCookies.forEach(({ name, options, value }) => {
       response.cookies.set(name, value, options);

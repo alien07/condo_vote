@@ -14,6 +14,7 @@ import { APP_NAME, APP_VERSION } from "@/lib/app-config";
 import { LanguageSwitcher } from "@/features/i18n/language-switcher";
 import { getI18n } from "@/lib/i18n/server";
 import { getCurrentProfileWithRoles } from "@/lib/auth/permissions";
+import { getMemberAccess } from "@/lib/auth/access";
 import { ApprovalNotice } from "@/features/shell/approval-notice";
 
 export const dynamic = "force-dynamic";
@@ -32,6 +33,9 @@ export default async function HomePage({ searchParams }: HomePageProps) {
   ]);
   const t = dict.home;
   const roles = current?.roles ?? [];
+  // Signed out: the cards lead to sign-in. Signed in: only what the account
+  // can open (pending and rejected accounts see neither, item 4).
+  const access = current ? await getMemberAccess() : null;
   const sections = [
     {
       href: "/vote",
@@ -39,7 +43,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
       label: t.voteTitle,
       description: t.voteText,
       icon: ClipboardCheck,
-      show: true,
+      show: !access || access.canVote,
     },
     {
       href: "/summary",
@@ -47,7 +51,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
       label: t.summaryTitle,
       description: t.summaryText,
       icon: BarChart3,
-      show: true,
+      show: !access || access.canViewResults,
     },
     {
       href: "/committee",
@@ -118,6 +122,8 @@ export default async function HomePage({ searchParams }: HomePageProps) {
                 signOut: dict.shell.signOut,
                 signingOut: dict.shell.signingOut,
                 user: dict.shell.user,
+                roles: dict.shell.roles,
+                statuses: dict.shell.statuses,
               }}
             />
           </div>

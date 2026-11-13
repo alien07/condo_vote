@@ -1,4 +1,6 @@
 import type { User } from "@supabase/supabase-js";
+import { cookies } from "next/headers";
+import { isLocale, LOCALE_COOKIE } from "@/lib/i18n/locales";
 import type { Database } from "@/lib/supabase/database.types";
 import type { createClient } from "@/lib/supabase/server";
 
@@ -30,10 +32,13 @@ export async function ensureProfile(
       ? metadata.full_name.trim()
       : email;
 
+  // A new profile starts in the language chosen before signing in (D020).
+  const cookieLocale = (await cookies()).get(LOCALE_COOKIE)?.value;
   const profile: ProfileInsert = {
     auth_user_id: user.id,
     email,
     full_name: fullName,
+    ...(isLocale(cookieLocale) ? { preferred_language: cookieLocale } : {}),
   };
 
   const { data, error } = await supabase

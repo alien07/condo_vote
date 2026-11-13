@@ -5,15 +5,10 @@ import { getStaffDictionary, type StaffDictionary } from "@/lib/i18n/staff";
 import { DEFAULT_LOCALE, isLocale, LOCALE_COOKIE, type Locale } from "@/lib/i18n/locales";
 import { createClient } from "@/lib/supabase/server";
 
-/** Language for this request: the switcher cookie, then the signed-in
- * profile, then Thai (D020). */
+/** Language for this request: the signed-in profile, then the switcher
+ * cookie, then Thai (D020, changed after the demo review: the person's own
+ * choice wins over a cookie another person left in a shared browser). */
 export const getLocale = cache(async function getLocale(): Promise<Locale> {
-  const cookieLocale = (await cookies()).get(LOCALE_COOKIE)?.value;
-
-  if (isLocale(cookieLocale)) {
-    return cookieLocale;
-  }
-
   const supabase = await createClient();
   const {
     data: { user },
@@ -29,6 +24,12 @@ export const getLocale = cache(async function getLocale(): Promise<Locale> {
     if (isLocale(data?.preferred_language)) {
       return data.preferred_language;
     }
+  }
+
+  const cookieLocale = (await cookies()).get(LOCALE_COOKIE)?.value;
+
+  if (isLocale(cookieLocale)) {
+    return cookieLocale;
   }
 
   return DEFAULT_LOCALE;
