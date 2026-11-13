@@ -19,6 +19,30 @@ Current version is read from `package.json` and shown in the browser title as `c
 
 Use `npm version patch`, `npm version minor`, or `npm version major` when intentionally bumping the app version.
 
+## Start And Stop In One Command
+For live tests and demos on this computer. Each script brings up Docker,
+the Supabase local stack, and the app, and waits until each one answers.
+
+| | Windows | macOS / Linux |
+|---|---|---|
+| Start | `start-local.bat` (double-click works) | `./start-local.sh` |
+| Start + fresh demo data | `start-local.bat -Seed` | `./start-local.sh --seed` |
+| Use `next dev` | `start-local.bat -Dev` | `./start-local.sh --dev` |
+| Force a rebuild | `start-local.bat -Build` | `./start-local.sh --build` |
+| Stop app + Supabase | `stop-local.bat` | `./stop-local.sh` |
+| Stop only the app | `stop-local.bat -AppOnly` | `./stop-local.sh --app-only` |
+
+- Start runs the production build with the demo sign-in buttons on
+  (`ENABLE_LOCAL_AUTH_BYPASS=1`, local only). It rebuilds only when the
+  commit or tracked files changed since the last local build.
+- `-Seed` wipes the local database (`scripts/seed-demo.mjs --reset --consent`).
+- Windows: the server runs in its own window titled `condoVotes-local-server`,
+  which shows the log. macOS/Linux: the log is `.next/local-server.log`.
+- Stop keeps all data in Docker volumes.
+- Windows, after a restart: if start says Windows is holding the Supabase
+  ports, open PowerShell as Administrator and run `net stop winnat` then
+  `net start winnat`, then start again.
+
 ## Supabase Local Stack
 Use the Supabase CLI with Docker for local development. Supabase official docs describe the CLI local stack as Docker-based and recommend local migrations before pushing to a linked Supabase project.
 

@@ -112,13 +112,12 @@ function writeLocalEnv(values) {
 function writeSupabaseConfig({ appUrl, authUrl }) {
   const configPath = "supabase/config.toml";
   let config = readFileSync(configPath, "utf8");
+  // ** patterns: the app redirects to /auth/callback?next=..., and an exact URL
+  // does not match the query string (Auth would fall back to site_url).
   const redirectUrls = [
-    "http://127.0.0.1:3000",
-    "http://127.0.0.1:3000/auth/callback",
-    "http://localhost:3000",
-    "http://localhost:3000/auth/callback",
-    appUrl,
-    `${appUrl}/auth/callback`,
+    "http://127.0.0.1:3000/**",
+    "http://localhost:3000/**",
+    `${appUrl}/**`,
   ];
 
   config = config.replace(/^site_url = ".*"$/m, `site_url = "${appUrl}"`);
