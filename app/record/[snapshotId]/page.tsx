@@ -48,7 +48,8 @@ function cssString(value: string) {
 export default async function OfficialRecordPage({ params }: RecordPageProps) {
   const { roles } = await requireProfileWithRoles();
 
-  if (!roles.includes("admin") && !roles.includes("committee")) {
+  // Auditors read official records too (item 14b).
+  if (!roles.includes("admin") && !roles.includes("committee") && !roles.includes("auditor")) {
     redirect(DENIED_PATH);
   }
 
@@ -93,6 +94,32 @@ export default async function OfficialRecordPage({ params }: RecordPageProps) {
   if (!snapshot) {
     notFound();
   }
+
+  // Correction requests of this meeting (demo feedback item 12). A high-level
+  // one is shown prominently: it was decided outside the system.
+  const { data: corrections } = await supabase
+    .from("result_correction_requests")
+    .select("category, level, reason, legal_reference, status, answer, created_at")
+    .eq("meeting_id", snapshot.meeting_id)
+    .order("created_at", { ascending: true });
+  const correctionRows = corrections ?? [];
+  const highCorrections = correctionRows.filter(
+    (correction) => correction.level === "high" && correction.status !== "no_change",
+  );
+  const correctionCategories: Record<string, string> = {
+    wording: "ข้อความวาระหรือตัวเลือก",
+    room_data: "ข้อมูลห้องหรืออัตราส่วนกรรมสิทธิ์",
+    voting_rights: "สิทธิ์ลงคะแนนหรือการมอบฉันทะ",
+    paper_ballot: "บัตรกระดาษ",
+    pass_rule: "เกณฑ์มติหรือองค์ประชุม",
+    other: "อื่น ๆ",
+  };
+  const correctionLevels: Record<string, string> = { low: "ต่ำ", medium: "กลาง", high: "สูง" };
+  const correctionStatuses: Record<string, string> = {
+    open: "รอตอบ",
+    fixed: "แก้แล้ว",
+    no_change: "ไม่ต้องแก้",
+  };
 
   const payload = (snapshot.payload_json ?? {}) as SummaryPayload;
   const meeting = payload.meeting ?? {};
@@ -337,6 +364,34 @@ export default async function OfficialRecordPage({ params }: RecordPageProps) {
 
       <section className="mt-5">
         <h2 className="text-base font-bold">6. การอนุมัติผล</h2>
+        {highCorrections.length > 0 ? (
+          <div className="mt-2 border-2 border-red-700 p-3" data-high-correction>
+            <p className="font-bold">หมายเหตุสำคัญ: มีคำขอแก้ไขผลระดับสูง</p>
+            {highCorrections.map((correction, index) => (
+              <p key={index}>
+                {correctionCategories[correction.category] ?? correction.category}: {correction.reason}
+                {correction.legal_reference ? ` (อ้างอิง ${correction.legal_reference})` : ""}
+                {correction.answer ? ` — ผลการพิจารณา: ${correction.answer}` : ""}
+              </p>
+            ))}
+          </div>
+        ) : null}
+        {correctionRows.length > 0 ? (
+          <div className="mt-2">
+            <p className="font-semibold">คำขอแก้ไขผล</p>
+            <ol className="list-decimal pl-6">
+              {correctionRows.map((correction, index) => (
+                <li key={index}>
+                  {formatThaiDateTime(correction.created_at)} ·{" "}
+                  {correctionCategories[correction.category] ?? correction.category} · ระดับ
+                  {correctionLevels[correction.level] ?? correction.level} ·{" "}
+                  {correctionStatuses[correction.status] ?? correction.status}: {correction.reason}
+                  {correction.answer ? ` — ${correction.answer}` : ""}
+                </li>
+              ))}
+            </ol>
+          </div>
+        ) : null}
         {approvals.length === 0 ? (
           <p className="mt-2">ยังไม่มีการอนุมัติ</p>
         ) : (

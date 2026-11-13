@@ -5,6 +5,7 @@ import {
 import { notFound } from "next/navigation";
 import { Vote } from "lucide-react";
 import { choiceLabel } from "@/lib/i18n/choice";
+import { localized } from "@/lib/i18n/content";
 import { RequiredMark } from "@/features/admin/components/field-label";
 import { PendingSubmitButton } from "@/features/debug/tracked-submit-button";
 import { submitBallot } from "@/features/voting/actions";
@@ -18,6 +19,7 @@ import { getVotingAssignmentData } from "@/features/voting/data";
 import { VotingStatusBadge } from "@/features/voting/status-badge";
 import { getVotingWindowStatus } from "@/features/voting/status";
 import { getI18n } from "@/lib/i18n/server";
+import { TranslationNote } from "@/features/i18n/translation-note";
 
 type VoteDetailPageProps = {
   params: Promise<{
@@ -71,12 +73,15 @@ export default async function VoteDetailPage({ params }: VoteDetailPageProps) {
     questions.flatMap((question) =>
       question.meeting_choices.map((choice) => [
         choice.id,
-        choiceLabel(choice.choice_text, choice.is_abstain, locale),
+        choiceLabel(localized(locale, choice.choice_text, choice.choice_text_en), choice.is_abstain, locale),
       ]),
     ),
   );
   const questionTextById = new Map(
-    questions.map((question) => [question.id, question.question_text]),
+    questions.map((question) => [
+      question.id,
+      localized(locale, question.question_text, question.question_text_en),
+    ]),
   );
   const ballotVersions = [...(ballot?.ballot_versions ?? [])].sort(
     (left, right) => right.version_number - left.version_number,
@@ -89,7 +94,7 @@ export default async function VoteDetailPage({ params }: VoteDetailPageProps) {
           <Vote className="mt-1 shrink-0 text-[var(--primary)]" size={26} />
           <div>
             <h1 className="text-2xl font-semibold">
-              {meeting?.title ?? t.title}
+              {meeting ? localized(locale, meeting.title, meeting.title_en) : t.title}
             </h1>
             <p className="text-sm text-[var(--muted)]">
               {describeVoterRoom(
@@ -106,6 +111,9 @@ export default async function VoteDetailPage({ params }: VoteDetailPageProps) {
             ) : null}
           </div>
         </div>
+        {/* English ballot: meeting content is Thai and the Thai text
+            prevails (demo feedback item 6a). */}
+        <TranslationNote className="mb-4" text={t.translationNote} />
 
         <section className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-5">
           <div className="flex flex-col gap-2 border-b border-[var(--border)] pb-4 md:flex-row md:items-start md:justify-between">
@@ -143,13 +151,17 @@ export default async function VoteDetailPage({ params }: VoteDetailPageProps) {
             </p>
           ) : (
             <BallotForm action={submitBallot} className="mt-4 grid gap-5">
-              <p className="text-xs text-[var(--muted)]">{t.requiredNote}</p>
+              <p className="text-xs text-[var(--muted)]">
+                {t.requiredNote.split("{mark}")[0]}
+                <RequiredMark />
+                {t.requiredNote.split("{mark}")[1]}
+              </p>
               <input name="meeting_id" type="hidden" value={eligible.meeting_id} />
               <input name="room_id" type="hidden" value={eligible.room_id} />
               {questions.map((question) => (
                 <fieldset
                   aria-describedby={`question-error-${question.id}`}
-                  className="scroll-mt-28 rounded-md border border-[var(--border)] p-4"
+                  className="scroll-mt-28 rounded-md border border-[var(--border)] p-4 aria-[invalid=true]:border-2 aria-[invalid=true]:border-[var(--danger)] aria-[invalid=true]:bg-[var(--danger-surface)]"
                   data-required={question.required ? "true" : "false"}
                   key={question.id}
                 >
@@ -160,14 +172,14 @@ export default async function VoteDetailPage({ params }: VoteDetailPageProps) {
                       <span className="block text-xs font-medium text-[var(--muted)]">
                         {[
                           question.agenda_no ? t.agenda(question.agenda_no) : null,
-                          question.agenda_title,
+                          localized(locale, question.agenda_title, question.agenda_title_en),
                         ]
                           .filter(Boolean)
                           .join(" · ")}
                       </span>
                     ) : null}
                     <span className="mt-1 block text-base font-semibold">
-                      {question.question_text}
+                      {localized(locale, question.question_text, question.question_text_en)}
                       {question.required ? (
                         <>
                           {" "}
@@ -177,7 +189,7 @@ export default async function VoteDetailPage({ params }: VoteDetailPageProps) {
                     </span>
                   </legend>
                   <p
-                    className="clear-both pt-2 text-sm font-medium text-red-700"
+                    className="clear-both pt-2 text-sm font-medium text-[var(--danger)]"
                     data-question-error
                     hidden
                     id={`question-error-${question.id}`}

@@ -101,8 +101,24 @@ export async function generateResultSnapshot(formData: FormData) {
     throw existingApprovalError;
   }
 
+  // After approvals, generating again is allowed only while a committee
+  // member's correction request is open (demo feedback item 12); the
+  // database checks the same rule.
   if (existingApprovals.length > 0) {
-    throw new Error("Cannot generate a new result after committee approval.");
+    const { data: openCorrections, error: correctionError } = await supabase
+      .from("result_correction_requests")
+      .select("id")
+      .eq("meeting_id", meetingId)
+      .eq("status", "open")
+      .limit(1);
+
+    if (correctionError) {
+      throw correctionError;
+    }
+
+    if (openCorrections.length === 0) {
+      throw new Error("Cannot generate a new result after committee approval.");
+    }
   }
 
   await assertNoPendingManualVoteIdentities(supabase, meetingId);
@@ -121,14 +137,14 @@ export async function generateResultSnapshot(formData: FormData) {
       supabase
         .from("meetings")
         .select(
-          "id, title, starts_at, ends_at, status, meeting_number, meeting_type, fiscal_year, location, chairperson_name, quorum_rule, ballot_secrecy, advance_starts_at, advance_ends_at, notice_sent_at, meeting_round, identity_method, recording_reference, traffic_log_reference",
+          "id, title, starts_at, ends_at, status, meeting_number, meeting_type, fiscal_year, location, chairperson_name, quorum_rule, ballot_secrecy, advance_starts_at, advance_ends_at, notice_sent_at, meeting_round, identity_method, recording_reference, traffic_log_reference, title_en, location_en",
         )
         .eq("id", meetingId)
         .single(),
       supabase
         .from("meeting_questions")
         .select(
-          "id, agenda_no, agenda_title, question_text, question_type, resolution_type, required_threshold, pass_basis, pass_operator, pass_percent, requires_land_office_registration, legal_note, display_order, meeting_choices(id, choice_text, display_order, is_abstain)",
+          "id, agenda_no, agenda_title, question_text, question_type, resolution_type, required_threshold, pass_basis, pass_operator, pass_percent, requires_land_office_registration, legal_note, display_order, agenda_title_en, question_text_en, legal_note_en, meeting_choices(id, choice_text, choice_text_en, display_order, is_abstain)",
         )
         .eq("meeting_id", meetingId)
         .order("display_order", { ascending: true }),
@@ -161,7 +177,7 @@ export async function generateResultSnapshot(formData: FormData) {
       // The official record keeps the juristic person's details as they were.
       supabase
         .from("condo_profiles")
-        .select("project_name, juristic_name, registration_no, tax_id, address, manager_name")
+        .select("project_name, juristic_name, registration_no, tax_id, address, manager_name, project_name_en, juristic_name_en")
         .order("created_at", { ascending: false })
         .limit(1),
       supabase

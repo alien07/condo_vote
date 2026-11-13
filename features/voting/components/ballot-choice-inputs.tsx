@@ -5,10 +5,13 @@
 import { getDictionary } from "@/lib/i18n/dictionaries";
 import type { Locale } from "@/lib/i18n/locales";
 import { choiceLabel } from "@/lib/i18n/choice";
+import { localized } from "@/lib/i18n/content";
 
 type BallotChoice = {
   id: string;
   choice_text: string;
+  /** English text (item 6b); shown on English pages when written. */
+  choice_text_en?: string | null;
   display_order: number;
   is_abstain?: boolean | null;
 };
@@ -70,7 +73,9 @@ export function BallotChoiceInputs({
             type={multiple ? "checkbox" : "radio"}
             value={choice.id}
           />
-          <span>{choiceLabel(choice.choice_text, choice.is_abstain, locale)}</span>
+          <span>
+            {choiceLabel(localized(locale, choice.choice_text, choice.choice_text_en), choice.is_abstain, locale)}
+          </span>
         </label>
       ))}
     </div>

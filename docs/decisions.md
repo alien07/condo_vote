@@ -111,15 +111,34 @@ may be offered. Abstain is reported as its own group and counts as voting
 "at least", because legal rules use both (more than half; at least 3/4).
 
 ### D014 - Committee Approval And Vote Closing
-Status: implemented (migration 0023, `/committee` page)
+Status: implemented (migrations 0023 and 0030, `/committee` page)
 
 - Admin sets a minimum number of committee approvals.
 - A result is published when its snapshot reaches that minimum. Each
   approval is a separate, immutable record.
-- Voting closes automatically at `ends_at`, or earlier when committee
-  approvals to close reach the same minimum.
+- Voting closes automatically at `ends_at`, or earlier through a
+  close-early request (migration 0030, demo review 2026-11-13): a committee
+  member or admin proposes it with a reason and a time (as soon as approved,
+  or a set time before `ends_at`). Every active committee member is emailed.
+  Members approve or object (an objection needs a reason). The same minimum
+  closes voting; the proposer's proposal counts as their approval when they
+  are a member. The request fails once the members who have not answered are
+  too few to reach the minimum. One open request per meeting; the proposer
+  can cancel; it lapses at `ends_at`. Approving to close without a request
+  is no longer possible.
 - Generating a result does not close voting. It is allowed only after
   voting has closed, so a single admin cannot end voting early.
+- Correction requests (migration 0030): a committee member asks the admin to
+  correct a result, by category, with a level. Levels: low (wording only),
+  medium (room data, voting rights, paper ballots, and "other"), high (pass
+  rule or quorum; needs a legal or by-law reference). The admin may raise a
+  level, never lower it, and answers every request; the requester cannot
+  answer their own. While a request is open, the admin may generate the
+  result again; approvals start from 0 on the new snapshot and members who
+  approved the old one are emailed. A high-level request needs every active
+  committee member to approve, and the official record shows it prominently.
+  An agenda item that fails the vote is still a correct result; approval
+  means the count is correct.
 - Store times in UTC; display in Asia/Bangkok.
 
 ### D015 - Ballot Secrecy Per Meeting
@@ -194,7 +213,24 @@ Status: implemented (migration 0027)
   viewer's language through `translateMessage()` (`lib/i18n/staff/messages.ts`).
   A message without a Thai entry shows in English.
 - The official result record is always Thai. The English owner summary
-  says the Thai version prevails.
+  and the English ballot say the Thai version prevails, near the top.
+- English versions of admin-typed content (migration 0032, demo review
+  2026-11-13): a per-condo switch in Setup (`bilingual_documents`) asks for
+  English next to the Thai meeting title, venue, agenda titles, questions,
+  legal notes and choices, and English condo and juristic person names.
+  Admin > Meetings > English text shows Thai beside English with a Translate
+  button per line and "Translate all". Machine drafts use a fixed glossary
+  of legal terms (`lib/translation/glossary.ts`); person names are
+  transliterated. The admin ticks "I checked the English" before publishing;
+  publishing is blocked until English is filled and checked (checked at
+  publish time, not when saving a draft). After publishing only English can
+  change, and the change is audited; the overview lists meetings missing
+  English, and nothing blocks voting. Result snapshots copy the English;
+  older ones fall back to Thai. Translation runs only when an admin presses
+  the button, from the server: Azure AI Translator (free tier F0) in real
+  use, or the demo list (`TRANSLATION_PROVIDER=mock`, the default without a
+  key), which marks unknown text "[no demo translation]". The privacy notice
+  should mention that meeting text may be sent to the translation service.
 - Queued emails store the recipient's language in `email_logs.language`;
   recipients without a profile get Thai. Email text lives in
   `features/email/templates.ts` until admin-editable templates (V2).
@@ -224,3 +260,31 @@ Status: implemented (migration 0028)
 - Chromium: on Vercel `@sparticuz/chromium`; elsewhere the Chromium that
   Playwright installed, or `CHROMIUM_EXECUTABLE_PATH`.
 - Google Drive backup of the files is planned later.
+
+### D022 - Roles, Separation Of Duties, And One Owner Of Record
+Status: implemented (migration 0031), decided in the demo review 2026-11-13
+
+- Separation of duties: whoever generated a result snapshot, or answered a
+  correction request of that meeting as fixed, cannot approve that result.
+  A requester cannot answer their own correction request (D014). Enforced
+  in the database functions.
+- Auditor (`auditor` role): read only. Published results, official records,
+  committee requests, correction requests and the audit log (`/audit`).
+- Office staff (`staff` role): data entry only. Rooms, owners, ownership
+  links, Excel import, paper ballots. Admin ("manager") keeps publishing
+  meetings, results, corrections, proxies, documents, communications,
+  setup and roles. A building with one officer gives both roles to the
+  same person.
+- `proxy` as a member status means an external proxy holder (neither owner
+  nor resident). Their access lasts while they hold an approved proxy for a
+  meeting that is still open; proxies stay per meeting.
+- One owner of record per room: `co_owner` links ended in migration 0031,
+  and a second open-ended active owner link is refused. A co-owner is
+  registered as a resident. The owner of record lets them vote for one
+  meeting in the app (Vote page), and can take it back until they vote. It
+  is stored as a `co_owner` proxy authorization, logged, emailed, and does
+  not count toward the three-room proxy limit. An owner who does not use
+  the app gives a normal proxy through the office.
+- The app has no record of which resident lives in which room, so the
+  co-owner check is "an approved resident account with this email".
+- The header shows job roles first, then the member status.

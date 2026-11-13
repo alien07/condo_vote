@@ -1,5 +1,6 @@
 import { AdminWorkspace } from "@/features/admin/components/admin-workspace";
 import { getStaffI18n } from "@/lib/i18n/server";
+import { requireAdmin } from "@/lib/auth/permissions";
 import type { ProxyTableFilters } from "@/features/admin/components/admin-workspace";
 
 type AdminProxiesPageProps = {
@@ -54,6 +55,8 @@ function getProxyFilters(
 export default async function AdminProxiesPage({
   searchParams,
 }: AdminProxiesPageProps) {
+  // Manager only: office staff do data entry elsewhere (item 14c).
+  await requireAdmin();
   const { s } = await getStaffI18n();
   const params = await searchParams;
 

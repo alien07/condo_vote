@@ -11,7 +11,7 @@ import { Vote } from "lucide-react";
 import { RequiredMark, RequiredNote } from "@/features/admin/components/field-label";
 import { submitManualBallot } from "@/features/admin/action-modules/voting";
 import { PendingSubmitButton } from "@/features/debug/tracked-submit-button";
-import { requireAdmin } from "@/lib/auth/permissions";
+import { requireOfficeStaff } from "@/lib/auth/permissions";
 import { createClient } from "@/lib/supabase/server";
 
 type ManualVotePageProps = {
@@ -32,7 +32,7 @@ export default async function ManualVotePage({
   searchParams,
 }: ManualVotePageProps) {
   const { s } = await getStaffI18n();
-  await requireAdmin();
+  await requireOfficeStaff();
 
   const { meetingId, roomId } = await params;
   const query = await searchParams;

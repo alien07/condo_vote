@@ -7,7 +7,7 @@ export async function fetchMeetingsData(supabase: SupabaseServerClient) {
     supabase
       .from("meetings")
       .select(
-        "id, title, description, video_url, starts_at, ends_at, status, meeting_number, meeting_type, fiscal_year, location, chairperson_name, quorum_rule, required_approvals, ballot_secrecy, advance_starts_at, advance_ends_at, notice_sent_at, meeting_round, identity_method, recording_reference, traffic_log_reference",
+        "id, title, description, video_url, starts_at, ends_at, status, meeting_number, meeting_type, fiscal_year, location, chairperson_name, quorum_rule, required_approvals, ballot_secrecy, advance_starts_at, advance_ends_at, notice_sent_at, meeting_round, identity_method, recording_reference, traffic_log_reference, title_en, english_checked_at",
       )
       .order("starts_at", { ascending: false }),
     supabase

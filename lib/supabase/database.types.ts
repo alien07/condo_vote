@@ -431,15 +431,18 @@ export type Database = {
       condo_profiles: {
         Row: {
           address: string | null
+          bilingual_documents: boolean
           created_at: string
           document_footer: string | null
           email: string | null
           id: string
           juristic_name: string
+          juristic_name_en: string | null
           logo_storage_path: string | null
           manager_name: string | null
           phone: string | null
           project_name: string
+          project_name_en: string | null
           record_signatories: string[]
           registration_no: string | null
           result_notice_days: number | null
@@ -450,15 +453,18 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          bilingual_documents?: boolean
           created_at?: string
           document_footer?: string | null
           email?: string | null
           id?: string
           juristic_name: string
+          juristic_name_en?: string | null
           logo_storage_path?: string | null
           manager_name?: string | null
           phone?: string | null
           project_name: string
+          project_name_en?: string | null
           record_signatories?: string[]
           registration_no?: string | null
           result_notice_days?: number | null
@@ -469,15 +475,18 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          bilingual_documents?: boolean
           created_at?: string
           document_footer?: string | null
           email?: string | null
           id?: string
           juristic_name?: string
+          juristic_name_en?: string | null
           logo_storage_path?: string | null
           manager_name?: string | null
           phone?: string | null
           project_name?: string
+          project_name_en?: string | null
           record_signatories?: string[]
           registration_no?: string | null
           result_notice_days?: number | null
@@ -767,6 +776,7 @@ export type Database = {
       meeting_choices: {
         Row: {
           choice_text: string
+          choice_text_en: string | null
           created_at: string
           display_order: number
           id: string
@@ -775,6 +785,7 @@ export type Database = {
         }
         Insert: {
           choice_text: string
+          choice_text_en?: string | null
           created_at?: string
           display_order?: number
           id?: string
@@ -783,6 +794,7 @@ export type Database = {
         }
         Update: {
           choice_text?: string
+          choice_text_en?: string | null
           created_at?: string
           display_order?: number
           id?: string
@@ -831,6 +843,99 @@ export type Database = {
             columns: ["meeting_id"]
             isOneToOne: false
             referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      meeting_close_request_answers: {
+        Row: {
+          answer: string
+          answered_at: string
+          answered_by: string
+          id: string
+          reason: string | null
+          request_id: string
+        }
+        Insert: {
+          answer: string
+          answered_at?: string
+          answered_by: string
+          id?: string
+          reason?: string | null
+          request_id: string
+        }
+        Update: {
+          answer?: string
+          answered_at?: string
+          answered_by?: string
+          id?: string
+          reason?: string | null
+          request_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meeting_close_request_answers_answered_by_fkey"
+            columns: ["answered_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meeting_close_request_answers_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "meeting_close_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      meeting_close_requests: {
+        Row: {
+          close_at: string | null
+          created_at: string
+          ended_at: string | null
+          id: string
+          meeting_id: string
+          original_ends_at: string
+          proposed_by: string
+          reason: string
+          status: string
+        }
+        Insert: {
+          close_at?: string | null
+          created_at?: string
+          ended_at?: string | null
+          id?: string
+          meeting_id: string
+          original_ends_at: string
+          proposed_by: string
+          reason: string
+          status?: string
+        }
+        Update: {
+          close_at?: string | null
+          created_at?: string
+          ended_at?: string | null
+          id?: string
+          meeting_id?: string
+          original_ends_at?: string
+          proposed_by?: string
+          reason?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meeting_close_requests_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meeting_close_requests_proposed_by_fkey"
+            columns: ["proposed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -887,16 +992,19 @@ export type Database = {
         Row: {
           agenda_no: string | null
           agenda_title: string | null
+          agenda_title_en: string | null
           created_at: string
           display_order: number
           id: string
           legal_note: string | null
+          legal_note_en: string | null
           max_choices: number | null
           meeting_id: string
           pass_basis: string
           pass_operator: string
           pass_percent: number
           question_text: string
+          question_text_en: string | null
           question_type: string
           required: boolean
           required_threshold: string
@@ -906,16 +1014,19 @@ export type Database = {
         Insert: {
           agenda_no?: string | null
           agenda_title?: string | null
+          agenda_title_en?: string | null
           created_at?: string
           display_order?: number
           id?: string
           legal_note?: string | null
+          legal_note_en?: string | null
           max_choices?: number | null
           meeting_id: string
           pass_basis?: string
           pass_operator?: string
           pass_percent?: number
           question_text: string
+          question_text_en?: string | null
           question_type?: string
           required?: boolean
           required_threshold?: string
@@ -925,16 +1036,19 @@ export type Database = {
         Update: {
           agenda_no?: string | null
           agenda_title?: string | null
+          agenda_title_en?: string | null
           created_at?: string
           display_order?: number
           id?: string
           legal_note?: string | null
+          legal_note_en?: string | null
           max_choices?: number | null
           meeting_id?: string
           pass_basis?: string
           pass_operator?: string
           pass_percent?: number
           question_text?: string
+          question_text_en?: string | null
           question_type?: string
           required?: boolean
           required_threshold?: string
@@ -961,10 +1075,13 @@ export type Database = {
           created_at: string
           description: string | null
           ends_at: string
+          english_checked_at: string | null
+          english_checked_by: string | null
           fiscal_year: string | null
           id: string
           identity_method: string | null
           location: string | null
+          location_en: string | null
           meeting_number: string | null
           meeting_round: string
           meeting_type: string
@@ -976,6 +1093,7 @@ export type Database = {
           starts_at: string
           status: string
           title: string
+          title_en: string | null
           traffic_log_reference: string | null
           transcript: string | null
           updated_at: string
@@ -990,10 +1108,13 @@ export type Database = {
           created_at?: string
           description?: string | null
           ends_at: string
+          english_checked_at?: string | null
+          english_checked_by?: string | null
           fiscal_year?: string | null
           id?: string
           identity_method?: string | null
           location?: string | null
+          location_en?: string | null
           meeting_number?: string | null
           meeting_round?: string
           meeting_type?: string
@@ -1005,6 +1126,7 @@ export type Database = {
           starts_at: string
           status?: string
           title: string
+          title_en?: string | null
           traffic_log_reference?: string | null
           transcript?: string | null
           updated_at?: string
@@ -1019,10 +1141,13 @@ export type Database = {
           created_at?: string
           description?: string | null
           ends_at?: string
+          english_checked_at?: string | null
+          english_checked_by?: string | null
           fiscal_year?: string | null
           id?: string
           identity_method?: string | null
           location?: string | null
+          location_en?: string | null
           meeting_number?: string | null
           meeting_round?: string
           meeting_type?: string
@@ -1034,6 +1159,7 @@ export type Database = {
           starts_at?: string
           status?: string
           title?: string
+          title_en?: string | null
           traffic_log_reference?: string | null
           transcript?: string | null
           updated_at?: string
@@ -1192,7 +1318,9 @@ export type Database = {
       proxy_authorizations: {
         Row: {
           created_at: string
+          granted_by_owner_profile_id: string | null
           id: string
+          kind: string
           meeting_id: string
           owner_id: string | null
           proxy_profile_id: string
@@ -1205,7 +1333,9 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          granted_by_owner_profile_id?: string | null
           id?: string
+          kind?: string
           meeting_id: string
           owner_id?: string | null
           proxy_profile_id: string
@@ -1218,7 +1348,9 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          granted_by_owner_profile_id?: string | null
           id?: string
+          kind?: string
           meeting_id?: string
           owner_id?: string | null
           proxy_profile_id?: string
@@ -1263,6 +1395,99 @@ export type Database = {
             columns: ["room_id"]
             isOneToOne: false
             referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      result_correction_requests: {
+        Row: {
+          answer: string | null
+          answered_at: string | null
+          answered_by: string | null
+          category: string
+          created_at: string
+          id: string
+          legal_reference: string | null
+          level: string
+          level_change_reason: string | null
+          level_changed_at: string | null
+          level_changed_by: string | null
+          meeting_id: string
+          reason: string
+          requested_by: string
+          result_snapshot_id: string
+          status: string
+        }
+        Insert: {
+          answer?: string | null
+          answered_at?: string | null
+          answered_by?: string | null
+          category: string
+          created_at?: string
+          id?: string
+          legal_reference?: string | null
+          level: string
+          level_change_reason?: string | null
+          level_changed_at?: string | null
+          level_changed_by?: string | null
+          meeting_id: string
+          reason: string
+          requested_by: string
+          result_snapshot_id: string
+          status?: string
+        }
+        Update: {
+          answer?: string | null
+          answered_at?: string | null
+          answered_by?: string | null
+          category?: string
+          created_at?: string
+          id?: string
+          legal_reference?: string | null
+          level?: string
+          level_change_reason?: string | null
+          level_changed_at?: string | null
+          level_changed_by?: string | null
+          meeting_id?: string
+          reason?: string
+          requested_by?: string
+          result_snapshot_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "result_correction_requests_answered_by_fkey"
+            columns: ["answered_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "result_correction_requests_level_changed_by_fkey"
+            columns: ["level_changed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "result_correction_requests_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "result_correction_requests_requested_by_fkey"
+            columns: ["requested_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "result_correction_requests_result_snapshot_id_fkey"
+            columns: ["result_snapshot_id"]
+            isOneToOne: false
+            referencedRelation: "result_snapshots"
             referencedColumns: ["id"]
           },
         ]
@@ -1588,11 +1813,30 @@ export type Database = {
         Args: { p_notes: string; p_result_snapshot_id: string }
         Returns: Json
       }
+      answer_close_request: {
+        Args: { p_answer: string; p_reason?: string; p_request_id: string }
+        Returns: Json
+      }
+      answer_correction_request: {
+        Args: { p_answer: string; p_request_id: string; p_status: string }
+        Returns: undefined
+      }
       can_approve_as_committee: { Args: never; Returns: boolean }
+      cancel_close_request: { Args: { p_request_id: string }; Returns: undefined }
+      cancel_co_owner_vote: {
+        Args: { p_authorization_id: string }
+        Returns: undefined
+      }
       committee_overview: { Args: never; Returns: Json }
       current_profile_id: { Args: never; Returns: string }
+      grant_co_owner_vote: {
+        Args: { p_co_owner_email: string; p_meeting_id: string; p_room_id: string }
+        Returns: string
+      }
       has_app_role: { Args: { required_role: string }; Returns: boolean }
+      is_office_staff: { Args: never; Returns: boolean }
       is_approved_member: { Args: never; Returns: boolean }
+      meeting_early_close: { Args: { p_meeting_id: string }; Returns: string }
       meeting_online_tally: {
         Args: { p_meeting_id: string }
         Returns: {
@@ -1603,9 +1847,31 @@ export type Database = {
       }
       my_member_access: { Args: never; Returns: Json }
       needs_privacy_consent: { Args: never; Returns: boolean }
+      propose_close_voting: {
+        Args: { p_close_at?: string; p_meeting_id: string; p_reason: string }
+        Returns: Json
+      }
       queue_result_approved_emails: {
         Args: { p_meeting_id: string }
         Returns: number
+      }
+      raise_correction_level: {
+        Args: {
+          p_legal_reference?: string
+          p_level: string
+          p_reason: string
+          p_request_id: string
+        }
+        Returns: undefined
+      }
+      request_result_correction: {
+        Args: {
+          p_category: string
+          p_legal_reference?: string
+          p_reason: string
+          p_result_snapshot_id: string
+        }
+        Returns: Json
       }
       resolve_vote_source_conflict: {
         Args: {
@@ -1616,6 +1882,11 @@ export type Database = {
           p_online_ballot_id: string
           p_room_id: string
         }
+        Returns: Json
+      }
+      result_required_approvals: { Args: { p_meeting_id: string }; Returns: number }
+      save_meeting_english: {
+        Args: { p_checked: boolean; p_meeting_id: string; p_text: Json }
         Returns: Json
       }
       set_preferred_language: { Args: { language: string }; Returns: undefined }

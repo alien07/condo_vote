@@ -1,5 +1,5 @@
-// Committee approvals and vote closing (D014). Rules live in
-// supabase/migrations/0023_committee_approvals.sql; these wrappers call them.
+// Committee approvals, close-early requests and correction requests (D014).
+// Rules live in supabase/migrations/0023 and 0030; these wrappers call them.
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/database.types";
 
@@ -44,26 +44,136 @@ export async function approveResult(
   return data as ApprovalProgress & { published: boolean };
 }
 
-export async function approveCloseVoting(supabase: Client, meetingId: string) {
-  const { data, error } = await supabase.rpc("approve_close_voting", {
-    p_meeting_id: meetingId,
-  });
+type RequestStatus = "open" | "approved" | "failed" | "cancelled" | "lapsed";
 
+function unwrap<T>({ data, error }: { data: unknown; error: { message: string } | null }): T {
   if (error) {
     throw toResultError(error);
   }
 
-  return data as ApprovalProgress & { closed: boolean };
+  return data as T;
 }
 
+/** Close voting early through a request (0030, demo feedback item 10). */
+export async function proposeCloseVoting(
+  supabase: Client,
+  input: { meetingId: string; reason: string; closeAt: string | null },
+) {
+  return unwrap<{ request_id: string; status: RequestStatus }>(
+    await supabase.rpc("propose_close_voting", {
+      p_meeting_id: input.meetingId,
+      p_reason: input.reason,
+      p_close_at: input.closeAt ?? undefined,
+    }),
+  );
+}
+
+export async function answerCloseRequest(
+  supabase: Client,
+  input: { requestId: string; answer: "approve" | "object"; reason: string | null },
+) {
+  return unwrap<{ request_id: string; status: RequestStatus }>(
+    await supabase.rpc("answer_close_request", {
+      p_request_id: input.requestId,
+      p_answer: input.answer,
+      p_reason: input.reason ?? undefined,
+    }),
+  );
+}
+
+export async function cancelCloseRequest(supabase: Client, requestId: string) {
+  return unwrap<null>(await supabase.rpc("cancel_close_request", { p_request_id: requestId }));
+}
+
+/** Correction requests (0030, demo feedback item 12). */
+export async function requestResultCorrection(
+  supabase: Client,
+  input: { resultSnapshotId: string; category: string; reason: string; legalReference: string | null },
+) {
+  return unwrap<{ request_id: string; level: string }>(
+    await supabase.rpc("request_result_correction", {
+      p_result_snapshot_id: input.resultSnapshotId,
+      p_category: input.category,
+      p_reason: input.reason,
+      p_legal_reference: input.legalReference ?? undefined,
+    }),
+  );
+}
+
+export async function raiseCorrectionLevel(
+  supabase: Client,
+  input: { requestId: string; level: string; reason: string; legalReference: string | null },
+) {
+  return unwrap<null>(
+    await supabase.rpc("raise_correction_level", {
+      p_request_id: input.requestId,
+      p_level: input.level,
+      p_reason: input.reason,
+      p_legal_reference: input.legalReference ?? undefined,
+    }),
+  );
+}
+
+export async function answerCorrectionRequest(
+  supabase: Client,
+  input: { requestId: string; status: "fixed" | "no_change"; answer: string },
+) {
+  return unwrap<null>(
+    await supabase.rpc("answer_correction_request", {
+      p_request_id: input.requestId,
+      p_status: input.status,
+      p_answer: input.answer,
+    }),
+  );
+}
+
+export type CommitteePerson = { profile_id: string; name: string; position: string | null };
+
+export type CloseRequest = {
+  id: string;
+  reason: string;
+  close_at: string | null;
+  created_at: string;
+  proposed_by: string;
+  proposed_by_me: boolean;
+  proposer: string | null;
+  my_answer: "approve" | "object" | null;
+  answers: Array<{
+    profile_id: string;
+    name: string | null;
+    answer: "approve" | "object";
+    reason: string | null;
+    answered_at: string;
+  }>;
+};
+
+export type CorrectionRequest = {
+  id: string;
+  result_snapshot_id: string;
+  category: string;
+  level: "low" | "medium" | "high";
+  reason: string;
+  legal_reference: string | null;
+  status: "open" | "fixed" | "no_change";
+  answer: string | null;
+  answered_at: string | null;
+  level_change_reason: string | null;
+  level_changed_at: string | null;
+  requested_by_me: boolean;
+  requester: string | null;
+  created_at: string;
+};
+
 export type CommitteeOverview = {
+  is_member: boolean;
+  members: CommitteePerson[];
   open_meetings: Array<{
     id: string;
     title: string;
     ends_at: string;
     required_approvals: number;
-    close_approvals: number;
-    approved_by_me: boolean;
+    request: CloseRequest | null;
+    closes_early_at: string | null;
   }>;
   pending_results: Array<{
     snapshot_id: string;
@@ -73,6 +183,14 @@ export type CommitteeOverview = {
     required_approvals: number;
     approvals: number;
     approved_by_me: boolean;
+    approval_list: Array<{
+      profile_id: string;
+      name: string | null;
+      approved_at: string;
+      notes: string | null;
+    }>;
+    corrections: CorrectionRequest[];
+    previous_payload: unknown;
     payload: unknown;
   }>;
 };

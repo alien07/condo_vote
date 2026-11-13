@@ -13,3 +13,19 @@ describe("vote invitation", () => {
     );
   });
 });
+
+describe("committee workflow emails", () => {
+  it("has Thai and English text for every committee email", () => {
+    for (const name of [
+      "close_request",
+      "close_request_failed",
+      "result_correction",
+      "result_correction_answered",
+      "result_review_again",
+      "co_owner_vote",
+    ] as const) {
+      expect(renderEmail(name, "th", { meetingTitle: "M1" }).subject).toContain("M1");
+      expect(renderEmail(name, "en", { meetingTitle: "M1" }).subject).toContain("M1");
+    }
+  });
+});

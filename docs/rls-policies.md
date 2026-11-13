@@ -94,6 +94,31 @@ function that changes only the caller's own profile. Admins change any
 profile's language through the existing admin update policy.
 Database tests: `supabase/tests/owner_language.test.sql`.
 
+## Committee Workflow
+Migration 0030 adds close-early requests (`meeting_close_requests`,
+`meeting_close_request_answers`) and `result_correction_requests`. Admin and
+committee read them; writes go only through security definer functions:
+`propose_close_voting`, `answer_close_request` (active committee members),
+`cancel_close_request` (the proposer), `request_result_correction`,
+`raise_correction_level` and `answer_correction_request` (admin, not the
+requester). `approve_close_voting` is no longer granted to signed-in users.
+`committee_overview()` returns approvers, objections and correction requests.
+Database tests: `supabase/tests/committee_workflow.test.sql`.
+
+## Roles And Ownership (D022)
+Migration 0031 adds the `staff` and `auditor` roles. `is_office_staff()`
+(admin or staff) replaces the admin check on every policy of `rooms`,
+`owners`, `room_owners`, `manual_ballots` and `manual_ballot_answers`, and on
+the select policies of the tables those forms read; `submit_manual_ballot`
+accepts staff. Auditors get select policies on the audit log, meetings,
+profiles, committee requests, correction requests and official result
+files. `approve_result_snapshot` refuses the generator of a snapshot and
+whoever answered its correction as fixed. `profile_access_active()` limits
+external proxy holders to the time they hold an open proxy.
+`grant_co_owner_vote` and `cancel_co_owner_vote` let the owner of record
+hand one room to a resident co-owner for one meeting.
+Database tests: `supabase/tests/roles_ownership.test.sql`.
+
 ## Member Access
 Migration 0029 limits published results to approved members:
 `is_approved_member()` is true for an approved profile or any staff role

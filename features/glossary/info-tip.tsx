@@ -1,7 +1,7 @@
 "use client";
 
 import { Info } from "lucide-react";
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 
 type Position = { top: number; left: number; width: number; above: boolean };
 
@@ -31,7 +31,18 @@ function computePosition(button: HTMLElement | null): Position | null {
 // the button when the page scrolls and closes once the button leaves the screen.
 // Fixed positioning, so tables with overflow do not clip it. Hidden in print:
 // printed pages show the same text as notes (GlossaryNotes).
-export function InfoTip({ about, term, text }: { about: string; term: string; text: string }) {
+export function InfoTip({
+  about,
+  term,
+  text,
+  extra,
+}: {
+  about: string;
+  term: string;
+  text: string;
+  /** More content under the explanation, e.g. who approved (item 11). */
+  extra?: ReactNode;
+}) {
   const [pinned, setPinned] = useState(false);
   const [hovered, setHovered] = useState(false);
   const [position, setPosition] = useState<Position | null>(null);
@@ -145,6 +156,7 @@ export function InfoTip({ about, term, text }: { about: string; term: string; te
         >
           <span className="block font-semibold">{term}</span>
           {text}
+          {extra ? <span className="mt-2 block border-t border-white/20 pt-2">{extra}</span> : null}
         </span>
       ) : null}
     </>

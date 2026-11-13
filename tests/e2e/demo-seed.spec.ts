@@ -122,17 +122,23 @@ test.describe("demo seed", () => {
     const origin = await signInAs(page, "ownerB", "/summary");
     await expect(page.getByText("DEMO M8", { exact: false }).first()).toBeVisible();
 
-    // The history marks the result on screen, and follows the choice.
+    // Newest meeting first (M9 met after M8); the result on screen is marked.
     const current = page.locator('aside a[aria-current="page"]');
     await expect(current).toHaveCount(1);
-    await expect(current).toContainText("DEMO M8");
-    await page.goto(`${origin}/summary`);
-    await page.locator("aside a", { hasText: "DEMO M9" }).click();
-    await expect(page.locator('aside a[aria-current="page"]')).toContainText("DEMO M9");
+    await expect(current).toContainText("DEMO M9");
+    await expect(page.locator("aside a", { hasText: "DEMO" }).first()).toContainText("DEMO M9");
+    await page.locator("aside a", { hasText: "DEMO M8" }).click();
+    await expect(page.locator('aside a[aria-current="page"]')).toContainText("DEMO M8");
+
+    // Every published result is reachable from the archive.
+    await page.goto(`${origin}/summary/archive`);
+    await expect(page.getByRole("heading", { name: "All results", level: 1 })).toBeVisible();
+    await expect(page.getByRole("link", { name: /DEMO M8/ })).toBeVisible();
   });
 
   test("result terms explain themselves", async ({ page }) => {
-    await signInAs(page, "ownerB", "/summary");
+    const m8 = await meetingId("DEMO M8");
+    await signInAs(page, "ownerB", `/summary/${m8.id}`);
     // M8 agenda 1 is decided on the ownership of rooms that voted.
     const firstTable = page.locator("table").first();
     await expect(firstTable.locator("th[data-deciding]")).toContainText("Decides this item");

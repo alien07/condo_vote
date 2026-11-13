@@ -1,11 +1,11 @@
 import { revalidatePath } from "next/cache";
 import ExcelJS from "exceljs";
-import { requireAdmin } from "@/lib/auth/permissions";
+import { requireAdmin, requireOfficeStaff } from "@/lib/auth/permissions";
 import { bangkokLocalToIso } from "@/lib/datetime";
 import { createClient } from "@/lib/supabase/server";
 import { withRecipientLanguage } from "@/features/email/recipient-language";
 
-export { createClient, requireAdmin };
+export { createClient, requireAdmin, requireOfficeStaff };
 
 export function optionalText(value: FormDataEntryValue | null) {
   const text = String(value ?? "").trim();

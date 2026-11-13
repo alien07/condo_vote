@@ -36,9 +36,14 @@ export type ResultPayloadInput = {
     pass_percent: Numeric;
     requires_land_office_registration: boolean;
     legal_note: string | null;
+    /** English text (D020, demo feedback item 6b); null falls back to Thai. */
+    agenda_title_en?: string | null;
+    question_text_en?: string | null;
+    legal_note_en?: string | null;
     meeting_choices: Array<{
       id: string;
       choice_text: string;
+      choice_text_en?: string | null;
       display_order: number;
       is_abstain: boolean;
     }>;
@@ -281,6 +286,9 @@ export function buildResultPayload(input: ResultPayloadInput) {
       requires_land_office_registration:
         question.requires_land_office_registration,
       legal_note: question.legal_note,
+      agenda_title_en: question.agenda_title_en ?? null,
+      text_en: question.question_text_en ?? null,
+      legal_note_en: question.legal_note_en ?? null,
       pass_rule: { ...passRule, label: describePassRule(passRule) },
       outcome: evaluation.outcome,
       basis_ownership: evaluation.basis_ownership,
@@ -296,6 +304,7 @@ export function buildResultPayload(input: ResultPayloadInput) {
           return {
             id: choice.id,
             text: choice.choice_text,
+            text_en: choice.choice_text_en ?? null,
             is_abstain: choice.is_abstain,
             meets_rule: evaluationByChoice.get(choice.id)?.meets_rule ?? false,
             percent_of_basis: evaluationByChoice.get(choice.id)?.percent_of_basis ?? null,

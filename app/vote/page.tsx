@@ -1,17 +1,57 @@
 import Link from "next/link";
 import { Vote } from "lucide-react";
 import { getVotingDashboardData } from "@/features/voting/data";
-import { describeVoterRoom, describeVotingWindow } from "@/features/voting/display";
-import { VotingStatusBadge } from "@/features/voting/status-badge";
-import { getVotingWindowStatus } from "@/features/voting/status";
+import { groupVoteRows } from "@/features/voting/grouping";
+import { VoteRowCard } from "@/features/voting/components/vote-row-card";
 import { getI18n } from "@/lib/i18n/server";
 import { requireVoteAccess } from "@/lib/auth/access";
+import { ConfirmButton } from "@/features/ui/confirm-button";
+import { cancelCoOwnerVote } from "@/features/voting/co-owner-actions";
 
-export default async function VotePage() {
+/** Closed meetings shown before "Show all" (demo feedback item 7). */
+const CLOSED_PREVIEW = 3;
+
+type VotePageProps = {
+  searchParams: Promise<{ room?: string; closed?: string }>;
+};
+
+export default async function VotePage({ searchParams }: VotePageProps) {
   const access = await requireVoteAccess();
   const { eligibleRows, ballotsByMeetingRoom } = await getVotingDashboardData();
   const { locale, t: dict } = await getI18n();
   const t = dict.vote;
+  const { room: roomFilter, closed } = await searchParams;
+  const showAllClosed = closed === "all";
+
+  // Room chips only for people with more than one room; proxy rooms marked.
+  const rooms = [
+    ...new Map(
+      eligibleRows.map((row) => [
+        row.room_id,
+        { id: row.room_id, number: row.rooms?.room_number ?? "-", proxy: row.voter_type === "proxy" },
+      ]),
+    ).values(),
+  ].sort((a, b) => a.number.localeCompare(b.number, "en", { numeric: true }));
+  const activeRoom = rooms.some((room) => room.id === roomFilter) ? roomFilter : undefined;
+  const visibleRows = activeRoom
+    ? eligibleRows.filter((row) => row.room_id === activeRoom)
+    : eligibleRows;
+  const groups = groupVoteRows(visibleRows);
+  const href = (params: { room?: string; closed?: string }) => {
+    const query = new URLSearchParams();
+
+    if (params.room) {
+      query.set("room", params.room);
+    }
+
+    if (params.closed) {
+      query.set("closed", params.closed);
+    }
+
+    const text = query.toString();
+    return text ? `/vote?${text}` : "/vote";
+  };
+  const groupTitle = { open: t.groupOpen, upcoming: t.groupUpcoming, closed: t.groupClosed };
 
   return (
     <main className="min-h-screen px-6 py-8">
@@ -34,8 +74,28 @@ export default async function VotePage() {
             <h2 className="font-semibold">{t.delegatedTitle}</h2>
             <ul className="mt-2 grid gap-1 text-[var(--muted)]">
               {access.delegatedRooms.map((room) => (
-                <li key={`${room.meeting_title}:${room.room_number}`}>
-                  {t.delegated(room.room_number, room.proxy_name, room.meeting_title)}
+                <li className="flex flex-wrap items-center gap-2" key={`${room.meeting_title}:${room.room_number}`}>
+                  <span>
+                    {t.delegated(
+                      room.room_number,
+                      room.kind === "co_owner" ? `${room.proxy_name} (${t.coOwnerLabel})` : room.proxy_name,
+                      room.meeting_title,
+                    )}
+                  </span>
+                  {room.can_cancel && room.id ? (
+                    <form action={cancelCoOwnerVote}>
+                      <input name="id" type="hidden" value={room.id} />
+                      <ConfirmButton
+                        cancelLabel={t.cancel}
+                        className="min-h-11 rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-1 font-medium text-[var(--foreground)]"
+                        confirmLabel={t.confirm}
+                        confirmMessage={t.confirmCoOwnerCancel}
+                        confirmTitle={t.confirmTitle}
+                      >
+                        {t.coOwnerCancel}
+                      </ConfirmButton>
+                    </form>
+                  ) : null}
                 </li>
               ))}
             </ul>
@@ -56,65 +116,68 @@ export default async function VotePage() {
             </Link>
           </section>
         ) : (
-          <div className="grid gap-4">
-            {eligibleRows.map((eligible) => {
-              const meeting = eligible.meetings;
-              const room = eligible.rooms;
-              const ballot = ballotsByMeetingRoom.get(
-                `${eligible.meeting_id}:${eligible.room_id}`,
-              );
-              const votingStatus = getVotingWindowStatus(meeting);
-              const href = `/vote/${eligible.meeting_id}/${eligible.room_id}`;
+          <div className="grid gap-6">
+            {rooms.length > 1 ? (
+              <nav aria-label={t.roomFilter} className="flex flex-wrap gap-2 text-sm">
+                {[{ id: undefined, number: t.allRooms, proxy: false }, ...rooms].map((room) => {
+                  const active = room.id === activeRoom;
+
+                  return (
+                    <Link
+                      aria-current={active ? "page" : undefined}
+                      className={`inline-flex min-h-11 items-center rounded-full border px-4 py-2 ${
+                        active
+                          ? "border-[var(--primary)] bg-[var(--primary)] text-[var(--primary-foreground)]"
+                          : "border-[var(--border)] bg-[var(--surface)]"
+                      }`}
+                      href={href({ room: room.id, closed })}
+                      key={room.id ?? "all"}
+                    >
+                      {room.number}
+                      {room.proxy ? ` · ${t.proxy}` : null}
+                    </Link>
+                  );
+                })}
+              </nav>
+            ) : null}
+
+            {groups.map((group) => {
+              const limited = group.key === "closed" && !showAllClosed;
+              const meetings = limited ? group.meetings.slice(0, CLOSED_PREVIEW) : group.meetings;
+              const hidden = group.meetings.length - meetings.length;
 
               return (
-                <section
-                  className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-5 shadow-sm"
-                  key={eligible.id}
-                >
-                  <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-                    <div>
-                      <h2 className="text-lg font-semibold">
-                        {meeting?.title ?? t.meeting}
-                      </h2>
-                      <p className="mt-1 text-sm text-[var(--muted)]">
-                        {describeVoterRoom(
-                          room?.room_number,
-                          eligible.voter_type,
-                          eligible.ownership_percent,
-                          locale,
-                        )}
-                      </p>
-                      {meeting ? (
-                        <p className="mt-1 text-sm font-medium">
-                          {describeVotingWindow(meeting, votingStatus, locale)}
-                        </p>
-                      ) : null}
-                    </div>
-                    <div className="flex flex-col items-start gap-2 md:items-end">
-                      <VotingStatusBadge
+                <section aria-labelledby={`vote-group-${group.key}`} className="grid gap-3" key={group.key}>
+                  <h2 className="text-base font-semibold" id={`vote-group-${group.key}`}>
+                    {groupTitle[group.key]}
+                  </h2>
+                  {meetings.flatMap((meeting) =>
+                    meeting.rows.map((row) => (
+                      <VoteRowCard
+                        ballot={ballotsByMeetingRoom.get(`${row.meeting_id}:${row.room_id}`)}
+                        key={row.id}
                         locale={locale}
-                        status={votingStatus}
-                        submittedVersion={
-                          ballot?.status === "submitted"
-                            ? ballot.version_number
-                            : null
-                        }
+                        row={row}
+                        t={t}
                       />
-                      {ballot?.status === "submitted" ? (
-                        <div className="text-sm text-[var(--muted)]">
-                          {votingStatus.canSubmit
-                            ? t.openForEdits
-                            : t.status[votingStatus.label]}
-                        </div>
-                      ) : null}
-                      <Link
-                        className="inline-flex min-h-11 items-center justify-center rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)]"
-                        href={href}
-                      >
-                        {t.openBallot}
-                      </Link>
-                    </div>
-                  </div>
+                    )),
+                  )}
+                  {hidden > 0 ? (
+                    <Link
+                      className="inline-flex min-h-11 w-fit items-center rounded-md border border-[var(--border)] px-4 py-2 text-sm font-medium"
+                      href={href({ room: activeRoom, closed: "all" })}
+                    >
+                      {t.showAllClosed(group.meetings.length)}
+                    </Link>
+                  ) : null}
+                  {group.key === "closed" && showAllClosed && group.meetings.length > CLOSED_PREVIEW ? (
+                    <Link
+                      className="inline-flex min-h-11 w-fit items-center rounded-md border border-[var(--border)] px-4 py-2 text-sm font-medium"
+                      href={href({ room: activeRoom })}
+                    >
+                      {t.showLatestClosed}
+                    </Link>
+                  ) : null}
                 </section>
               );
             })}

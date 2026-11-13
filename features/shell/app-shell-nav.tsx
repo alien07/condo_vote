@@ -1,17 +1,19 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { BarChart3, CheckSquare, Gavel, Settings, Wrench } from "lucide-react";
+import { BarChart3, CheckSquare, Gavel, ScrollText, Settings, Wrench } from "lucide-react";
 import { TrackedLink } from "@/features/debug/tracked-link";
 
 type NavLabels = {
   admin: string;
+  audit: string;
   committee: string;
   system: string;
   vote: string;
   summary: string;
   ballot: string;
   resultDetail: string;
+  archive: string;
   back: string;
   /** Admin area names for the breadcrumb (staff only). */
   adminSections?: Record<string, string>;
@@ -22,6 +24,8 @@ type AppShellNavProps = {
   isAdmin: boolean;
   isCommittee?: boolean;
   isSystemAdmin?: boolean;
+  /** Read-only audit page: auditors and admins (item 14b). */
+  isAuditor?: boolean;
   /** Owners, proxies and anyone holding a ballot right (my_member_access). */
   canVote?: boolean;
   /** Approved members and staff. */
@@ -41,6 +45,13 @@ const navItems = [
     icon: Gavel,
     adminOnly: false,
     committeeOnly: true,
+  },
+  {
+    href: "/audit",
+    key: "audit",
+    icon: ScrollText,
+    adminOnly: false,
+    auditOnly: true,
   },
   {
     href: "/system",
@@ -94,7 +105,12 @@ function getBreadcrumbs(pathname: string, labels: NavLabels) {
   if (parts[0] === "summary") {
     return [
       { href: "/summary", label: labels.summary },
-      parts.length > 1 ? { href: pathname, label: labels.resultDetail } : null,
+      parts.length > 1
+        ? {
+            href: pathname,
+            label: parts[1] === "archive" ? labels.archive : labels.resultDetail,
+          }
+        : null,
     ].filter((item): item is { href: string; label: string } => Boolean(item));
   }
 
@@ -122,6 +138,7 @@ export function AppShellNav({
   isAdmin,
   isCommittee = false,
   isSystemAdmin = false,
+  isAuditor = false,
   canVote = false,
   canViewResults = false,
 }: AppShellNavProps) {
@@ -140,6 +157,7 @@ export function AppShellNav({
             .filter((item) => !item.adminOnly || isAdmin)
             .filter((item) => !("committeeOnly" in item) || isAdmin || isCommittee)
             .filter((item) => !("systemAdminOnly" in item) || isSystemAdmin)
+            .filter((item) => !("auditOnly" in item) || isAuditor)
             .filter((item) => !("voterOnly" in item) || canVote)
             .filter((item) => !("memberOnly" in item) || canViewResults)
             .map((item) => {

@@ -1,5 +1,8 @@
 "use server";
 
+import { englishGaps, getEnglishMeeting } from "@/features/english/data";
+import { getStaffI18n } from "@/lib/i18n/server";
+
 import { redirect } from "next/navigation";
 import {
   createClient,
@@ -709,6 +712,27 @@ export async function publishMeeting(formData: FormData) {
   const meetingId = requiredText(formData.get("id"), "Meeting ID");
   const supabase = await createClient();
 
+  // Two-language documents (item 6b): English must be filled in and checked
+  // before publishing. Checked here, not when saving a draft.
+  const { data: condoSettings } = await supabase
+    .from("condo_profiles")
+    .select("bilingual_documents")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (condoSettings?.bilingual_documents) {
+    const englishMeeting = await getEnglishMeeting(meetingId);
+    const gaps = englishMeeting ? englishGaps(englishMeeting) : { missing: true, unchecked: true };
+
+    if (gaps.missing || gaps.unchecked) {
+      const { s } = await getStaffI18n();
+      redirect(
+        `/admin/meetings/${meetingId}/english?feedback=error&message=${encodeURIComponent(s.english.publishBlocked)}`,
+      );
+    }
+  }
+
   const [
     roomsResult,
     profilesResult,
@@ -720,10 +744,14 @@ export async function publishMeeting(formData: FormData) {
       .from("profiles")
       .select("id, email, default_status, approval_status")
       .eq("approval_status", "approved"),
+    // One owner of record per room (item 15); the oldest link first, so the
+    // same owner is picked every time.
     supabase
       .from("room_owners")
       .select("room_id, owners(email)")
-      .is("ends_at", null),
+      .is("ends_at", null)
+      .eq("ownership_role", "owner")
+      .order("created_at", { ascending: true }),
     supabase
       .from("proxy_authorizations")
       .select("room_id, proxy_profile_id, rooms(ownership_percent)")

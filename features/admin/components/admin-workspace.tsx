@@ -68,6 +68,7 @@ export async function AdminWorkspace({
   sections = allSections,
   title = "Admin",
   description = "Room, owner, profile, and role-controlled demo workspace.",
+  intro,
 }: AdminWorkspaceProps) {
   const {
     condoProfile,
@@ -130,6 +131,8 @@ export async function AdminWorkspace({
             </div>
           </div>
         </div>
+
+        {intro}
 
         {sections.length > 1 ? (
           <div className="sticky top-0 z-10 mb-5 border-b border-[var(--border)] bg-[var(--background)] py-3">

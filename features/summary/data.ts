@@ -15,6 +15,9 @@ export type SummaryPayload = {
   } | null;
   meeting?: {
     title?: string;
+    /** English text (item 6b); older snapshots have none. */
+    title_en?: string | null;
+    location_en?: string | null;
     meeting_number?: string | null;
     meeting_type?: string | null;
     fiscal_year?: string | null;
@@ -40,7 +43,9 @@ export type SummaryPayload = {
   questions?: {
     agenda_no?: string | null;
     agenda_title?: string | null;
+    agenda_title_en?: string | null;
     text?: string;
+    text_en?: string | null;
     resolution_type?: string;
     legal_note?: string | null;
     requires_land_office_registration?: boolean | null;
@@ -50,6 +55,7 @@ export type SummaryPayload = {
     choices?: {
       id?: string;
       text?: string;
+      text_en?: string | null;
       is_abstain?: boolean;
       vote_count?: number;
       ownership?: number;
@@ -140,52 +146,138 @@ function normalizeApproval(row: {
   };
 }
 
-export async function getSummaryData(meetingId?: string) {
-  await requireProfile();
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+/** A published result in the history and the archive (light: no payload). */
+export type SummaryListItem = {
+  id: string;
+  meetingId: string;
+  title: string | null;
+  meetingStartsAt: string | null;
+  fiscalYear: string | null;
+  publishedAt: string;
+};
+
+type ListRow = {
+  id: string;
+  meeting_id: string;
+  published_at: string;
+  result_snapshots:
+    | { title: string | null; starts_at: string | null; fiscal_year: string | null }
+    | { title: string | null; starts_at: string | null; fiscal_year: string | null }[]
+    | null;
+};
+
+function time(value: string | null) {
+  const parsed = value ? Date.parse(value) : Number.NaN;
+  return Number.isNaN(parsed) ? 0 : parsed;
+}
+
+/** Every published result, newest meeting first (demo feedback item 8:
+ * before, the history followed publication time, so a result approved late
+ * jumped above newer meetings). Meeting facts come from the snapshot, which
+ * every approved member can read. */
+export async function getSummaryList(): Promise<SummaryListItem[]> {
   const supabase = await createClient();
-  const { data: condoProfile, error: condoProfileError } = await supabase
-    .from("condo_profiles")
-    .select("project_name, juristic_name, document_footer, summary_history_limit")
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  if (condoProfileError) {
-    throw condoProfileError;
-  }
-
-  const historyLimit = Math.max(
-    1,
-    Math.min(Number(condoProfile?.summary_history_limit ?? 5), 20),
-  );
-  // D014: a result is visible once approvals reach the minimum, which is
-  // recorded in result_publications.
-  let query = supabase
+  const { data, error } = await supabase
     .from("result_publications")
     .select(
-      "id, meeting_id, approved_at:published_at, result_snapshots(id, generated_at, payload_json, payload_sha256, result_documents(kind, language))",
-    )
-    .order("published_at", { ascending: false })
-    .limit(historyLimit);
-
-  if (meetingId) {
-    query = query.eq("meeting_id", meetingId).limit(1);
-  }
-
-  const { data, error } = await query;
+      "id, meeting_id, published_at, result_snapshots(title:payload_json->meeting->>title, starts_at:payload_json->meeting->>starts_at, fiscal_year:payload_json->meeting->>fiscal_year)",
+    );
 
   if (error) {
     throw error;
   }
 
-  const summaries = data
-    .map((row) => normalizeApproval({ ...row, notes: null }))
-    .filter((summary): summary is ApprovedSummary => Boolean(summary));
+  return ((data ?? []) as unknown as ListRow[])
+    .map((row) => {
+      const snapshot = Array.isArray(row.result_snapshots)
+        ? row.result_snapshots[0]
+        : row.result_snapshots;
+
+      return {
+        id: row.id,
+        meetingId: row.meeting_id,
+        title: snapshot?.title ?? null,
+        meetingStartsAt: snapshot?.starts_at ?? null,
+        fiscalYear: snapshot?.fiscal_year ?? null,
+        publishedAt: row.published_at,
+      };
+    })
+    .sort(
+      (a, b) =>
+        time(b.meetingStartsAt ?? b.publishedAt) - time(a.meetingStartsAt ?? a.publishedAt) ||
+        time(b.publishedAt) - time(a.publishedAt),
+    );
+}
+
+async function getCondoProfile() {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("condo_profiles")
+    .select("project_name, juristic_name, document_footer, summary_history_limit, project_name_en, juristic_name_en")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  return data;
+}
+
+async function getPublishedSummary(meetingId: string) {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("result_publications")
+    .select(
+      "id, meeting_id, approved_at:published_at, result_snapshots(id, generated_at, payload_json, payload_sha256, result_documents(kind, language))",
+    )
+    .eq("meeting_id", meetingId)
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  return data ? normalizeApproval({ ...data, notes: null }) : null;
+}
+
+/**
+ * The summary page: one result in full, plus the history side panel.
+ * Without a meeting, the newest meeting's result. The panel shows the
+ * latest `summary_history_limit` results (Admin > Setup, 1–20); the shown
+ * result stays in the panel even when it is older than those.
+ */
+export async function getSummaryData(meetingId?: string) {
+  await requireProfile();
+
+  const [condoProfile, list] = await Promise.all([getCondoProfile(), getSummaryList()]);
+  const historyLimit = Math.max(
+    1,
+    Math.min(Number(condoProfile?.summary_history_limit ?? 5), 20),
+  );
+  const targetMeetingId = meetingId
+    ? UUID.test(meetingId)
+      ? meetingId
+      : undefined
+    : list[0]?.meetingId;
+  const selected = targetMeetingId ? await getPublishedSummary(targetMeetingId) : null;
+  const latest = list.slice(0, historyLimit);
+  const selectedItem = selected
+    ? list.find((item) => item.meetingId === selected.meetingId)
+    : undefined;
+  const history =
+    selectedItem && !latest.some((item) => item.id === selectedItem.id)
+      ? [selectedItem, ...latest]
+      : latest;
 
   return {
     condoProfile,
     historyLimit,
-    summaries,
+    history,
+    totalCount: list.length,
+    selected,
   };
 }

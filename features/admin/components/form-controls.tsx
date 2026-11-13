@@ -3,32 +3,28 @@
 import { useStaffText } from "@/lib/i18n/staff/client";
 
 import type { ComponentProps } from "react";
-import { PendingSubmitButton } from "@/features/debug/tracked-submit-button";
+import { ConfirmButton } from "@/features/ui/confirm-button";
 
-type ConfirmSubmitButtonProps = ComponentProps<"button"> & {
-  confirmMessage: string;
-  debugName?: string;
-  pendingLabel?: string;
+type ConfirmSubmitButtonProps = Omit<
+  ComponentProps<typeof ConfirmButton>,
+  "confirmTitle" | "confirmLabel" | "cancelLabel"
+> & {
+  /** Heading of the dialog; defaults to "Please confirm". */
+  confirmTitle?: string;
+  /** Label of the confirm button; defaults to "Confirm". */
+  confirmLabel?: string;
 };
 
-export function ConfirmSubmitButton({
-  confirmMessage,
-  onClick,
-  pendingLabel,
-  ...props
-}: ConfirmSubmitButtonProps) {
-  return (
-    <PendingSubmitButton
-      {...props}
-      onClick={(event) => {
-        onClick?.(event);
+/** ConfirmButton with the staff words (staff pages only). */
+export function ConfirmSubmitButton({ confirmTitle, confirmLabel, ...props }: ConfirmSubmitButtonProps) {
+  const { s } = useStaffText();
 
-        if (!event.defaultPrevented && !window.confirm(confirmMessage)) {
-          event.preventDefault();
-        }
-      }}
-      pendingLabel={pendingLabel}
-      type={props.type ?? "submit"}
+  return (
+    <ConfirmButton
+      {...props}
+      cancelLabel={s.common.cancel}
+      confirmLabel={confirmLabel ?? s.common.confirm}
+      confirmTitle={confirmTitle ?? s.common.confirmTitle}
     />
   );
 }

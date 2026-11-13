@@ -32,8 +32,14 @@ export async function AuthenticatedShell({ children }: AuthenticatedShellProps) 
 
   const { locale, t } = await getI18n();
   const isAdmin = roles.includes("admin");
+  // Office staff open the data-entry admin pages (item 14c).
+  const opensAdmin = isAdmin || roles.includes("staff");
   // Staff pages get their words in the client too (D020).
-  const isStaff = isAdmin || roles.includes("committee") || roles.includes("system_admin");
+  const isStaff =
+    opensAdmin ||
+    roles.includes("committee") ||
+    roles.includes("system_admin") ||
+    roles.includes("auditor");
   const label = accountLabel(roles, profile.default_status, t.shell);
   const access = await getMemberAccess();
 
@@ -85,7 +91,8 @@ export async function AuthenticatedShell({ children }: AuthenticatedShellProps) 
             back: t.shell.back,
             adminSections: isStaff ? getStaffDictionary(locale).adminHome.nav : undefined,
           }}
-          isAdmin={isAdmin}
+          isAdmin={opensAdmin}
+          isAuditor={isAdmin || roles.includes("auditor")}
           isCommittee={roles.includes("committee")}
           isSystemAdmin={roles.includes("system_admin")}
           canVote={access.canVote}
