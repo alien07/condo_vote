@@ -169,7 +169,7 @@ test.describe("@test:e2e @test:auth @test:role role access", () => {
       page.getByRole("heading", { exact: true, name: "Committee" }),
     ).toBeVisible();
     await expect(
-      page.getByRole("heading", { name: /^2\. Approve results/ }),
+      page.getByRole("heading", { name: /^1\. Approve results/ }),
     ).toBeVisible();
     await expect(
       primaryNav.getByRole("link", { name: "Committee" }),

@@ -49,7 +49,10 @@ export async function approveResultAsCommittee(formData: FormData) {
       "success",
       result.published
         ? t.approvedPublished
-        : fill(t.approvalRecorded, { count: result.approvals, required: result.required }),
+        : fill(result.held ? t.approvalHeld : t.approvalRecorded, {
+            count: result.approvals,
+            required: result.required,
+          }),
     );
   } catch (error) {
     href = feedbackHref("error", error instanceof Error ? error.message : t.couldNotApprove);

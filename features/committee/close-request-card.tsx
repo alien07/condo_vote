@@ -108,7 +108,13 @@ export function CloseRequestCard({
             </Term>
           </div>
 
-          {isMember ? (
+          {request.proposed_by_me ? (
+            // The proposal counts as the proposer's approval; they cancel
+            // instead of objecting (review 2026-11-14).
+            <p className="text-[var(--muted)]" data-proposer-note>
+              {t.proposerNote}
+            </p>
+          ) : isMember ? (
             <div className="grid gap-2 sm:grid-cols-2">
               {request.my_answer !== "approve" ? (
                 <form action={answerCloseAsCommittee}>
@@ -166,6 +172,29 @@ export function CloseRequestCard({
           ) : null}
         </div>
       ) : meeting.closes_early_at ? null : (
+        <>
+        {meeting.last_request ? (
+          // What happened to the last request, so it does not just vanish.
+          <div className="grid gap-1 rounded-md border border-[var(--border)] px-3 py-2 text-sm" data-last-request>
+            <div className="font-medium">
+              {fill(t.lastRequest, { status: t.requestStatus[meeting.last_request.status] ?? meeting.last_request.status })}
+              {meeting.last_request.ended_at ? ` · ${formatDateTime(meeting.last_request.ended_at)}` : null}
+            </div>
+            <div className="text-[var(--muted)]">
+              {fill(t.lastRequestBy, { name: meeting.last_request.proposer ?? "-" })}
+            </div>
+            <div>{fill(t.requestReason, { reason: meeting.last_request.reason })}</div>
+            {meeting.last_request.answers.map((answer, index) => (
+              <div className="text-[var(--muted)]" key={index}>
+                {fill(t.lastRequestAnswer, {
+                  name: answer.name ?? "-",
+                  answer: answer.answer === "object" ? t.objected : t.answerApprove,
+                })}
+                {answer.reason ? ` · ${answer.reason}` : null}
+              </div>
+            ))}
+          </div>
+        ) : null}
         <details className="text-sm">
           <summary className="inline-flex min-h-11 cursor-pointer items-center rounded-md border border-[var(--border)] px-3 py-2 font-medium">
             {t.propose}
@@ -199,6 +228,7 @@ export function CloseRequestCard({
             </ConfirmSubmitButton>
           </form>
         </details>
+        </>
       )}
     </div>
   );

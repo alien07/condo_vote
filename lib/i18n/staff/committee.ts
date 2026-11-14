@@ -35,10 +35,10 @@ const en = {
   approvedPublished: "Result approved and published",
   approvalRecorded: "Approval recorded ({count} of {required})",
   // Sections (demo feedback item 10).
-  stepClose: "1. Close voting early (optional)",
+  stepClose: "2. Close voting early",
   stepCloseText:
     "Only to close before the set end time. A member or admin proposes it with a reason; it closes when enough members approve. Without a request, voting closes on time by itself.",
-  stepResults: "2. Approve results (required before publishing)",
+  stepResults: "1. Approve results",
   stepResultsText:
     "Check the counts, then approve. The result is published when enough members approve. If something is wrong, request a correction instead.",
   // Approval counts and approvers (item 11).
@@ -92,6 +92,24 @@ const en = {
   requestCancelled: "Request cancelled",
   // Correction requests (item 12).
   requestCorrection: "Request a correction",
+  sendCorrection: "Send correction request",
+  cancel: "Cancel",
+  correctionWaiting:
+    "A correction request for this result is waiting for the admin. A new request can be sent after the admin answers.",
+  publishHeld:
+    "Approvals are complete, but the result is published only after the admin answers the open correction request.",
+  approvalHeld: "Approval recorded ({count} of {required}). The result is published after the admin answers the correction request.",
+  // Close-early requests (review 2026-11-14).
+  proposerNote: "Your request counts as your approval. To change your mind, cancel the request.",
+  lastRequest: "Last request: {status}",
+  lastRequestBy: "Proposed by {name}",
+  lastRequestAnswer: "{name}: {answer}",
+  // Page layout (review 2026-11-14).
+  pendingCount: "{count} awaiting approval",
+  openCount: "{count} open for voting",
+  required: "Required",
+  optional: "Optional",
+  jumpTo: "On this page",
   correctionCategory: "What needs correcting",
   correctionReason: "Describe what is wrong",
   correctionReference: "Legal or by-law reference (required for high level)",
@@ -170,10 +188,10 @@ const th: typeof en = {
   couldNotApprove: "อนุมัติไม่สำเร็จ",
   approvedPublished: "อนุมัติและเผยแพร่ผลแล้ว",
   approvalRecorded: "บันทึกการอนุมัติแล้ว ({count} จาก {required})",
-  stepClose: "1. ปิดลงคะแนนก่อนเวลา (ไม่บังคับ)",
+  stepClose: "2. ปิดลงคะแนนก่อนเวลา",
   stepCloseText:
     "ใช้เฉพาะเมื่อต้องการปิดก่อนเวลาที่กำหนด กรรมการหรือผู้ดูแลเสนอพร้อมเหตุผล ลงคะแนนจะปิดเมื่อกรรมการอนุมัติครบ ถ้าไม่มีคำขอ ระบบปิดเองตามเวลา",
-  stepResults: "2. อนุมัติผล (ต้องทำก่อนประกาศ)",
+  stepResults: "1. อนุมัติผล",
   stepResultsText:
     "ตรวจตัวเลขแล้วกดอนุมัติ ผลจะประกาศเมื่อกรรมการอนุมัติครบ ถ้าพบสิ่งผิด ให้ขอให้แก้ไขแทน",
   countMore: "อนุมัติแล้ว {count} จาก {required} (ต้องการอีก {more})",
@@ -224,6 +242,20 @@ const th: typeof en = {
   requestFailed: "คำขอไม่ผ่าน",
   requestCancelled: "ยกเลิกคำขอแล้ว",
   requestCorrection: "ขอให้แก้ไข",
+  sendCorrection: "ส่งคำขอแก้ไข",
+  cancel: "ยกเลิก",
+  correctionWaiting: "มีคำขอแก้ไขผลนี้รอผู้ดูแลตอบอยู่ ส่งคำขอใหม่ได้หลังผู้ดูแลตอบแล้ว",
+  publishHeld: "อนุมัติครบแล้ว แต่ผลจะประกาศหลังผู้ดูแลตอบคำขอแก้ไขที่ค้างอยู่",
+  approvalHeld: "บันทึกการอนุมัติแล้ว ({count} จาก {required}) ผลจะประกาศหลังผู้ดูแลตอบคำขอแก้ไข",
+  proposerNote: "คำขอของท่านนับเป็นการอนุมัติแล้ว ถ้าเปลี่ยนใจ ให้ยกเลิกคำขอ",
+  lastRequest: "คำขอล่าสุด: {status}",
+  lastRequestBy: "เสนอโดย {name}",
+  lastRequestAnswer: "{name}: {answer}",
+  pendingCount: "{count} ผลรออนุมัติ",
+  openCount: "{count} การประชุมที่เปิดลงคะแนนอยู่",
+  required: "ต้องทำ",
+  optional: "ไม่บังคับ",
+  jumpTo: "ในหน้านี้",
   correctionCategory: "เรื่องที่ต้องแก้",
   correctionReason: "อธิบายสิ่งที่ผิด",
   correctionReference: "อ้างอิงข้อกฎหมายหรือข้อบังคับ (ต้องระบุเมื่อระดับสูง)",

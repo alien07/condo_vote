@@ -2,6 +2,7 @@ import { ConfirmSubmitButton } from "@/features/admin/components/form-controls";
 import { RequiredMark } from "@/features/admin/components/field-label";
 import { ApproverList } from "@/features/committee/approver-list";
 import { changedAgendaItems } from "@/features/committee/changed-items";
+import { CloseDetailsButton } from "@/features/committee/close-details-button";
 import {
   approveResultAsCommittee,
   requestCorrectionAsCommittee,
@@ -67,6 +68,12 @@ export function PendingResultCard({
   const changed = result.previous_payload
     ? changedAgendaItems(result.previous_payload as PendingPayload, payload)
     : null;
+  // One open correction per result (0034): others see it instead of the form.
+  const openCorrection = result.corrections.some((correction) => correction.status === "open");
+  // Approvals complete, but publishing waits for the admin's answer.
+  const held = openCorrection && result.approvals >= result.required_approvals;
+  // A member who approved has said the numbers are correct (0034).
+  const canRequestCorrection = !result.approved_by_me && !openCorrection;
   const regeneratedAfter = result.corrections.find(
     (correction) => correction.result_snapshot_id !== result.snapshot_id,
   );
@@ -115,6 +122,11 @@ export function PendingResultCard({
         </Term>
       </p>
       {openHigh ? <p className="mt-1 text-sm font-medium text-[var(--danger)]">{t.allMembersNeeded}</p> : null}
+      {held ? (
+        <p className="mt-2 rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-900" data-publish-held>
+          {t.publishHeld}
+        </p>
+      ) : null}
 
       {regeneratedAfter ? (
         <p className="mt-2 rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-900" data-regenerated>
@@ -228,11 +240,11 @@ export function PendingResultCard({
         )}
       </div>
 
-      <div className="mt-4 grid gap-4 border-t border-[var(--border)] pt-4 sm:grid-cols-2">
-        {result.approved_by_me ? (
-          <p className="text-sm text-[var(--muted)]">{t.youApprovedResult}</p>
-        ) : (
-          <form action={approveResultAsCommittee} className="grid gap-2">
+      {/* Actions. Someone who approved has none left: the badge at the top
+          already says so (no second "you approved" line here). */}
+      {result.approved_by_me ? null : (
+      <div className="mt-4 grid gap-4 border-t border-[var(--border)] pt-4">
+          <form action={approveResultAsCommittee} className="grid gap-2 sm:max-w-md">
             <input name="result_snapshot_id" type="hidden" value={result.snapshot_id} />
             <label className="grid gap-1 text-sm font-medium">
               {t.notes}
@@ -249,13 +261,19 @@ export function PendingResultCard({
               {t.approveResult}
             </ConfirmSubmitButton>
           </form>
-        )}
 
-        <details className="text-sm">
+        {openCorrection ? (
+          <p className="text-sm text-[var(--muted)]" data-correction-waiting>
+            {t.correctionWaiting}
+          </p>
+        ) : null}
+
+        {canRequestCorrection ? (
+        <details className="text-sm" data-correction-form>
           <summary className="inline-flex min-h-11 cursor-pointer items-center rounded-md border border-[var(--border)] px-3 py-2 font-medium">
             {t.requestCorrection}
           </summary>
-          <form action={requestCorrectionAsCommittee} className="mt-3 grid gap-2">
+          <form action={requestCorrectionAsCommittee} className="mt-3 grid gap-3">
             <input name="result_snapshot_id" type="hidden" value={result.snapshot_id} />
             <label className="grid gap-1 font-medium">
               <span>
@@ -282,17 +300,25 @@ export function PendingResultCard({
               {t.correctionReference}
               <input className={input} name="legal_reference" />
             </label>
-            <ConfirmSubmitButton
-              className="min-h-11 rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm font-medium"
-              confirmMessage={fill(t.confirmCorrection, { title })}
-              pendingLabel={t.saving}
-              tone="primary"
-            >
-              {t.requestCorrection}
-            </ConfirmSubmitButton>
+            <div className="flex flex-wrap justify-end gap-2">
+              <CloseDetailsButton
+                className="min-h-11 rounded-md border border-[var(--border)] bg-[var(--surface)] px-4 py-2 text-sm font-medium"
+                label={t.cancel}
+              />
+              <ConfirmSubmitButton
+                className="min-h-11 rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)]"
+                confirmMessage={fill(t.confirmCorrection, { title })}
+                pendingLabel={t.saving}
+                tone="primary"
+              >
+                {t.sendCorrection}
+              </ConfirmSubmitButton>
+            </div>
           </form>
         </details>
+        ) : null}
       </div>
+      )}
     </section>
   );
 }

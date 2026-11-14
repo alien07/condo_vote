@@ -1819,7 +1819,7 @@ export type Database = {
       }
       answer_correction_request: {
         Args: { p_answer: string; p_request_id: string; p_status: string }
-        Returns: undefined
+        Returns: Json
       }
       can_approve_as_committee: { Args: never; Returns: boolean }
       cancel_close_request: { Args: { p_request_id: string }; Returns: undefined }

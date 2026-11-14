@@ -7,13 +7,15 @@ import { createClient } from "@/lib/supabase/server";
 import { getCommitteeOverview } from "@/features/results/committee-service";
 import { CloseRequestCard } from "@/features/committee/close-request-card";
 import { PendingResultCard } from "@/features/committee/pending-result-card";
+import { fill } from "@/lib/i18n/template";
 
 // Approving can start the master PDF files (D021), which needs Chromium time.
 export const maxDuration = 60;
 
-// Committee work (D014), as two steps (demo feedback item 10): closing voting
-// early, which is optional and starts with a request, and approving results,
-// which every result needs before it is published.
+// Committee work (D014), in two panels (demo feedback item 10, review
+// 2026-11-14): approving results, which every result needs before it is
+// published, comes first; closing voting early is optional and starts with
+// a request.
 export default async function CommitteePage() {
   const current = await requireProfileWithRoles();
 
@@ -26,6 +28,8 @@ export default async function CommitteePage() {
   const { locale, s } = await getStaffI18n();
   const t = s.committee;
   const formatDateTime = (value: string) => formatDateTimeIn(locale, value);
+  const pendingCount = overview.pending_results.length;
+  const openCount = overview.open_meetings.length;
 
   return (
     <main className="mx-auto max-w-5xl px-6 py-8">
@@ -37,53 +41,99 @@ export default async function CommitteePage() {
         </div>
       </div>
 
-      <section aria-labelledby="committee-step-close" className="mb-8">
-        <h2 className="text-lg font-semibold" id="committee-step-close">
-          {t.stepClose}
-          {overview.open_meetings.length > 0 ? ` (${overview.open_meetings.length})` : null}
-        </h2>
-        <p className="mt-1 text-sm text-[var(--muted)]">{t.stepCloseText}</p>
-        {overview.open_meetings.length === 0 ? (
-          <p className="mt-3 text-sm text-[var(--muted)]">{t.noOpen}</p>
-        ) : (
-          <div className="mt-3 grid gap-3">
-            {overview.open_meetings.map((meeting) => (
-              <CloseRequestCard
-                formatDateTime={formatDateTime}
-                isMember={overview.is_member}
-                key={meeting.id}
-                locale={locale}
-                meeting={meeting}
-                members={overview.members}
-                t={t}
-              />
-            ))}
+      {/* Summary with jump links; on a phone the page gets long. */}
+      <nav aria-label={t.jumpTo} className="mb-6 flex flex-wrap gap-2 text-sm" data-committee-summary>
+        <a
+          className={`inline-flex min-h-11 items-center rounded-full px-4 font-medium ${
+            pendingCount > 0
+              ? "bg-[var(--primary)] text-[var(--primary-foreground)]"
+              : "border border-[var(--border)] bg-[var(--surface)]"
+          }`}
+          href="#committee-step-results"
+        >
+          {fill(t.pendingCount, { count: pendingCount })}
+        </a>
+        <a
+          className="inline-flex min-h-11 items-center rounded-full border border-[var(--border)] bg-[var(--surface)] px-4 font-medium"
+          href="#committee-step-close"
+        >
+          {fill(t.openCount, { count: openCount })}
+        </a>
+      </nav>
+
+      {/* 1. Approve results: required work, so it comes first and stands out. */}
+      <section
+        aria-labelledby="committee-step-results"
+        className="mb-8 scroll-mt-4 overflow-hidden rounded-lg border-2 border-[var(--primary)] bg-[var(--surface)]"
+      >
+        <div className="border-b border-[var(--border)] bg-[var(--primary)]/10 px-4 py-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <h2 className="text-lg font-semibold" id="committee-step-results">
+              {t.stepResults}
+            </h2>
+            <span className="rounded-full bg-[var(--primary)] px-2 py-0.5 text-xs font-semibold text-[var(--primary-foreground)]">
+              {t.required}
+            </span>
+            <span className="text-sm text-[var(--muted)]">{fill(t.pendingCount, { count: pendingCount })}</span>
           </div>
-        )}
+          <p className="mt-1 text-sm text-[var(--muted)]">{t.stepResultsText}</p>
+        </div>
+        <div className="p-4">
+          {pendingCount === 0 ? (
+            <p className="text-sm text-[var(--muted)]">{t.noPending}</p>
+          ) : (
+            <div className="grid gap-4">
+              {overview.pending_results.map((result) => (
+                <PendingResultCard
+                  formatDateTime={formatDateTime}
+                  key={result.snapshot_id}
+                  locale={locale}
+                  members={overview.members}
+                  result={result}
+                  t={t}
+                />
+              ))}
+            </div>
+          )}
+        </div>
       </section>
 
-      <section aria-labelledby="committee-step-results">
-        <h2 className="text-lg font-semibold" id="committee-step-results">
-          {t.stepResults}
-          {overview.pending_results.length > 0 ? ` (${overview.pending_results.length})` : null}
-        </h2>
-        <p className="mt-1 text-sm text-[var(--muted)]">{t.stepResultsText}</p>
-        {overview.pending_results.length === 0 ? (
-          <p className="mt-3 text-sm text-[var(--muted)]">{t.noPending}</p>
-        ) : (
-          <div className="mt-3 grid gap-4">
-            {overview.pending_results.map((result) => (
-              <PendingResultCard
-                formatDateTime={formatDateTime}
-                key={result.snapshot_id}
-                locale={locale}
-                members={overview.members}
-                result={result}
-                t={t}
-              />
-            ))}
+      {/* 2. Close voting early: optional, so it is quieter. */}
+      <section
+        aria-labelledby="committee-step-close"
+        className="scroll-mt-4 overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--surface)]"
+      >
+        <div className="border-b border-[var(--border)] bg-[var(--background)] px-4 py-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <h2 className="text-lg font-semibold" id="committee-step-close">
+              {t.stepClose}
+            </h2>
+            <span className="rounded-full border border-[var(--border)] px-2 py-0.5 text-xs font-semibold text-[var(--muted)]">
+              {t.optional}
+            </span>
+            <span className="text-sm text-[var(--muted)]">{fill(t.openCount, { count: openCount })}</span>
           </div>
-        )}
+          <p className="mt-1 text-sm text-[var(--muted)]">{t.stepCloseText}</p>
+        </div>
+        <div className="p-4">
+          {openCount === 0 ? (
+            <p className="text-sm text-[var(--muted)]">{t.noOpen}</p>
+          ) : (
+            <div className="grid gap-3">
+              {overview.open_meetings.map((meeting) => (
+                <CloseRequestCard
+                  formatDateTime={formatDateTime}
+                  isMember={overview.is_member}
+                  key={meeting.id}
+                  locale={locale}
+                  meeting={meeting}
+                  members={overview.members}
+                  t={t}
+                />
+              ))}
+            </div>
+          )}
+        </div>
       </section>
     </main>
   );
