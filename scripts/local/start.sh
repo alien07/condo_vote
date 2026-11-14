@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 # Start condoVotes on this computer (macOS / Linux): Docker -> Supabase -> app.
 #
-#   ./start-local.sh              start (production build, demo sign-in buttons on)
-#   ./start-local.sh --seed       also wipe the local database and load demo data
-#   ./start-local.sh --dev        use `next dev` instead of the production build
-#   ./start-local.sh --build      rebuild even if the code did not change
-#   ./start-local.sh --no-browser do not open the browser
+#   ./scripts/local/start.sh              start (production build, demo sign-in buttons on)
+#   ./scripts/local/start.sh --seed       also wipe the local database and load demo data
+#   ./scripts/local/start.sh --dev        use `next dev` instead of the production build
+#   ./scripts/local/start.sh --build      rebuild even if the code did not change
+#   ./scripts/local/start.sh --no-browser do not open the browser
 #
-# The app log is .next/local-server.log. Stop with ./stop-local.sh.
+# The app log is .next/local-server.log. Stop with ./scripts/local/stop.sh.
 set -euo pipefail
 
 root="$(cd "$(dirname "$0")/../.." && pwd)"
@@ -94,5 +94,5 @@ step "Ready"
 echo "App:   $app_url"
 echo "Help:  $app_url/help"
 echo "Log:   $log"
-echo "Stop:  ./stop-local.sh"
+echo "Stop:  ./scripts/local/stop.sh"
 if [ "$browser" = 1 ] && command -v open >/dev/null 2>&1; then open "$app_url"; fi
