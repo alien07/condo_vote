@@ -12,6 +12,7 @@ import {
 import type { CommitteeOverview } from "@/features/results/committee-service";
 import { Term } from "@/features/glossary/term";
 import type { StaffDictionary } from "@/lib/i18n/staff";
+import { closeEarlyWindow } from "@/lib/datetime";
 import { localized } from "@/lib/i18n/content";
 import type { Locale } from "@/lib/i18n/locales";
 import { fill } from "@/lib/i18n/template";
@@ -43,6 +44,8 @@ export function CloseRequestCard({
   const request = meeting.request;
   // English title when the reader uses English and it was written (D020).
   const title = localized(locale, meeting.title, meeting.title_en);
+  // Voting closes only on the meeting day (0036).
+  const closeWindow = closeEarlyWindow(meeting.starts_at);
   const approvals = request?.answers.filter((answer) => answer.answer === "approve").length ?? 0;
   const objections = request?.answers.filter((answer) => answer.answer === "object").length ?? 0;
   const more = Math.max(meeting.required_approvals - approvals, 0);
@@ -179,8 +182,8 @@ export function CloseRequestCard({
           // What happened to the last request, in one folded line so many
           // requests over time do not make the card long. Older ones are in
           // the audit log.
-          <details className="rounded-md border border-[var(--border)] px-3 py-2 text-sm" data-last-request>
-            <summary className="cursor-pointer text-[var(--muted)]">
+          <details className="rounded-md border border-[var(--border)] px-3 py-2 text-xs" data-last-request>
+            <summary className="cursor-pointer text-xs text-[var(--muted)]">
               {fill(t.lastRequest, { status: t.requestStatus[meeting.last_request.status] ?? meeting.last_request.status })}
               {meeting.last_request.ended_at ? ` · ${formatDateTime(meeting.last_request.ended_at)}` : null}
             </summary>
@@ -219,10 +222,16 @@ export function CloseRequestCard({
               labels={{
                 when: t.proposeWhen,
                 now: t.proposeNow,
+                nowLater: fill(t.proposeNowLater, { time: formatDateTime(meeting.starts_at) }),
                 at: t.proposeAt,
                 atTime: t.proposeAtTime,
-                atHint: fill(t.proposeAtHint, { time: formatDateTime(meeting.ends_at) }),
+                atHint: fill(t.proposeAtHint, {
+                  start: formatDateTime(closeWindow.minAt),
+                  time: formatDateTime(meeting.ends_at),
+                }),
               }}
+              meetingDayStarted={closeWindow.meetingDayStarted}
+              minAt={closeWindow.minAt}
             />
             <div className="flex flex-wrap justify-end gap-2">
               <CloseDetailsButton

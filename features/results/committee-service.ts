@@ -174,6 +174,8 @@ export type CommitteeOverview = {
     title: string;
     /** English title (0033); null when not written. */
     title_en: string | null;
+    /** Start of meeting-day voting (0036). */
+    starts_at: string;
     ends_at: string;
     required_approvals: number;
     request: CloseRequest | null;

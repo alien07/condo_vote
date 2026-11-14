@@ -1,16 +1,17 @@
--- Database tests for the committee review rules (0034, 0035): the proposer of a
+-- Database tests for the committee review rules (0034, 0035, 0036): the proposer of a
 -- close-early request cannot object, the last ended request is shown, one
 -- open correction per result, no correction after approving, and publishing
 -- waits for an open correction.
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(11);
+select plan(14);
 
 \set admin_a  '''00000000-0000-4000-8000-0000000000d1'''
 \set member_b '''00000000-0000-4000-8000-0000000000d2'''
 \set member_c '''00000000-0000-4000-8000-0000000000d3'''
 \set open_m   '''10000000-0000-4000-8000-0000000000d1'''
 \set closed_m '''10000000-0000-4000-8000-0000000000d2'''
+\set adv_m    '''10000000-0000-4000-8000-0000000000d3'''
 \set snap     '''50000000-0000-4000-8000-0000000000d1'''
 
 insert into auth.users (id, email) values
@@ -29,6 +30,10 @@ insert into public.committee_members (profile_id, full_name, position_title, dis
 insert into public.meetings (id, title, status, starts_at, ends_at, required_approvals) values
   (:open_m, 'Review open meeting', 'published', now() - interval '1 hour', now() + interval '2 hours', 2),
   (:closed_m, 'Review closed meeting', 'closed', now() - interval '3 hours', now() - interval '2 hours', 2);
+-- Advance voting open now; meeting-day voting in two days.
+insert into public.meetings (id, title, status, advance_starts_at, advance_ends_at, starts_at, ends_at, required_approvals)
+values (:adv_m, 'Review advance meeting', 'published', now() - interval '1 day', now() + interval '1 day',
+  now() + interval '2 days', now() + interval '2 days 4 hours', 2);
 insert into public.result_snapshots (id, meeting_id, payload_json, generated_at, generated_by)
 values (:snap, :closed_m, '{"questions": []}', now() - interval '1 hour', :admin_a);
 
@@ -57,6 +62,17 @@ select is(
 select throws_like(
   format($q$select public.propose_close_voting(%L, %L, null)$q$, :open_m, repeat('a', 501)),
   '%meeting_close_requests_reason_length%', 'a reason is at most 500 characters');
+
+-- Close early only on the meeting day (0036) ----------------------------------------
+select throws_like(
+  format($q$select public.propose_close_voting(%L, 'Close now', null)$q$, :adv_m),
+  'RESULT_CLOSE_BEFORE_MEETING_DAY%', 'before the meeting day, "as soon as approved" is refused');
+select throws_like(
+  format($q$select public.propose_close_voting(%L, 'Close in advance', now() + interval '12 hours')$q$, :adv_m),
+  'RESULT_CLOSE_TIME%', 'a close time during advance voting is refused');
+select lives_ok(
+  format($q$select public.propose_close_voting(%L, 'Close early on the day', now() + interval '2 days 2 hours')$q$, :adv_m),
+  'a close time on the meeting day can be requested in advance');
 
 -- Corrections: one at a time, not after approving -------------------------------------
 select lives_ok(format($q$select public.approve_result_snapshot(%L, null)$q$, :snap), 'member B approves');

@@ -27,7 +27,7 @@ export const committeeGuide: Record<Locale, HelpGuide> = {
         id: "propose-close",
         title: "(ถ้าจำเป็น) เสนอปิดลงคะแนนก่อนเวลา",
         body: "ถ้าไม่มีคำขอ ระบบปิดลงคะแนนเองตามเวลาที่กำหนด ถ้าต้องการปิดก่อน กด \"เสนอปิดก่อนเวลา\" ที่การประชุมนั้น ใส่เหตุผล เลือก \"ทันทีที่อนุมัติครบ\" หรือ \"ตามเวลาที่ระบุ\" แล้วกด \"ส่งคำขอ\" และ \"ยืนยัน\" ระบบส่งอีเมลถึงกรรมการทุกคนให้ตอบ",
-        tip: "แต่ละการประชุมมีคำขอที่รอตอบได้ครั้งละหนึ่งคำขอ ถ้าผู้เสนอเป็นกรรมการ ระบบนับคำขอเป็นการอนุมัติของผู้เสนอด้วย ถ้าผู้เสนอเปลี่ยนใจ ให้กด \"ยกเลิกคำขอ\" (คัดค้านคำขอของตัวเองไม่ได้)",
+        tip: "แต่ละการประชุมมีคำขอที่รอตอบได้ครั้งละหนึ่งคำขอ ถ้าผู้เสนอเป็นกรรมการ ระบบนับคำขอเป็นการอนุมัติของผู้เสนอด้วย ถ้าผู้เสนอเปลี่ยนใจ ให้กด \"ยกเลิกคำขอ\" (คัดค้านคำขอของตัวเองไม่ได้) การประชุมที่มีลงคะแนนล่วงหน้า เสนอได้ตั้งแต่ช่วงล่วงหน้า แต่เวลาปิดต้องอยู่ในวันประชุม และเลือก \"ทันทีที่อนุมัติครบ\" ได้เมื่อเริ่มลงคะแนนวันประชุมแล้ว",
         image: "committee-close-propose",
       },
       {
@@ -118,7 +118,7 @@ export const committeeGuide: Record<Locale, HelpGuide> = {
         id: "propose-close",
         title: "(If needed) Propose closing voting early",
         body: "Without a request, voting closes on time by itself. To close earlier, tap \"Propose closing early\" on that meeting, give a reason, choose \"As soon as approved\" or \"At this time\", then tap \"Send request\" and \"Confirm\". Every committee member is emailed and asked to answer.",
-        tip: "A meeting has one open request at a time. If the proposer is a committee member, the request counts as their approval. To change their mind, the proposer taps \"Cancel request\" (they cannot object to their own request).",
+        tip: "A meeting has one open request at a time. If the proposer is a committee member, the request counts as their approval. To change their mind, the proposer taps \"Cancel request\" (they cannot object to their own request). For a meeting with advance voting, a request can be sent during advance voting, but the close time must be on the meeting day, and \"As soon as approved\" is available once meeting-day voting starts.",
         image: "committee-close-propose",
       },
       {

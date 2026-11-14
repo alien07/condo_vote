@@ -127,12 +127,12 @@ export function PendingResultCard({
         </Term>
       </p>
       {result.approval_list.length > 0 ? (
-        <p className="text-sm text-[var(--muted)]" data-approved-by>
+        <p className="text-xs text-[var(--muted)]" data-approved-by>
           {fill(t.approvedBy, { names: result.approval_list.map((approval) => approval.name ?? "-").join(", ") })}
         </p>
       ) : null}
       {waitingFor.length > 0 ? (
-        <p className="text-sm" data-not-approved>
+        <p className="text-xs" data-not-approved>
           <span className="font-medium">{t.notApprovedYet}</span>{" "}
           {waitingFor.map((member) => member.name).join(", ")}
         </p>

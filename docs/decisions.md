@@ -111,7 +111,7 @@ may be offered. Abstain is reported as its own group and counts as voting
 "at least", because legal rules use both (more than half; at least 3/4).
 
 ### D014 - Committee Approval And Vote Closing
-Status: implemented (migrations 0023, 0030 and 0034, `/committee` page)
+Status: implemented (migrations 0023, 0030, 0034, 0035 and 0036, `/committee` page)
 
 - Admin sets a minimum number of committee approvals.
 - A result is published when its snapshot reaches that minimum. Each
@@ -152,6 +152,13 @@ Status: implemented (migrations 0023, 0030 and 0034, `/committee` page)
   - While a correction request is open, members can still approve, but the
     result is not published. When the admin answers "No change needed" and
     the approvals are complete, the result is published then.
+  - Voting closes only on the meeting day (0036, option b): a request can be
+    sent during advance voting, but its close time must fall within
+    meeting-day voting, and "as soon as approved" is allowed only once
+    meeting-day voting has started.
+  - Reasons, notes and answers are limited to 500 characters and references
+    to 200, with a counter on the page (0035, NOT VALID for older rows).
+    The limits can be raised later with a migration and one constant.
   - Page layout: "1. Approve results" (required) comes first in its own
     panel, then "2. Close voting early" (optional), with count buttons at
     the top that jump to each part.
