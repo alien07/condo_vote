@@ -204,7 +204,9 @@ async function shootLocale(locale, { m1, m8, room }) {
   await scrollToTop(result);
   await save(pending, locale, "committee-result");
 
-  await openDetails(result.locator("[data-correction-form]"));
+  // The correction form opens below the approve row (ActionRow).
+  await result.locator("[data-correction-form] button[aria-expanded]").click();
+  await scrollToTop(result.locator("[data-correction-form]"));
   await save(pending, locale, "committee-correction");
   await reviewer.close();
 }

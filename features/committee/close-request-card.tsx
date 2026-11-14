@@ -4,6 +4,7 @@ import { ConfirmSubmitButton } from "@/features/admin/components/form-controls";
 import { RequiredMark } from "@/features/admin/components/field-label";
 import { ApproverList } from "@/features/committee/approver-list";
 import { CloseDetailsButton } from "@/features/committee/close-details-button";
+import { ActionRow, ActionRowCancel } from "@/features/ui/action-row";
 import { CloseWhenFields } from "@/features/committee/close-when-fields";
 import {
   answerCloseAsCommittee,
@@ -155,57 +156,67 @@ export function CloseRequestCard({
             </div>
           ) : isMember ? (
             <div className="grid gap-1" data-close-answers>
-              <div className="flex flex-wrap items-start gap-2">
-                {request.my_answer !== "approve" ? (
-                  <form action={answerCloseAsCommittee}>
-                    <input name="request_id" type="hidden" value={request.id} />
-                    <input name="answer" type="hidden" value="approve" />
-                    <ConfirmSubmitButton
-                      className="min-h-11 rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)]"
-                      confirmMessage={fill(t.confirmApproveClose, {
-                        title,
-                        required: meeting.required_approvals,
-                      })}
-                      pendingLabel={t.saving}
-                      tone="primary"
-                    >
-                      {t.answerApprove}
-                    </ConfirmSubmitButton>
-                  </form>
-                ) : null}
-                {request.my_answer !== "object" ? (
-                  // The reason field opens only when objecting, so nobody
-                  // thinks approving needs a reason.
-                  <details className="open:basis-full" data-object-form>
-                    <summary className="inline-flex min-h-11 cursor-pointer items-center rounded-md border border-[var(--border)] bg-[var(--surface)] px-4 py-2 text-sm font-medium">
-                      {t.answerObject}
-                    </summary>
-                    <form action={answerCloseAsCommittee} className="mt-3 grid gap-3 sm:max-w-md">
+              {(() => {
+                const approveForm =
+                  request.my_answer !== "approve" ? (
+                    <form action={answerCloseAsCommittee}>
                       <input name="request_id" type="hidden" value={request.id} />
-                      <input name="answer" type="hidden" value="object" />
-                      <label className="grid gap-1 font-medium">
-                        <span>
-                          {t.objectReason} <RequiredMark />
-                        </span>
-                        <CountedText className={input} maxLength={500} multiline name="reason" required />
-                      </label>
-                      <div className="flex flex-wrap justify-end gap-2">
-                        <CloseDetailsButton
-                          className="min-h-11 rounded-md border border-[var(--border)] bg-[var(--surface)] px-4 py-2 text-sm font-medium"
-                          label={t.cancel}
-                        />
-                        <ConfirmSubmitButton
-                          className="min-h-11 rounded-md bg-[var(--danger)] px-4 py-2 text-sm font-medium text-white"
-                          confirmMessage={fill(t.confirmObject, { title })}
-                          pendingLabel={t.saving}
-                        >
-                          {t.sendObjection}
-                        </ConfirmSubmitButton>
-                      </div>
+                      <input name="answer" type="hidden" value="approve" />
+                      <ConfirmSubmitButton
+                        className="min-h-11 rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)]"
+                        confirmMessage={fill(t.confirmApproveClose, {
+                          title,
+                          required: meeting.required_approvals,
+                        })}
+                        pendingLabel={t.saving}
+                        tone="primary"
+                      >
+                        {t.answerApprove}
+                      </ConfirmSubmitButton>
                     </form>
-                  </details>
-                ) : null}
-              </div>
+                  ) : null;
+
+                // Already objected: only "approve" is left to change to.
+                if (request.my_answer === "object") {
+                  return <div className="flex flex-wrap gap-2">{approveForm}</div>;
+                }
+
+                // The reason field opens only when objecting, so nobody
+                // thinks approving needs a reason; the buttons stay in a row.
+                return (
+                  <ActionRow
+                    actions={approveForm}
+                    data-object-form
+                    panel={
+                      <form action={answerCloseAsCommittee} className="grid gap-3 sm:max-w-md">
+                        <input name="request_id" type="hidden" value={request.id} />
+                        <input name="answer" type="hidden" value="object" />
+                        <label className="grid gap-1 font-medium">
+                          <span>
+                            {t.objectReason} <RequiredMark />
+                          </span>
+                          <CountedText className={input} maxLength={500} multiline name="reason" required />
+                        </label>
+                        <div className="flex flex-wrap justify-end gap-2">
+                          <ActionRowCancel
+                            className="min-h-11 rounded-md border border-[var(--border)] bg-[var(--surface)] px-4 py-2 text-sm font-medium"
+                            label={t.cancel}
+                          />
+                          <ConfirmSubmitButton
+                            className="min-h-11 rounded-md bg-[var(--danger)] px-4 py-2 text-sm font-medium text-white"
+                            confirmMessage={fill(t.confirmObject, { title })}
+                            pendingLabel={t.saving}
+                          >
+                            {t.sendObjection}
+                          </ConfirmSubmitButton>
+                        </div>
+                      </form>
+                    }
+                    toggleClassName="inline-flex min-h-11 items-center rounded-md border border-[var(--border)] bg-[var(--surface)] px-4 py-2 text-sm font-medium"
+                    toggleLabel={t.answerObject}
+                  />
+                );
+              })()}
               <p className="text-xs text-[var(--muted)]">{t.changeAnswer}</p>
             </div>
           ) : (

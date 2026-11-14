@@ -4,7 +4,7 @@ import { ConfirmSubmitButton } from "@/features/admin/components/form-controls";
 import { RequiredMark } from "@/features/admin/components/field-label";
 import { ApproverList } from "@/features/committee/approver-list";
 import { changedAgendaItems } from "@/features/committee/changed-items";
-import { CloseDetailsButton } from "@/features/committee/close-details-button";
+import { ActionRow, ActionRowCancel } from "@/features/ui/action-row";
 import {
   approveResultAsCommittee,
   requestCorrectionAsCommittee,
@@ -274,71 +274,81 @@ export function PendingResultCard({
           {t.notes}
           <CountedText className={input} form={`approve-${result.snapshot_id}`} maxLength={500} name="notes" />
         </label>
-        <div className="flex flex-wrap items-start gap-2">
-          <form action={approveResultAsCommittee} id={`approve-${result.snapshot_id}`}>
-            <input name="result_snapshot_id" type="hidden" value={result.snapshot_id} />
-            <ConfirmSubmitButton
-              className="min-h-11 rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)]"
-              confirmMessage={fill(t.confirmApprove, {
-                title,
-                required: result.required_approvals,
-              })}
-              pendingLabel={t.approving}
-            >
-              {t.approveResult}
-            </ConfirmSubmitButton>
-          </form>
-
-        {canRequestCorrection ? (
-        <details className="text-sm open:basis-full" data-correction-form>
-          <summary className="inline-flex min-h-11 cursor-pointer items-center rounded-md border border-[var(--border)] bg-[var(--surface)] px-4 py-2 font-medium">
-            {t.requestCorrection}
-          </summary>
-          <form action={requestCorrectionAsCommittee} className="mt-3 grid gap-3">
-            <input name="result_snapshot_id" type="hidden" value={result.snapshot_id} />
-            <label className="grid gap-1 font-medium">
-              <span>
-                {t.correctionCategory} <RequiredMark />
-              </span>
-              <select className={input} defaultValue="" name="category" required>
-                <option disabled value="">
-                  -
-                </option>
-                {CATEGORIES.map((category) => (
-                  <option key={category} value={category}>
-                    {t.categories[category]}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="grid gap-1 font-medium">
-              <span>
-                {t.correctionReason} <RequiredMark />
-              </span>
-              <CountedText className={input} maxLength={500} multiline name="reason" required />
-            </label>
-            <label className="grid gap-1 font-medium">
-              {t.correctionReference}
-              <CountedText className={input} maxLength={200} name="legal_reference" />
-            </label>
-            <div className="flex flex-wrap justify-end gap-2">
-              <CloseDetailsButton
-                className="min-h-11 rounded-md border border-[var(--border)] bg-[var(--surface)] px-4 py-2 text-sm font-medium"
-                label={t.cancel}
-              />
+        {(() => {
+          const approveForm = (
+            <form action={approveResultAsCommittee} id={`approve-${result.snapshot_id}`}>
+              <input name="result_snapshot_id" type="hidden" value={result.snapshot_id} />
               <ConfirmSubmitButton
                 className="min-h-11 rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)]"
-                confirmMessage={fill(t.confirmCorrection, { title })}
-                pendingLabel={t.saving}
-                tone="primary"
+                confirmMessage={fill(t.confirmApprove, {
+                  title,
+                  required: result.required_approvals,
+                })}
+                pendingLabel={t.approving}
               >
-                {t.sendCorrection}
+                {t.approveResult}
               </ConfirmSubmitButton>
-            </div>
-          </form>
-        </details>
-        ) : null}
-        </div>
+            </form>
+          );
+
+          if (!canRequestCorrection) {
+            return <div className="flex flex-wrap gap-2">{approveForm}</div>;
+          }
+
+          // The correction form opens below the row; the buttons stay put.
+          return (
+            <ActionRow
+              actions={approveForm}
+              data-correction-form
+              panel={
+                <form action={requestCorrectionAsCommittee} className="grid gap-3 text-sm">
+                  <input name="result_snapshot_id" type="hidden" value={result.snapshot_id} />
+                  <label className="grid gap-1 font-medium">
+                    <span>
+                      {t.correctionCategory} <RequiredMark />
+                    </span>
+                    <select className={input} defaultValue="" name="category" required>
+                      <option disabled value="">
+                        -
+                      </option>
+                      {CATEGORIES.map((category) => (
+                        <option key={category} value={category}>
+                          {t.categories[category]}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="grid gap-1 font-medium">
+                    <span>
+                      {t.correctionReason} <RequiredMark />
+                    </span>
+                    <CountedText className={input} maxLength={500} multiline name="reason" required />
+                  </label>
+                  <label className="grid gap-1 font-medium">
+                    {t.correctionReference}
+                    <CountedText className={input} maxLength={200} name="legal_reference" />
+                  </label>
+                  <div className="flex flex-wrap justify-end gap-2">
+                    <ActionRowCancel
+                      className="min-h-11 rounded-md border border-[var(--border)] bg-[var(--surface)] px-4 py-2 text-sm font-medium"
+                      label={t.cancel}
+                    />
+                    <ConfirmSubmitButton
+                      className="min-h-11 rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)]"
+                      confirmMessage={fill(t.confirmCorrection, { title })}
+                      pendingLabel={t.saving}
+                      tone="primary"
+                    >
+                      {t.sendCorrection}
+                    </ConfirmSubmitButton>
+                  </div>
+                </form>
+              }
+              toggleClassName="inline-flex min-h-11 items-center rounded-md border border-[var(--border)] bg-[var(--surface)] px-4 py-2 text-sm font-medium"
+              toggleLabel={t.requestCorrection}
+            />
+          );
+        })()}
 
         {openCorrection ? (
           <p className="text-sm text-[var(--muted)]" data-correction-waiting>
