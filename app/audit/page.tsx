@@ -1,3 +1,4 @@
+import { LongText } from "@/features/ui/long-text";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ScrollText } from "lucide-react";
@@ -93,7 +94,12 @@ export default async function AuditPage() {
                   {s.committee.levels[correction.level] ?? correction.level} ·{" "}
                   {s.committee.correctionStatus[correction.status] ?? correction.status}
                 </div>
-                <div>{correction.reason}</div>
+                <LongText
+                  label={s.committee.labelReason}
+                  less={s.committee.showLess}
+                  more={s.committee.showMore}
+                  text={correction.reason}
+                />
               </li>
             ))}
           </ul>

@@ -1,3 +1,4 @@
+import { LongText } from "@/features/ui/long-text";
 import { CountedText } from "@/features/committee/counted-text";
 import { ConfirmSubmitButton } from "@/features/admin/components/form-controls";
 import { RequiredMark } from "@/features/admin/components/field-label";
@@ -78,7 +79,7 @@ export function CloseRequestCard({
             ) : null}
           </div>
           <div>{fill(t.requestBy, { name: request.proposer ?? "-", time: formatDateTime(request.created_at) })}</div>
-          <div>{fill(t.requestReason, { reason: request.reason })}</div>
+          <LongText label={t.labelReason} less={t.showLess} more={t.showMore} text={request.reason} />
           <div className="text-[var(--muted)]">
             {request.close_at
               ? fill(t.requestCloseAt, {
@@ -191,14 +192,16 @@ export function CloseRequestCard({
             <div className="text-[var(--muted)]">
               {fill(t.lastRequestBy, { name: meeting.last_request.proposer ?? "-" })}
             </div>
-            <div>{fill(t.requestReason, { reason: meeting.last_request.reason })}</div>
+            <LongText label={t.labelReason} less={t.showLess} more={t.showMore} text={meeting.last_request.reason} />
             {meeting.last_request.answers.map((answer, index) => (
               <div className="text-[var(--muted)]" key={index}>
                 {fill(t.lastRequestAnswer, {
                   name: answer.name ?? "-",
                   answer: answer.answer === "object" ? t.objected : t.answerApprove,
                 })}
-                {answer.reason ? ` · ${answer.reason}` : null}
+                {answer.reason ? (
+                  <LongText less={t.showLess} lines={2} more={t.showMore} text={answer.reason} />
+                ) : null}
               </div>
             ))}
             </div>

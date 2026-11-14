@@ -1,3 +1,4 @@
+import { LongText } from "@/features/ui/long-text";
 import { CountedText } from "@/features/committee/counted-text";
 import { ConfirmSubmitButton } from "@/features/admin/components/form-controls";
 import { RequiredMark } from "@/features/admin/components/field-label";
@@ -146,10 +147,12 @@ export function PendingResultCard({
 
       {regeneratedAfter ? (
         <p className="mt-2 rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-900" data-regenerated>
-          {fill(t.regenerated, { reason: regeneratedAfter.reason })}{" "}
-          {changed && changed.length > 0
-            ? fill(t.changedAgenda, { items: changed.join(", ") })
-            : t.numbersUnchanged}
+          <span className="block font-medium">
+            {changed && changed.length > 0
+              ? `${t.labelRegenerated} · ${fill(t.changedAgenda, { items: changed.join(", ") })}`
+              : `${t.labelRegenerated} · ${t.numbersUnchanged}`}
+          </span>
+          <LongText less={t.showLess} lines={2} more={t.showMore} text={regeneratedAfter.reason} />
         </p>
       ) : null}
 
@@ -174,14 +177,18 @@ export function PendingResultCard({
                   time: formatDateTime(correction.created_at),
                 })}
               </div>
-              <div>{correction.reason}</div>
-              {correction.legal_reference ? <div>{correction.legal_reference}</div> : null}
-              {correction.level_change_reason ? (
-                <div>{fill(t.correctionLevelRaised, { reason: correction.level_change_reason })}</div>
-              ) : null}
-              {correction.answer ? (
-                <div>{fill(t.correctionAnswer, { answer: correction.answer })}</div>
-              ) : null}
+              <div className="mt-1 grid gap-1">
+                <LongText label={t.labelReason} less={t.showLess} more={t.showMore} text={correction.reason} />
+                {correction.legal_reference ? (
+                  <LongText label={t.labelReference} less={t.showLess} lines={2} more={t.showMore} text={correction.legal_reference} />
+                ) : null}
+                {correction.level_change_reason ? (
+                  <LongText label={t.labelLevelRaised} less={t.showLess} lines={2} more={t.showMore} text={correction.level_change_reason} />
+                ) : null}
+                {correction.answer ? (
+                  <LongText label={t.labelAnswer} less={t.showLess} more={t.showMore} text={correction.answer} />
+                ) : null}
+              </div>
             </div>
           ))}
         </div>

@@ -1,3 +1,4 @@
+import { LongText } from "@/features/ui/long-text";
 import { CountedText } from "@/features/committee/counted-text";
 import { ConfirmSubmitButton } from "@/features/admin/components/form-controls";
 import { RequiredMark } from "@/features/admin/components/field-label";
@@ -67,8 +68,10 @@ export async function CorrectionAdminPanel() {
                   time: formatDateTimeIn(locale, request.created_at),
                 })}
               </div>
-              <div>{request.reason}</div>
-              {request.legal_reference ? <div>{request.legal_reference}</div> : null}
+              <LongText label={t.labelReason} less={t.showLess} more={t.showMore} text={request.reason} />
+              {request.legal_reference ? (
+                <LongText label={t.labelReference} less={t.showLess} lines={2} more={t.showMore} text={request.legal_reference} />
+              ) : null}
 
               <div className="grid gap-3 sm:grid-cols-2">
                 <form action={answerCorrectionAsAdmin} className="grid gap-2">
