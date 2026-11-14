@@ -67,6 +67,8 @@ async function openDetails(locator) {
 async function save(page, locale, name) {
   const dir = path.join(root, "public", "help", locale);
   fs.mkdirSync(dir, { recursive: true });
+  // `next dev` adds its own badge in the corner; owners never see it.
+  await page.evaluate(() => document.querySelectorAll("nextjs-portal").forEach((element) => element.remove()));
   await page.screenshot({ path: path.join(dir, `${name}.png`) });
   console.log(`[help] ${locale}/${name}.png`);
 }
@@ -150,8 +152,7 @@ async function shootLocale(locale, { m1, m8, room }) {
 
   const owner = await newContext(locale);
   const list = await signIn(owner, "ownerA", "/vote");
-  // Start at an open meeting, as an owner sees it on a voting day.
-  await scrollToTop(list.getByText("DEMO M1", { exact: false }).first());
+  // The top of the list: the "Open now" group and the room buttons.
   await save(list, locale, "owner-vote-list");
 
   // The folded "let my co-owner vote" form under a room the owner holds.
