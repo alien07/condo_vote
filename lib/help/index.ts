@@ -1,21 +1,54 @@
+import type { AppRole } from "@/lib/auth/roles";
 import type { Locale } from "@/lib/i18n/locales";
 import { committeeGuide } from "@/lib/help/committee-guide";
 import { ownerGuide } from "@/lib/help/owner-guide";
 import type { HelpGuide } from "@/lib/help/types";
 
-// Guides published in the app, one per group of readers. The office staff
-// guide waits until the admin screens are reviewed; see docs/help-outline.md.
-const GUIDES = [ownerGuide, committeeGuide];
+type GuideEntry = {
+  guide: Record<Locale, HelpGuide>;
+  /** Job roles that see this guide; null: everyone, signed in or not. */
+  roles: AppRole[] | null;
+};
+
+// Guides published in the app, one per group of readers, and shown to the
+// people whose role they are for. The office staff guide waits until the
+// admin screens are reviewed; see docs/help-outline.md.
+const GUIDES: GuideEntry[] = [
+  { guide: ownerGuide, roles: null },
+  // Admins propose closing early and answer corrections; auditors read
+  // correction requests. Both need the committee steps.
+  { guide: committeeGuide, roles: ["committee", "admin", "auditor"] },
+];
+
+/** Whether someone with these job roles (null: signed out) sees a guide. */
+function canRead(entry: GuideEntry, roles: readonly string[] | null) {
+  return entry.roles === null || (roles ?? []).some((role) => entry.roles?.includes(role as AppRole));
+}
 
 /** The release the guides were checked against. */
 export const HELP_CHECKED_FOR = "v0.1 (2026-11-14)";
 
-export function listGuides(locale: Locale): HelpGuide[] {
-  return GUIDES.map((guide) => guide[locale]);
+/** The guides this reader sees, owner guide first. */
+export function listGuides(locale: Locale, roles: readonly string[] | null): HelpGuide[] {
+  return GUIDES.filter((entry) => canRead(entry, roles)).map((entry) => entry.guide[locale]);
 }
 
-export function findGuide(slug: string, locale: Locale): HelpGuide | null {
-  return GUIDES.find((guide) => guide[locale].slug === slug)?.[locale] ?? null;
+/**
+ * A guide by slug. "forbidden" when it exists but is for other roles, so the
+ * page can send the reader back to the guides they can read.
+ */
+export function findGuide(
+  slug: string,
+  locale: Locale,
+  roles: readonly string[] | null,
+): HelpGuide | "forbidden" | null {
+  const entry = GUIDES.find((item) => item.guide[locale].slug === slug);
+
+  if (!entry) {
+    return null;
+  }
+
+  return canRead(entry, roles) ? entry.guide[locale] : "forbidden";
 }
 
 /** Page text around the guides. */

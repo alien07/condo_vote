@@ -1,9 +1,10 @@
 import Image from "next/image";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { Download, Lightbulb } from "lucide-react";
-import { HelpNav, HelpTopBar, safeFrom } from "@/features/help/help-top-bar";
+import { HelpNav, HelpTopBar, safeFrom, withFrom } from "@/features/help/help-top-bar";
 import { ScreenshotZoom } from "@/features/help/screenshot-zoom";
 import { findGuide, HELP_CHECKED_FOR, HELP_TEXT } from "@/lib/help";
+import { getHelpReaderRoles } from "@/lib/help/reader";
 import type { HelpGuide } from "@/lib/help/types";
 import type { Locale } from "@/lib/i18n/locales";
 import { getLocale } from "@/lib/i18n/server";
@@ -24,11 +25,16 @@ function screenshot(locale: Locale, name: string) {
 // `npm run help:pdf` turns into the quick guide PDF.
 export default async function HelpGuidePage({ params, searchParams }: GuidePageProps) {
   const [{ slug }, { print, from }] = await Promise.all([params, searchParams]);
-  const locale = await getLocale();
-  const guide = findGuide(slug, locale);
+  const [locale, roles] = await Promise.all([getLocale(), getHelpReaderRoles()]);
+  const guide = findGuide(slug, locale, roles);
 
   if (!guide) {
     notFound();
+  }
+
+  // A guide for other roles: back to the list of guides this reader has.
+  if (guide === "forbidden") {
+    redirect(withFrom("/help", safeFrom(from)));
   }
 
   return print ? (

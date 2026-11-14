@@ -2,16 +2,18 @@ import Link from "next/link";
 import { BookOpen, LifeBuoy } from "lucide-react";
 import { HelpTopBar, safeFrom, withFrom } from "@/features/help/help-top-bar";
 import { HELP_TEXT, listGuides } from "@/lib/help";
+import { getHelpReaderRoles } from "@/lib/help/reader";
 import { getLocale } from "@/lib/i18n/server";
 
-// Public: owners who cannot sign in still need the guide.
+// Public: owners who cannot sign in still need the guide. Each reader sees
+// the guides for their own roles; signed out, the owner guide only.
 export default async function HelpIndexPage({
   searchParams,
 }: {
   searchParams: Promise<{ from?: string }>;
 }) {
   const from = safeFrom((await searchParams).from);
-  const locale = await getLocale();
+  const [locale, roles] = await Promise.all([getLocale(), getHelpReaderRoles()]);
   const t = HELP_TEXT[locale];
 
   return (
@@ -27,7 +29,7 @@ export default async function HelpIndexPage({
         </div>
       </div>
       <ul className="grid gap-3">
-        {listGuides(locale).map((guide) => (
+        {listGuides(locale, roles).map((guide) => (
           <li key={guide.slug}>
             <Link
               className="block rounded-lg border border-[var(--border)] bg-[var(--surface)] p-4 hover:border-[var(--primary)]"
@@ -45,7 +47,10 @@ export default async function HelpIndexPage({
           </li>
         ))}
       </ul>
-      <p className="mt-6 text-sm text-[var(--muted)]">{t.comingSoon}</p>
+      {/* Only the people the coming guides are for. */}
+      {roles?.some((role) => ["admin", "staff", "system_admin"].includes(role)) ? (
+        <p className="mt-6 text-sm text-[var(--muted)]">{t.comingSoon}</p>
+      ) : null}
       <p className="mt-6">
         <Link className="text-sm font-medium text-[var(--primary)] underline" href="/login">
           {t.signIn}

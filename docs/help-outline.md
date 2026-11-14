@@ -7,8 +7,14 @@ committee guides are published; the office staff guide waits until the
 admin screens have been reviewed (user decision, 2026-11-14).
 
 ## Where Guides Live
-- In the app at `/help` (public, no sign-in), Thai and English, switched with
-  the language buttons. Content: `lib/help/*.ts`, one file per guide.
+- In the app at `/help`, Thai and English, switched with the language
+  buttons. Content: `lib/help/*.ts`, one file per guide.
+- Each reader sees the guides for their roles (`GUIDES` in
+  `lib/help/index.ts`): the owner guide for everyone, signed in or not; the
+  committee guide for committee members, admins and auditors. A guide for
+  other roles sends the reader back to `/help`. The quick guide PDFs are
+  static files in `public/help`, so anyone with the exact link can download
+  them; they hold no personal data.
 - The "?" button in the header opens the topic for the current page
   (`helpHrefForPath` in `lib/help/index.ts`).
 - Screenshots: `public/help/<lang>/*.png`, made by `npm run help:screenshots`

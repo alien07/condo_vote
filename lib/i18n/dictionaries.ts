@@ -61,7 +61,7 @@ const en = {
     systemTitle: "System",
     systemText: "Privacy notice, retention, and technical settings.",
     helpTitle: "Help",
-    helpText: "Step-by-step guides for voting and committee work.",
+    helpText: "Step-by-step guides for your role.",
     denied: "Your account cannot open that page, so you were brought back here.",
   },
   login: {
@@ -306,7 +306,7 @@ const th: Dictionary = {
     systemTitle: "ระบบ",
     systemText: "ประกาศความเป็นส่วนตัว ระยะเวลาเก็บข้อมูล และการตั้งค่าทางเทคนิค",
     helpTitle: "ช่วยเหลือ",
-    helpText: "คู่มือการลงคะแนนและงานคณะกรรมการทีละขั้น",
+    helpText: "คู่มือการใช้งานทีละขั้นตามบทบาทของท่าน",
     denied: "บัญชีนี้ไม่มีสิทธิ์เข้าหน้านั้น จึงพากลับมาที่หน้าแรก",
   },
   login: {
