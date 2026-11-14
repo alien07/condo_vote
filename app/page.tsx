@@ -2,7 +2,7 @@ import {
   BarChart3,
   Building2,
   ClipboardCheck,
-  Gavel,
+  Stamp,
   LifeBuoy,
   Server,
   Settings,
@@ -59,7 +59,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
       debugName: "committee",
       label: t.committeeTitle,
       description: t.committeeText,
-      icon: Gavel,
+      icon: Stamp,
       show: roles.includes("committee") || roles.includes("admin"),
     },
     {
