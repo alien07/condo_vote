@@ -87,7 +87,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
       show: roles.includes("system_admin"),
     },
     {
-      href: "/help/owner",
+      href: "/help",
       debugName: "help",
       label: t.helpTitle,
       description: t.helpText,

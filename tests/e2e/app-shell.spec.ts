@@ -22,7 +22,7 @@ test.describe("@test:e2e app shell", () => {
     );
     await expect(page.getByRole("link", { name: /^Help/ })).toHaveAttribute(
       "href",
-      "/help/owner",
+      "/help",
     );
     await expect(page.getByRole("link", { name: /Vote/ })).toHaveAttribute(
       "href",

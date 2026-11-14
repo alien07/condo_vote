@@ -1,13 +1,14 @@
 import type { Locale } from "@/lib/i18n/locales";
+import { committeeGuide } from "@/lib/help/committee-guide";
 import { ownerGuide } from "@/lib/help/owner-guide";
 import type { HelpGuide } from "@/lib/help/types";
 
-// Guides published in the app. More guides (admin, committee, setup) come
-// after the demo round; see docs/help-outline.md.
-const GUIDES = [ownerGuide];
+// Guides published in the app, one per group of readers. The office staff
+// guide waits until the admin screens are reviewed; see docs/help-outline.md.
+const GUIDES = [ownerGuide, committeeGuide];
 
 /** The release the guides were checked against. */
-export const HELP_CHECKED_FOR = "v0.1";
+export const HELP_CHECKED_FOR = "v0.1 (2026-11-14)";
 
 export function listGuides(locale: Locale): HelpGuide[] {
   return GUIDES.map((guide) => guide[locale]);
@@ -31,7 +32,7 @@ export const HELP_TEXT = {
     allGuides: "คู่มือทั้งหมด",
     checkedFor: (version: string) => `ตรวจกับระบบเวอร์ชัน ${version}`,
     screenshotNote: "ภาพตัวอย่างจากข้อมูลทดสอบ หน้าจอจริงอาจมีชื่อการประชุมต่างกัน",
-    comingSoon: "คู่มือผู้ดูแล คณะกรรมการ และการติดตั้งระบบ จะเพิ่มเร็ว ๆ นี้",
+    comingSoon: "คู่มือสำหรับเจ้าหน้าที่นิติบุคคลและการติดตั้งระบบ จะเพิ่มเร็ว ๆ นี้",
     enlarge: "ขยาย",
     back: "กลับไปหน้าเดิม",
     home: "หน้าหลัก",
@@ -49,7 +50,7 @@ export const HELP_TEXT = {
     allGuides: "All guides",
     checkedFor: (version: string) => `Checked against version ${version}`,
     screenshotNote: "Screenshots use test data; your meeting names will differ.",
-    comingSoon: "Guides for admins, the committee, and system setup are coming soon.",
+    comingSoon: "Guides for office staff and system setup are coming soon.",
     enlarge: "Enlarge",
     back: "Back to where you were",
     home: "Home",
@@ -65,6 +66,14 @@ export function helpHrefForPath(pathname: string) {
 
   if (pathname.startsWith("/summary") || pathname.startsWith("/verify")) {
     return "/help/owner#results";
+  }
+
+  if (pathname.startsWith("/committee")) {
+    return "/help/committee";
+  }
+
+  if (pathname.startsWith("/audit")) {
+    return "/help/committee#auditor";
   }
 
   if (pathname.startsWith("/consent")) {
