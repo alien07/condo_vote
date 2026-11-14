@@ -1,7 +1,7 @@
--- Database tests for English meeting text (0032).
+-- Database tests for English meeting text (0032, 0033).
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(7);
+select plan(8);
 
 \set admin_a '''00000000-0000-4000-8000-0000000000c1'''
 \set owner_b '''00000000-0000-4000-8000-0000000000c2'''
@@ -55,6 +55,16 @@ reset role;
 select ok((select english_checked_at is null from public.meetings where id = :meet), 'a change clears "checked"');
 select ok(exists (select 1 from public.audit_logs where entity_id = :meet and action = 'meeting.english_edited_after_publish'),
   'an edit after publishing is audited');
+
+-- The Committee page gets the English title of an open meeting (0033).
+update public.meetings set starts_at = now() - interval '1 hour' where id = :meet;
+set local role authenticated;
+select pg_temp.act_as(:admin_a);
+select is(
+  (select item->>'title_en' from jsonb_array_elements(public.committee_overview()->'open_meetings') item
+   where item->>'id' = :meet),
+  'Annual meeting', 'committee_overview returns the English title');
+reset role;
 
 select * from finish();
 rollback;

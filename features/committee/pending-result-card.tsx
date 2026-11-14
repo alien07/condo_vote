@@ -14,6 +14,7 @@ import {
 } from "@/features/results/question-outcome";
 import { quorumText } from "@/features/results/thai-labels";
 import { Term } from "@/features/glossary/term";
+import { localized } from "@/lib/i18n/content";
 import type { Locale } from "@/lib/i18n/locales";
 import type { StaffDictionary } from "@/lib/i18n/staff";
 import { codeLabel, fill } from "@/lib/i18n/template";
@@ -30,7 +31,9 @@ type PendingPayload = {
     pass_rule?: { basis?: string } | null;
     agenda_no?: string | null;
     agenda_title?: string | null;
+    agenda_title_en?: string | null;
     text?: string;
+    text_en?: string | null;
     choices?: ChoiceResult[];
   })[];
 };
@@ -55,6 +58,8 @@ export function PendingResultCard({
   t: StaffDictionary["committee"];
 }) {
   const payload = (result.payload ?? {}) as PendingPayload;
+  // English text when the reader uses English and it was written (D020).
+  const title = localized(locale, result.title, result.title_en);
   const more = Math.max(result.required_approvals - result.approvals, 0);
   const openHigh = result.corrections.some(
     (correction) => correction.level === "high" && correction.status !== "no_change",
@@ -72,7 +77,7 @@ export function PendingResultCard({
       data-result-snapshot-id={result.snapshot_id}
     >
       <div className="flex flex-wrap items-center gap-2">
-        <h3 className="font-semibold">{result.title}</h3>
+        <h3 className="font-semibold">{title}</h3>
         {result.approved_by_me ? (
           <span
             className="rounded-full bg-[var(--primary)]/10 px-2 py-0.5 text-xs font-semibold text-[var(--primary)]"
@@ -183,7 +188,19 @@ export function PendingResultCard({
 
       <div className="mt-4 grid gap-4">
         {payload.questions?.length ? (
-          payload.questions.map((question, index) => (
+          payload.questions.map((source, index) => {
+            const question = {
+              ...source,
+              choices: source.choices?.map((choice) => ({
+                ...choice,
+                // Snapshots since 0032 carry text_en next to text.
+                text:
+                  localized(locale, choice.text, (choice as { text_en?: string | null }).text_en) ??
+                  undefined,
+              })),
+            };
+
+            return (
             <div
               className="border-t border-[var(--border)] pt-3 text-sm"
               key={`${result.snapshot_id}-${index}`}
@@ -193,7 +210,9 @@ export function PendingResultCard({
                   ? fill(t.agenda, { no: question.agenda_no })
                   : fill(t.item, { no: index + 1 })}
                 {" · "}
-                {question.agenda_title ?? question.text ?? "-"}
+                {localized(locale, question.agenda_title, question.agenda_title_en) ??
+                  localized(locale, question.text, question.text_en) ??
+                  "-"}
               </div>
               <QuestionOutcomeLine locale={locale} question={question} />
               <ChoiceResultsTable
@@ -202,7 +221,8 @@ export function PendingResultCard({
                 ruleBasis={question.pass_rule?.basis}
               />
             </div>
-          ))
+            );
+          })
         ) : (
           <p className="text-sm text-[var(--muted)]">{t.noItems}</p>
         )}
@@ -221,7 +241,7 @@ export function PendingResultCard({
             <ConfirmSubmitButton
               className="min-h-11 rounded-md bg-[var(--primary)] px-3 py-2 text-sm font-medium text-[var(--primary-foreground)]"
               confirmMessage={fill(t.confirmApprove, {
-                title: result.title,
+                title,
                 required: result.required_approvals,
               })}
               pendingLabel={t.approving}
@@ -264,7 +284,7 @@ export function PendingResultCard({
             </label>
             <ConfirmSubmitButton
               className="min-h-11 rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm font-medium"
-              confirmMessage={fill(t.confirmCorrection, { title: result.title })}
+              confirmMessage={fill(t.confirmCorrection, { title })}
               pendingLabel={t.saving}
               tone="primary"
             >

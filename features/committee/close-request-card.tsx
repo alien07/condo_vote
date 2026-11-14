@@ -10,6 +10,7 @@ import {
 import type { CommitteeOverview } from "@/features/results/committee-service";
 import { Term } from "@/features/glossary/term";
 import type { StaffDictionary } from "@/lib/i18n/staff";
+import { localized } from "@/lib/i18n/content";
 import type { Locale } from "@/lib/i18n/locales";
 import { fill } from "@/lib/i18n/template";
 
@@ -38,6 +39,8 @@ export function CloseRequestCard({
   t: StaffDictionary["committee"];
 }) {
   const request = meeting.request;
+  // English title when the reader uses English and it was written (D020).
+  const title = localized(locale, meeting.title, meeting.title_en);
   const approvals = request?.answers.filter((answer) => answer.answer === "approve").length ?? 0;
   const objections = request?.answers.filter((answer) => answer.answer === "object").length ?? 0;
   const more = Math.max(meeting.required_approvals - approvals, 0);
@@ -48,7 +51,7 @@ export function CloseRequestCard({
       data-meeting-id={meeting.id}
     >
       <div>
-        <div className="font-medium">{meeting.title}</div>
+        <div className="font-medium">{title}</div>
         <div className="text-sm text-[var(--muted)]">
           {fill(t.closesAuto, { time: formatDateTime(meeting.ends_at) })}
         </div>
@@ -114,7 +117,7 @@ export function CloseRequestCard({
                   <ConfirmSubmitButton
                     className="min-h-11 w-full rounded-md bg-[var(--primary)] px-3 py-2 text-sm font-medium text-[var(--primary-foreground)]"
                     confirmMessage={fill(t.confirmApproveClose, {
-                      title: meeting.title,
+                      title,
                       required: meeting.required_approvals,
                     })}
                     pendingLabel={t.saving}
@@ -136,7 +139,7 @@ export function CloseRequestCard({
                   </label>
                   <ConfirmSubmitButton
                     className={secondaryButton}
-                    confirmMessage={fill(t.confirmObject, { title: meeting.title })}
+                    confirmMessage={fill(t.confirmObject, { title })}
                     pendingLabel={t.saving}
                   >
                     {t.answerObject}
@@ -188,7 +191,7 @@ export function CloseRequestCard({
             />
             <ConfirmSubmitButton
               className="min-h-11 rounded-md bg-[var(--primary)] px-3 py-2 text-sm font-medium text-[var(--primary-foreground)]"
-              confirmMessage={fill(t.confirmPropose, { title: meeting.title })}
+              confirmMessage={fill(t.confirmPropose, { title })}
               pendingLabel={t.proposing}
               tone="primary"
             >

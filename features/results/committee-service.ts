@@ -170,6 +170,8 @@ export type CommitteeOverview = {
   open_meetings: Array<{
     id: string;
     title: string;
+    /** English title (0033); null when not written. */
+    title_en: string | null;
     ends_at: string;
     required_approvals: number;
     request: CloseRequest | null;
@@ -179,6 +181,7 @@ export type CommitteeOverview = {
     snapshot_id: string;
     meeting_id: string;
     title: string;
+    title_en: string | null;
     generated_at: string;
     required_approvals: number;
     approvals: number;
