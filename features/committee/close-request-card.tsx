@@ -1,6 +1,7 @@
 import { ConfirmSubmitButton } from "@/features/admin/components/form-controls";
 import { RequiredMark } from "@/features/admin/components/field-label";
 import { ApproverList } from "@/features/committee/approver-list";
+import { CloseWhenFields } from "@/features/committee/close-when-fields";
 import {
   answerCloseAsCommittee,
   cancelCloseAsCommittee,
@@ -174,21 +175,17 @@ export function CloseRequestCard({
               </span>
               <textarea className={input} name="reason" required rows={2} />
             </label>
-            <fieldset className="grid gap-2">
-              <legend className="font-medium">{t.proposeWhen}</legend>
-              <label className="inline-flex items-center gap-2">
-                <input defaultChecked name="when" type="radio" value="now" />
-                {t.proposeNow}
-              </label>
-              <label className="inline-flex items-center gap-2">
-                <input name="when" type="radio" value="at" />
-                {t.proposeAt}
-              </label>
-              <label className="grid gap-1">
-                <span>{t.proposeAtTime}</span>
-                <input className={input} name="close_at" type="datetime-local" />
-              </label>
-            </fieldset>
+            <CloseWhenFields
+              endsAt={meeting.ends_at}
+              inputClassName={input}
+              labels={{
+                when: t.proposeWhen,
+                now: t.proposeNow,
+                at: t.proposeAt,
+                atTime: t.proposeAtTime,
+                atHint: fill(t.proposeAtHint, { time: formatDateTime(meeting.ends_at) }),
+              }}
+            />
             <ConfirmSubmitButton
               className="min-h-11 rounded-md bg-[var(--primary)] px-3 py-2 text-sm font-medium text-[var(--primary-foreground)]"
               confirmMessage={fill(t.confirmPropose, { title: meeting.title })}
