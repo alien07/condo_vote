@@ -20,6 +20,9 @@ export const DEMO_TRANSLATIONS: Record<string, string> = {
   "DEMO M9 · ประชุมครั้งที่สอง (ไม่ต้องครบองค์ประชุม)":
     "DEMO M9 · Reconvened meeting (no quorum required)",
   "DEMO M10 · ประชุมปีที่แล้ว (เก็บถาวร)": "DEMO M10 · Last year's meeting (archived)",
+  "DEMO M11 · ออกผลแล้ว ยังไม่มีใครอนุมัติ (0/2)": "DEMO M11 · Results generated, nobody has approved (0/2)",
+  "DEMO M12 · มีคำขอแก้ไขรอผู้ดูแลตอบ": "DEMO M12 · Correction request waiting for the admin",
+  "DEMO M13 · สร้างผลใหม่หลังแก้ไข": "DEMO M13 · Generated again after a correction",
   "งบการเงิน": "Financial statements",
   "อนุมัติงบการเงินประจำปี 2568": "Approval of the financial statements for 2025",
   "เลือกตั้งกรรมการ": "Election of committee members",
