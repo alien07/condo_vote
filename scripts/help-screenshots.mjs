@@ -16,7 +16,10 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const appUrl = process.env.HELP_APP_URL ?? "http://localhost:3000";
 const host = new URL(appUrl).hostname;
 const LOCALES = ["th", "en"];
-const GUIDES = ["owner", "committee"];
+// Guide slug -> demo persona that may read it (null: signed out). Guides
+// are shown by role, so the committee guide needs a committee sign-in.
+const GUIDES = { owner: null, committee: "committee" };
+const PERSONA_EMAILS = { committee: "committee.approve@example.test" };
 const PHONE = { viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true };
 
 function readEnv() {
@@ -205,10 +208,29 @@ async function setNewUserLanguage(locale) {
 }
 
 async function pdfs() {
-  for (const guide of GUIDES) {
+  const env = readEnv();
+  const db = createClient(env("NEXT_PUBLIC_SUPABASE_URL"), env("SUPABASE_SECRET_KEY") || env("SUPABASE_SERVICE_ROLE_KEY"), {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+
+  for (const [guide, persona] of Object.entries(GUIDES)) {
+    const email = persona ? PERSONA_EMAILS[persona] : null;
+    const { data: saved } = email
+      ? await db.from("profiles").select("preferred_language").eq("email", email).single()
+      : { data: null };
+
     for (const locale of LOCALES) {
       const context = await newContext(locale, { viewport: { width: 1000, height: 1400 } });
-      const page = await context.newPage();
+      let page;
+
+      if (persona) {
+        // The saved language wins over the cookie (D020).
+        await db.from("profiles").update({ preferred_language: locale }).eq("email", email);
+        page = await signIn(context, persona, `/help/${guide}?print=1`);
+      } else {
+        page = await context.newPage();
+      }
+
       await page.goto(`${appUrl}/help/${guide}?print=1`);
       await page.waitForLoadState("networkidle");
       await page.waitForFunction(() => [...document.images].every((image) => image.complete && image.naturalWidth > 0));
@@ -216,6 +238,10 @@ async function pdfs() {
       await page.pdf({ path: file, format: "A4", printBackground: false, margin: { top: "12mm", bottom: "12mm", left: "10mm", right: "10mm" } });
       console.log(`[help] ${guide}-quick-guide-${locale}.pdf`);
       await context.close();
+    }
+
+    if (email && saved) {
+      await db.from("profiles").update({ preferred_language: saved.preferred_language }).eq("email", email);
     }
   }
 }

@@ -44,14 +44,14 @@ test.describe("help", () => {
     await context.close();
   });
 
-  test("lists the committee guide", async ({ page }) => {
+  test("signed out, only the owner guide is shown", async ({ page }) => {
     await page.goto("/help");
-    await page.getByRole("link", { name: /Committee guide/ }).click();
+    await expect(page.getByRole("link", { name: /How to vote online/ })).toBeVisible();
+    await expect(page.getByRole("link", { name: /Committee guide/ })).toHaveCount(0);
 
-    await expect(page).toHaveURL(/\/help\/committee$/);
-    await expect(page.getByRole("heading", { name: "Committee guide" })).toBeVisible();
-    await expect(page.getByRole("heading", { name: /Request a correction/ })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "For auditors" })).toBeVisible();
+    // A guide for other roles leads back to the guides this reader has.
+    await page.goto("/help/committee");
+    await expect(page).toHaveURL(/\/help$/);
   });
 
   test("the quick guide PDFs are published", async ({ request }) => {
