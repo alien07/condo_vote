@@ -104,6 +104,7 @@ async function screenshots() {
   const personaEmails = [
     "owner.th.2rooms-proxy@example.test",
     "committee.approve@example.test",
+    "admin.fix-results@example.test",
     "new.pending-consent@example.test",
   ];
   const { data: savedLanguages } = await db
@@ -186,16 +187,26 @@ async function shootLocale(locale, { m1, m8, room }) {
   const board = await signIn(committee, "committee", "/committee");
   await save(board, locale, "committee-page");
 
-  await openDetails(board.locator('section[aria-labelledby="committee-step-close"] details').first());
+  // The propose form (not a folded "last request") of the first meeting
+  // that offers one.
+  await openDetails(
+    board.locator('section[aria-labelledby="committee-step-close"] [data-meeting-id] details:not([data-last-request])').first(),
+  );
   await save(board, locale, "committee-close-propose");
-
-  const result = board.locator("[data-result-snapshot-id]").first();
-  await scrollToTop(result);
-  await save(board, locale, "committee-result");
-
-  await openDetails(result.locator("details").first());
-  await save(board, locale, "committee-correction");
   await committee.close();
+
+  // A result card as a member who has not approved yet sees it, with the
+  // approve and correction forms. The demo committee persona approved M7 in
+  // the seed, so the admin persona (who may also act here) is used.
+  const reviewer = await newContext(locale);
+  const pending = await signIn(reviewer, "admin", "/committee");
+  const result = pending.locator("[data-result-snapshot-id]").first();
+  await scrollToTop(result);
+  await save(pending, locale, "committee-result");
+
+  await openDetails(result.locator("[data-correction-form]"));
+  await save(pending, locale, "committee-correction");
+  await reviewer.close();
 }
 
 // The new-user persona has no profile until its first sign-in.
