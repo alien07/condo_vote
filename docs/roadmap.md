@@ -59,6 +59,22 @@
   including action messages. Admin dates still use the English date format.
 - Admin-editable email templates (Thai and English).
 - Split remaining oversized files by domain sub-feature (see code-organization.md backlog).
+- Postpone or cancel a published meeting (user decision 2026-11-15: V2).
+  Today a published meeting cannot change its times or agenda; the only
+  option is the committee closing voting early. Proposed flow:
+  - Postpone: a manager proposes new advance and meeting-day times with a
+    reason; the committee approves with the meeting's minimum; on approval
+    the times change, every room gets a new invitation, and it is audited.
+    Only before meeting-day voting starts, and the new day must leave the
+    notice period (setting, default 7 days; to be confirmed by a lawyer).
+    Agenda and choices cannot change. Open question: keep advance ballots
+    (proposed, the agenda is the same) or clear them.
+  - Cancel: a manager proposes with a reason; the committee approves; the
+    meeting gets a new "cancelled" status, voting stops, nothing is counted
+    and no result is made; every room is told. Cast ballots are kept for
+    audit, secret ballots stay secret. Allowed until a result is generated
+    (after that, use a high-level correction). "Copy as a new draft" to
+    hold the meeting again.
 
 ## Later
 - Direct private document upload adapters and Google Drive API synchronization after credential and sharing policy approval.

@@ -1,6 +1,8 @@
+import { CountedText } from "@/features/committee/counted-text";
 import { ConfirmSubmitButton } from "@/features/admin/components/form-controls";
 import { RequiredMark } from "@/features/admin/components/field-label";
 import { ApproverList } from "@/features/committee/approver-list";
+import { CloseDetailsButton } from "@/features/committee/close-details-button";
 import { CloseWhenFields } from "@/features/committee/close-when-fields";
 import {
   answerCloseAsCommittee,
@@ -10,6 +12,8 @@ import {
 import type { CommitteeOverview } from "@/features/results/committee-service";
 import { Term } from "@/features/glossary/term";
 import type { StaffDictionary } from "@/lib/i18n/staff";
+import { closeEarlyWindow } from "@/lib/datetime";
+import { localized } from "@/lib/i18n/content";
 import type { Locale } from "@/lib/i18n/locales";
 import { fill } from "@/lib/i18n/template";
 
@@ -38,6 +42,10 @@ export function CloseRequestCard({
   t: StaffDictionary["committee"];
 }) {
   const request = meeting.request;
+  // English title when the reader uses English and it was written (D020).
+  const title = localized(locale, meeting.title, meeting.title_en);
+  // Voting closes only on the meeting day (0036).
+  const closeWindow = closeEarlyWindow(meeting.starts_at);
   const approvals = request?.answers.filter((answer) => answer.answer === "approve").length ?? 0;
   const objections = request?.answers.filter((answer) => answer.answer === "object").length ?? 0;
   const more = Math.max(meeting.required_approvals - approvals, 0);
@@ -48,7 +56,7 @@ export function CloseRequestCard({
       data-meeting-id={meeting.id}
     >
       <div>
-        <div className="font-medium">{meeting.title}</div>
+        <div className="font-medium">{title}</div>
         <div className="text-sm text-[var(--muted)]">
           {fill(t.closesAuto, { time: formatDateTime(meeting.ends_at) })}
         </div>
@@ -105,7 +113,13 @@ export function CloseRequestCard({
             </Term>
           </div>
 
-          {isMember ? (
+          {request.proposed_by_me ? (
+            // The proposal counts as the proposer's approval; they cancel
+            // instead of objecting (review 2026-11-14).
+            <p className="text-[var(--muted)]" data-proposer-note>
+              {t.proposerNote}
+            </p>
+          ) : isMember ? (
             <div className="grid gap-2 sm:grid-cols-2">
               {request.my_answer !== "approve" ? (
                 <form action={answerCloseAsCommittee}>
@@ -114,7 +128,7 @@ export function CloseRequestCard({
                   <ConfirmSubmitButton
                     className="min-h-11 w-full rounded-md bg-[var(--primary)] px-3 py-2 text-sm font-medium text-[var(--primary-foreground)]"
                     confirmMessage={fill(t.confirmApproveClose, {
-                      title: meeting.title,
+                      title,
                       required: meeting.required_approvals,
                     })}
                     pendingLabel={t.saving}
@@ -132,11 +146,11 @@ export function CloseRequestCard({
                     <span>
                       {t.objectReason} <RequiredMark />
                     </span>
-                    <input className={input} name="reason" required />
+                    <CountedText className={input} maxLength={500} name="reason" required />
                   </label>
                   <ConfirmSubmitButton
                     className={secondaryButton}
-                    confirmMessage={fill(t.confirmObject, { title: meeting.title })}
+                    confirmMessage={fill(t.confirmObject, { title })}
                     pendingLabel={t.saving}
                   >
                     {t.answerObject}
@@ -163,6 +177,33 @@ export function CloseRequestCard({
           ) : null}
         </div>
       ) : meeting.closes_early_at ? null : (
+        <>
+        {meeting.last_request ? (
+          // What happened to the last request, in one folded line so many
+          // requests over time do not make the card long. Older ones are in
+          // the audit log.
+          <details className="rounded-md border border-[var(--border)] px-3 py-2 text-xs" data-last-request>
+            <summary className="cursor-pointer text-xs text-[var(--muted)]">
+              {fill(t.lastRequest, { status: t.requestStatus[meeting.last_request.status] ?? meeting.last_request.status })}
+              {meeting.last_request.ended_at ? ` · ${formatDateTime(meeting.last_request.ended_at)}` : null}
+            </summary>
+            <div className="mt-2 grid gap-1">
+            <div className="text-[var(--muted)]">
+              {fill(t.lastRequestBy, { name: meeting.last_request.proposer ?? "-" })}
+            </div>
+            <div>{fill(t.requestReason, { reason: meeting.last_request.reason })}</div>
+            {meeting.last_request.answers.map((answer, index) => (
+              <div className="text-[var(--muted)]" key={index}>
+                {fill(t.lastRequestAnswer, {
+                  name: answer.name ?? "-",
+                  answer: answer.answer === "object" ? t.objected : t.answerApprove,
+                })}
+                {answer.reason ? ` · ${answer.reason}` : null}
+              </div>
+            ))}
+            </div>
+          </details>
+        ) : null}
         <details className="text-sm">
           <summary className="inline-flex min-h-11 cursor-pointer items-center rounded-md border border-[var(--border)] px-3 py-2 font-medium">
             {t.propose}
@@ -173,7 +214,7 @@ export function CloseRequestCard({
               <span>
                 {t.proposeReason} <RequiredMark />
               </span>
-              <textarea className={input} name="reason" required rows={2} />
+              <CountedText className={input} maxLength={500} multiline name="reason" required />
             </label>
             <CloseWhenFields
               endsAt={meeting.ends_at}
@@ -181,21 +222,34 @@ export function CloseRequestCard({
               labels={{
                 when: t.proposeWhen,
                 now: t.proposeNow,
+                nowLater: fill(t.proposeNowLater, { time: formatDateTime(meeting.starts_at) }),
                 at: t.proposeAt,
                 atTime: t.proposeAtTime,
-                atHint: fill(t.proposeAtHint, { time: formatDateTime(meeting.ends_at) }),
+                atHint: fill(t.proposeAtHint, {
+                  start: formatDateTime(closeWindow.minAt),
+                  time: formatDateTime(meeting.ends_at),
+                }),
               }}
+              meetingDayStarted={closeWindow.meetingDayStarted}
+              minAt={closeWindow.minAt}
             />
-            <ConfirmSubmitButton
-              className="min-h-11 rounded-md bg-[var(--primary)] px-3 py-2 text-sm font-medium text-[var(--primary-foreground)]"
-              confirmMessage={fill(t.confirmPropose, { title: meeting.title })}
-              pendingLabel={t.proposing}
-              tone="primary"
-            >
-              {t.sendRequest}
-            </ConfirmSubmitButton>
+            <div className="flex flex-wrap justify-end gap-2">
+              <CloseDetailsButton
+                className="min-h-11 rounded-md border border-[var(--border)] bg-[var(--surface)] px-4 py-2 text-sm font-medium"
+                label={t.cancel}
+              />
+              <ConfirmSubmitButton
+                className="min-h-11 rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)]"
+                confirmMessage={fill(t.confirmPropose, { title })}
+                pendingLabel={t.proposing}
+                tone="primary"
+              >
+                {t.sendRequest}
+              </ConfirmSubmitButton>
+            </div>
           </form>
         </details>
+        </>
       )}
     </div>
   );

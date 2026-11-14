@@ -1,7 +1,9 @@
+import { CountedText } from "@/features/committee/counted-text";
 import { ConfirmSubmitButton } from "@/features/admin/components/form-controls";
 import { RequiredMark } from "@/features/admin/components/field-label";
 import { ApproverList } from "@/features/committee/approver-list";
 import { changedAgendaItems } from "@/features/committee/changed-items";
+import { CloseDetailsButton } from "@/features/committee/close-details-button";
 import {
   approveResultAsCommittee,
   requestCorrectionAsCommittee,
@@ -14,6 +16,7 @@ import {
 } from "@/features/results/question-outcome";
 import { quorumText } from "@/features/results/thai-labels";
 import { Term } from "@/features/glossary/term";
+import { localized } from "@/lib/i18n/content";
 import type { Locale } from "@/lib/i18n/locales";
 import type { StaffDictionary } from "@/lib/i18n/staff";
 import { codeLabel, fill } from "@/lib/i18n/template";
@@ -30,7 +33,9 @@ type PendingPayload = {
     pass_rule?: { basis?: string } | null;
     agenda_no?: string | null;
     agenda_title?: string | null;
+    agenda_title_en?: string | null;
     text?: string;
+    text_en?: string | null;
     choices?: ChoiceResult[];
   })[];
 };
@@ -55,6 +60,8 @@ export function PendingResultCard({
   t: StaffDictionary["committee"];
 }) {
   const payload = (result.payload ?? {}) as PendingPayload;
+  // English text when the reader uses English and it was written (D020).
+  const title = localized(locale, result.title, result.title_en);
   const more = Math.max(result.required_approvals - result.approvals, 0);
   const openHigh = result.corrections.some(
     (correction) => correction.level === "high" && correction.status !== "no_change",
@@ -62,6 +69,16 @@ export function PendingResultCard({
   const changed = result.previous_payload
     ? changedAgendaItems(result.previous_payload as PendingPayload, payload)
     : null;
+  // Members who have not approved yet, shown on the card (review 2026-11-14)
+  // as well as in the "i" list.
+  const approvedIds = new Set(result.approval_list.map((approval) => approval.profile_id));
+  const waitingFor = members.filter((member) => !approvedIds.has(member.profile_id));
+  // One open correction per result (0034): others see it instead of the form.
+  const openCorrection = result.corrections.some((correction) => correction.status === "open");
+  // Approvals complete, but publishing waits for the admin's answer.
+  const held = openCorrection && result.approvals >= result.required_approvals;
+  // A member who approved has said the numbers are correct (0034).
+  const canRequestCorrection = !result.approved_by_me && !openCorrection;
   const regeneratedAfter = result.corrections.find(
     (correction) => correction.result_snapshot_id !== result.snapshot_id,
   );
@@ -72,7 +89,7 @@ export function PendingResultCard({
       data-result-snapshot-id={result.snapshot_id}
     >
       <div className="flex flex-wrap items-center gap-2">
-        <h3 className="font-semibold">{result.title}</h3>
+        <h3 className="font-semibold">{title}</h3>
         {result.approved_by_me ? (
           <span
             className="rounded-full bg-[var(--primary)]/10 px-2 py-0.5 text-xs font-semibold text-[var(--primary)]"
@@ -109,7 +126,23 @@ export function PendingResultCard({
             : fill(t.countDone, { count: result.approvals, required: result.required_approvals })}
         </Term>
       </p>
+      {result.approval_list.length > 0 ? (
+        <p className="text-xs text-[var(--muted)]" data-approved-by>
+          {fill(t.approvedBy, { names: result.approval_list.map((approval) => approval.name ?? "-").join(", ") })}
+        </p>
+      ) : null}
+      {waitingFor.length > 0 ? (
+        <p className="text-xs" data-not-approved>
+          <span className="font-medium">{t.notApprovedYet}</span>{" "}
+          {waitingFor.map((member) => member.name).join(", ")}
+        </p>
+      ) : null}
       {openHigh ? <p className="mt-1 text-sm font-medium text-[var(--danger)]">{t.allMembersNeeded}</p> : null}
+      {held ? (
+        <p className="mt-2 rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-900" data-publish-held>
+          {t.publishHeld}
+        </p>
+      ) : null}
 
       {regeneratedAfter ? (
         <p className="mt-2 rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-900" data-regenerated>
@@ -183,7 +216,19 @@ export function PendingResultCard({
 
       <div className="mt-4 grid gap-4">
         {payload.questions?.length ? (
-          payload.questions.map((question, index) => (
+          payload.questions.map((source, index) => {
+            const question = {
+              ...source,
+              choices: source.choices?.map((choice) => ({
+                ...choice,
+                // Snapshots since 0032 carry text_en next to text.
+                text:
+                  localized(locale, choice.text, (choice as { text_en?: string | null }).text_en) ??
+                  undefined,
+              })),
+            };
+
+            return (
             <div
               className="border-t border-[var(--border)] pt-3 text-sm"
               key={`${result.snapshot_id}-${index}`}
@@ -193,7 +238,9 @@ export function PendingResultCard({
                   ? fill(t.agenda, { no: question.agenda_no })
                   : fill(t.item, { no: index + 1 })}
                 {" · "}
-                {question.agenda_title ?? question.text ?? "-"}
+                {localized(locale, question.agenda_title, question.agenda_title_en) ??
+                  localized(locale, question.text, question.text_en) ??
+                  "-"}
               </div>
               <QuestionOutcomeLine locale={locale} question={question} />
               <ChoiceResultsTable
@@ -202,26 +249,27 @@ export function PendingResultCard({
                 ruleBasis={question.pass_rule?.basis}
               />
             </div>
-          ))
+            );
+          })
         ) : (
           <p className="text-sm text-[var(--muted)]">{t.noItems}</p>
         )}
       </div>
 
-      <div className="mt-4 grid gap-4 border-t border-[var(--border)] pt-4 sm:grid-cols-2">
-        {result.approved_by_me ? (
-          <p className="text-sm text-[var(--muted)]">{t.youApprovedResult}</p>
-        ) : (
-          <form action={approveResultAsCommittee} className="grid gap-2">
+      {/* Actions. Someone who approved has none left: the badge at the top
+          already says so (no second "you approved" line here). */}
+      {result.approved_by_me ? null : (
+      <div className="mt-4 grid gap-4 border-t border-[var(--border)] pt-4">
+          <form action={approveResultAsCommittee} className="grid gap-2 sm:max-w-md">
             <input name="result_snapshot_id" type="hidden" value={result.snapshot_id} />
             <label className="grid gap-1 text-sm font-medium">
               {t.notes}
-              <input className={input} name="notes" />
+              <CountedText className={input} maxLength={500} name="notes" />
             </label>
             <ConfirmSubmitButton
               className="min-h-11 rounded-md bg-[var(--primary)] px-3 py-2 text-sm font-medium text-[var(--primary-foreground)]"
               confirmMessage={fill(t.confirmApprove, {
-                title: result.title,
+                title,
                 required: result.required_approvals,
               })}
               pendingLabel={t.approving}
@@ -229,13 +277,19 @@ export function PendingResultCard({
               {t.approveResult}
             </ConfirmSubmitButton>
           </form>
-        )}
 
-        <details className="text-sm">
+        {openCorrection ? (
+          <p className="text-sm text-[var(--muted)]" data-correction-waiting>
+            {t.correctionWaiting}
+          </p>
+        ) : null}
+
+        {canRequestCorrection ? (
+        <details className="text-sm" data-correction-form>
           <summary className="inline-flex min-h-11 cursor-pointer items-center rounded-md border border-[var(--border)] px-3 py-2 font-medium">
             {t.requestCorrection}
           </summary>
-          <form action={requestCorrectionAsCommittee} className="mt-3 grid gap-2">
+          <form action={requestCorrectionAsCommittee} className="mt-3 grid gap-3">
             <input name="result_snapshot_id" type="hidden" value={result.snapshot_id} />
             <label className="grid gap-1 font-medium">
               <span>
@@ -256,23 +310,31 @@ export function PendingResultCard({
               <span>
                 {t.correctionReason} <RequiredMark />
               </span>
-              <textarea className={input} name="reason" required rows={2} />
+              <CountedText className={input} maxLength={500} multiline name="reason" required />
             </label>
             <label className="grid gap-1 font-medium">
               {t.correctionReference}
-              <input className={input} name="legal_reference" />
+              <CountedText className={input} maxLength={200} name="legal_reference" />
             </label>
-            <ConfirmSubmitButton
-              className="min-h-11 rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm font-medium"
-              confirmMessage={fill(t.confirmCorrection, { title: result.title })}
-              pendingLabel={t.saving}
-              tone="primary"
-            >
-              {t.requestCorrection}
-            </ConfirmSubmitButton>
+            <div className="flex flex-wrap justify-end gap-2">
+              <CloseDetailsButton
+                className="min-h-11 rounded-md border border-[var(--border)] bg-[var(--surface)] px-4 py-2 text-sm font-medium"
+                label={t.cancel}
+              />
+              <ConfirmSubmitButton
+                className="min-h-11 rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)]"
+                confirmMessage={fill(t.confirmCorrection, { title })}
+                pendingLabel={t.saving}
+                tone="primary"
+              >
+                {t.sendCorrection}
+              </ConfirmSubmitButton>
+            </div>
           </form>
         </details>
+        ) : null}
       </div>
+      )}
     </section>
   );
 }

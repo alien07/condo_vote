@@ -111,7 +111,7 @@ may be offered. Abstain is reported as its own group and counts as voting
 "at least", because legal rules use both (more than half; at least 3/4).
 
 ### D014 - Committee Approval And Vote Closing
-Status: implemented (migrations 0023 and 0030, `/committee` page)
+Status: implemented (migrations 0023, 0030, 0034, 0035 and 0036, `/committee` page)
 
 - Admin sets a minimum number of committee approvals.
 - A result is published when its snapshot reaches that minimum. Each
@@ -139,6 +139,29 @@ Status: implemented (migrations 0023 and 0030, `/committee` page)
   committee member to approve, and the official record shows it prominently.
   An agenda item that fails the vote is still a correct result; approval
   means the count is correct.
+- Committee page review (migration 0034, user decisions 2026-11-14):
+  - The proposer of a close-early request cannot object to it; they cancel
+    it instead. A request that failed or was cancelled stays visible on the
+    meeting as "last request".
+  - One open correction request per result at a time, whoever asked; a new
+    one can be sent once the admin has answered.
+  - A member who approved a result cannot request a correction on it, and
+    an approval cannot be taken back. A member who finds a mistake after
+    approving tells the admin or a member who has not approved (outside the
+    system).
+  - While a correction request is open, members can still approve, but the
+    result is not published. When the admin answers "No change needed" and
+    the approvals are complete, the result is published then.
+  - Voting closes only on the meeting day (0036, option b): a request can be
+    sent during advance voting, but its close time must fall within
+    meeting-day voting, and "as soon as approved" is allowed only once
+    meeting-day voting has started.
+  - Reasons, notes and answers are limited to 500 characters and references
+    to 200, with a counter on the page (0035, NOT VALID for older rows).
+    The limits can be raised later with a migration and one constant.
+  - Page layout: "1. Approve results" (required) comes first in its own
+    panel, then "2. Close voting early" (optional), with count buttons at
+    the top that jump to each part.
 - Store times in UTC; display in Asia/Bangkok.
 
 ### D015 - Ballot Secrecy Per Meeting

@@ -1,3 +1,4 @@
+import { CountedText } from "@/features/committee/counted-text";
 import { ConfirmSubmitButton } from "@/features/admin/components/form-controls";
 import { RequiredMark } from "@/features/admin/components/field-label";
 import {
@@ -86,7 +87,7 @@ export async function CorrectionAdminPanel() {
                     <span>
                       {t.answerText} <RequiredMark />
                     </span>
-                    <textarea className={input} name="answer" required rows={2} />
+                    <CountedText className={input} maxLength={500} multiline name="answer" required />
                   </label>
                   <ConfirmSubmitButton
                     className="min-h-11 rounded-md bg-[var(--primary)] px-3 py-2 text-sm font-medium text-[var(--primary-foreground)]"
@@ -112,11 +113,11 @@ export async function CorrectionAdminPanel() {
                       <span>
                         {t.raiseReason} <RequiredMark />
                       </span>
-                      <input className={input} name="reason" required />
+                      <CountedText className={input} maxLength={500} name="reason" required />
                     </label>
                     <label className="grid gap-1 font-medium">
                       {t.correctionReference}
-                      <input className={input} name="legal_reference" />
+                      <CountedText className={input} maxLength={200} name="legal_reference" />
                     </label>
                     <ConfirmSubmitButton
                       className="min-h-11 rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm font-medium"

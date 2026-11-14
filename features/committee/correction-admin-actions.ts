@@ -8,6 +8,7 @@ import {
   answerCorrectionRequest,
   raiseCorrectionLevel,
 } from "@/features/results/committee-service";
+import { scheduleResultPdfs } from "@/features/results/pdf/schedule";
 import { getStaffI18n } from "@/lib/i18n/server";
 
 // Admin side of correction requests (demo feedback item 12): answer every
@@ -36,11 +37,18 @@ async function run(work: () => Promise<string>) {
 export async function answerCorrectionAsAdmin(formData: FormData) {
   await run(async () => {
     const t = (await getStaffI18n()).s.committee;
-    await answerCorrectionRequest(await createClient(), {
+    const answered = await answerCorrectionRequest(await createClient(), {
       requestId: String(formData.get("request_id") ?? ""),
       status: formData.get("status") === "no_change" ? "no_change" : "fixed",
       answer: String(formData.get("answer") ?? "").trim(),
     });
+
+    // Publishing waited for this answer: make the PDF files as approving does.
+    if (answered?.published && answered.result_snapshot_id) {
+      await scheduleResultPdfs(answered.result_snapshot_id);
+      revalidatePath("/summary");
+      return t.approvedPublished;
+    }
 
     return t.correctionAnswered;
   });

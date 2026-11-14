@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/server";
 import {
   answerCloseRequest,
   approveResult,
+  ResultError,
   cancelCloseRequest,
   proposeCloseVoting,
   requestResultCorrection,
@@ -15,6 +16,15 @@ import { bangkokLocalToIso } from "@/lib/datetime";
 import { scheduleResultPdfs } from "@/features/results/pdf/schedule";
 import { getStaffI18n } from "@/lib/i18n/server";
 import { fill } from "@/lib/i18n/template";
+
+/** A database refusal in the reader's language when known, else as sent. */
+function errorText(t: { errors: Record<string, string>; couldNotApprove: string }, error: unknown) {
+  if (error instanceof ResultError && t.errors[error.code]) {
+    return t.errors[error.code];
+  }
+
+  return error instanceof Error ? error.message : t.couldNotApprove;
+}
 
 function feedbackHref(tone: "success" | "error", message: string) {
   return `/committee?feedback=${tone}&message=${encodeURIComponent(message)}`;
@@ -49,10 +59,13 @@ export async function approveResultAsCommittee(formData: FormData) {
       "success",
       result.published
         ? t.approvedPublished
-        : fill(t.approvalRecorded, { count: result.approvals, required: result.required }),
+        : fill(result.held ? t.approvalHeld : t.approvalRecorded, {
+            count: result.approvals,
+            required: result.required,
+          }),
     );
   } catch (error) {
-    href = feedbackHref("error", error instanceof Error ? error.message : t.couldNotApprove);
+    href = feedbackHref("error", errorText(t, error));
   }
 
   revalidatePath("/committee");
@@ -70,7 +83,7 @@ async function runAndRedirect(
   try {
     href = feedbackHref("success", await work(t));
   } catch (error) {
-    href = feedbackHref("error", error instanceof Error ? error.message : t.couldNotApprove);
+    href = feedbackHref("error", errorText(t, error));
   }
 
   revalidatePath("/committee");

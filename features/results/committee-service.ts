@@ -41,7 +41,8 @@ export async function approveResult(
     throw toResultError(error);
   }
 
-  return data as ApprovalProgress & { published: boolean };
+  // held: approvals are complete but a correction request is open (0034).
+  return data as ApprovalProgress & { published: boolean; held?: boolean };
 }
 
 type RequestStatus = "open" | "approved" | "failed" | "cancelled" | "lapsed";
@@ -118,7 +119,8 @@ export async function answerCorrectionRequest(
   supabase: Client,
   input: { requestId: string; status: "fixed" | "no_change"; answer: string },
 ) {
-  return unwrap<null>(
+  // published: the answer let a fully approved result be published (0034).
+  return unwrap<{ status: string; published: boolean; result_snapshot_id: string | null }>(
     await supabase.rpc("answer_correction_request", {
       p_request_id: input.requestId,
       p_status: input.status,
@@ -170,15 +172,28 @@ export type CommitteeOverview = {
   open_meetings: Array<{
     id: string;
     title: string;
+    /** English title (0033); null when not written. */
+    title_en: string | null;
+    /** Start of meeting-day voting (0036). */
+    starts_at: string;
     ends_at: string;
     required_approvals: number;
     request: CloseRequest | null;
+    /** The latest request that failed or was cancelled (0034), when none is open. */
+    last_request: {
+      status: string;
+      reason: string;
+      proposer: string | null;
+      ended_at: string | null;
+      answers: Array<{ name: string | null; answer: "approve" | "object"; reason: string | null }>;
+    } | null;
     closes_early_at: string | null;
   }>;
   pending_results: Array<{
     snapshot_id: string;
     meeting_id: string;
     title: string;
+    title_en: string | null;
     generated_at: string;
     required_approvals: number;
     approvals: number;

@@ -23,6 +23,9 @@ insert into public.profiles (id, auth_user_id, full_name, email, default_status,
   (:member_e, :member_e, 'Member E', 'flow.e@example.test', 'owner', 'approved');
 insert into public.app_roles (profile_id, role) values
   (:admin_a, 'admin'), (:member_b, 'committee'), (:member_c, 'committee'), (:member_e, 'committee');
+-- Only these three are active members here, even on a database with demo
+-- data (the test rolls back, so nothing is changed for real).
+update public.committee_members set active = false;
 insert into public.committee_members (profile_id, full_name, position_title, display_order) values
   (:member_b, 'Member B', 'Chair', 1), (:member_c, 'Member C', 'Secretary', 2),
   (:member_e, 'Member E', 'Member', 3);
@@ -104,6 +107,8 @@ select ok(
 set local role authenticated;
 select pg_temp.act_as(:member_b);
 select lives_ok(format($q$select public.approve_result_snapshot(%L, null)$q$, :snap_1), 'first approval');
+-- A member who approved cannot request a correction (0034); another member does.
+select pg_temp.act_as(:member_c);
 select is(
   public.request_result_correction(:snap_1, 'other', 'Room A-1 share looks wrong', null)->>'level',
   'medium', '"Other" starts at medium');

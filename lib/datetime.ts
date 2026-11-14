@@ -92,3 +92,17 @@ export function formatThaiDateTime(value: string | null | undefined) {
 
   return Number.isNaN(date.getTime()) ? "-" : thaiDateTime.format(date);
 }
+
+/**
+ * Close-early timing for a meeting (review 2026-11-14): whether meeting-day
+ * voting has started, and the earliest close time a request may name
+ * (the later of now and the start of meeting-day voting).
+ */
+export function closeEarlyWindow(startsAt: string, now: number = Date.now()) {
+  const start = new Date(startsAt).getTime();
+
+  return {
+    meetingDayStarted: now >= start,
+    minAt: new Date(Math.max(now, start)).toISOString(),
+  };
+}
