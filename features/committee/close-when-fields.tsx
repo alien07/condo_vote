@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { RequiredMark } from "@/features/admin/components/field-label";
 
 const BANGKOK_OFFSET_MS = 7 * 60 * 60 * 1000;
@@ -30,6 +30,15 @@ export function CloseWhenFields({
   const [minimum, setMinimum] = useState<string | undefined>(undefined);
   const timed = when === "at";
   const hintId = useId();
+  const fieldsetRef = useRef<HTMLFieldSetElement>(null);
+
+  // "Cancel" resets the form: back to "As soon as approved".
+  useEffect(() => {
+    const form = fieldsetRef.current?.form;
+    const reset = () => setWhen("now");
+    form?.addEventListener("reset", reset);
+    return () => form?.removeEventListener("reset", reset);
+  }, []);
 
   function choose(value: "now" | "at") {
     setWhen(value);
@@ -40,7 +49,7 @@ export function CloseWhenFields({
   }
 
   return (
-    <fieldset className="grid gap-2">
+    <fieldset className="grid gap-2" ref={fieldsetRef}>
       <legend className="font-medium">{labels.when}</legend>
       <label className="inline-flex items-center gap-2">
         <input checked={!timed} name="when" onChange={() => choose("now")} type="radio" value="now" />

@@ -1,3 +1,4 @@
+import { CountedText } from "@/features/committee/counted-text";
 import { ConfirmSubmitButton } from "@/features/admin/components/form-controls";
 import { RequiredMark } from "@/features/admin/components/field-label";
 import { ApproverList } from "@/features/committee/approver-list";
@@ -68,6 +69,10 @@ export function PendingResultCard({
   const changed = result.previous_payload
     ? changedAgendaItems(result.previous_payload as PendingPayload, payload)
     : null;
+  // Members who have not approved yet, shown on the card (review 2026-11-14)
+  // as well as in the "i" list.
+  const approvedIds = new Set(result.approval_list.map((approval) => approval.profile_id));
+  const waitingFor = members.filter((member) => !approvedIds.has(member.profile_id));
   // One open correction per result (0034): others see it instead of the form.
   const openCorrection = result.corrections.some((correction) => correction.status === "open");
   // Approvals complete, but publishing waits for the admin's answer.
@@ -121,6 +126,17 @@ export function PendingResultCard({
             : fill(t.countDone, { count: result.approvals, required: result.required_approvals })}
         </Term>
       </p>
+      {result.approval_list.length > 0 ? (
+        <p className="text-sm text-[var(--muted)]" data-approved-by>
+          {fill(t.approvedBy, { names: result.approval_list.map((approval) => approval.name ?? "-").join(", ") })}
+        </p>
+      ) : null}
+      {waitingFor.length > 0 ? (
+        <p className="text-sm" data-not-approved>
+          <span className="font-medium">{t.notApprovedYet}</span>{" "}
+          {waitingFor.map((member) => member.name).join(", ")}
+        </p>
+      ) : null}
       {openHigh ? <p className="mt-1 text-sm font-medium text-[var(--danger)]">{t.allMembersNeeded}</p> : null}
       {held ? (
         <p className="mt-2 rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-900" data-publish-held>
@@ -248,7 +264,7 @@ export function PendingResultCard({
             <input name="result_snapshot_id" type="hidden" value={result.snapshot_id} />
             <label className="grid gap-1 text-sm font-medium">
               {t.notes}
-              <input className={input} name="notes" />
+              <CountedText className={input} maxLength={500} name="notes" />
             </label>
             <ConfirmSubmitButton
               className="min-h-11 rounded-md bg-[var(--primary)] px-3 py-2 text-sm font-medium text-[var(--primary-foreground)]"
@@ -294,11 +310,11 @@ export function PendingResultCard({
               <span>
                 {t.correctionReason} <RequiredMark />
               </span>
-              <textarea className={input} name="reason" required rows={2} />
+              <CountedText className={input} maxLength={500} multiline name="reason" required />
             </label>
             <label className="grid gap-1 font-medium">
               {t.correctionReference}
-              <input className={input} name="legal_reference" />
+              <CountedText className={input} maxLength={200} name="legal_reference" />
             </label>
             <div className="flex flex-wrap justify-end gap-2">
               <CloseDetailsButton

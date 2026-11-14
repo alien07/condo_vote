@@ -1,10 +1,10 @@
--- Database tests for the committee review rules (0034): the proposer of a
+-- Database tests for the committee review rules (0034, 0035): the proposer of a
 -- close-early request cannot object, the last ended request is shown, one
 -- open correction per result, no correction after approving, and publishing
 -- waits for an open correction.
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(10);
+select plan(11);
 
 \set admin_a  '''00000000-0000-4000-8000-0000000000d1'''
 \set member_b '''00000000-0000-4000-8000-0000000000d2'''
@@ -54,6 +54,9 @@ select is(
   (select item->'last_request'->>'status' from jsonb_array_elements(public.committee_overview()->'open_meetings') item
    where item->>'id' = :open_m),
   'cancelled', 'the card shows what happened to the last request');
+select throws_like(
+  format($q$select public.propose_close_voting(%L, %L, null)$q$, :open_m, repeat('a', 501)),
+  '%meeting_close_requests_reason_length%', 'a reason is at most 500 characters');
 
 -- Corrections: one at a time, not after approving -------------------------------------
 select lives_ok(format($q$select public.approve_result_snapshot(%L, null)$q$, :snap), 'member B approves');

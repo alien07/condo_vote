@@ -103,6 +103,8 @@ const en = {
   proposerNote: "Your request counts as your approval. To change your mind, cancel the request.",
   lastRequest: "Last request: {status}",
   lastRequestBy: "Proposed by {name}",
+  approvedBy: "Approved by: {names}",
+  notApprovedYet: "Not approved yet:",
   lastRequestAnswer: "{name}: {answer}",
   // Page layout (review 2026-11-14).
   pendingCount: "{count} awaiting approval",
@@ -250,6 +252,8 @@ const th: typeof en = {
   proposerNote: "คำขอของท่านนับเป็นการอนุมัติแล้ว ถ้าเปลี่ยนใจ ให้ยกเลิกคำขอ",
   lastRequest: "คำขอล่าสุด: {status}",
   lastRequestBy: "เสนอโดย {name}",
+  approvedBy: "อนุมัติแล้ว: {names}",
+  notApprovedYet: "ยังไม่อนุมัติ:",
   lastRequestAnswer: "{name}: {answer}",
   pendingCount: "{count} ผลรออนุมัติ",
   openCount: "{count} การประชุมที่เปิดลงคะแนนอยู่",

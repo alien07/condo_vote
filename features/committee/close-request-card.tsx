@@ -1,6 +1,8 @@
+import { CountedText } from "@/features/committee/counted-text";
 import { ConfirmSubmitButton } from "@/features/admin/components/form-controls";
 import { RequiredMark } from "@/features/admin/components/field-label";
 import { ApproverList } from "@/features/committee/approver-list";
+import { CloseDetailsButton } from "@/features/committee/close-details-button";
 import { CloseWhenFields } from "@/features/committee/close-when-fields";
 import {
   answerCloseAsCommittee,
@@ -141,7 +143,7 @@ export function CloseRequestCard({
                     <span>
                       {t.objectReason} <RequiredMark />
                     </span>
-                    <input className={input} name="reason" required />
+                    <CountedText className={input} maxLength={500} name="reason" required />
                   </label>
                   <ConfirmSubmitButton
                     className={secondaryButton}
@@ -174,12 +176,15 @@ export function CloseRequestCard({
       ) : meeting.closes_early_at ? null : (
         <>
         {meeting.last_request ? (
-          // What happened to the last request, so it does not just vanish.
-          <div className="grid gap-1 rounded-md border border-[var(--border)] px-3 py-2 text-sm" data-last-request>
-            <div className="font-medium">
+          // What happened to the last request, in one folded line so many
+          // requests over time do not make the card long. Older ones are in
+          // the audit log.
+          <details className="rounded-md border border-[var(--border)] px-3 py-2 text-sm" data-last-request>
+            <summary className="cursor-pointer text-[var(--muted)]">
               {fill(t.lastRequest, { status: t.requestStatus[meeting.last_request.status] ?? meeting.last_request.status })}
               {meeting.last_request.ended_at ? ` · ${formatDateTime(meeting.last_request.ended_at)}` : null}
-            </div>
+            </summary>
+            <div className="mt-2 grid gap-1">
             <div className="text-[var(--muted)]">
               {fill(t.lastRequestBy, { name: meeting.last_request.proposer ?? "-" })}
             </div>
@@ -193,7 +198,8 @@ export function CloseRequestCard({
                 {answer.reason ? ` · ${answer.reason}` : null}
               </div>
             ))}
-          </div>
+            </div>
+          </details>
         ) : null}
         <details className="text-sm">
           <summary className="inline-flex min-h-11 cursor-pointer items-center rounded-md border border-[var(--border)] px-3 py-2 font-medium">
@@ -205,7 +211,7 @@ export function CloseRequestCard({
               <span>
                 {t.proposeReason} <RequiredMark />
               </span>
-              <textarea className={input} name="reason" required rows={2} />
+              <CountedText className={input} maxLength={500} multiline name="reason" required />
             </label>
             <CloseWhenFields
               endsAt={meeting.ends_at}
@@ -218,14 +224,20 @@ export function CloseRequestCard({
                 atHint: fill(t.proposeAtHint, { time: formatDateTime(meeting.ends_at) }),
               }}
             />
-            <ConfirmSubmitButton
-              className="min-h-11 rounded-md bg-[var(--primary)] px-3 py-2 text-sm font-medium text-[var(--primary-foreground)]"
-              confirmMessage={fill(t.confirmPropose, { title })}
-              pendingLabel={t.proposing}
-              tone="primary"
-            >
-              {t.sendRequest}
-            </ConfirmSubmitButton>
+            <div className="flex flex-wrap justify-end gap-2">
+              <CloseDetailsButton
+                className="min-h-11 rounded-md border border-[var(--border)] bg-[var(--surface)] px-4 py-2 text-sm font-medium"
+                label={t.cancel}
+              />
+              <ConfirmSubmitButton
+                className="min-h-11 rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)]"
+                confirmMessage={fill(t.confirmPropose, { title })}
+                pendingLabel={t.proposing}
+                tone="primary"
+              >
+                {t.sendRequest}
+              </ConfirmSubmitButton>
+            </div>
           </form>
         </details>
         </>
