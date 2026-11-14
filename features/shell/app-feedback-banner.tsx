@@ -127,7 +127,7 @@ export function AppFeedbackBanner({
         <p className="min-w-0 flex-1">{translateMessage(locale, message)}</p>
         <button
           aria-label={dismissLabel}
-          className="shrink-0 rounded p-1 hover:bg-black/5"
+          className="tap-target shrink-0 rounded p-1 hover:bg-black/5"
           onClick={() => {
             setDismissedKey(bannerKey);
             window.history.replaceState(window.history.state, "", closeHref);

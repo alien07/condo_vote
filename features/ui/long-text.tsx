@@ -53,7 +53,7 @@ export function LongText({
       {overflows || open ? (
         <button
           aria-expanded={open}
-          className="mt-0.5 text-xs font-medium text-[var(--primary)] underline"
+          className="tap-target mt-0.5 text-xs font-medium text-[var(--primary)] underline"
           onClick={() => setOpen((value) => !value)}
           type="button"
         >

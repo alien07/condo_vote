@@ -9,6 +9,7 @@ import { useEffect, useId, useRef, useState } from "react";
  */
 export function CountedText({
   className,
+  form,
   maxLength,
   multiline = false,
   name,
@@ -16,6 +17,8 @@ export function CountedText({
   rows = 2,
 }: {
   className: string;
+  /** Id of the form this field belongs to, when it sits outside it. */
+  form?: string;
   maxLength: number;
   multiline?: boolean;
   name: string;
@@ -37,6 +40,7 @@ export function CountedText({
   const shared = {
     "aria-describedby": counterId,
     className,
+    form,
     maxLength,
     name,
     onChange: (event: { currentTarget: { value: string } }) => setLength(event.currentTarget.value.length),

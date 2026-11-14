@@ -15,6 +15,7 @@ import { Term } from "@/features/glossary/term";
 import type { StaffDictionary } from "@/lib/i18n/staff";
 import { closeEarlyWindow } from "@/lib/datetime";
 import { localized } from "@/lib/i18n/content";
+import { formatDurationIn } from "@/lib/i18n/format";
 import type { Locale } from "@/lib/i18n/locales";
 import { fill } from "@/lib/i18n/template";
 
@@ -69,17 +70,33 @@ export function CloseRequestCard({
       </div>
 
       {request ? (
-        <div className="grid gap-2 rounded-md bg-[var(--background)] p-3 text-sm" data-close-request>
+        // Review 2026-11-15: no grey box inside the card (a line on the left
+        // instead); the request time is the headline; approve and object are
+        // one row of similar buttons, and the objection form opens below.
+        <div className="grid gap-2 border-l-4 border-[var(--primary)] pl-3 text-sm" data-close-request>
           <div className="flex flex-wrap items-center gap-2">
-            <span className="font-semibold">{t.requestStatus.open}</span>
+            <span className="rounded-full border border-[var(--border)] px-2 py-0.5 text-xs font-semibold">
+              {t.requestStatus.open}
+            </span>
             {request.my_answer === "approve" ? (
               <span className="rounded-full bg-[var(--primary)]/10 px-2 py-0.5 text-xs font-semibold text-[var(--primary)]">
                 {t.youApproved}
               </span>
             ) : null}
+            {request.my_answer === "object" ? (
+              <span className="rounded-full bg-[var(--danger-surface)] px-2 py-0.5 text-xs font-semibold text-[var(--danger)]">
+                {t.youObjected}
+              </span>
+            ) : null}
           </div>
-          <div>{fill(t.requestBy, { name: request.proposer ?? "-", time: formatDateTime(request.created_at) })}</div>
-          <LongText label={t.labelReason} less={t.showLess} more={t.showMore} text={request.reason} />
+          <div className="text-base font-semibold" data-close-summary>
+            {request.close_at
+              ? fill(t.requestSummaryAt, {
+                  time: formatDateTime(request.close_at),
+                  early: formatDurationIn(locale, new Date(meeting.ends_at).getTime() - new Date(request.close_at).getTime()),
+                })
+              : fill(t.requestSummaryNow, { time: formatDateTime(meeting.ends_at) })}
+          </div>
           <div className="text-[var(--muted)]">
             {request.close_at
               ? fill(t.requestCloseAt, {
@@ -88,6 +105,10 @@ export function CloseRequestCard({
                 })
               : fill(t.requestCloseNow, { required: meeting.required_approvals })}
           </div>
+          <div className="text-[var(--muted)]">
+            {fill(t.requestBy, { name: request.proposer ?? "-", time: formatDateTime(request.created_at) })}
+          </div>
+          <LongText label={t.labelReason} less={t.showLess} more={t.showMore} text={request.reason} />
           <div data-close-count>
             <Term
               extra={
@@ -117,65 +138,79 @@ export function CloseRequestCard({
           {request.proposed_by_me ? (
             // The proposal counts as the proposer's approval; they cancel
             // instead of objecting (review 2026-11-14).
-            <p className="text-[var(--muted)]" data-proposer-note>
-              {t.proposerNote}
-            </p>
+            <div className="grid gap-2">
+              <p className="text-[var(--muted)]" data-proposer-note>
+                {t.proposerNote}
+              </p>
+              <form action={cancelCloseAsCommittee}>
+                <input name="request_id" type="hidden" value={request.id} />
+                <ConfirmSubmitButton
+                  className={secondaryButton}
+                  confirmMessage={t.confirmCancel}
+                  pendingLabel={t.saving}
+                >
+                  {t.cancelRequest}
+                </ConfirmSubmitButton>
+              </form>
+            </div>
           ) : isMember ? (
-            <div className="grid gap-2 sm:grid-cols-2">
-              {request.my_answer !== "approve" ? (
-                <form action={answerCloseAsCommittee}>
-                  <input name="request_id" type="hidden" value={request.id} />
-                  <input name="answer" type="hidden" value="approve" />
-                  <ConfirmSubmitButton
-                    className="min-h-11 w-full rounded-md bg-[var(--primary)] px-3 py-2 text-sm font-medium text-[var(--primary-foreground)]"
-                    confirmMessage={fill(t.confirmApproveClose, {
-                      title,
-                      required: meeting.required_approvals,
-                    })}
-                    pendingLabel={t.saving}
-                    tone="primary"
-                  >
-                    {t.answerApprove}
-                  </ConfirmSubmitButton>
-                </form>
-              ) : null}
-              {request.my_answer !== "object" ? (
-                <form action={answerCloseAsCommittee} className="grid gap-2">
-                  <input name="request_id" type="hidden" value={request.id} />
-                  <input name="answer" type="hidden" value="object" />
-                  <label className="grid gap-1 font-medium">
-                    <span>
-                      {t.objectReason} <RequiredMark />
-                    </span>
-                    <CountedText className={input} maxLength={500} name="reason" required />
-                  </label>
-                  <ConfirmSubmitButton
-                    className={secondaryButton}
-                    confirmMessage={fill(t.confirmObject, { title })}
-                    pendingLabel={t.saving}
-                  >
-                    {t.answerObject}
-                  </ConfirmSubmitButton>
-                </form>
-              ) : null}
-              <p className="text-xs text-[var(--muted)] sm:col-span-2">{t.changeAnswer}</p>
+            <div className="grid gap-1" data-close-answers>
+              <div className="flex flex-wrap items-start gap-2">
+                {request.my_answer !== "approve" ? (
+                  <form action={answerCloseAsCommittee}>
+                    <input name="request_id" type="hidden" value={request.id} />
+                    <input name="answer" type="hidden" value="approve" />
+                    <ConfirmSubmitButton
+                      className="min-h-11 rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)]"
+                      confirmMessage={fill(t.confirmApproveClose, {
+                        title,
+                        required: meeting.required_approvals,
+                      })}
+                      pendingLabel={t.saving}
+                      tone="primary"
+                    >
+                      {t.answerApprove}
+                    </ConfirmSubmitButton>
+                  </form>
+                ) : null}
+                {request.my_answer !== "object" ? (
+                  // The reason field opens only when objecting, so nobody
+                  // thinks approving needs a reason.
+                  <details className="open:basis-full" data-object-form>
+                    <summary className="inline-flex min-h-11 cursor-pointer items-center rounded-md border border-[var(--border)] bg-[var(--surface)] px-4 py-2 text-sm font-medium">
+                      {t.answerObject}
+                    </summary>
+                    <form action={answerCloseAsCommittee} className="mt-3 grid gap-3 sm:max-w-md">
+                      <input name="request_id" type="hidden" value={request.id} />
+                      <input name="answer" type="hidden" value="object" />
+                      <label className="grid gap-1 font-medium">
+                        <span>
+                          {t.objectReason} <RequiredMark />
+                        </span>
+                        <CountedText className={input} maxLength={500} multiline name="reason" required />
+                      </label>
+                      <div className="flex flex-wrap justify-end gap-2">
+                        <CloseDetailsButton
+                          className="min-h-11 rounded-md border border-[var(--border)] bg-[var(--surface)] px-4 py-2 text-sm font-medium"
+                          label={t.cancel}
+                        />
+                        <ConfirmSubmitButton
+                          className="min-h-11 rounded-md bg-[var(--danger)] px-4 py-2 text-sm font-medium text-white"
+                          confirmMessage={fill(t.confirmObject, { title })}
+                          pendingLabel={t.saving}
+                        >
+                          {t.sendObjection}
+                        </ConfirmSubmitButton>
+                      </div>
+                    </form>
+                  </details>
+                ) : null}
+              </div>
+              <p className="text-xs text-[var(--muted)]">{t.changeAnswer}</p>
             </div>
           ) : (
             <p className="text-xs text-[var(--muted)]">{t.notMember}</p>
           )}
-
-          {request.proposed_by_me ? (
-            <form action={cancelCloseAsCommittee}>
-              <input name="request_id" type="hidden" value={request.id} />
-              <ConfirmSubmitButton
-                className={secondaryButton}
-                confirmMessage={t.confirmCancel}
-                pendingLabel={t.saving}
-              >
-                {t.cancelRequest}
-              </ConfirmSubmitButton>
-            </form>
-          ) : null}
         </div>
       ) : meeting.closes_early_at ? null : (
         <>
@@ -184,7 +219,7 @@ export function CloseRequestCard({
           // requests over time do not make the card long. Older ones are in
           // the audit log.
           <details className="rounded-md border border-[var(--border)] px-3 py-2 text-xs" data-last-request>
-            <summary className="cursor-pointer text-xs text-[var(--muted)]">
+            <summary className="tap-target cursor-pointer text-xs text-[var(--muted)]">
               {fill(t.lastRequest, { status: t.requestStatus[meeting.last_request.status] ?? meeting.last_request.status })}
               {meeting.last_request.ended_at ? ` · ${formatDateTime(meeting.last_request.ended_at)}` : null}
             </summary>

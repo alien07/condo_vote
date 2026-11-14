@@ -266,15 +266,19 @@ export function PendingResultCard({
       {/* Actions. Someone who approved has none left: the badge at the top
           already says so (no second "you approved" line here). */}
       {result.approved_by_me ? null : (
-      <div className="mt-4 grid gap-4 border-t border-[var(--border)] pt-4">
-          <form action={approveResultAsCommittee} className="grid gap-2 sm:max-w-md">
+      <div className="mt-4 grid gap-3 border-t border-[var(--border)] pt-4">
+        {/* The optional note belongs to the approve form (form attribute), so
+            approve and "request a correction" can sit in one row of buttons
+            (review 2026-11-15). */}
+        <label className="grid gap-1 text-sm font-medium sm:max-w-md">
+          {t.notes}
+          <CountedText className={input} form={`approve-${result.snapshot_id}`} maxLength={500} name="notes" />
+        </label>
+        <div className="flex flex-wrap items-start gap-2">
+          <form action={approveResultAsCommittee} id={`approve-${result.snapshot_id}`}>
             <input name="result_snapshot_id" type="hidden" value={result.snapshot_id} />
-            <label className="grid gap-1 text-sm font-medium">
-              {t.notes}
-              <CountedText className={input} maxLength={500} name="notes" />
-            </label>
             <ConfirmSubmitButton
-              className="min-h-11 rounded-md bg-[var(--primary)] px-3 py-2 text-sm font-medium text-[var(--primary-foreground)]"
+              className="min-h-11 rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)]"
               confirmMessage={fill(t.confirmApprove, {
                 title,
                 required: result.required_approvals,
@@ -285,15 +289,9 @@ export function PendingResultCard({
             </ConfirmSubmitButton>
           </form>
 
-        {openCorrection ? (
-          <p className="text-sm text-[var(--muted)]" data-correction-waiting>
-            {t.correctionWaiting}
-          </p>
-        ) : null}
-
         {canRequestCorrection ? (
-        <details className="text-sm" data-correction-form>
-          <summary className="inline-flex min-h-11 cursor-pointer items-center rounded-md border border-[var(--border)] px-3 py-2 font-medium">
+        <details className="text-sm open:basis-full" data-correction-form>
+          <summary className="inline-flex min-h-11 cursor-pointer items-center rounded-md border border-[var(--border)] bg-[var(--surface)] px-4 py-2 font-medium">
             {t.requestCorrection}
           </summary>
           <form action={requestCorrectionAsCommittee} className="mt-3 grid gap-3">
@@ -339,6 +337,13 @@ export function PendingResultCard({
             </div>
           </form>
         </details>
+        ) : null}
+        </div>
+
+        {openCorrection ? (
+          <p className="text-sm text-[var(--muted)]" data-correction-waiting>
+            {t.correctionWaiting}
+          </p>
         ) : null}
       </div>
       )}
