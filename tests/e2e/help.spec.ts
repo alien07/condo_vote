@@ -44,11 +44,23 @@ test.describe("help", () => {
     await context.close();
   });
 
-  test("the quick guide PDF is published", async ({ request }) => {
-    for (const locale of ["th", "en"]) {
-      const response = await request.get(`/help/owner-quick-guide-${locale}.pdf`);
-      expect(response.ok()).toBe(true);
-      expect(response.headers()["content-type"]).toContain("pdf");
+  test("lists the committee guide", async ({ page }) => {
+    await page.goto("/help");
+    await page.getByRole("link", { name: /Committee guide/ }).click();
+
+    await expect(page).toHaveURL(/\/help\/committee$/);
+    await expect(page.getByRole("heading", { name: "Committee guide" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: /Request a correction/ })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "For auditors" })).toBeVisible();
+  });
+
+  test("the quick guide PDFs are published", async ({ request }) => {
+    for (const guide of ["owner", "committee"]) {
+      for (const locale of ["th", "en"]) {
+        const response = await request.get(`/help/${guide}-quick-guide-${locale}.pdf`);
+        expect(response.ok()).toBe(true);
+        expect(response.headers()["content-type"]).toContain("pdf");
+      }
     }
   });
 
