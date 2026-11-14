@@ -25,12 +25,12 @@ the Supabase local stack, and the app, and waits until each one answers.
 
 | | Windows | macOS / Linux |
 |---|---|---|
-| Start | `start-local.bat` (double-click works) | `./start-local.sh` |
-| Start + fresh demo data | `start-local.bat -Seed` | `./start-local.sh --seed` |
-| Use `next dev` | `start-local.bat -Dev` | `./start-local.sh --dev` |
-| Force a rebuild | `start-local.bat -Build` | `./start-local.sh --build` |
-| Stop app + Supabase | `stop-local.bat` | `./stop-local.sh` |
-| Stop only the app | `stop-local.bat -AppOnly` | `./stop-local.sh --app-only` |
+| Start | `scripts\local\start-local.bat` (double-click works) | `./scripts/local/start.sh` |
+| Start + fresh demo data | `scripts\local\start-local.bat -Seed` | `./scripts/local/start.sh --seed` |
+| Use `next dev` | `scripts\local\start-local.bat -Dev` | `./scripts/local/start.sh --dev` |
+| Force a rebuild | `scripts\local\start-local.bat -Build` | `./scripts/local/start.sh --build` |
+| Stop app + Supabase | `scripts\local\stop-local.bat` | `./scripts/local/stop.sh` |
+| Stop only the app | `scripts\local\stop-local.bat -AppOnly` | `./scripts/local/stop.sh --app-only` |
 
 - Start runs the production build with the demo sign-in buttons on
   (`ENABLE_LOCAL_AUTH_BYPASS=1`, local only). It rebuilds only when the

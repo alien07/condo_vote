@@ -2,8 +2,8 @@
 # Stop condoVotes on this computer (macOS / Linux): the app, then Supabase.
 # Data is kept.
 #
-#   ./stop-local.sh             stop the app and Supabase
-#   ./stop-local.sh --app-only  stop only the app
+#   ./scripts/local/stop.sh             stop the app and Supabase
+#   ./scripts/local/stop.sh --app-only  stop only the app
 set -uo pipefail
 
 root="$(cd "$(dirname "$0")/../.." && pwd)"

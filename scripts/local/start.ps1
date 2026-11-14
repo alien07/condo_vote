@@ -1,13 +1,13 @@
 <#
   Start condoVotes on this computer: Docker -> Supabase -> app.
 
-  start-local.bat              start (production build, demo sign-in buttons on)
-  start-local.bat -Seed        also wipe the local database and load demo data
-  start-local.bat -Dev         use `next dev` instead of the production build
-  start-local.bat -Build       rebuild even if the code did not change
-  start-local.bat -NoBrowser   do not open the browser
+  scripts\local\start-local.bat              start (production build, demo sign-in buttons on)
+  scripts\local\start-local.bat -Seed        also wipe the local database and load demo data
+  scripts\local\start-local.bat -Dev         use `next dev` instead of the production build
+  scripts\local\start-local.bat -Build       rebuild even if the code did not change
+  scripts\local\start-local.bat -NoBrowser   do not open the browser
 
-  Stop everything with stop-local.bat. See docs/local-development.md.
+  Stop everything with scripts\local\stop-local.bat. See docs/local-development.md.
 #>
 param(
   [switch]$Seed,
@@ -70,12 +70,12 @@ if ($LASTEXITCODE -ne 0 -and $supabaseOut -notmatch "already running") {
     Fail ("Windows is holding the Supabase ports (often after a restart).`n" +
       "    Open PowerShell as Administrator and run:`n" +
       "      net stop winnat`n      net start winnat`n" +
-      "    Then run start-local.bat again. No data is lost.")
+      "    Then run scripts\local\start-local.bat again. No data is lost.")
   }
   Fail "supabase start failed (see above)."
 }
 if (-not (Wait-Http "http://127.0.0.1:54321/rest/v1/" 90)) {
-  Fail "Supabase API (port 54321) did not answer. Try stop-local.bat, then start-local.bat."
+  Fail "Supabase API (port 54321) did not answer. Try scripts\local\stop-local.bat, then scripts\local\start-local.bat."
 }
 Write-Host "Supabase is running. Studio: http://localhost:54323  Mail: http://localhost:54324"
 
@@ -134,5 +134,5 @@ Step "Ready"
 Write-Host "App:      $appUrl"
 Write-Host "Help:     $appUrl/help"
 Write-Host "Same Wi-Fi (demo sign-in only): http://<this PC's IP>:3000"
-Write-Host "Stop:     stop-local.bat"
+Write-Host "Stop:     scripts\local\stop-local.bat"
 if (-not $NoBrowser) { Start-Process $appUrl }

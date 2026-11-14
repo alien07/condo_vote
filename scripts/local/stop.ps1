@@ -1,9 +1,9 @@
 <#
   Stop condoVotes on this computer: the app, then Supabase. Data is kept.
 
-  stop-local.bat             stop the app and Supabase
-  stop-local.bat -AppOnly    stop only the app
-  stop-local.bat -Docker     also quit Docker Desktop
+  scripts\local\stop-local.bat             stop the app and Supabase
+  scripts\local\stop-local.bat -AppOnly    stop only the app
+  scripts\local\stop-local.bat -Docker     also quit Docker Desktop
 #>
 param(
   [switch]$AppOnly,
