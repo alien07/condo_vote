@@ -99,10 +99,17 @@ export async function proposeCloseAsCommittee(formData: FormData) {
   await runAndRedirect(async (t) => {
     const supabase = await createClient();
     const when = String(formData.get("when") ?? "now");
+    const closeAt = when === "at" ? bangkokLocalToIso(String(formData.get("close_at") ?? "")) : null;
+
+    // "At this time" without a time must not become "as soon as approved".
+    if (when === "at" && !closeAt) {
+      throw new Error(t.proposeAtMissing);
+    }
+
     const result = await proposeCloseVoting(supabase, {
       meetingId: String(formData.get("meeting_id") ?? ""),
       reason: String(formData.get("reason") ?? "").trim(),
-      closeAt: when === "at" ? bangkokLocalToIso(String(formData.get("close_at") ?? "")) : null,
+      closeAt,
     });
 
     return statusMessage(t, result.status, t.proposed);

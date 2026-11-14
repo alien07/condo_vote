@@ -56,6 +56,8 @@ const en = {
   proposeNow: "As soon as approved",
   proposeAt: "At this time",
   proposeAtTime: "Close time",
+  proposeAtHint: "After now and before the normal close time, {time}.",
+  proposeAtMissing: "Choose the close time, or choose \"As soon as approved\".",
   proposing: "Sending...",
   sendRequest: "Send request",
   confirmPropose:
@@ -187,6 +189,8 @@ const th: typeof en = {
   proposeNow: "ทันทีที่อนุมัติครบ",
   proposeAt: "ตามเวลาที่ระบุ",
   proposeAtTime: "เวลาปิด",
+  proposeAtHint: "หลังเวลาปัจจุบัน และก่อนเวลาปิดปกติ {time}",
+  proposeAtMissing: "โปรดระบุเวลาปิด หรือเลือก \"ทันทีที่อนุมัติครบ\"",
   proposing: "กำลังส่ง...",
   sendRequest: "ส่งคำขอ",
   confirmPropose:
