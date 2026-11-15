@@ -1,7 +1,18 @@
 "use client";
 
-import { useEffect, useId, useRef, useState, type ComponentProps } from "react";
+import {
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  useSyncExternalStore,
+  type ComponentProps,
+} from "react";
 import { PendingSubmitButton } from "@/features/debug/tracked-submit-button";
+
+const subscribeNever = () => () => {};
+const isClient = () => true;
+const isServer = () => false;
 
 type ConfirmButtonProps = ComponentProps<"button"> & {
   confirmMessage: string;
@@ -36,6 +47,11 @@ export function ConfirmButton({
   // The dialog's words exist only while it is open, so a closed dialog adds
   // no hidden copy of the message to the page.
   const [open, setOpen] = useState(false);
+  // Before hydration the button is a plain submit button: a click would send
+  // the form with no confirm dialog. Keep it disabled until the click handler
+  // is wired. (A server-side "confirmed" check is a V2 option.)
+  // false on the server and during hydration, true once hydrated.
+  const ready = useSyncExternalStore(subscribeNever, isClient, isServer);
 
   useEffect(() => {
     if (open && !dialogRef.current?.open) {
@@ -62,6 +78,7 @@ export function ConfirmButton({
     <>
       <PendingSubmitButton
         {...props}
+        disabled={!ready || props.disabled}
         onClick={(event) => {
           onClick?.(event);
 
