@@ -15,7 +15,8 @@ Current verification:
 - Targeted owner/proxy voting checks:
   `npx playwright test tests/e2e/vote-flow.spec.ts --project=chromium`
 - Admin demo flow:
-  `npx playwright test tests/e2e/admin-demo.spec.ts --project=chromium`
+  `npx playwright test tests/e2e/admin/ --project=chromium` (one spec per
+  flow; files are numbered so they run in the old order)
 - Database checks when schema changes:
   `npm run db:reset:local`
   `npm run types:supabase`
@@ -178,15 +179,16 @@ gives every test an English `lang` cookie, so specs read English copy.
 
 Test tags:
 - `@full`: long end-to-end flows, for example the admin lifecycle in
-  `admin-demo.spec.ts` "demo admin can sign in and manage master data".
+  `admin/01-lifecycle.spec.ts` "demo admin can sign in and manage master data".
   They run in the full suite (`npm run test:e2e`, shared-code changes in CI,
   or a manual CI run) and are skipped by smoke runs
   (`npm run test:e2e:smoke`, per-PR CI).
 
 ## Implementation Order
 
-1. Split `admin-demo.spec.ts` by flow (issue #4). The admin lifecycle test
-   stays as one `@full` test.
+1. Done (2026-11-15): `admin-demo.spec.ts` split by flow into
+   `tests/e2e/admin/` (issue #4). The admin lifecycle test stays as one
+   `@full` test.
 2. Add Vitest, starting with result calculation and pass rules (D013).
 3. Expand Playwright coverage for closed-meeting summary redirects.
 4. Add database smoke checks for RLS policy coverage.

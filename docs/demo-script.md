@@ -180,7 +180,7 @@ Then:
 
 ## P3 · Already covered by CI (no need to show again)
 - `vote-flow.spec`: owner/proxy voting, editing a ballot, voting closed
-- `admin-demo.spec`: meeting CRUD/publish, paper ballots, conflicts, results/approvals, communications, documents, ownership
+- `admin/*.spec` (one per flow): meeting CRUD/publish, paper ballots, conflicts, results/approvals, communications, documents, ownership
 - `role-access.spec`, `privacy.spec`, `language.spec`, `table-search.spec`, `app-shell.spec`
 - `demo-seed.spec` (new): checks that the seed matches this script (20 rooms = 100%, M6/M7/M8/M10 states, emails th/en + failed, login buttons, consent)
 - pgTAP: ballot secrecy, committee approvals, proxy limit, result documents/PDF, owner language

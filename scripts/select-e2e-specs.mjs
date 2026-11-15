@@ -13,7 +13,8 @@ const SPEC = {
   shell: "tests/e2e/app-shell.spec.ts",
   roles: "tests/e2e/role-access.spec.ts",
   vote: "tests/e2e/vote-flow.spec.ts",
-  admin: "tests/e2e/admin-demo.spec.ts",
+  // Admin flows, one spec per flow (run in file-name order, workers: 1).
+  admin: "tests/e2e/admin/",
   tables: "tests/e2e/table-search.spec.ts",
   privacy: "tests/e2e/privacy.spec.ts",
   language: "tests/e2e/language.spec.ts",
@@ -38,6 +39,7 @@ const runAll = [
 // Domain rules: changed path -> specs that cover that feature.
 const rules = [
   [/^tests\/e2e\/(.+\.spec\.ts)$/, (m) => [`tests/e2e/${m[1]}`]],
+  [/^tests\/e2e\/admin\//, () => [SPEC.admin]],
   [/^(app\/(vote|summary)|features\/(voting|summary))\//, () => [SPEC.vote]],
   [/^(app\/(auth|login)|features\/(auth|shell)|lib\/auth)\//, () => [SPEC.roles, SPEC.privacy, SPEC.language]],
   [/^(app\/(consent|system)|features\/privacy)\//, () => [SPEC.privacy]],
