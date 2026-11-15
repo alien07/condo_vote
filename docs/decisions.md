@@ -311,3 +311,38 @@ Status: implemented (migration 0031), decided in the demo review 2026-11-13
 - The app has no record of which resident lives in which room, so the
   co-owner check is "an approved resident account with this email".
 - The header shows job roles first, then the member status.
+
+### D023 - Role Management Page (V2)
+Status: accepted 2026-11-15, planned for V2 (roadmap Phase 4)
+
+Replaces the fixed role list of D005, D016 and D022 with roles that can be
+managed in the app. The database stays the source of truth: hiding a menu is
+not security.
+
+- Model: person -> roles (with start and end dates) -> permissions -> menus,
+  buttons and RLS. Permissions are a fixed list in code (for example
+  `rooms.edit`, `meetings.publish`, `results.generate`, `results.approve`,
+  `audit.view`); roles are sets of permissions; a person can hold several
+  roles. A menu shows when the person has any permission of that menu.
+- Granularity: per menu, with levels such as none / view / edit / publish.
+  Not per button.
+- Who manages what:
+  - System Admin only: the System Admin role, the "manage roles"
+    permission, and the locked built-in roles.
+  - Manager (admin): every other role (create, edit, copy) and who holds it.
+  - No one can raise their own permissions; the last Manager cannot be
+    removed. Every change is in the audit log and applies at once.
+- Committee role: start and end of term are required; access ends by itself
+  at the end of the term. It is kept in step with `committee_members`,
+  which still decides how many approvals a result needs.
+- Building scope (D009, option ข): the person-to-role table has a
+  `project_id` column, empty for now ("whole system"), and checks are
+  written as `has_permission(permission, project)` so a second building
+  needs only a building picker, not new RLS.
+- Guardrails: warn when one role or person holds permissions that should
+  not go together (for example `results.generate` with `results.approve`;
+  the per-snapshot rule of D022 stays in the database); a role with
+  `audit.view` cannot hold edit permissions. Owner, resident and proxy stay
+  member statuses worked out from data, not assignable roles.
+- Built-in roles Manager, Staff, Committee, Auditor and System Admin are
+  seeded with exactly today's access, locked, and can be copied.

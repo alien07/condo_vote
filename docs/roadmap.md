@@ -79,6 +79,18 @@
   use about 250 fixed Tailwind colors (amber, red, green and so on) that
   would need theme tokens first. Print and PDF output must stay light.
   Admin pages wait for the admin review.
+- Role management page `/admin/roles` (D023, user decision 2026-11-15).
+  Tabs: Roles (create, copy, permission table by menu with a "this role
+  sees these menus" preview), People and roles (assign with start/end date
+  and reason, several people at once), Check (who can do X, change history).
+  Build in three steps so behaviour never changes by surprise:
+  - V2-a: permission list, `has_permission(permission, project)`, built-in
+    roles with today's access, replace the 134 `has_app_role` checks (about
+    21 migrations); existing pgTAP and e2e must pass unchanged.
+  - V2-b: People and roles tab and Check tab, using the built-in roles;
+    committee term dates required.
+  - V2-c: custom roles, the permission table, and warnings for permissions
+    that should not go together.
 
 ## Later
 - Direct private document upload adapters and Google Drive API synchronization after credential and sharing policy approval.
