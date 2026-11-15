@@ -17,6 +17,8 @@ type NavLabels = {
   back: string;
   /** Admin area names for the breadcrumb (staff only). */
   adminSections?: Record<string, string>;
+  /** Names for pages below an admin section, keyed by URL segment. */
+  adminSubpages?: Record<string, string>;
 };
 
 type AppShellNavProps = {
@@ -84,6 +86,13 @@ function getBreadcrumbs(pathname: string, labels: NavLabels) {
   }
 
   if (parts[0] === "admin") {
+    // Deeper pages (e.g. /admin/voting/conflicts) name themselves after the
+    // last URL segment that has a label; ids in between are skipped.
+    const subpage = parts
+      .slice(2)
+      .reverse()
+      .find((segment) => labels.adminSubpages?.[segment]);
+
     return [
       { href: "/admin", label: labels.admin },
       parts[1]
@@ -91,6 +100,9 @@ function getBreadcrumbs(pathname: string, labels: NavLabels) {
             href: `/admin/${parts[1]}`,
             label: labels.adminSections?.[parts[1]] ?? parts[1].replaceAll("-", " "),
           }
+        : null,
+      subpage
+        ? { href: pathname, label: labels.adminSubpages?.[subpage] ?? subpage }
         : null,
     ].filter((item): item is { href: string; label: string } => Boolean(item));
   }
@@ -126,9 +138,7 @@ function getBackHref(pathname: string) {
     return "/summary";
   }
 
-  if (pathname.startsWith("/admin/")) {
-    return "/admin";
-  }
+  // Admin pages get no "Back": its target was the same as the first crumb.
 
   return null;
 }
@@ -186,8 +196,9 @@ export function AppShellNav({
         </nav>
 
         {/* A single crumb repeats the active tab, so show the trail only on
-            nested pages. */}
-        {breadcrumbs.length > 1 || backHref ? (
+            nested pages. In admin the second crumb repeats the admin menu
+            too, so the trail starts at the third level. */}
+        {breadcrumbs.length > (pathname.startsWith("/admin") ? 2 : 1) || backHref ? (
           <div className="flex flex-wrap items-center gap-x-2 text-xs text-[var(--muted)]">
             {backHref ? (
               <TrackedLink

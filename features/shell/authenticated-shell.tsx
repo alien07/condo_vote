@@ -53,7 +53,8 @@ export async function AuthenticatedShell({ children }: AuthenticatedShellProps) 
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-[var(--primary)] text-[var(--primary-foreground)]">
               <Building2 size={22} aria-hidden="true" />
             </div>
-            <div className="min-w-0">
+            {/* Phones show the logo only, so the account name has room. */}
+            <div className="sr-only min-w-0 sm:not-sr-only">
               <div className="truncate text-sm font-semibold">{APP_NAME}</div>
               <div className="hidden text-xs text-[var(--muted)] sm:block">
                 v{APP_VERSION}
@@ -79,7 +80,7 @@ export async function AuthenticatedShell({ children }: AuthenticatedShellProps) 
                 type="submit"
               >
                 <LogOut size={16} aria-hidden="true" />
-                <span className="hidden sm:inline">{t.shell.signOut}</span>
+                <span className="hidden whitespace-nowrap sm:inline">{t.shell.signOut}</span>
               </TrackedSubmitButton>
             </form>
           </div>
@@ -90,6 +91,7 @@ export async function AuthenticatedShell({ children }: AuthenticatedShellProps) 
             ...t.shell.crumbs,
             back: t.shell.back,
             adminSections: isStaff ? getStaffDictionary(locale).adminHome.nav : undefined,
+            adminSubpages: isStaff ? getStaffDictionary(locale).adminHome.subpages : undefined,
           }}
           isAdmin={opensAdmin}
           isAuditor={isAdmin || roles.includes("auditor")}
