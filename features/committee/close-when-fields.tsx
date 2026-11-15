@@ -58,7 +58,7 @@ export function CloseWhenFields({
   return (
     <fieldset className="grid gap-2" ref={fieldsetRef}>
       <legend className="font-medium">{labels.when}</legend>
-      <label className={`inline-flex items-center gap-2 ${meetingDayStarted ? "" : "opacity-50"}`}>
+      <label className={`inline-flex min-h-11 items-center gap-2 ${meetingDayStarted ? "" : "opacity-50"}`}>
         <input
           checked={!timed}
           disabled={!meetingDayStarted}
@@ -72,7 +72,7 @@ export function CloseWhenFields({
       {meetingDayStarted ? null : (
         <span className="-mt-1 ml-6 text-xs text-[var(--muted)]">{labels.nowLater}</span>
       )}
-      <label className="inline-flex items-center gap-2">
+      <label className="inline-flex min-h-11 items-center gap-2">
         <input checked={timed} name="when" onChange={() => setWhen("at")} type="radio" value="at" />
         {labels.at}
       </label>

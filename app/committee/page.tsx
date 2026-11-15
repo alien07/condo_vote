@@ -74,7 +74,6 @@ export default async function CommitteePage() {
             <span className="rounded-full bg-[var(--primary)] px-2 py-0.5 text-xs font-semibold text-[var(--primary-foreground)]">
               {t.required}
             </span>
-            <span className="text-sm text-[var(--muted)]">{fill(t.pendingCount, { count: pendingCount })}</span>
           </div>
           <p className="mt-1 text-sm text-[var(--muted)]">{t.stepResultsText}</p>
         </div>
@@ -111,7 +110,6 @@ export default async function CommitteePage() {
             <span className="rounded-full border border-[var(--border)] px-2 py-0.5 text-xs font-semibold text-[var(--muted)]">
               {t.optional}
             </span>
-            <span className="text-sm text-[var(--muted)]">{fill(t.openCount, { count: openCount })}</span>
           </div>
           <p className="mt-1 text-sm text-[var(--muted)]">{t.stepCloseText}</p>
         </div>

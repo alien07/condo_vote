@@ -2,7 +2,7 @@
 const en = {
   title: "Committee",
   intro:
-    "Close voting early when needed, and approve results. Each meeting sets how many approvals are needed.",
+    "Approve results, and close voting early when needed. Each meeting sets how many approvals are needed.",
   votingOpen: "Voting Open",
   noOpen: "No meeting is open for voting.",
   closesAuto: "Closes automatically {time}",
@@ -117,6 +117,10 @@ const en = {
   lastRequest: "Last request: {status}",
   lastRequestBy: "Proposed by {name}",
   approvedBy: "Approved by: {names}",
+  showAgendaTables: "Show the result tables ({count} items)",
+  hideAgendaTables: "Hide the tables",
+  answeredCorrections: "Answered correction requests ({count})",
+  addNote: "+ Add a note (optional)",
   // Database refusals shown in the reader's language (code -> text).
   errors: {
     RESULT_CLOSE_TIME: "The close time must be on the meeting day, later than now, and before the normal close time.",
@@ -181,7 +185,7 @@ const en = {
 
 const th: typeof en = {
   title: "คณะกรรมการ",
-  intro: "ปิดลงคะแนนก่อนเวลาเมื่อจำเป็น และอนุมัติผลการลงมติ แต่ละการประชุมกำหนดจำนวนผู้อนุมัติที่ต้องการเอง",
+  intro: "อนุมัติผลการลงมติ และปิดลงคะแนนก่อนเวลาเมื่อจำเป็น แต่ละการประชุมกำหนดจำนวนผู้อนุมัติที่ต้องการเอง",
   votingOpen: "กำลังเปิดลงคะแนน",
   noOpen: "ไม่มีการประชุมที่เปิดลงคะแนนอยู่",
   closesAuto: "ปิดอัตโนมัติ {time}",
@@ -288,6 +292,10 @@ const th: typeof en = {
   lastRequest: "คำขอล่าสุด: {status}",
   lastRequestBy: "เสนอโดย {name}",
   approvedBy: "อนุมัติแล้ว: {names}",
+  showAgendaTables: "ดูตารางผลรายวาระ ({count} วาระ)",
+  hideAgendaTables: "ซ่อนตาราง",
+  answeredCorrections: "คำขอแก้ไขที่ตอบแล้ว ({count})",
+  addNote: "+ เพิ่มหมายเหตุ (ไม่บังคับ)",
   errors: {
     RESULT_CLOSE_TIME: "เวลาปิดต้องอยู่ในวันประชุม หลังเวลาปัจจุบัน และก่อนเวลาปิดปกติ",
     RESULT_CLOSE_BEFORE_MEETING_DAY: "ก่อนถึงวันประชุม ให้ระบุเวลาปิดที่อยู่ในวันประชุม",

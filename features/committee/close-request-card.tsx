@@ -59,7 +59,7 @@ export function CloseRequestCard({
       data-meeting-id={meeting.id}
     >
       <div>
-        <div className="font-medium">{title}</div>
+        <h3 className="font-semibold">{title}</h3>
         <div className="text-sm text-[var(--muted)]">
           {fill(t.closesAuto, { time: formatDateTime(meeting.ends_at) })}
         </div>

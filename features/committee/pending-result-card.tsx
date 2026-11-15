@@ -1,26 +1,16 @@
 import { LongText } from "@/features/ui/long-text";
-import { CountedText } from "@/features/committee/counted-text";
-import { ConfirmSubmitButton } from "@/features/admin/components/form-controls";
-import { RequiredMark } from "@/features/admin/components/field-label";
 import { ApproverList } from "@/features/committee/approver-list";
 import { changedAgendaItems } from "@/features/committee/changed-items";
-import { ActionRow, ActionRowCancel } from "@/features/ui/action-row";
-import {
-  approveResultAsCommittee,
-  requestCorrectionAsCommittee,
-} from "@/features/committee/actions";
+import { ResultActions } from "@/features/committee/result-actions";
+import { ResultAgenda, type AgendaQuestion } from "@/features/committee/result-agenda";
+import { ResultCorrections } from "@/features/committee/result-corrections";
 import type { CommitteeOverview } from "@/features/results/committee-service";
-import { ChoiceResultsTable, type ChoiceResult } from "@/features/results/choice-results-table";
-import {
-  QuestionOutcomeLine,
-  type QuestionOutcomePayload,
-} from "@/features/results/question-outcome";
 import { quorumText } from "@/features/results/thai-labels";
 import { Term } from "@/features/glossary/term";
 import { localized } from "@/lib/i18n/content";
 import type { Locale } from "@/lib/i18n/locales";
 import type { StaffDictionary } from "@/lib/i18n/staff";
-import { codeLabel, fill } from "@/lib/i18n/template";
+import { fill } from "@/lib/i18n/template";
 
 type PendingResult = CommitteeOverview["pending_results"][number];
 
@@ -30,20 +20,9 @@ type PendingPayload = {
     eligible_voters?: number;
     submitted_ballots?: number;
   };
-  questions?: (QuestionOutcomePayload & {
-    pass_rule?: { basis?: string } | null;
-    agenda_no?: string | null;
-    agenda_title?: string | null;
-    agenda_title_en?: string | null;
-    text?: string;
-    text_en?: string | null;
-    choices?: ChoiceResult[];
-  })[];
+  questions?: AgendaQuestion[];
 };
 
-const CATEGORIES = ["wording", "room_data", "voting_rights", "paper_ballot", "pass_rule", "other"];
-const input =
-  "min-h-11 w-full rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm font-normal";
 
 /** A result waiting for approval: counts, who approved, corrections, and the
  * approve and correction forms (demo feedback items 11 and 12). */
@@ -86,7 +65,7 @@ export function PendingResultCard({
 
   return (
     <section
-      className="rounded-md border border-[var(--border)] p-4"
+      className="grid gap-3 rounded-md border border-[var(--border)] p-4 [&>*]:min-w-0"
       data-result-snapshot-id={result.snapshot_id}
     >
       <div className="flex flex-wrap items-center gap-2">
@@ -138,224 +117,68 @@ export function PendingResultCard({
           {waitingFor.map((member) => member.name).join(", ")}
         </p>
       ) : null}
-      {openHigh ? <p className="mt-1 text-sm font-medium text-[var(--danger)]">{t.allMembersNeeded}</p> : null}
+      {openHigh ? <p className="text-sm font-medium text-[var(--danger)]">{t.allMembersNeeded}</p> : null}
       {held ? (
-        <p className="mt-2 rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-900" data-publish-held>
+        <p className="rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-900" data-publish-held>
           {t.publishHeld}
         </p>
       ) : null}
 
+      {/* Summary numbers first; they are what members check. */}
+      <div className="grid gap-0.5 text-sm" data-result-totals>
+        {payload.totals?.submitted_ballots !== undefined ? (
+          <p>
+            <Term k="ballotsCounted" locale={locale}>
+              {fill(t.ballotsCounted, {
+                count: payload.totals.submitted_ballots,
+                eligible: payload.totals.eligible_voters ?? 0,
+              })}
+            </Term>
+          </p>
+        ) : null}
+        {payload.totals?.quorum?.label ? (
+          <p>
+            <Term k="quorum" locale={locale}>{t.quorum}</Term>:{" "}
+            <span className="font-medium">
+              {payload.totals.quorum.required_percent === undefined
+                ? `${payload.totals.quorum.label}: ${
+                    payload.totals.quorum.met === null
+                      ? t.notEvaluated
+                      : payload.totals.quorum.met
+                        ? t.met
+                        : t.notMet
+                  }`
+                : quorumText(locale, payload.totals.quorum)}
+            </span>
+          </p>
+        ) : null}
+      </div>
+
+      <ResultAgenda locale={locale} questions={payload.questions} snapshotId={result.snapshot_id} t={t} />
+
       {regeneratedAfter ? (
-        <p className="mt-2 rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-900" data-regenerated>
+        <div className="rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-900" data-regenerated>
           <span className="block font-medium">
             {changed && changed.length > 0
               ? `${t.labelRegenerated} · ${fill(t.changedAgenda, { items: changed.join(", ") })}`
               : `${t.labelRegenerated} · ${t.numbersUnchanged}`}
           </span>
           <LongText less={t.showLess} lines={2} more={t.showMore} text={regeneratedAfter.reason} />
-        </p>
-      ) : null}
-
-      {result.corrections.length > 0 ? (
-        <div className="mt-3 grid gap-2 text-sm" data-corrections>
-          <div className="font-medium">{t.correctionsTitle}</div>
-          {result.corrections.map((correction) => (
-            <div
-              className={`rounded-md border px-3 py-2 ${
-                correction.level === "high" ? "border-[var(--danger)]" : "border-[var(--border)]"
-              }`}
-              key={correction.id}
-            >
-              <div className="font-medium">
-                {codeLabel(t.categories, correction.category)} ·{" "}
-                {fill(t.correctionLevel, { level: codeLabel(t.levels, correction.level) })} ·{" "}
-                {codeLabel(t.correctionStatus, correction.status)}
-              </div>
-              <div className="text-[var(--muted)]">
-                {fill(t.correctionBy, {
-                  name: correction.requester ?? "-",
-                  time: formatDateTime(correction.created_at),
-                })}
-              </div>
-              <div className="mt-1 grid gap-1">
-                <LongText label={t.labelReason} less={t.showLess} more={t.showMore} text={correction.reason} />
-                {correction.legal_reference ? (
-                  <LongText label={t.labelReference} less={t.showLess} lines={2} more={t.showMore} text={correction.legal_reference} />
-                ) : null}
-                {correction.level_change_reason ? (
-                  <LongText label={t.labelLevelRaised} less={t.showLess} lines={2} more={t.showMore} text={correction.level_change_reason} />
-                ) : null}
-                {correction.answer ? (
-                  <LongText label={t.labelAnswer} less={t.showLess} more={t.showMore} text={correction.answer} />
-                ) : null}
-              </div>
-            </div>
-          ))}
         </div>
       ) : null}
 
-      {payload.totals?.submitted_ballots !== undefined ? (
-        <p className="mt-3 text-sm">
-          <Term k="ballotsCounted" locale={locale}>
-            {fill(t.ballotsCounted, {
-              count: payload.totals.submitted_ballots,
-              eligible: payload.totals.eligible_voters ?? 0,
-            })}
-          </Term>
-        </p>
-      ) : null}
-      {payload.totals?.quorum?.label ? (
-        <p className="text-sm">
-          <Term k="quorum" locale={locale}>{t.quorum}</Term>:{" "}
-          <span className="font-medium">
-            {payload.totals.quorum.required_percent === undefined
-              ? `${payload.totals.quorum.label}: ${
-                  payload.totals.quorum.met === null
-                    ? t.notEvaluated
-                    : payload.totals.quorum.met
-                      ? t.met
-                      : t.notMet
-                }`
-              : quorumText(locale, payload.totals.quorum)}
-          </span>
-        </p>
-      ) : null}
+      <ResultCorrections corrections={result.corrections} formatDateTime={formatDateTime} t={t} />
 
-      <div className="mt-4 grid gap-4">
-        {payload.questions?.length ? (
-          payload.questions.map((source, index) => {
-            const question = {
-              ...source,
-              choices: source.choices?.map((choice) => ({
-                ...choice,
-                // Snapshots since 0032 carry text_en next to text.
-                text:
-                  localized(locale, choice.text, (choice as { text_en?: string | null }).text_en) ??
-                  undefined,
-              })),
-            };
-
-            return (
-            <div
-              className="border-t border-[var(--border)] pt-3 text-sm"
-              key={`${result.snapshot_id}-${index}`}
-            >
-              <div className="font-medium">
-                {question.agenda_no
-                  ? fill(t.agenda, { no: question.agenda_no })
-                  : fill(t.item, { no: index + 1 })}
-                {" · "}
-                {localized(locale, question.agenda_title, question.agenda_title_en) ??
-                  localized(locale, question.text, question.text_en) ??
-                  "-"}
-              </div>
-              <QuestionOutcomeLine locale={locale} question={question} />
-              <ChoiceResultsTable
-                choices={question.choices}
-                locale={locale}
-                ruleBasis={question.pass_rule?.basis}
-              />
-            </div>
-            );
-          })
-        ) : (
-          <p className="text-sm text-[var(--muted)]">{t.noItems}</p>
-        )}
-      </div>
-
-      {/* Actions. Someone who approved has none left: the badge at the top
-          already says so (no second "you approved" line here). */}
+      {/* Someone who approved has nothing left to do here: the badge at the
+          top says so. */}
       {result.approved_by_me ? null : (
-      <div className="mt-4 grid gap-3 border-t border-[var(--border)] pt-4">
-        {/* The optional note belongs to the approve form (form attribute), so
-            approve and "request a correction" can sit in one row of buttons
-            (review 2026-11-15). */}
-        <label className="grid gap-1 text-sm font-medium sm:max-w-md">
-          {t.notes}
-          <CountedText className={input} form={`approve-${result.snapshot_id}`} maxLength={500} name="notes" />
-        </label>
-        {(() => {
-          const approveForm = (
-            <form action={approveResultAsCommittee} id={`approve-${result.snapshot_id}`}>
-              <input name="result_snapshot_id" type="hidden" value={result.snapshot_id} />
-              <ConfirmSubmitButton
-                className="min-h-11 rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)]"
-                confirmMessage={fill(t.confirmApprove, {
-                  title,
-                  required: result.required_approvals,
-                })}
-                pendingLabel={t.approving}
-              >
-                {t.approveResult}
-              </ConfirmSubmitButton>
-            </form>
-          );
-
-          if (!canRequestCorrection) {
-            return <div className="flex flex-wrap gap-2">{approveForm}</div>;
-          }
-
-          // The correction form opens below the row; the buttons stay put.
-          return (
-            <ActionRow
-              actions={approveForm}
-              data-correction-form
-              panel={
-                <form action={requestCorrectionAsCommittee} className="grid gap-3 text-sm">
-                  <input name="result_snapshot_id" type="hidden" value={result.snapshot_id} />
-                  <label className="grid gap-1 font-medium">
-                    <span>
-                      {t.correctionCategory} <RequiredMark />
-                    </span>
-                    <select className={input} defaultValue="" name="category" required>
-                      <option disabled value="">
-                        -
-                      </option>
-                      {CATEGORIES.map((category) => (
-                        <option key={category} value={category}>
-                          {t.categories[category]}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <label className="grid gap-1 font-medium">
-                    <span>
-                      {t.correctionReason} <RequiredMark />
-                    </span>
-                    <CountedText className={input} maxLength={500} multiline name="reason" required />
-                  </label>
-                  <label className="grid gap-1 font-medium">
-                    {t.correctionReference}
-                    <CountedText className={input} maxLength={200} name="legal_reference" />
-                  </label>
-                  <div className="flex flex-wrap justify-end gap-2">
-                    <ActionRowCancel
-                      className="min-h-11 rounded-md border border-[var(--border)] bg-[var(--surface)] px-4 py-2 text-sm font-medium"
-                      label={t.cancel}
-                    />
-                    <ConfirmSubmitButton
-                      className="min-h-11 rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)]"
-                      confirmMessage={fill(t.confirmCorrection, { title })}
-                      pendingLabel={t.saving}
-                      tone="primary"
-                    >
-                      {t.sendCorrection}
-                    </ConfirmSubmitButton>
-                  </div>
-                </form>
-              }
-              toggleClassName="inline-flex min-h-11 items-center rounded-md border border-[var(--border)] bg-[var(--surface)] px-4 py-2 text-sm font-medium"
-              toggleLabel={t.requestCorrection}
-            />
-          );
-        })()}
-
-        {openCorrection ? (
-          <p className="text-sm text-[var(--muted)]" data-correction-waiting>
-            {t.correctionWaiting}
-          </p>
-        ) : null}
-      </div>
+        <ResultActions
+          canRequestCorrection={canRequestCorrection}
+          openCorrection={openCorrection}
+          result={result}
+          t={t}
+          title={title}
+        />
       )}
     </section>
   );
