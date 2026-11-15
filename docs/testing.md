@@ -188,7 +188,7 @@ Test tags:
 
 1. Done (2026-11-15): `admin-demo.spec.ts` split by flow into
    `tests/e2e/admin/` (issue #4). The admin lifecycle test stays as one
-   `@full` test.
+   `@full` test; its steps are in `tests/e2e/admin/lifecycle/`.
 2. Add Vitest, starting with result calculation and pass rules (D013).
 3. Expand Playwright coverage for closed-meeting summary redirects.
 4. Add database smoke checks for RLS policy coverage.

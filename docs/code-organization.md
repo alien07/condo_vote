@@ -88,11 +88,18 @@ Split on 2026-11-15 (no behaviour change; old import paths still work):
 - `tests/e2e/admin-demo.spec.ts` -> `tests/e2e/admin/`, one spec per flow,
   numbered to keep the old run order.
 
+- `scripts/seed-demo.mjs` -> `scripts/demo-seed/` (context, people,
+  meeting-builder, meetings, results, emails). Each file imports the one
+  before it, so the steps run in the same order.
+- `tests/e2e/admin/01-lifecycle.spec.ts`: still one `@full` test, but its
+  steps live in `tests/e2e/admin/lifecycle/`, one file per feature; values
+  a later step needs are passed in a typed context object.
+
 Still large, accepted for now:
 - `components/ownership-manager.tsx` (about 600 lines): one component;
   splitting further means changing its state handling, not just moving code.
-- `tests/e2e/admin/01-lifecycle.spec.ts` (about 1,000 lines): one `@full`
-  end-to-end test, kept whole on purpose (docs/testing.md).
+- `lib/supabase/database.types.ts` is generated (`npm run types:supabase`);
+  migrations are applied history. Neither is split by hand.
 
 Between 400 and 600 lines (split when next changed): `sections/people/rooms-panel.tsx`,
 `sections/people/owners-panel.tsx`, `sections/people/profiles-panel.tsx`,
