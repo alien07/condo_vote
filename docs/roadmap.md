@@ -75,6 +75,10 @@
     audit, secret ballots stay secret. Allowed until a result is generated
     (after that, use a high-level correction). "Copy as a new draft" to
     hold the meeting again.
+- Dark mode (UI review 2026-11-15; decide whether to do it in V2). Pages
+  use about 250 fixed Tailwind colors (amber, red, green and so on) that
+  would need theme tokens first. Print and PDF output must stay light.
+  Admin pages wait for the admin review.
 
 ## Later
 - Direct private document upload adapters and Google Drive API synchronization after credential and sharing policy approval.
