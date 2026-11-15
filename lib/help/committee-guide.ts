@@ -39,14 +39,14 @@ export const committeeGuide: Record<Locale, HelpGuide> = {
       {
         id: "check-result",
         title: "ตรวจผลก่อนอนุมัติ",
-        body: "หลังปิดลงคะแนน ผู้ดูแลสร้างผล แล้วผลจะแสดงใน \"1. อนุมัติผล\" ตรวจจำนวนบัตรที่นับเทียบกับห้องที่มีสิทธิ์ องค์ประชุม และผลกับเกณฑ์ของแต่ละวาระ กดปุ่ม \"i\" ข้างจำนวนการอนุมัติเพื่อดูว่าใครอนุมัติแล้ว",
+        body: "หลังปิดลงคะแนน ผู้ดูแลสร้างผล แล้วผลจะแสดงใน \"1. อนุมัติผล\" การ์ดบอกว่าใครอนุมัติแล้วและใครยังไม่อนุมัติ ตรวจจำนวนบัตรที่นับเทียบกับห้องที่มีสิทธิ์ และองค์ประชุม แต่ละวาระแสดงมติเป็นบรรทัดเดียว กด \"ดูตารางผลรายวาระ\" เพื่อดูคะแนนของทุกตัวเลือกเทียบกับเกณฑ์",
         tip: "การอนุมัติหมายถึง \"ตัวเลขถูกต้อง\" ไม่ใช่ \"เห็นด้วยกับผล\" วาระที่ไม่ผ่านมติก็เป็นผลที่ถูกต้อง",
         image: "committee-result",
       },
       {
         id: "approve",
         title: "อนุมัติผล",
-        body: "ถ้าตัวเลขถูกต้อง ใส่หมายเหตุได้ (ไม่บังคับ) กด \"อนุมัติผล\" แล้วกด \"ยืนยัน\" การ์ดจะแสดง \"ท่านอนุมัติแล้ว\" เมื่อกรรมการอนุมัติครบตามจำนวนที่กำหนด ระบบประกาศผล ส่งอีเมลแจ้งเจ้าของห้อง และสร้างไฟล์ PDF",
+        body: "ถ้าตัวเลขถูกต้อง กด \"+ เพิ่มหมายเหตุ\" ถ้าต้องการ (ไม่บังคับ) แล้วกด \"อนุมัติผล\" แล้วกด \"ยืนยัน\" การ์ดจะแสดง \"ท่านอนุมัติแล้ว\" เมื่อกรรมการอนุมัติครบตามจำนวนที่กำหนด ระบบประกาศผล ส่งอีเมลแจ้งเจ้าของห้อง และสร้างไฟล์ PDF",
         tip: "ยกเลิกการอนุมัติไม่ได้ ผู้ที่สร้างผลหรือแก้ข้อมูลของผลนั้นอนุมัติผลนั้นเองไม่ได้",
       },
       {
@@ -130,14 +130,14 @@ export const committeeGuide: Record<Locale, HelpGuide> = {
       {
         id: "check-result",
         title: "Check a result before approving",
-        body: "After voting closes, the admin generates the result, and it appears under \"1. Approve results\". Check the ballots counted against the eligible rooms, the quorum, and each agenda result against its pass rule. Tap the \"i\" next to the approval count to see who has approved.",
+        body: "After voting closes, the admin generates the result, and it appears under \"1. Approve results\". The card shows who has approved and who has not. Check the ballots counted against the eligible rooms, and the quorum. Each agenda item shows its outcome in one line; tap \"Show the result tables\" to see every choice against the pass rule.",
         tip: "Approving means \"the numbers are correct\", not \"we agree with the outcome\". An agenda item that does not pass is a valid result.",
         image: "committee-result",
       },
       {
         id: "approve",
         title: "Approve the result",
-        body: "If the numbers are correct, add a note if you like (optional), tap \"Approve result\", then \"Confirm\". The card shows \"You approved\". When enough members approve, the result is published, owners are emailed, and the PDF files are made.",
+        body: "If the numbers are correct, tap \"+ Add a note\" if you like (optional), then \"Approve result\", then \"Confirm\". The card shows \"You approved\". When enough members approve, the result is published, owners are emailed, and the PDF files are made.",
         tip: "An approval cannot be taken back. Whoever generated a result, or corrected its data, cannot approve it.",
       },
       {
