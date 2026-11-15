@@ -1,0 +1,235 @@
+// People, rooms, owners, ownership links, juristic person, PDPA consent.
+
+import {
+  args,
+  en,
+  db,
+  DAY,
+  at,
+  dateOnly,
+  must,
+  ensureAuthUser,
+  upsertProfile,
+  grantRoles,
+  DEMO_PERSONAS,
+  DEMO_SYSTEM_ADMIN,
+} from "./context.mjs";
+
+// ---------------------------------------------------------------- people
+
+console.log("[demo:seed] people ...");
+
+export const personaProfile = {};
+export const personaEmail = Object.fromEntries(DEMO_PERSONAS.map((p) => [p.key, p.email]));
+
+for (const persona of DEMO_PERSONAS) {
+  if (!persona.seeded) {
+    // Fresh each time: the first sign-in creates a pending profile.
+    await must(db.from("profiles").delete().ilike("email", persona.email), "new user reset");
+    continue;
+  }
+
+  const user = await ensureAuthUser(persona.email, persona.fullName);
+  personaProfile[persona.key] = await upsertProfile({
+    email: persona.email,
+    fullName: persona.fullName,
+    defaultStatus: persona.defaultStatus,
+    language: persona.language,
+    authUserId: user.id,
+  });
+  await grantRoles(personaProfile[persona.key], persona.roles);
+}
+
+// The system admin signs in with real Google; Supabase links the Google
+// identity to this user by its verified email. A name from an earlier
+// Google sign-in is kept.
+export const sysUser = await ensureAuthUser(DEMO_SYSTEM_ADMIN.email, DEMO_SYSTEM_ADMIN.fullName);
+export const sysProfile = await upsertProfile({
+  email: DEMO_SYSTEM_ADMIN.email,
+  defaultStatus: "resident",
+  language: "th",
+  authUserId: sysUser.id,
+});
+await grantRoles(sysProfile, [...DEMO_SYSTEM_ADMIN.roles]);
+
+export const OWNER_A = personaEmail.ownerA;
+export const OWNER_B = personaEmail.ownerB;
+
+// 20 rooms, 100% ownership in total: [room, ownership %, owner email].
+export const ROOMS = [
+  ["A-101", 5.5, OWNER_A],
+  ["A-102", 4.5, OWNER_A],
+  ["A-103", 5.0, "proxy.giver.a103@example.test"],
+  ["A-104", 4.0, "voter.a104@example.test"],
+  ["A-105", 4.5, "proxy.pending.a105@example.test"],
+  ["A-106", 5.0, "proxy.pending.a106@example.test"],
+  ["A-107", 4.5, "proxy.limit.a107@example.test"],
+  ["A-108", 5.5, "voter.a108@example.test"],
+  ["A-109", 4.0, "voter.a109@example.test"],
+  ["A-110", 6.0, "voter.a110@example.test"],
+  ["A-201", 6.0, OWNER_B],
+  ["A-202", 5.0, "voter.a202@example.test"],
+  ["A-203", 4.5, "voter.a203@example.test"],
+  ["A-204", 5.5, "voter.a204@example.test"],
+  ["A-205", 4.0, "voter.a205@example.test"],
+  ["A-206", 5.5, "voter.a206@example.test"],
+  ["A-207", 4.5, "voter.a207@example.test"],
+  ["A-208", 5.0, "voter.a208@example.test"],
+  ["A-209", 6.0, "voter.a209@example.test"],
+  ["A-210", 5.5, "voter.a210@example.test"],
+];
+export const roomRow = (number) => ROOMS.find(([n]) => n === number);
+
+export const OWNER_NAMES = {
+  [OWNER_A]: DEMO_PERSONAS.find((p) => p.key === "ownerA").fullName,
+  [OWNER_B]: DEMO_PERSONAS.find((p) => p.key === "ownerB").fullName,
+  "proxy.giver.a103@example.test": "A-103 · มอบฉันทะให้ Owner A (approved)",
+  "proxy.pending.a105@example.test": "A-105 · มอบฉันทะให้ Owner A (pending)",
+  "proxy.pending.a106@example.test": "A-106 · มอบฉันทะให้ Owner A (pending)",
+  "proxy.limit.a107@example.test": "A-107 · ทดสอบมอบฉันทะเกิน 3 ห้อง",
+};
+export const ENGLISH_OWNERS = new Set([OWNER_B, "voter.a204@example.test"]);
+
+export const roomId = {};
+export const ownerId = {};
+export const profileByEmail = { [OWNER_A]: personaProfile.ownerA, [OWNER_B]: personaProfile.ownerB };
+
+for (const [number, percent] of ROOMS) {
+  const room = await must(
+    db
+      .from("rooms")
+      .upsert(
+        {
+          room_number: number,
+          ownership_percent: percent,
+          building: "DEMO-A",
+          floor: number.slice(2, 3),
+          area_size: 30 + percent * 5,
+          active: true,
+        },
+        { onConflict: "room_number" },
+      )
+      .select("id")
+      .single(),
+    `room ${number}`,
+  );
+  roomId[number] = room.id;
+}
+
+export async function ensureOwner(email, fullName, phone = null) {
+  const found = await must(db.from("owners").select("id").eq("email", email).limit(1), `owner ${email}`);
+
+  if (found[0]) {
+    ownerId[email] = found[0].id;
+    return;
+  }
+
+  const created = await must(
+    db.from("owners").insert({ email, full_name: fullName, phone, active: true }).select("id").single(),
+    `owner ${email}`,
+  );
+  ownerId[email] = created.id;
+}
+
+for (const [number, , email] of ROOMS) {
+  const fullName = OWNER_NAMES[email] ?? `Voter ${number}`;
+  await ensureOwner(email, fullName, `0810${number.replace("-", "")}`);
+
+  if (!profileByEmail[email]) {
+    // Synthetic voters: approved owner profiles without a sign-in.
+    profileByEmail[email] = await upsertProfile({
+      email,
+      fullName,
+      defaultStatus: "owner",
+      language: ENGLISH_OWNERS.has(email) ? "en" : "th",
+    });
+  }
+}
+
+// Ownership link states: ended (A-209), scheduled (A-210), cancelled (A-208).
+await ensureOwner("seller.ended.a209@example.test", "A-209 · เจ้าของเดิม (ended)");
+await ensureOwner("buyer.scheduled.a210@example.test", "A-210 · ผู้ซื้อ (scheduled)");
+await ensureOwner("buyer.cancelled.a208@example.test", "A-208 · ผู้ซื้อ (cancelled)");
+
+export const links = [];
+
+for (const [number, , email] of ROOMS) {
+  if (number === "A-209") {
+    links.push({ room: number, owner: "seller.ended.a209@example.test", starts_at: dateOnly(-700 * DAY), ends_at: dateOnly(-40 * DAY), status: "ended" });
+    links.push({ room: number, owner: email, starts_at: dateOnly(-39 * DAY), ends_at: null, status: "active" });
+  } else if (number === "A-210") {
+    links.push({ room: number, owner: email, starts_at: dateOnly(-500 * DAY), ends_at: dateOnly(30 * DAY), status: "active" });
+    links.push({ room: number, owner: "buyer.scheduled.a210@example.test", starts_at: dateOnly(31 * DAY), ends_at: null, status: "scheduled" });
+  } else if (number === "A-208") {
+    links.push({ room: number, owner: email, starts_at: dateOnly(-400 * DAY), ends_at: null, status: "active" });
+    links.push({ room: number, owner: "buyer.cancelled.a208@example.test", starts_at: dateOnly(60 * DAY), ends_at: null, status: "cancelled", cancelled_at: at(-2 * DAY), cancelled_by: personaProfile.admin });
+  } else {
+    links.push({ room: number, owner: email, starts_at: dateOnly(-365 * DAY), ends_at: null, status: "active" });
+  }
+}
+
+await must(
+  db.from("room_owners").insert(
+    links.map((link) => ({
+      room_id: roomId[link.room],
+      owner_id: ownerId[link.owner],
+      ownership_role: "owner",
+      starts_at: link.starts_at,
+      ends_at: link.ends_at,
+      status: link.status,
+      cancelled_at: link.cancelled_at ?? null,
+      cancelled_by: link.cancelled_by ?? null,
+    })),
+  ),
+  "room owners",
+);
+
+// Juristic person and committee members for the official record.
+export const condo = await must(db.from("condo_profiles").select("id").limit(1), "condo");
+
+if (condo.length === 0) {
+  await must(
+    db.from("condo_profiles").insert({
+      project_name: "DEMO Condo (ข้อมูลทดสอบ)",
+      juristic_name: "นิติบุคคลอาคารชุด เดโม่ คอนโด",
+      project_name_en: en("DEMO Condo (ข้อมูลทดสอบ)"),
+      juristic_name_en: en("นิติบุคคลอาคารชุด เดโม่ คอนโด"),
+      // Two-language documents on, so the English pages show English (6b).
+      bilingual_documents: true,
+      registration_no: "DEMO-0001",
+      tax_id: "0000000000000",
+      address: "99 ถนนทดสอบ แขวงตัวอย่าง เขตเดโม่ กรุงเทพฯ 10000",
+      manager_name: "ผู้จัดการ เดโม่",
+      email: "juristic@example.test",
+    }),
+    "condo profile",
+  );
+}
+
+await must(
+  db.from("committee_members").insert([
+    { full_name: DEMO_PERSONAS.find((p) => p.key === "committee").fullName, position_title: "ประธานกรรมการ", profile_id: personaProfile.committee, display_order: 1, active: true },
+    { full_name: DEMO_SYSTEM_ADMIN.fullName, position_title: "กรรมการ", profile_id: sysProfile, display_order: 2, active: true },
+  ]),
+  "committee members",
+);
+
+// PDPA consent: seeded personas have accepted the current notice. The new
+// user has no profile, so it sees the notice when consent is required.
+export const privacy = await must(db.from("privacy_settings").select("notice_version").single(), "privacy");
+await must(
+  db.from("profile_consents").insert(
+    [...Object.values(personaProfile), sysProfile].map((profileId) => ({
+      profile_id: profileId,
+      notice_version: privacy.notice_version,
+    })),
+  ),
+  "consents",
+);
+
+if (args.has("--consent")) {
+  await must(
+    db.from("privacy_settings").update({ consent_required: true }).eq("id", true),
+    "consent required",
+  );
+}

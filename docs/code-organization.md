@@ -77,14 +77,29 @@ features/admin/
    Admin tables are brought in line during the admin review.
 
 ## Backlog
-These files are over the limit and should be split by sub-feature
-(roadmap Phase 4):
-- `features/admin/action-modules/people.ts` (about 1,340 lines)
-- `features/admin/components/ownership-manager.tsx` (about 1,110 lines)
-- `features/admin/action-modules/voting.ts` (about 925 lines)
-- `features/admin/action-modules/meetings.ts` (about 730 lines)
-- `features/admin/components/vote-conflicts-table.tsx` (about 710 lines)
-- `tests/e2e/admin-demo.spec.ts` (about 3,450 lines): split by admin flow
+Split on 2026-11-15 (no behaviour change; old import paths still work):
+- `action-modules/people.ts` -> `people/` (helpers, rooms, owners,
+  ownership, access); `meetings.ts` -> `meetings/` (helpers,
+  meeting-actions, question-actions); `voting.ts` -> `voting/` (helpers,
+  proxies, manual-votes, conflicts). The old files are re-export barrels.
+- `components/ownership-manager.tsx` -> `ownership/` (helpers, drawers,
+  row); `components/vote-conflicts-table.tsx` -> `vote-conflicts/`
+  (helpers, resolve form).
+- `tests/e2e/admin-demo.spec.ts` -> `tests/e2e/admin/`, one spec per flow,
+  numbered to keep the old run order.
+
+- `scripts/seed-demo.mjs` -> `scripts/demo-seed/` (context, people,
+  meeting-builder, meetings, results, emails). Each file imports the one
+  before it, so the steps run in the same order.
+- `tests/e2e/admin/01-lifecycle.spec.ts`: still one `@full` test, but its
+  steps live in `tests/e2e/admin/lifecycle/`, one file per feature; values
+  a later step needs are passed in a typed context object.
+
+Still large, accepted for now:
+- `components/ownership-manager.tsx` (about 600 lines): one component;
+  splitting further means changing its state handling, not just moving code.
+- `lib/supabase/database.types.ts` is generated (`npm run types:supabase`);
+  migrations are applied history. Neither is split by hand.
 
 Between 400 and 600 lines (split when next changed): `sections/people/rooms-panel.tsx`,
 `sections/people/owners-panel.tsx`, `sections/people/profiles-panel.tsx`,
