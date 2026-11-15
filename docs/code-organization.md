@@ -65,6 +65,16 @@ features/admin/
    browser APIs. Keep sections as server components when they can be.
 6. **Refactors keep behavior.** A move-only refactor must not change UI text,
    markup, or data flow. Verify with lint, typecheck, build, and e2e.
+7. **One standard for controls (review 2026-11-15).**
+   - Every control has a tap area of at least 44 x 44 px: `min-h-11` on
+     buttons and fields, or the `tap-target` class (app/globals.css) on
+     controls drawn smaller, such as the "i" button.
+   - Typed text (reasons, notes, answers) is shown with `LongText`
+     (features/ui/long-text.tsx) and typed into `CountedText` with a limit.
+   - A choice between actions is one row of buttons of similar weight; a
+     form that one of them needs opens below the row, and ends with
+     [Cancel] [Send ...] on the right.
+   Admin tables are brought in line during the admin review.
 
 ## Backlog
 These files are over the limit and should be split by sub-feature

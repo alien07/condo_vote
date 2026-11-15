@@ -49,6 +49,9 @@ $env:ENABLE_LOCAL_AUTH_BYPASS="1"; npm run start
 | M8 | Published · full meeting record (notice, identity method, 1 incident) · Q1 decided, Q2 not decided | F3 |
 | M9 | Second meeting (reconvened) · no quorum required · published | — |
 | M10 | Last year · archived | — |
+| M11 | Result generated · nobody approved (0/2) | Committee: approve or request a correction |
+| M12 | Result generated · correction open (System Admin, medium) · needs 1 | Committee approves → 1/1 but held; Admin answers "No change needed" in Admin > Results → published |
+| M13 | Generated again after a wording correction (fixed) · 0/2 | Card says "generated again", numbers unchanged; Demo Committee was asked to review again |
 
 ### Checkpoint 0
 1. Log in as **Demo Admin** → Admin › Results → in row **DEMO M8**, click **Create PDF files (0/3)**

@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { BarChart3, CheckSquare, Gavel, ScrollText, Settings, Wrench } from "lucide-react";
+import { BarChart3, CheckSquare, Stamp, ScrollText, Settings, Wrench } from "lucide-react";
 import { TrackedLink } from "@/features/debug/tracked-link";
 
 type NavLabels = {
@@ -42,7 +42,7 @@ const navItems = [
   {
     href: "/committee",
     key: "committee",
-    icon: Gavel,
+    icon: Stamp,
     adminOnly: false,
     committeeOnly: true,
   },

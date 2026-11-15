@@ -109,7 +109,7 @@ export function InfoTip({
         aria-describedby={open ? id : undefined}
         aria-expanded={pinned}
         aria-label={`${about}: ${term}`}
-        className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full align-middle text-[var(--muted)] hover:text-[var(--primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] print:hidden"
+        className="tap-target inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full align-middle text-[var(--muted)] hover:text-[var(--primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] print:hidden"
         onBlur={() => setHovered(false)}
         onClick={() => {
           // Hover or focus may have opened it already; a click pins it.

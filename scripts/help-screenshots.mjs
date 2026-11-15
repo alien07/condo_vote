@@ -15,7 +15,9 @@ import { createClient } from "@supabase/supabase-js";
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const appUrl = process.env.HELP_APP_URL ?? "http://localhost:3000";
 const host = new URL(appUrl).hostname;
-const LOCALES = ["th", "en"];
+// `--locale=en` shoots one language (less memory on small machines).
+const onlyLocale = process.argv.find((arg) => arg.startsWith("--locale="))?.split("=")[1];
+const LOCALES = onlyLocale ? [onlyLocale] : ["th", "en"];
 // Guide slug -> demo persona that may read it (null: signed out). Guides
 // are shown by role, so the committee guide needs a committee sign-in.
 const GUIDES = { owner: null, committee: "committee" };
@@ -200,11 +202,18 @@ async function shootLocale(locale, { m1, m8, room }) {
   // the seed, so the admin persona (who may also act here) is used.
   const reviewer = await newContext(locale);
   const pending = await signIn(reviewer, "admin", "/committee");
-  const result = pending.locator("[data-result-snapshot-id]").first();
+  // The first card that still offers a correction (some seed cases have one
+  // open already, which hides the form).
+  const result = pending
+    .locator("[data-result-snapshot-id]")
+    .filter({ has: pending.locator("[data-correction-form]") })
+    .first();
   await scrollToTop(result);
   await save(pending, locale, "committee-result");
 
-  await openDetails(result.locator("[data-correction-form]"));
+  // The correction form opens below the approve row (ActionRow).
+  await result.locator("[data-correction-form] button[aria-expanded]").click();
+  await scrollToTop(result.locator("[data-correction-form]"));
   await save(pending, locale, "committee-correction");
   await reviewer.close();
 }

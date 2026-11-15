@@ -901,6 +901,30 @@ await createMeeting({
   ),
 });
 
+// M11-M13: test cases for "1. Approve results" on the Committee page
+// (review 2026-11-15). Same voters as M7.
+const m7Voters = ["A-101", "A-103", "A-104", "A-106", "A-108", "A-110", "A-201", "A-202", "A-203", "A-204", "A-206", "A-207", "A-209", "A-210"];
+for (const [key, title, daysAgo, required] of [
+  // Nobody has approved: approve, or request a correction.
+  ["M11", "DEMO M11 · ออกผลแล้ว ยังไม่มีใครอนุมัติ (0/2)", 6, 2],
+  // An open correction request: approving counts, publishing waits (needs 1).
+  ["M12", "DEMO M12 · มีคำขอแก้ไขรอผู้ดูแลตอบ", 5, 1],
+  // Generated again after a wording correction: approvals start again.
+  ["M13", "DEMO M13 · สร้างผลใหม่หลังแก้ไข", 4, 2],
+]) {
+  await createMeeting({
+    key,
+    title,
+    meeting_type: "egm",
+    starts_at: at(-(daysAgo + 1) * DAY),
+    ends_at: at(-daysAgo * DAY),
+    status: "closed",
+    notice_sent_at: at(-(daysAgo + 15) * DAY),
+    required_approvals: required,
+    online: votes(m7Voters, at(-daysAgo * DAY - 5 * HOUR)),
+  });
+}
+
 // M8: published with the full meeting record. Q1 decided; Q2 needs 75% of
 // total ownership and is not decided.
 await createMeeting({
@@ -1044,6 +1068,52 @@ await approve(committeeSession, m8, "ตรวจแล้วถูกต้อ�
 await approve(sysSession, m8, "อนุมัติเผยแพร่");
 
 await must(db.from("meetings").update({ status: "archived" }).eq("id", meetingIds.M10), "archive M10");
+
+// Correction test cases (review 2026-11-15). The requester is the System
+// Admin (Google), so the Demo Committee can still act and the Demo Admin
+// can answer (nobody answers their own request).
+async function requestCorrection(snapshotId, category, reason) {
+  const result = await must(
+    sysSession.rpc("request_result_correction", {
+      p_result_snapshot_id: snapshotId,
+      p_category: category,
+      p_reason: reason,
+      p_legal_reference: null,
+    }),
+    "correction request",
+  );
+  return result.request_id;
+}
+
+// M11: nobody has approved yet.
+await generateResult(meetingIds.M11);
+
+// M12: a medium correction is open. Demo Committee's approval completes the
+// count (1 of 1) but the result waits; Demo Admin answers "No change needed"
+// in Admin > Results to publish it.
+const m12 = await generateResult(meetingIds.M12);
+await requestCorrection(m12, "room_data", "อัตราส่วนกรรมสิทธิ์ห้อง A-104 ไม่ตรงกับหนังสือรับรอง (ข้อมูลทดสอบ)");
+
+// M13: agenda 1 had a typo; after the correction the admin fixed the
+// wording and generated the result again, so approvals start from 0.
+const m13Agenda = await must(
+  db.from("meeting_questions").select("id, agenda_title").eq("meeting_id", meetingIds.M13).order("display_order").limit(1).single(),
+  "M13 agenda",
+);
+await must(db.from("meeting_questions").update({ agenda_title: "งบการเงน" }).eq("id", m13Agenda.id), "M13 typo");
+const m13Old = await generateResult(meetingIds.M13);
+await approve(committeeSession, m13Old, "ตรวจแล้ว");
+const m13Request = await requestCorrection(m13Old, "wording", "วาระที่ 1 ชื่อวาระพิมพ์ผิด: งบการเงน");
+await must(db.from("meeting_questions").update({ agenda_title: m13Agenda.agenda_title }).eq("id", m13Agenda.id), "M13 fix");
+await generateResult(meetingIds.M13);
+await must(
+  adminSession.rpc("answer_correction_request", {
+    p_request_id: m13Request,
+    p_status: "fixed",
+    p_answer: "แก้ชื่อวาระแล้ว และสร้างผลใหม่",
+  }),
+  "M13 answer",
+);
 
 // ---------------------------------------------------------------- emails, documents
 

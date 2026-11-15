@@ -43,7 +43,9 @@ export function ApproverList({
             {entry.name ?? "-"}
             {member?.position ? ` (${member.position})` : null}
             {` · ${formatTime(entry.at)}`}
-            {entry.note ? <span className="block opacity-90">“{entry.note}”</span> : null}
+            {entry.note ? (
+              <span className="line-clamp-3 block opacity-90 [overflow-wrap:anywhere]">“{entry.note}”</span>
+            ) : null}
           </span>
         );
       })}

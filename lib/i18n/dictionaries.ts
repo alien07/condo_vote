@@ -217,6 +217,9 @@ const en = {
     rooms: "Rooms",
     shareOfAll: "Of all ownership",
     shareOfCast: "Of votes cast",
+    // Short headers for phones (UI review 2026-11-15).
+    shareOfAllShort: "% all",
+    shareOfCastShort: "% cast",
     noVotes: "No votes were recorded for this item.",
     infoOnly: "For information, no pass rule",
     ruleMore: "More than",
@@ -459,6 +462,8 @@ const th: Dictionary = {
     rooms: "ห้อง",
     shareOfAll: "% ของทั้งอาคาร",
     shareOfCast: "% ของผู้ลงคะแนน",
+    shareOfAllShort: "% อาคาร",
+    shareOfCastShort: "% ผู้ลงคะแนน",
     noVotes: "ไม่มีการลงคะแนนในวาระนี้",
     infoOnly: "วาระแจ้งเพื่อทราบ ไม่มีเกณฑ์ผ่าน",
     ruleMore: "เกินกว่า",

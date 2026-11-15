@@ -1,7 +1,7 @@
 import { formatDateTimeIn } from "@/lib/i18n/format";
 import { getStaffI18n } from "@/lib/i18n/server";
 import { redirect } from "next/navigation";
-import { Gavel } from "lucide-react";
+import { Stamp } from "lucide-react";
 import { DENIED_PATH, requireProfileWithRoles } from "@/lib/auth/permissions";
 import { createClient } from "@/lib/supabase/server";
 import { getCommitteeOverview } from "@/features/results/committee-service";
@@ -34,7 +34,7 @@ export default async function CommitteePage() {
   return (
     <main className="mx-auto max-w-5xl px-6 py-8">
       <div className="mb-6 flex items-start gap-3 border-b border-[var(--border)] pb-5">
-        <Gavel className="mt-1 shrink-0 text-[var(--primary)]" size={26} />
+        <Stamp className="mt-1 shrink-0 text-[var(--primary)]" size={26} />
         <div>
           <h1 className="text-2xl font-semibold">{t.title}</h1>
           <p className="text-sm text-[var(--muted)]">{t.intro}</p>
@@ -74,7 +74,6 @@ export default async function CommitteePage() {
             <span className="rounded-full bg-[var(--primary)] px-2 py-0.5 text-xs font-semibold text-[var(--primary-foreground)]">
               {t.required}
             </span>
-            <span className="text-sm text-[var(--muted)]">{fill(t.pendingCount, { count: pendingCount })}</span>
           </div>
           <p className="mt-1 text-sm text-[var(--muted)]">{t.stepResultsText}</p>
         </div>
@@ -111,7 +110,6 @@ export default async function CommitteePage() {
             <span className="rounded-full border border-[var(--border)] px-2 py-0.5 text-xs font-semibold text-[var(--muted)]">
               {t.optional}
             </span>
-            <span className="text-sm text-[var(--muted)]">{fill(t.openCount, { count: openCount })}</span>
           </div>
           <p className="mt-1 text-sm text-[var(--muted)]">{t.stepCloseText}</p>
         </div>

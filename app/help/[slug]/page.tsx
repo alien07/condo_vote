@@ -132,7 +132,7 @@ function WebGuide({
               className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-4 py-3"
               key={item.q}
             >
-              <summary className="cursor-pointer font-medium">{item.q}</summary>
+              <summary className="min-h-11 cursor-pointer py-2 font-medium">{item.q}</summary>
               <p className="mt-2 text-sm leading-6">{item.a}</p>
             </details>
           ))}
