@@ -348,7 +348,7 @@ not security.
   seeded with exactly today's access, locked, and can be copied.
 
 ### D024 - Owner Record Linked To One Account
-Status: accepted 2026-11-16, in progress (migration 0037)
+Status: accepted 2026-11-16, implemented (migrations 0037, 0038)
 
 Before this, an owner of record and a signed-in account were matched by
 email (`lower(owners.email) = lower(profiles.email)`) every time rights were
@@ -378,8 +378,11 @@ with no audit entry, and office staff could do it.
   (unique index, case and spaces ignored). Owners who share one email need separate
   Google accounts, or one gives the other a proxy (three-room limit, D012).
 - Known risk: a wrong email in the owners file links the wrong account. The
-  admin sees recent automatic links and can unlink or move a link (planned
-  in the follow-up change with the "move account" action, which also
-  updates the snapshot of open meetings for rooms that have not voted).
+  owners page shows owners with no account and the latest account changes,
+  so the admin can check new links.
+- Admin link, move and unlink (migration 0038, admin only, reason required,
+  audited): open meetings follow the change for rooms that have not voted
+  (online or paper); rooms that already voted keep their vote. A moved-from
+  account becomes a resident.
 - Migration 0037 links existing owners once, with the same exact-one-match
   rule; owners it cannot link stay unlinked until the account signs in.

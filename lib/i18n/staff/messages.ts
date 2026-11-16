@@ -71,6 +71,17 @@ const field = (name: string) => FIELDS[name] ?? name;
 const EXACT: Record<string, string> = {
   "Active ownership link ended.": "สิ้นสุดการผูกกรรมสิทธิ์แล้ว",
   "Another active owner already uses this email.": "อีเมลนี้มีเจ้าของคนอื่นใช้อยู่แล้ว",
+  "Account email is required.": "ต้องกรอกอีเมลของบัญชี",
+  "Give a reason of at least 5 characters.": "กรอกเหตุผลอย่างน้อย 5 ตัวอักษร",
+  "No account has this email. Ask the owner to sign in once first.":
+    "ไม่มีบัญชีที่ใช้อีเมลนี้ ให้เจ้าของเข้าสู่ระบบหนึ่งครั้งก่อน",
+  "This account was rejected. Change its approval first.": "บัญชีนี้ถูกปฏิเสธ ให้แก้สถานะการอนุมัติก่อน",
+  "This account is already linked to another owner.": "บัญชีนี้ผูกกับเจ้าของคนอื่นอยู่แล้ว",
+  "The owner is already linked to this account.": "เจ้าของนี้ผูกกับบัญชีนี้อยู่แล้ว",
+  "Owner account linked.": "ผูกบัญชีของเจ้าของแล้ว",
+  "Owner account moved.": "ย้ายบัญชีของเจ้าของแล้ว",
+  "Owner account unlinked.": "ยกเลิกการผูกบัญชีแล้ว",
+  "Owner account updated.": "แก้ไขบัญชีของเจ้าของแล้ว",
   "Only an admin can change an owner's email.": "เฉพาะผู้ดูแล (admin) เท่านั้นที่แก้อีเมลของเจ้าของได้",
   "Advance voting end must be a valid date and time.": "เวลาปิดลงคะแนนล่วงหน้าต้องถูกต้อง",
   "Advance voting must end after it starts.": "เวลาปิดลงคะแนนล่วงหน้าต้องอยู่หลังเวลาเริ่ม",

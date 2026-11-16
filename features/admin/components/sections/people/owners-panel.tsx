@@ -10,18 +10,28 @@ import { AdminCrudDrawer } from "@/features/admin/components/admin-crud-drawer";
 import { useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { OwnerForm } from "@/features/admin/components/sections/people/owner-form";
+import { OwnerAccountPanel } from "@/features/admin/components/sections/people/owner-account-panel";
+import { OwnerAccountReview } from "@/features/admin/components/sections/people/owner-account-review";
 import { mergeParams, ownerTableParams, ownerTableStateFromParams } from "@/features/admin/components/sections/people/people-table-state";
 import type { OwnerTableState, PeopleCrudPilotProps } from "@/features/admin/components/sections/people/people-types";
 
 type OwnersPanelProps = Pick<
   PeopleCrudPilotProps,
-  "activeSection" | "drawer" | "owners"
+  | "activeSection"
+  | "canManageOwnerAccounts"
+  | "drawer"
+  | "ownerAccountEvents"
+  | "owners"
+  | "profiles"
 >;
 
 export function OwnersPanel({
   activeSection,
+  canManageOwnerAccounts,
   drawer,
+  ownerAccountEvents,
   owners,
+  profiles,
 }: OwnersPanelProps) {
   const { s } = useStaffText();
   const searchParams = useSearchParams();
@@ -74,7 +84,20 @@ export function OwnersPanel({
     if (drawer?.mode === "edit" && drawer.type === "owner" && selectedOwner) {
       return {
         content: (
-          <OwnerForm closeHref={closeHref} mode="edit" owner={selectedOwner} />
+          <>
+            <OwnerForm
+              canEditEmail={canManageOwnerAccounts}
+              closeHref={closeHref}
+              mode="edit"
+              owner={selectedOwner}
+            />
+            <OwnerAccountPanel
+              canManage={canManageOwnerAccounts}
+              key={`${selectedOwner.id}:${selectedOwner.profile_id ?? ""}`}
+              owner={selectedOwner}
+              profiles={profiles}
+            />
+          </>
         ),
         summary: [
           fill(s.people.nameSummary, { name: selectedOwner.full_name }),
@@ -91,11 +114,17 @@ export function OwnersPanel({
   }, [
     s,
     activeSection,
+    canManageOwnerAccounts,
     closeHref,
     drawer?.mode,
     drawer?.type,
+    profiles,
     selectedOwner,
   ]);
+  const profileEmailById = useMemo(
+    () => new Map(profiles.map((profile) => [profile.id, profile.email])),
+    [profiles],
+  );
   const filteredOwners = useMemo(() => {
     const nameQuery = ownerTableState.name.trim().toLowerCase();
 
@@ -177,6 +206,17 @@ export function OwnersPanel({
             </div>
           </div>
         </section>
+
+        {canManageOwnerAccounts ? (
+          <OwnerAccountReview
+            buildOwnerHref={(ownerId) =>
+              buildHref({ id: ownerId, mode: "edit", tab: "owners", type: "owner" })
+            }
+            events={ownerAccountEvents}
+            owners={owners}
+            profiles={profiles}
+          />
+        ) : null}
 
         <section className="rounded-lg border border-[var(--border)] bg-[var(--background)] p-5">
           <div className="mb-3">
@@ -350,6 +390,7 @@ export function OwnersPanel({
                     </button>
                   </th>
                   <th className="py-2 pr-3 font-medium">{s.people.email}</th>
+                  <th className="py-2 pr-3 font-medium">{s.people.account}</th>
                   <th className="py-2 pr-3 font-medium">
                     <button
                       className="font-medium"
@@ -397,6 +438,13 @@ export function OwnersPanel({
                     >
                       <td className="py-2 pr-3">{owner.full_name}</td>
                       <td className="py-2 pr-3">{owner.email ?? "-"}</td>
+                      <td className="py-2 pr-3">
+                        {owner.profile_id ? (
+                          profileEmailById.get(owner.profile_id) ?? "-"
+                        ) : (
+                          <span className="text-[var(--muted)]">{s.people.accountNotLinked}</span>
+                        )}
+                      </td>
                       <td className="py-2 pr-3">
                         {owner.active ? s.common.active : s.common.inactive}
                       </td>

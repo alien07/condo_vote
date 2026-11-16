@@ -1,6 +1,6 @@
 import { getAdminDashboardData } from "@/features/admin/data";
 import { getStaffI18n } from "@/lib/i18n/server";
-import { isSystemAdmin } from "@/lib/auth/permissions";
+import { isAdmin, isSystemAdmin } from "@/lib/auth/permissions";
 import { AdminSoftNavigation } from "@/features/admin/components/admin-soft-navigation";
 import { ShieldCheck } from "lucide-react";
 import { PeopleCrudPilot } from "@/features/admin/components/sections/people/people-crud-pilot";
@@ -81,6 +81,7 @@ export async function AdminWorkspace({
     committeeMembers,
     rooms,
     appRoles,
+    ownerAccountEvents,
     owners,
     roomOwners,
     meetings,
@@ -95,7 +96,10 @@ export async function AdminWorkspace({
     resultPublications,
   } =
     await getAdminDashboardData({ auditFilters });
-  const canEditTechnicalSettings = await isSystemAdmin();
+  const [canEditTechnicalSettings, canManageOwnerAccounts] = await Promise.all([
+    isSystemAdmin(),
+    isAdmin(),
+  ]);
   const {
     appRolesByProfile,
     approvalCountBySnapshotId,
@@ -253,6 +257,8 @@ export async function AdminWorkspace({
             activeSection="rooms"
             appRolesByProfile={appRolesByProfile}
             drawer={drawer}
+            canManageOwnerAccounts={canManageOwnerAccounts}
+            ownerAccountEvents={ownerAccountEvents}
             owners={owners}
             profiles={profiles}
             rooms={rooms}
@@ -264,6 +270,8 @@ export async function AdminWorkspace({
             activeSection="rooms"
             appRolesByProfile={appRolesByProfile}
             drawer={drawer}
+            canManageOwnerAccounts={canManageOwnerAccounts}
+            ownerAccountEvents={ownerAccountEvents}
             owners={owners}
             profiles={profiles}
             rooms={rooms}
@@ -275,6 +283,8 @@ export async function AdminWorkspace({
             activeSection="owners"
             appRolesByProfile={appRolesByProfile}
             drawer={drawer}
+            canManageOwnerAccounts={canManageOwnerAccounts}
+            ownerAccountEvents={ownerAccountEvents}
             owners={owners}
             profiles={profiles}
             rooms={rooms}
@@ -307,6 +317,8 @@ export async function AdminWorkspace({
             activeSection="profiles"
             appRolesByProfile={appRolesByProfile}
             drawer={drawer}
+            canManageOwnerAccounts={canManageOwnerAccounts}
+            ownerAccountEvents={ownerAccountEvents}
             owners={owners}
             profiles={profiles}
             rooms={rooms}

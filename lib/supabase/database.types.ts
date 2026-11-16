@@ -1827,6 +1827,10 @@ export type Database = {
         Returns: undefined
       }
       active_committee_profile_ids: { Args: never; Returns: string[] }
+      admin_set_owner_account: {
+        Args: { p_owner_id: string; p_profile_email: string; p_reason: string }
+        Returns: Json
+      }
       answer_close_request: {
         Args: { p_answer: string; p_reason?: string; p_request_id: string }
         Returns: Json
@@ -1873,6 +1877,7 @@ export type Database = {
       is_approved_member: { Args: never; Returns: boolean }
       is_office_staff: { Args: never; Returns: boolean }
       link_my_owner_record: { Args: never; Returns: string }
+      mask_email: { Args: { p_email: string }; Returns: string }
       meeting_early_close: { Args: { p_meeting_id: string }; Returns: string }
       meeting_online_tally: {
         Args: { p_meeting_id: string }

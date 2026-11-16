@@ -3,7 +3,14 @@ import type { createClient } from "@/lib/supabase/server";
 type SupabaseServerClient = Awaited<ReturnType<typeof createClient>>;
 
 export async function fetchPeopleData(supabase: SupabaseServerClient) {
-  const [roomsResult, appRolesResult, ownersResult, roomOwnersResult, profilesResult] =
+  const [
+    roomsResult,
+    appRolesResult,
+    ownersResult,
+    roomOwnersResult,
+    profilesResult,
+    ownerLinksResult,
+  ] =
     await Promise.all([
       supabase
         .from("rooms")
@@ -17,7 +24,7 @@ export async function fetchPeopleData(supabase: SupabaseServerClient) {
         .order("role", { ascending: true }),
       supabase
         .from("owners")
-        .select("id, full_name, email, phone, line_id, active")
+        .select("id, full_name, email, phone, line_id, active, profile_id")
         .order("created_at", { ascending: false }),
       supabase
         .from("room_owners")
@@ -31,6 +38,14 @@ export async function fetchPeopleData(supabase: SupabaseServerClient) {
           "id, full_name, email, default_status, approval_status, preferred_language, created_at",
         )
         .order("created_at", { ascending: false }),
+      // Recent account links for the admin to review (D024). Office staff
+      // cannot read the audit log, so they get an empty list.
+      supabase
+        .from("audit_logs")
+        .select("id, action, created_at, entity_id, details_json")
+        .in("action", ["owner.profile_linked", "owner.profile_moved", "owner.profile_unlinked"])
+        .order("created_at", { ascending: false })
+        .limit(10),
     ]);
 
   if (roomsResult.error) {
@@ -53,7 +68,12 @@ export async function fetchPeopleData(supabase: SupabaseServerClient) {
     throw profilesResult.error;
   }
 
+  if (ownerLinksResult.error) {
+    throw ownerLinksResult.error;
+  }
+
   return {
+    ownerAccountEvents: ownerLinksResult.data,
     rooms: roomsResult.data,
     appRoles: appRolesResult.data,
     owners: ownersResult.data,
