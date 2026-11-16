@@ -39,13 +39,14 @@ export async function fetchPeopleData(supabase: SupabaseServerClient) {
         )
         .order("created_at", { ascending: false }),
       // Recent account links for the admin to review (D024). Office staff
-      // cannot read the audit log, so they get an empty list.
+      // cannot read the audit log, so they get an empty list. 50 so the
+      // admin changes still show on a sign-in day full of automatic links.
       supabase
         .from("audit_logs")
         .select("id, action, created_at, entity_id, details_json")
         .in("action", ["owner.profile_linked", "owner.profile_moved", "owner.profile_unlinked"])
         .order("created_at", { ascending: false })
-        .limit(10),
+        .limit(50),
     ]);
 
   if (roomsResult.error) {

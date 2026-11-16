@@ -69,6 +69,8 @@ export type RoomTableState = {
 };
 
 export type OwnerTableState = {
+  /** Account link (D024): all owners, only linked, or only not linked. */
+  account: "all" | "linked" | "unlinked";
   dir: "asc" | "desc";
   name: string;
   page: number;
