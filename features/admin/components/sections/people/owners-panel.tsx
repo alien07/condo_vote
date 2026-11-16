@@ -7,6 +7,24 @@ import { UserRound } from "lucide-react";
 import { deactivateOwner, reactivateOwner } from "@/features/admin/actions";
 import { ConfirmSubmitButton } from "@/features/admin/components/form-controls";
 import { AdminCrudDrawer } from "@/features/admin/components/admin-crud-drawer";
+import {
+  AdminListCard,
+  AdminListFooterPager,
+  AdminListPager,
+  AdminListToolbar,
+  SortHeader,
+  listActionsClass,
+  listFieldClass,
+  listInputClass,
+  listQuietButtonClass,
+  listQuietDangerButtonClass,
+  listRowButtonClass,
+  listRowClass,
+  listTableClass,
+  listTdClass,
+  listThClass,
+  listTheadClass,
+} from "@/features/admin/components/list/admin-list";
 import { useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { OwnerForm } from "@/features/admin/components/sections/people/owner-form";
@@ -179,18 +197,20 @@ export function OwnersPanel({
     ownerPage * ownerTableState.perPage,
   );
 
+  const sortBy = (sort: OwnerTableState["sort"]) =>
+    updateOwnerTable({
+      ...ownerTableState,
+      dir: ownerTableState.sort === sort && ownerTableState.dir === "asc" ? "desc" : "asc",
+      page: 1,
+      sort,
+    });
+
   return (
     <>
       <div className="grid gap-5">
-        <section className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-5">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div className="max-w-3xl">
-              <h2 className="text-lg font-semibold">{s.people.ownersTitle}</h2>
-              <p className="mt-2 text-sm text-[var(--muted)]">
-                {s.people.ownersIntro}
-              </p>
-            </div>
-            <div className="flex flex-wrap gap-2">
+        <AdminListCard
+          actions={
+            <>
               <Link
                 className="inline-flex min-h-10 items-center justify-center rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)]"
                 href={buildHref({ mode: "create", tab: "owners", type: "owner" })}
@@ -203,9 +223,167 @@ export function OwnersPanel({
               >
                 {s.people.importMaster}
               </Link>
-            </div>
-          </div>
-        </section>
+            </>
+          }
+          description={s.people.ownersIntro}
+          footer={
+            <AdminListFooterPager
+              end={ownerPageEnd}
+              onPage={(page) => updateOwnerTable({ ...ownerTableState, page })}
+              page={ownerPage}
+              start={ownerPageStart}
+              total={ownerTotal}
+              totalPages={ownerTotalPages}
+            />
+          }
+          icon={<UserRound aria-hidden="true" size={20} />}
+          meta={fill(s.common.showing, { start: ownerPageStart, end: ownerPageEnd, total: ownerTotal })}
+          pager={
+            <AdminListPager
+              onPage={(page) => updateOwnerTable({ ...ownerTableState, page })}
+              onPerPage={(perPage) => updateOwnerTable({ ...ownerTableState, page: 1, perPage })}
+              page={ownerPage}
+              perPage={ownerTableState.perPage}
+              totalPages={ownerTotalPages}
+            />
+          }
+          title={s.people.owners}
+          toolbar={
+            <AdminListToolbar
+              onClear={() =>
+                updateOwnerTable({
+                  dir: "asc",
+                  name: "",
+                  page: 1,
+                  perPage: 25,
+                  sort: "name",
+                  status: "all",
+                })
+              }
+              onSubmit={() => updateOwnerTable({ ...ownerCriteria, page: 1 })}
+            >
+              <label className={`${listFieldClass} w-full sm:w-72`}>
+                {s.common.name}
+                <input
+                  className={listInputClass}
+                  onChange={(event) => {
+                    const value = event.currentTarget.value;
+
+                    setOwnerCriteria((current) => ({ ...current, name: value }));
+                  }}
+                  placeholder={s.people.searchOwner}
+                  value={ownerCriteria.name}
+                />
+              </label>
+              <label className={`${listFieldClass} w-full sm:w-44`}>
+                {s.common.status}
+                <select
+                  className={listInputClass}
+                  onChange={(event) => {
+                    const value = event.currentTarget.value as OwnerTableState["status"];
+
+                    setOwnerCriteria((current) => ({ ...current, status: value }));
+                  }}
+                  value={ownerCriteria.status}
+                >
+                  <option value="all">{s.common.allStatuses}</option>
+                  <option value="active">{s.common.active}</option>
+                  <option value="inactive">{s.common.inactive}</option>
+                </select>
+              </label>
+            </AdminListToolbar>
+          }
+        >
+          <table className={listTableClass}>
+            <thead className={listTheadClass}>
+              <tr>
+                <SortHeader
+                  active={ownerTableState.sort === "name"}
+                  dir={ownerTableState.dir}
+                  label={s.common.name}
+                  onSort={() => sortBy("name")}
+                />
+                <th className={listThClass} scope="col">{s.people.email}</th>
+                <th className={listThClass} scope="col">{s.people.account}</th>
+                <SortHeader
+                  active={ownerTableState.sort === "status"}
+                  dir={ownerTableState.dir}
+                  label={s.common.status}
+                  onSort={() => sortBy("status")}
+                />
+                <th className={listThClass} scope="col">{s.common.action}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {pagedOwners.map((owner) => {
+                const selected =
+                  drawer?.mode === "edit" &&
+                  drawer.type === "owner" &&
+                  drawer.id === owner.id;
+
+                return (
+                  <tr
+                    className={[
+                      listRowClass,
+                      selected ? "border-l-4 border-l-[var(--primary)] bg-[var(--accent)]" : "",
+                    ].join(" ")}
+                    key={owner.id}
+                  >
+                    <td className={`${listTdClass} font-medium`}>{owner.full_name}</td>
+                    <td className={listTdClass}>{owner.email ?? "-"}</td>
+                    <td className={listTdClass}>
+                      {owner.profile_id ? (
+                        profileEmailById.get(owner.profile_id) ?? "-"
+                      ) : (
+                        <span className="text-[var(--muted)]">{s.people.accountNotLinked}</span>
+                      )}
+                    </td>
+                    <td className={listTdClass}>
+                      {owner.active ? s.common.active : s.common.inactive}
+                    </td>
+                    <td className={listTdClass}>
+                      <div className={listActionsClass}>
+                        <Link
+                          className={listRowButtonClass}
+                          href={buildHref({
+                            id: owner.id,
+                            mode: "edit",
+                            tab: "owners",
+                            type: "owner",
+                          })}
+                        >
+                          {s.common.edit}
+                        </Link>
+                        <form action={owner.active ? deactivateOwner : reactivateOwner}>
+                          <input name="id" type="hidden" value={owner.id} />
+                          <ConfirmSubmitButton
+                            className={owner.active ? listQuietDangerButtonClass : listQuietButtonClass}
+                            confirmMessage={
+                              owner.active
+                                ? fill(s.people.confirmDeactivateOwner, { name: owner.full_name })
+                                : fill(s.people.confirmReactivateOwner, { name: owner.full_name })
+                            }
+                            pendingLabel={
+                              owner.active ? s.common.deactivating : s.common.reactivating
+                            }
+                            type="submit"
+                          >
+                            {owner.active ? s.common.deactivate : s.common.reactivate}
+                          </ConfirmSubmitButton>
+                        </form>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+          {pagedOwners.length === 0 ? (
+            <p className="px-5 py-4 text-sm text-[var(--muted)]">
+              {s.people.noOwners}
+            </p>
+          ) : null}
+        </AdminListCard>
 
         {canManageOwnerAccounts ? (
           <OwnerAccountReview
@@ -217,322 +395,6 @@ export function OwnersPanel({
             profiles={profiles}
           />
         ) : null}
-
-        <section className="rounded-lg border border-[var(--border)] bg-[var(--background)] p-5">
-          <div className="mb-3">
-            <h2 className="text-sm font-semibold">{s.common.searchCriteria}</h2>
-            <p className="mt-1 text-xs text-[var(--muted)]">
-              {s.people.ownersFilter}
-            </p>
-          </div>
-          <form
-            className="grid gap-3 md:grid-cols-12"
-            onSubmit={(event) => {
-              event.preventDefault();
-              updateOwnerTable({ ...ownerCriteria, page: 1 });
-            }}
-          >
-            <label className="grid gap-1 text-xs font-medium text-[var(--muted)] md:col-span-5">
-              {s.common.name}
-              <input
-                className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)]"
-                onChange={(event) => {
-                  const value = event.currentTarget.value;
-
-                  setOwnerCriteria((current) => ({ ...current, name: value }));
-                }}
-                placeholder={s.people.searchOwner}
-                value={ownerCriteria.name}
-              />
-            </label>
-            <label className="grid gap-1 text-xs font-medium text-[var(--muted)] md:col-span-3">
-              {s.common.status}
-              <select
-                className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)]"
-                onChange={(event) => {
-                  const value = event.currentTarget
-                    .value as OwnerTableState["status"];
-
-                  setOwnerCriteria((current) => ({ ...current, status: value }));
-                }}
-                value={ownerCriteria.status}
-              >
-                <option value="all">{s.common.allStatuses}</option>
-                <option value="active">{s.common.active}</option>
-                <option value="inactive">{s.common.inactive}</option>
-              </select>
-            </label>
-            <div className="flex flex-wrap items-end justify-center gap-2 md:col-span-4">
-              <button
-                className="min-h-10 rounded-md bg-[var(--primary)] px-5 py-2 text-sm font-medium text-[var(--primary-foreground)]"
-                type="submit"
-              >
-                {s.common.search}
-              </button>
-              <button
-                className="inline-flex min-h-10 items-center rounded-md border border-[var(--border)] bg-[var(--surface)] px-5 py-2 text-sm font-medium"
-                onClick={() =>
-                  updateOwnerTable({
-                    dir: "asc",
-                    name: "",
-                    page: 1,
-                    perPage: 25,
-                    sort: "name",
-                    status: "all",
-                  })
-                }
-                type="button"
-              >
-                {s.common.clear}
-              </button>
-            </div>
-          </form>
-        </section>
-
-        <section className="rounded-lg border border-[var(--border)] bg-[var(--surface)]">
-          <div className="mb-4 flex items-center gap-2">
-            <div className="flex w-full flex-wrap items-center justify-between gap-3 border-b border-[var(--border)] px-5 py-4">
-              <div className="flex items-center gap-2">
-                <UserRound className="text-[var(--primary)]" size={20} />
-                <div>
-                  <h2 className="text-lg font-semibold">{s.people.owners}</h2>
-                  <p className="mt-1 text-xs text-[var(--muted)]">
-                    {fill(s.common.showing, { start: ownerPageStart, end: ownerPageEnd, total: ownerTotal })}
-                  </p>
-                </div>
-              </div>
-              <div className="flex flex-wrap items-center gap-2 rounded-md border border-[var(--border)] bg-[var(--background)] px-3 py-2">
-                <label className="flex items-center gap-2 text-xs font-medium text-[var(--muted)]">
-                  <span>{s.common.page}</span>
-                  <select
-                    aria-label={s.common.page}
-                    className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-2 py-1 text-sm text-[var(--foreground)]"
-                    disabled={ownerTotalPages <= 1}
-                    onChange={(event) => {
-                      const nextPage = Number(event.currentTarget.value);
-
-                      updateOwnerTable({
-                        ...ownerTableState,
-                        page:
-                          Number.isInteger(nextPage) && nextPage > 0
-                            ? nextPage
-                            : 1,
-                      });
-                    }}
-                    value={String(ownerPage)}
-                  >
-                    {Array.from(
-                      { length: ownerTotalPages },
-                      (_, index) => index + 1,
-                    ).map((pageNumber) => (
-                      <option key={pageNumber} value={pageNumber}>
-                        {pageNumber}
-                      </option>
-                    ))}
-                  </select>
-                  <span>of {ownerTotalPages}</span>
-                </label>
-                <div className="hidden h-6 w-px bg-[var(--border)] sm:block" />
-                <label className="flex items-center gap-2 text-xs font-medium text-[var(--muted)]">
-                  <span>{s.common.perPage}</span>
-                  <select
-                    aria-label={s.common.perPage}
-                    className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-2 py-1 text-sm text-[var(--foreground)]"
-                    onChange={(event) => {
-                      const nextPerPage = Number(event.currentTarget.value);
-
-                      updateOwnerTable({
-                        ...ownerTableState,
-                        page: 1,
-                        perPage: Number.isInteger(nextPerPage)
-                          ? nextPerPage
-                          : 25,
-                      });
-                    }}
-                    value={String(ownerTableState.perPage)}
-                  >
-                    <option value="10">10</option>
-                    <option value="25">25</option>
-                    <option value="50">50</option>
-                    <option value="100">100</option>
-                  </select>
-                </label>
-              </div>
-            </div>
-          </div>
-          <div className="overflow-x-auto px-5 pb-2">
-            <table className="w-full border-collapse text-left text-sm">
-              <thead className="border-b border-[var(--border)] text-[var(--muted)]">
-                <tr>
-                  <th className="py-2 pr-3 font-medium">
-                    <button
-                      className="font-medium"
-                      onClick={() =>
-                        updateOwnerTable({
-                          ...ownerTableState,
-                          dir:
-                            ownerTableState.sort === "name" &&
-                            ownerTableState.dir === "asc"
-                              ? "desc"
-                              : "asc",
-                          page: 1,
-                          sort: "name",
-                        })
-                      }
-                      type="button"
-                    >
-                      {s.common.name}
-                      {ownerTableState.sort === "name"
-                        ? ownerTableState.dir === "asc"
-                          ? " ↑"
-                          : " ↓"
-                        : ""}
-                    </button>
-                  </th>
-                  <th className="py-2 pr-3 font-medium">{s.people.email}</th>
-                  <th className="py-2 pr-3 font-medium">{s.people.account}</th>
-                  <th className="py-2 pr-3 font-medium">
-                    <button
-                      className="font-medium"
-                      onClick={() =>
-                        updateOwnerTable({
-                          ...ownerTableState,
-                          dir:
-                            ownerTableState.sort === "status" &&
-                            ownerTableState.dir === "asc"
-                              ? "desc"
-                              : "asc",
-                          page: 1,
-                          sort: "status",
-                        })
-                      }
-                      type="button"
-                    >
-                      {s.common.status}
-                      {ownerTableState.sort === "status"
-                        ? ownerTableState.dir === "asc"
-                          ? " ↑"
-                          : " ↓"
-                        : ""}
-                    </button>
-                  </th>
-                  <th className="py-2 font-medium">{s.common.action}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {pagedOwners.map((owner) => {
-                  const selected =
-                    drawer?.mode === "edit" &&
-                    drawer.type === "owner" &&
-                    drawer.id === owner.id;
-
-                  return (
-                    <tr
-                      className={[
-                        "border-b border-[var(--border)]",
-                        selected
-                          ? "border-l-4 border-l-[var(--primary)] bg-[var(--accent)]"
-                          : "",
-                      ].join(" ")}
-                      key={owner.id}
-                    >
-                      <td className="py-2 pr-3">{owner.full_name}</td>
-                      <td className="py-2 pr-3">{owner.email ?? "-"}</td>
-                      <td className="py-2 pr-3">
-                        {owner.profile_id ? (
-                          profileEmailById.get(owner.profile_id) ?? "-"
-                        ) : (
-                          <span className="text-[var(--muted)]">{s.people.accountNotLinked}</span>
-                        )}
-                      </td>
-                      <td className="py-2 pr-3">
-                        {owner.active ? s.common.active : s.common.inactive}
-                      </td>
-                      <td className="py-2">
-                        <div className="flex flex-wrap gap-2">
-                          <Link
-                            className="rounded-md border border-[var(--border)] px-3 py-1 text-sm font-medium"
-                            href={buildHref({
-                              id: owner.id,
-                              mode: "edit",
-                              tab: "owners",
-                              type: "owner",
-                            })}
-                          >
-                            {s.common.edit}
-                          </Link>
-                          <form
-                            action={
-                              owner.active ? deactivateOwner : reactivateOwner
-                            }
-                          >
-                            <input name="id" type="hidden" value={owner.id} />
-                            <ConfirmSubmitButton
-                              className={
-                                owner.active
-                                  ? "text-sm font-medium text-red-700"
-                                  : "text-sm font-medium text-[var(--primary)]"
-                              }
-                              confirmMessage={
-                                owner.active
-                                  ? fill(s.people.confirmDeactivateOwner, { name: owner.full_name })
-                                  : fill(s.people.confirmReactivateOwner, { name: owner.full_name })
-                              }
-                              pendingLabel={
-                                owner.active
-                                  ? s.common.deactivating
-                                  : s.common.reactivating
-                              }
-                              type="submit"
-                            >
-                              {owner.active ? s.common.deactivate : s.common.reactivate}
-                            </ConfirmSubmitButton>
-                          </form>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-          {pagedOwners.length === 0 ? (
-            <p className="px-5 py-4 text-sm text-[var(--muted)]">
-              {s.people.noOwners}
-            </p>
-          ) : null}
-          <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-4">
-            <button
-              className="inline-flex min-h-10 items-center rounded-md border border-[var(--border)] px-4 py-2 text-sm font-medium disabled:opacity-50"
-              disabled={ownerPage <= 1}
-              onClick={() =>
-                updateOwnerTable({
-                  ...ownerTableState,
-                  page: Math.max(1, ownerPage - 1),
-                })
-              }
-              type="button"
-            >
-              {s.common.previous}
-            </button>
-            <div className="text-sm text-[var(--muted)]">
-              {ownerPageStart}-{ownerPageEnd} / {ownerTotal}
-            </div>
-            <button
-              className="inline-flex min-h-10 items-center rounded-md border border-[var(--border)] px-4 py-2 text-sm font-medium disabled:opacity-50"
-              disabled={ownerPage >= ownerTotalPages}
-              onClick={() =>
-                updateOwnerTable({
-                  ...ownerTableState,
-                  page: Math.min(ownerTotalPages, ownerPage + 1),
-                })
-              }
-              type="button"
-            >
-              {s.common.next}
-            </button>
-          </div>
-        </section>
       </div>
 
       {drawerContent ? (
