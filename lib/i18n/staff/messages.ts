@@ -70,6 +70,8 @@ const field = (name: string) => FIELDS[name] ?? name;
 
 const EXACT: Record<string, string> = {
   "Active ownership link ended.": "สิ้นสุดการผูกกรรมสิทธิ์แล้ว",
+  "Another active owner already uses this email.": "อีเมลนี้มีเจ้าของคนอื่นใช้อยู่แล้ว",
+  "Only an admin can change an owner's email.": "เฉพาะผู้ดูแล (admin) เท่านั้นที่แก้อีเมลของเจ้าของได้",
   "Advance voting end must be a valid date and time.": "เวลาปิดลงคะแนนล่วงหน้าต้องถูกต้อง",
   "Advance voting must end after it starts.": "เวลาปิดลงคะแนนล่วงหน้าต้องอยู่หลังเวลาเริ่ม",
   "Advance voting must end before meeting-day voting starts.":
