@@ -32,7 +32,7 @@ export default async function MeetingEnglishPage({ params }: EnglishPageProps) {
   const t = s.english;
 
   return (
-    <main className="mx-auto max-w-5xl px-6 py-8">
+    <main className="mx-auto max-w-[var(--page-max)] px-6 py-8">
       <div className="mb-6 flex items-start gap-3 border-b border-[var(--border)] pb-5">
         <Languages className="mt-1 shrink-0 text-[var(--primary)]" size={26} />
         <div>

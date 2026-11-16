@@ -59,7 +59,7 @@ export function AdminSectionNav({ groups, ariaLabel, menuLabel }: AdminSectionNa
       className="border-b border-[var(--border)] bg-[var(--background)] print:hidden"
     >
       {/* Phones: one button that opens the grouped list. */}
-      <details className="group mx-auto max-w-6xl px-4 py-2 md:hidden" ref={menuRef}>
+      <details className="group mx-auto max-w-[var(--page-max)] px-4 py-2 md:hidden" ref={menuRef}>
         <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 text-sm font-medium [&::-webkit-details-marker]:hidden">
           <span className="truncate">
             <span className="text-[var(--muted)]">{menuLabel}: </span>
@@ -107,7 +107,7 @@ export function AdminSectionNav({ groups, ariaLabel, menuLabel }: AdminSectionNa
       </details>
 
       {/* Tablet and up: an underlined tab strip, one step below the role buttons. */}
-      <div className="relative mx-auto hidden max-w-6xl px-4 md:block md:px-6">
+      <div className="relative mx-auto hidden max-w-[var(--page-max)] px-4 md:block md:px-6">
         <div
           className="flex items-end gap-1 overflow-x-auto text-sm [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
           ref={stripRef}

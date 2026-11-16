@@ -103,7 +103,7 @@ export default async function ManualVotePage({
 
   return (
     <main className="min-h-screen px-6 py-8">
-      <section className="mx-auto max-w-5xl">
+      <section className="mx-auto max-w-[calc(var(--page-max)-3rem)]">
         <div className="mb-6 flex items-center gap-3">
           <Vote className="text-[var(--primary)]" size={26} />
           <div>

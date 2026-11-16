@@ -118,7 +118,7 @@ export function AppFeedbackBanner({
       <div
         aria-live={config.live}
         className={[
-          "mx-auto flex max-w-6xl items-start gap-3 rounded-md border px-3 py-2 text-sm",
+          "mx-auto flex max-w-[var(--page-max)] items-start gap-3 rounded-md border px-3 py-2 text-sm",
           config.style,
         ].join(" ")}
         role={tone === "error" || tone === "warning" ? "alert" : "status"}

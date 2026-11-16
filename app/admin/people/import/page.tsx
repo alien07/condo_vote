@@ -7,7 +7,7 @@ export default async function AdminPeopleImportPage() {
   const { s } = await getStaffI18n();
   return (
     <main className="min-h-screen px-6 py-8">
-      <section className="mx-auto max-w-5xl">
+      <section className="mx-auto max-w-[calc(var(--page-max)-3rem)]">
         <div className="mb-6 border-b border-[var(--border)] pb-5">
           <Link
             className="mb-4 inline-flex text-sm font-medium text-[var(--primary)]"

@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { AuthenticatedShell } from "@/features/shell/authenticated-shell";
 import { AdminSectionNav, type AdminNavGroup } from "@/features/admin/components/admin-section-nav";
 import { getStaffI18n } from "@/lib/i18n/server";
@@ -63,9 +63,13 @@ export default async function AdminLayout({ children }: { children: ReactNode })
     .filter((group) => group.items.length > 0);
 
   return (
-    <AuthenticatedShell>
-      <AdminSectionNav ariaLabel={text.navLabel} groups={groups} menuLabel={text.navMenu} />
-      {children}
-    </AuthenticatedShell>
+    // Admin lists use a wide screen: header, menus and content grow to the
+    // same width (2026-11-17). Owner pages keep the narrower default.
+    <div style={{ "--page-max": "96rem" } as CSSProperties}>
+      <AuthenticatedShell>
+        <AdminSectionNav ariaLabel={text.navLabel} groups={groups} menuLabel={text.navMenu} />
+        {children}
+      </AuthenticatedShell>
+    </div>
   );
 }
