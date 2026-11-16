@@ -19,6 +19,7 @@ This is the initial relational model. Names may change during implementation, bu
 erDiagram
     rooms ||--o{ room_owners : has
     owners ||--o{ room_owners : owns
+    profiles |o--o| owners : linked_account
     profiles ||--o{ app_roles : grants
     profiles ||--o{ approval_requests : requests
     profiles ||--o{ proxy_authorizations : acts_as_proxy
@@ -105,8 +106,8 @@ Notes: This is document and governance data. `app_roles` remains system authoriz
 
 ### owners
 Purpose: Stores verified legal owner master data.
-Key fields: full name, email, phone, LINE ID, active flag.
-Notes: Can come from juristic office records or admin import. Keep separate from login profile.
+Key fields: full name, email, phone, LINE ID, active flag, linked account (`profile_id`).
+Notes: Can come from juristic office records or admin import. Keep separate from login profile. Rights follow `profile_id`, not the email (D024): one owner has at most one account and one account at most one owner. The link is made automatically when the email matches exactly one active unlinked owner and the account has consented; only the link functions can set it, and each link is audited (`owner.profile_linked`).
 
 ### room_owners
 Purpose: Links owners to rooms.

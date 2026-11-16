@@ -105,6 +105,23 @@ export function databaseErrorState(
     };
   }
 
+  // Owner email rules (D024).
+  if (error.message.includes("owners_active_email_key")) {
+    return {
+      error: "Please fix 1 field before saving.",
+      fieldErrors: { email: "Another active owner already uses this email." },
+      values,
+    };
+  }
+
+  if (error.message.includes("OWNER_EMAIL_ADMIN_ONLY")) {
+    return {
+      error: "Please fix 1 field before saving.",
+      fieldErrors: { email: "Only an admin can change an owner's email." },
+      values,
+    };
+  }
+
   return { error: error.message, values };
 }
 

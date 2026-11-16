@@ -14,6 +14,7 @@ import {
 import {
   type PeopleActionState,
   type ExcelImportActionState,
+  databaseErrorState,
   formValues,
   requiredFormText,
   validationState,
@@ -59,7 +60,7 @@ async function createOwnerFromForm(formData: FormData) {
   });
 
   if (error) {
-    return { error: error.message, values };
+    return databaseErrorState(error, values);
   }
 
   revalidateAdminPaths();
@@ -114,7 +115,7 @@ export async function updateOwnerWithState(
       .eq("id", id);
 
     if (error) {
-      return { error: error.message, values };
+      return databaseErrorState(error, values);
     }
 
     revalidateAdminPaths();
