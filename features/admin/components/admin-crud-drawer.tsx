@@ -3,8 +3,8 @@
 import { useStaffText } from "@/lib/i18n/staff/client";
 
 import Link from "next/link";
-import { useEffect } from "react";
-import { X } from "lucide-react";
+import { useEffect, useSyncExternalStore } from "react";
+import { Maximize2, Minimize2, X } from "lucide-react";
 
 type AdminCrudDrawerProps = {
   children: React.ReactNode;
@@ -14,6 +14,43 @@ type AdminCrudDrawerProps = {
   title: string;
 };
 
+// Wide or normal drawer, remembered in this browser for every drawer
+// (2026-11-17). Storage can be missing or blocked; the drawer then stays
+// normal width and the button still works for this page.
+const WIDE_KEY = "condovotes.drawer.wide";
+const WIDE_EVENT = "condovotes:drawer-wide";
+let wideFallback = false;
+
+function readWide() {
+  try {
+    return window.localStorage.getItem(WIDE_KEY) === "1";
+  } catch {
+    return wideFallback;
+  }
+}
+
+function writeWide(value: boolean) {
+  wideFallback = value;
+
+  try {
+    window.localStorage.setItem(WIDE_KEY, value ? "1" : "0");
+  } catch {
+    // Keep the in-memory value only.
+  }
+
+  window.dispatchEvent(new Event(WIDE_EVENT));
+}
+
+function subscribeWide(onChange: () => void) {
+  window.addEventListener(WIDE_EVENT, onChange);
+  window.addEventListener("storage", onChange);
+
+  return () => {
+    window.removeEventListener(WIDE_EVENT, onChange);
+    window.removeEventListener("storage", onChange);
+  };
+}
+
 export function AdminCrudDrawer({
   children,
   closeHref,
@@ -22,6 +59,7 @@ export function AdminCrudDrawer({
   title,
 }: AdminCrudDrawerProps) {
   const { s } = useStaffText();
+  const wide = useSyncExternalStore(subscribeWide, readWide, () => false);
 
   useEffect(() => {
     if (!lockScroll) {
@@ -44,7 +82,12 @@ export function AdminCrudDrawer({
     <div className="fixed inset-0 z-40 flex justify-end overflow-hidden bg-black/10">
       <aside
         aria-label={title}
-        className="flex h-full w-full max-w-full flex-col border-l border-[var(--border)] bg-[var(--surface)] shadow-xl sm:max-w-xl"
+        className={[
+          "flex h-full w-full max-w-full flex-col border-l border-[var(--border)] bg-[var(--surface)] shadow-xl transition-[max-width] duration-200 motion-reduce:transition-none",
+          // Wide keeps a strip of the page visible, so it is still clear
+          // which list the drawer belongs to.
+          wide ? "sm:max-w-[90vw]" : "sm:max-w-xl",
+        ].join(" ")}
         role="complementary"
       >
         <div className="border-b border-[var(--border)] px-5 py-4">
@@ -59,13 +102,26 @@ export function AdminCrudDrawer({
                 </dl>
               ) : null}
             </div>
-            <Link
-              aria-label={s.common.closeDrawer}
-              className="rounded-md border border-[var(--border)] p-2"
-              href={closeHref}
-            >
-              <X size={18} />
-            </Link>
+            <div className="flex shrink-0 items-center gap-2">
+              {/* Phones already show the drawer full width. */}
+              <button
+                aria-label={wide ? s.common.shrinkDrawer : s.common.expandDrawer}
+                aria-pressed={wide}
+                className="hidden rounded-md border border-[var(--border)] p-2 sm:inline-flex"
+                onClick={() => writeWide(!wide)}
+                title={wide ? s.common.shrinkDrawer : s.common.expandDrawer}
+                type="button"
+              >
+                {wide ? <Minimize2 aria-hidden="true" size={18} /> : <Maximize2 aria-hidden="true" size={18} />}
+              </button>
+              <Link
+                aria-label={s.common.closeDrawer}
+                className="rounded-md border border-[var(--border)] p-2"
+                href={closeHref}
+              >
+                <X size={18} />
+              </Link>
+            </div>
           </div>
         </div>
         <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">{children}</div>
