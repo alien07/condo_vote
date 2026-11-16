@@ -1176,6 +1176,7 @@ export type Database = {
           id: string
           line_id: string | null
           phone: string | null
+          profile_id: string | null
           updated_at: string
         }
         Insert: {
@@ -1186,6 +1187,7 @@ export type Database = {
           id?: string
           line_id?: string | null
           phone?: string | null
+          profile_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -1196,9 +1198,18 @@ export type Database = {
           id?: string
           line_id?: string | null
           phone?: string | null
+          profile_id?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "owners_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       privacy_settings: {
         Row: {
@@ -1362,6 +1373,13 @@ export type Database = {
           valid_until?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "proxy_authorizations_granted_by_owner_profile_id_fkey"
+            columns: ["granted_by_owner_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "proxy_authorizations_meeting_id_fkey"
             columns: ["meeting_id"]
@@ -1808,11 +1826,7 @@ export type Database = {
         Args: { p_notice_version: number }
         Returns: undefined
       }
-      approve_close_voting: { Args: { p_meeting_id: string }; Returns: Json }
-      approve_result_snapshot: {
-        Args: { p_notes: string; p_result_snapshot_id: string }
-        Returns: Json
-      }
+      active_committee_profile_ids: { Args: never; Returns: string[] }
       answer_close_request: {
         Args: { p_answer: string; p_reason?: string; p_request_id: string }
         Returns: Json
@@ -1821,21 +1835,44 @@ export type Database = {
         Args: { p_answer: string; p_request_id: string; p_status: string }
         Returns: Json
       }
+      approve_close_voting: { Args: { p_meeting_id: string }; Returns: Json }
+      approve_result_snapshot: {
+        Args: { p_notes: string; p_result_snapshot_id: string }
+        Returns: Json
+      }
       can_approve_as_committee: { Args: never; Returns: boolean }
-      cancel_close_request: { Args: { p_request_id: string }; Returns: undefined }
+      cancel_close_request: {
+        Args: { p_request_id: string }
+        Returns: undefined
+      }
       cancel_co_owner_vote: {
         Args: { p_authorization_id: string }
         Returns: undefined
       }
       committee_overview: { Args: never; Returns: Json }
+      committee_people: { Args: { p_profile_ids: string[] }; Returns: Json }
+      committee_person_name: { Args: { p_profile_id: string }; Returns: string }
+      correction_default_level: {
+        Args: { p_category: string }
+        Returns: string
+      }
       current_profile_id: { Args: never; Returns: string }
+      evaluate_close_request: {
+        Args: { p_request_id: string }
+        Returns: string
+      }
       grant_co_owner_vote: {
-        Args: { p_co_owner_email: string; p_meeting_id: string; p_room_id: string }
+        Args: {
+          p_co_owner_email: string
+          p_meeting_id: string
+          p_room_id: string
+        }
         Returns: string
       }
       has_app_role: { Args: { required_role: string }; Returns: boolean }
-      is_office_staff: { Args: never; Returns: boolean }
       is_approved_member: { Args: never; Returns: boolean }
+      is_office_staff: { Args: never; Returns: boolean }
+      link_my_owner_record: { Args: never; Returns: string }
       meeting_early_close: { Args: { p_meeting_id: string }; Returns: string }
       meeting_online_tally: {
         Args: { p_meeting_id: string }
@@ -1847,13 +1884,26 @@ export type Database = {
       }
       my_member_access: { Args: never; Returns: Json }
       needs_privacy_consent: { Args: never; Returns: boolean }
+      profile_access_active: {
+        Args: { p_profile_id: string }
+        Returns: boolean
+      }
+      profile_has_consent: { Args: { p_profile_id: string }; Returns: boolean }
       propose_close_voting: {
         Args: { p_close_at?: string; p_meeting_id: string; p_reason: string }
         Returns: Json
       }
+      publish_result_if_ready: {
+        Args: { p_actor: string; p_result_snapshot_id: string }
+        Returns: boolean
+      }
       queue_result_approved_emails: {
         Args: { p_meeting_id: string }
         Returns: number
+      }
+      queue_staff_email: {
+        Args: { p_profile_id: string; p_template_key: string }
+        Returns: undefined
       }
       raise_correction_level: {
         Args: {
@@ -1884,7 +1934,11 @@ export type Database = {
         }
         Returns: Json
       }
-      result_required_approvals: { Args: { p_meeting_id: string }; Returns: number }
+      result_required_approvals: {
+        Args: { p_meeting_id: string }
+        Returns: number
+      }
+      room_owner_profile_id: { Args: { p_room_id: string }; Returns: string }
       save_meeting_english: {
         Args: { p_checked: boolean; p_meeting_id: string; p_text: Json }
         Returns: Json
@@ -1905,16 +1959,25 @@ export type Database = {
         }
         Returns: Json
       }
+      try_link_owner_profile: {
+        Args: {
+          p_actor_profile_id: string
+          p_owner_id: string
+          p_profile_id: string
+          p_source: string
+        }
+        Returns: boolean
+      }
+      verify_result_reference: {
+        Args: { p_snapshot_id: string }
+        Returns: Json
+      }
       vote_normalize_answers: {
         Args: { p_answers: Json; p_meeting_id: string }
         Returns: {
           choice_id: string
           question_id: string
         }[]
-      }
-      verify_result_reference: {
-        Args: { p_snapshot_id: string }
-        Returns: Json
       }
     }
     Enums: {

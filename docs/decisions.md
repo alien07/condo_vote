@@ -346,3 +346,40 @@ not security.
   member statuses worked out from data, not assignable roles.
 - Built-in roles Manager, Staff, Committee, Auditor and System Admin are
   seeded with exactly today's access, locked, and can be copied.
+
+### D024 - Owner Record Linked To One Account
+Status: accepted 2026-11-16, in progress (migration 0037)
+
+Before this, an owner of record and a signed-in account were matched by
+email (`lower(owners.email) = lower(profiles.email)`) every time rights were
+checked. Changing an owner's email silently moved the room's voting right,
+with no audit entry, and office staff could do it.
+
+- `owners.profile_id` references `profiles(id)`. One account is linked to at
+  most one owner of record and one owner to at most one account (unique).
+  One owner can still hold many rooms through `room_owners`.
+- Rights follow the link, not the email: `room_owner_profile_id`,
+  `my_member_access` and the eligible-voter snapshot built at publish use
+  `owners.profile_id`. Owner email stays a contact address and the key the
+  link is first made from.
+- Automatic link: when an account has given the current privacy consent
+  (or consent is not required), and its email matches exactly one active
+  owner of record that has no account yet, the owner is linked, the account
+  is approved with member status `owner`, and `owner.profile_linked` is
+  written to the audit log. This runs after the consent page, at sign-in,
+  and when an owner is added or its email changed. A rejected account
+  is never approved automatically.
+- Owner email: office staff set it when adding an owner; only an admin
+  changes it afterwards, and each change is audited (`owner.email_changed`,
+  addresses masked). Changing the email does not move an existing link.
+- Only the link functions set `owners.profile_id` (column privileges), so a
+  link cannot be written around the audit.
+- Shared email: not supported. Two active owners cannot have the same email
+  (unique index, case and spaces ignored). Owners who share one email need separate
+  Google accounts, or one gives the other a proxy (three-room limit, D012).
+- Known risk: a wrong email in the owners file links the wrong account. The
+  admin sees recent automatic links and can unlink or move a link (planned
+  in the follow-up change with the "move account" action, which also
+  updates the snapshot of open meetings for rooms that have not voted).
+- Migration 0037 links existing owners once, with the same exact-one-match
+  rule; owners it cannot link stay unlinked until the account signs in.

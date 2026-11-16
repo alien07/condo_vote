@@ -257,13 +257,14 @@ export async function publishMeeting(formData: FormData) {
     supabase.from("rooms").select("id, ownership_percent").eq("active", true),
     supabase
       .from("profiles")
-      .select("id, email, default_status, approval_status")
+      .select("id, default_status, approval_status")
       .eq("approval_status", "approved"),
     // One owner of record per room (item 15); the oldest link first, so the
-    // same owner is picked every time.
+    // same owner is picked every time. The owner's linked account votes
+    // (D024), not whoever has the same email.
     supabase
       .from("room_owners")
-      .select("room_id, owners(email)")
+      .select("room_id, owners(profile_id)")
       .is("ends_at", null)
       .eq("ownership_role", "owner")
       .order("created_at", { ascending: true }),
@@ -290,8 +291,8 @@ export async function publishMeeting(formData: FormData) {
     throw proxyAuthorizationsResult.error;
   }
 
-  const profilesByEmail = new Map(
-    profilesResult.data.map((profile) => [profile.email.toLowerCase(), profile]),
+  const profilesById = new Map(
+    profilesResult.data.map((profile) => [profile.id, profile]),
   );
   const ownershipByRoom = new Map(
     roomsResult.data.map((room) => [room.id, room.ownership_percent]),
@@ -309,8 +310,8 @@ export async function publishMeeting(formData: FormData) {
   >();
 
   for (const link of roomOwnersResult.data) {
-    const ownerEmail = link.owners?.email?.toLowerCase();
-    const profile = ownerEmail ? profilesByEmail.get(ownerEmail) : null;
+    const ownerProfileId = link.owners?.profile_id;
+    const profile = ownerProfileId ? profilesById.get(ownerProfileId) : null;
     const ownershipPercent = ownershipByRoom.get(link.room_id);
 
     if (
