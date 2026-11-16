@@ -15,6 +15,17 @@ export type Owner = {
   id: string;
   line_id: string | null;
   phone: string | null;
+  /** Linked account (D024); null until the owner signs in or an admin links. */
+  profile_id: string | null;
+};
+
+/** Audit entry of an owner account link, move or unlink (D024). */
+export type OwnerAccountEvent = {
+  action: string;
+  created_at: string;
+  details_json: unknown;
+  entity_id: string | null;
+  id: string;
 };
 
 export type Profile = {
@@ -35,11 +46,14 @@ export type AppRole = {
 export type PeopleCrudPilotProps = {
   activeSection: "owners" | "profiles" | "rooms";
   appRolesByProfile: Map<string, AppRole[]>;
+  /** Admin (manager) may link, move or unlink owner accounts (D024). */
+  canManageOwnerAccounts: boolean;
   drawer?: {
     id?: string;
     mode?: string;
     type?: string;
   };
+  ownerAccountEvents: OwnerAccountEvent[];
   owners: Owner[];
   profiles: Profile[];
   rooms: Room[];

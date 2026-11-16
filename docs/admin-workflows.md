@@ -18,6 +18,18 @@ These workflows define the admin-facing MVP behavior. Ask before implementing an
 - Admin can edit ownership dates, end an active owner-room relationship, or cancel a scheduled link before it becomes active.
 - Ownership status is displayed as Active, Scheduled, Ended, or Cancelled. Cancelled state is stored on the ownership row and recorded in audit logs.
 
+## Owner Accounts (D024)
+- Each owner of record is linked to at most one account, and each account to at most one owner. Voting rights follow the link, not the email.
+- Two active owners cannot share an email. Office staff set the email when they add an owner; only an admin changes it later (audited, link unchanged).
+- Automatic link: when the owner signs in with the owner email and accepts the privacy notice, the account is linked and approved as an owner. Existing owners were linked once by migration 0037.
+- Review: `Admin > Rooms & Owners > Owners` shows owners with no account and the last account changes. Check new automatic links; a wrong email in the owners file links the wrong account.
+- Move an owner to a new account (lost Google account, new email):
+  1. Ask the owner to sign in once with the new Google account (it waits for approval).
+  2. Open the owner, enter the new account email and a reason, and press `Link or move account`.
+  3. Open meetings: rooms that have not voted move to the new account; rooms that already voted keep their vote. The old account becomes a resident.
+- Unlink (wrong link, owner sold the rooms): give a reason and press `Unlink account`. Rooms that have not voted in open meetings have no voter until an account is linked again; use a paper ballot if needed.
+- Every link, move and unlink is in the audit log with who did it and the reason (`owner.profile_linked`, `owner.profile_moved`, `owner.profile_unlinked`).
+
 ## User Approval
 - Admin can review registered profiles.
 - Admin can approve or reject owner eligibility requests.

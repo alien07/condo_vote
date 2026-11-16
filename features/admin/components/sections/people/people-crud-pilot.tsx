@@ -8,7 +8,9 @@ import type { PeopleCrudPilotProps } from "@/features/admin/components/sections/
 export function PeopleCrudPilot({
   activeSection,
   appRolesByProfile,
+  canManageOwnerAccounts,
   drawer,
+  ownerAccountEvents,
   owners,
   profiles,
   rooms,
@@ -28,8 +30,11 @@ export function PeopleCrudPilot({
     return (
       <OwnersPanel
         activeSection={activeSection}
+        canManageOwnerAccounts={canManageOwnerAccounts}
         drawer={drawer}
+        ownerAccountEvents={ownerAccountEvents}
         owners={owners}
+        profiles={profiles}
       />
     );
   }

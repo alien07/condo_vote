@@ -18,14 +18,18 @@ import {
 import type { Owner } from "@/features/admin/components/sections/people/people-types";
 
 export function OwnerForm({
+  canEditEmail = true,
   closeHref,
   mode,
   owner,
 }: {
+  /** Only an admin changes an existing owner's email (D024). */
+  canEditEmail?: boolean;
   closeHref: string;
   mode: "create" | "edit";
   owner?: Owner;
 }) {
+  const emailLocked = mode === "edit" && !canEditEmail;
   const { s } = useStaffText();
   const formRef = useRef<HTMLFormElement>(null);
   const [state, formAction] = useActionState(
@@ -54,11 +58,24 @@ export function OwnerForm({
       <label className="grid gap-1 text-sm font-medium">
         {s.people.email}
         <input
-          className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+          {...fieldProps("email", state)}
+          aria-describedby={
+            [emailLocked ? "owner-email-locked" : null, fieldProps("email", state)["aria-describedby"]]
+              .filter(Boolean)
+              .join(" ") || undefined
+          }
+          className="rounded-md border border-[var(--border)] px-3 py-2 text-sm read-only:bg-[var(--background)] read-only:text-[var(--muted)]"
           defaultValue={stateValue(state, "email", owner?.email)}
           name="email"
+          readOnly={emailLocked}
           type="email"
         />
+        {emailLocked ? (
+          <span className="text-xs font-normal text-[var(--muted)]" id="owner-email-locked">
+            {s.people.emailAdminOnly}
+          </span>
+        ) : null}
+        <FieldError fieldName="email" state={state} />
       </label>
       <label className="grid gap-1 text-sm font-medium">
         {s.people.phone}
