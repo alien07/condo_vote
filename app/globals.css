@@ -29,6 +29,17 @@
     color: inherit;
     text-decoration: none;
   }
+
+  /* Text boxes grow with what is typed, up to most of the screen, then
+     scroll (2026-11-17). Browsers without field-sizing keep the drawn size
+     and can still be resized by hand. */
+  @supports (field-sizing: content) {
+    textarea {
+      field-sizing: content;
+      min-height: 5rem;
+      max-height: 60vh;
+    }
+  }
 }
 
 /* The one required mark (demo feedback item 9). */
