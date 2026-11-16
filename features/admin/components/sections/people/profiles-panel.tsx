@@ -7,6 +7,7 @@ import { UsersRound } from "lucide-react";
 import { AdminCrudDrawer } from "@/features/admin/components/admin-crud-drawer";
 import {
   AdminListCard,
+  AdminListEmpty,
   AdminListFooterPager,
   AdminListPager,
   AdminListToolbar,
@@ -46,6 +47,7 @@ export function ProfilesPanel({
   const [profileTableState, setProfileTableState] = useState(() =>
     profileTableStateFromParams(searchParams),
   );
+  const [searchRuns, setSearchRuns] = useState(0);
   const closeHref = mergeParams(searchParams, {
     feedback: null,
     id: null,
@@ -167,6 +169,58 @@ export function ProfilesPanel({
       page: 1,
       sort,
     });
+  const clearProfileTable = () =>
+    updateProfileTable({
+      defaultStatus: "all",
+      dir: "asc",
+      name: "",
+      page: 1,
+      perPage: 25,
+      sort: "name",
+    });
+  const defaultStatusLabel: Record<ProfileTableState["defaultStatus"], string> = {
+    all: s.common.allStatuses,
+    owner: s.people.ownerOption,
+    proxy: s.people.proxyOption,
+    resident: s.people.residentOption,
+  };
+  // Search feedback: the count, the filters in use, and a fade on every
+  // search (even a repeated one, hence searchRuns).
+  const profileFilters = [
+    ...(profileTableState.name.trim()
+      ? [
+          {
+            key: "name",
+            label: `${s.common.name}: ${profileTableState.name.trim()}`,
+            onRemove: () => updateProfileTable({ ...profileTableState, name: "", page: 1 }),
+          },
+        ]
+      : []),
+    ...(profileTableState.defaultStatus !== "all"
+      ? [
+          {
+            key: "defaultStatus",
+            label: `${s.people.defaultStatus}: ${defaultStatusLabel[profileTableState.defaultStatus]}`,
+            onRemove: () =>
+              updateProfileTable({ ...profileTableState, defaultStatus: "all", page: 1 }),
+          },
+        ]
+      : []),
+  ];
+  const profileShowing = fill(s.common.showing, {
+    start: profilePageStart,
+    end: profilePageEnd,
+    total: profileTotal,
+  });
+  const profileFound = fill(s.common.foundOf, {
+    count: profileTotal,
+    total: profiles.length,
+  });
+  const profileMeta = !profileFilters.length
+    ? profileShowing
+    : profileTotal
+      ? `${profileFound} · ${profileShowing}`
+      : profileFound;
 
   return (
     <>
@@ -181,8 +235,9 @@ export function ProfilesPanel({
             totalPages={profileTotalPages}
           />
         }
+        filters={profileFilters}
         icon={<UsersRound aria-hidden="true" size={20} />}
-        meta={fill(s.common.showing, { start: profilePageStart, end: profilePageEnd, total: profileTotal })}
+        meta={profileMeta}
         pager={
           <AdminListPager
             onPage={(page) => updateProfileTable({ ...profileTableState, page })}
@@ -192,20 +247,15 @@ export function ProfilesPanel({
             totalPages={profileTotalPages}
           />
         }
+        resultKey={`${JSON.stringify(profileTableState)}:${searchRuns}`}
         title={s.people.profilesTitle}
         toolbar={
           <AdminListToolbar
-            onClear={() =>
-              updateProfileTable({
-                defaultStatus: "all",
-                dir: "asc",
-                name: "",
-                page: 1,
-                perPage: 25,
-                sort: "name",
-              })
-            }
-            onSubmit={() => updateProfileTable({ ...profileCriteria, page: 1 })}
+            onClear={clearProfileTable}
+            onSubmit={() => {
+              setSearchRuns((runs) => runs + 1);
+              updateProfileTable({ ...profileCriteria, page: 1 });
+            }}
           >
             <label className={`${listFieldClass} w-full sm:w-72`}>
               {s.common.name}
@@ -305,9 +355,10 @@ export function ProfilesPanel({
           </tbody>
         </table>
         {pagedProfiles.length === 0 ? (
-          <p className="px-5 py-4 text-sm text-[var(--muted)]">
-            {s.people.noProfiles}
-          </p>
+          <AdminListEmpty
+            message={s.people.noProfiles}
+            onClearFilters={profileFilters.length ? clearProfileTable : undefined}
+          />
         ) : null}
       </AdminListCard>
       {drawerContent ? (

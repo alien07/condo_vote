@@ -9,6 +9,7 @@ import { ConfirmSubmitButton } from "@/features/admin/components/form-controls";
 import { AdminCrudDrawer } from "@/features/admin/components/admin-crud-drawer";
 import {
   AdminListCard,
+  AdminListEmpty,
   AdminListFooterPager,
   AdminListPager,
   AdminListToolbar,
@@ -59,6 +60,7 @@ export function OwnersPanel({
   const [ownerTableState, setOwnerTableState] = useState(() =>
     ownerTableStateFromParams(searchParams),
   );
+  const [searchRuns, setSearchRuns] = useState(0);
   const closeHref = mergeParams(searchParams, {
     feedback: null,
     id: null,
@@ -204,6 +206,50 @@ export function OwnersPanel({
       page: 1,
       sort,
     });
+  const clearOwnerTable = () =>
+    updateOwnerTable({
+      dir: "asc",
+      name: "",
+      page: 1,
+      perPage: 25,
+      sort: "name",
+      status: "all",
+    });
+  // Search feedback: the count, the filters in use, and a fade on every
+  // search (even a repeated one, hence searchRuns).
+  const ownerFilters = [
+    ...(ownerTableState.name.trim()
+      ? [
+          {
+            key: "name",
+            label: `${s.common.name}: ${ownerTableState.name.trim()}`,
+            onRemove: () => updateOwnerTable({ ...ownerTableState, name: "", page: 1 }),
+          },
+        ]
+      : []),
+    ...(ownerTableState.status !== "all"
+      ? [
+          {
+            key: "status",
+            label: `${s.common.status}: ${
+              ownerTableState.status === "active" ? s.common.active : s.common.inactive
+            }`,
+            onRemove: () => updateOwnerTable({ ...ownerTableState, page: 1, status: "all" }),
+          },
+        ]
+      : []),
+  ];
+  const ownerShowing = fill(s.common.showing, {
+    start: ownerPageStart,
+    end: ownerPageEnd,
+    total: ownerTotal,
+  });
+  const ownerFound = fill(s.common.foundOf, { count: ownerTotal, total: owners.length });
+  const ownerMeta = !ownerFilters.length
+    ? ownerShowing
+    : ownerTotal
+      ? `${ownerFound} · ${ownerShowing}`
+      : ownerFound;
 
   return (
     <>
@@ -236,8 +282,9 @@ export function OwnersPanel({
               totalPages={ownerTotalPages}
             />
           }
+          filters={ownerFilters}
           icon={<UserRound aria-hidden="true" size={20} />}
-          meta={fill(s.common.showing, { start: ownerPageStart, end: ownerPageEnd, total: ownerTotal })}
+          meta={ownerMeta}
           pager={
             <AdminListPager
               onPage={(page) => updateOwnerTable({ ...ownerTableState, page })}
@@ -247,20 +294,15 @@ export function OwnersPanel({
               totalPages={ownerTotalPages}
             />
           }
+          resultKey={`${JSON.stringify(ownerTableState)}:${searchRuns}`}
           title={s.people.owners}
           toolbar={
             <AdminListToolbar
-              onClear={() =>
-                updateOwnerTable({
-                  dir: "asc",
-                  name: "",
-                  page: 1,
-                  perPage: 25,
-                  sort: "name",
-                  status: "all",
-                })
-              }
-              onSubmit={() => updateOwnerTable({ ...ownerCriteria, page: 1 })}
+              onClear={clearOwnerTable}
+              onSubmit={() => {
+                setSearchRuns((runs) => runs + 1);
+                updateOwnerTable({ ...ownerCriteria, page: 1 });
+              }}
             >
               <label className={`${listFieldClass} w-full sm:w-72`}>
                 {s.common.name}
@@ -379,9 +421,10 @@ export function OwnersPanel({
             </tbody>
           </table>
           {pagedOwners.length === 0 ? (
-            <p className="px-5 py-4 text-sm text-[var(--muted)]">
-              {s.people.noOwners}
-            </p>
+            <AdminListEmpty
+              message={s.people.noOwners}
+              onClearFilters={ownerFilters.length ? clearOwnerTable : undefined}
+            />
           ) : null}
         </AdminListCard>
 

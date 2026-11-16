@@ -42,6 +42,31 @@
   }
 }
 
+/* Admin lists (2026-11-17): a thin bar runs under the filters while a
+   search waits on the server. People who ask for less motion see a still
+   bar instead. */
+@keyframes list-progress {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(250%);
+  }
+}
+
+.list-progress {
+  animation: list-progress 1.1s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .list-progress {
+    animation: none;
+    transform: none;
+    width: 100%;
+    opacity: 0.6;
+  }
+}
+
 /* The one required mark (demo feedback item 9). */
 .required-mark {
   color: var(--danger);

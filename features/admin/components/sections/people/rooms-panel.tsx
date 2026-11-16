@@ -9,6 +9,7 @@ import { ConfirmSubmitButton } from "@/features/admin/components/form-controls";
 import { AdminCrudDrawer } from "@/features/admin/components/admin-crud-drawer";
 import {
   AdminListCard,
+  AdminListEmpty,
   AdminListFooterPager,
   AdminListPager,
   AdminListToolbar,
@@ -55,6 +56,7 @@ export function RoomsPanel({
   const [roomTableState, setRoomTableState] = useState(() =>
     roomTableStateFromParams(searchParams),
   );
+  const [searchRuns, setSearchRuns] = useState(0);
   const closeHref = mergeParams(searchParams, {
     feedback: null,
     id: null,
@@ -222,6 +224,50 @@ export function RoomsPanel({
       page: 1,
       sort,
     });
+  const clearRoomTable = () =>
+    updateRoomTable({
+      dir: "asc",
+      page: 1,
+      perPage: 25,
+      room: "",
+      sort: "room",
+      status: "all",
+    });
+  // Search feedback: the count, the filters in use, and a fade on every
+  // search (even a repeated one, hence searchRuns).
+  const roomFilters = [
+    ...(roomTableState.room.trim()
+      ? [
+          {
+            key: "room",
+            label: `${s.people.room}: ${roomTableState.room.trim()}`,
+            onRemove: () => updateRoomTable({ ...roomTableState, page: 1, room: "" }),
+          },
+        ]
+      : []),
+    ...(roomTableState.status !== "all"
+      ? [
+          {
+            key: "status",
+            label: `${s.common.status}: ${
+              roomTableState.status === "active" ? s.common.active : s.common.inactive
+            }`,
+            onRemove: () => updateRoomTable({ ...roomTableState, page: 1, status: "all" }),
+          },
+        ]
+      : []),
+  ];
+  const roomShowing = fill(s.common.showing, {
+    start: roomPageStart,
+    end: roomPageEnd,
+    total: roomTotal,
+  });
+  const roomFound = fill(s.common.foundOf, { count: roomTotal, total: rooms.length });
+  const roomMeta = !roomFilters.length
+    ? roomShowing
+    : roomTotal
+      ? `${roomFound} · ${roomShowing}`
+      : roomFound;
 
   return (
   <>
@@ -253,8 +299,9 @@ export function RoomsPanel({
           totalPages={roomTotalPages}
         />
       }
+      filters={roomFilters}
       icon={<Building2 aria-hidden="true" size={20} />}
-      meta={fill(s.common.showing, { start: roomPageStart, end: roomPageEnd, total: roomTotal })}
+      meta={roomMeta}
       pager={
         <AdminListPager
           onPage={(page) => updateRoomTable({ ...roomTableState, page })}
@@ -264,20 +311,15 @@ export function RoomsPanel({
           totalPages={roomTotalPages}
         />
       }
+      resultKey={`${JSON.stringify(roomTableState)}:${searchRuns}`}
       title={s.people.rooms}
       toolbar={
         <AdminListToolbar
-          onClear={() =>
-            updateRoomTable({
-              dir: "asc",
-              page: 1,
-              perPage: 25,
-              room: "",
-              sort: "room",
-              status: "all",
-            })
-          }
-          onSubmit={() => updateRoomTable({ ...roomCriteria, page: 1 })}
+          onClear={clearRoomTable}
+          onSubmit={() => {
+            setSearchRuns((runs) => runs + 1);
+            updateRoomTable({ ...roomCriteria, page: 1 });
+          }}
         >
           <label className={`${listFieldClass} w-full sm:w-64`}>
             {s.people.room}
@@ -401,9 +443,10 @@ export function RoomsPanel({
         </tbody>
       </table>
       {pagedRooms.length === 0 ? (
-        <p className="px-5 py-4 text-sm text-[var(--muted)]">
-          {s.people.noRooms}
-        </p>
+        <AdminListEmpty
+          message={s.people.noRooms}
+          onClearFilters={roomFilters.length ? clearRoomTable : undefined}
+        />
       ) : null}
     </AdminListCard>
 
