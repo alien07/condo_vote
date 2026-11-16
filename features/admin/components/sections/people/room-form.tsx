@@ -89,6 +89,8 @@ export function RoomForm({
         <input
           className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
           defaultValue={stateValue(state, "area_size", room?.area_size)}
+          inputMode="decimal"
+          min="0"
           name="area_size"
           step="0.01"
           type="number"
