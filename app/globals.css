@@ -13,9 +13,6 @@
      --background; the error surface keeps it above 4.5:1. */
   --danger: #b91c1c;
   --danger-surface: #fef2f2;
-  /* Widest the header, menus and page content grow. Admin pages raise it
-     so lists use a wide screen (2026-11-17). */
-  --page-max: 72rem;
 }
 
 /* Base rules live in a layer so Tailwind utilities (text colors on links,

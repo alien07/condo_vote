@@ -158,7 +158,7 @@ export function AppShellNav({
 
   return (
     <div className="border-t border-[var(--border)] bg-[var(--background)]">
-      <div className="mx-auto flex max-w-[var(--page-max)] flex-col gap-2 px-4 py-3 md:px-6">
+      <div className="mx-auto flex max-w-6xl flex-col gap-2 px-4 py-3 md:px-6">
         <nav
           aria-label="Primary navigation"
           className="flex gap-2 overflow-x-auto pb-1 text-sm"

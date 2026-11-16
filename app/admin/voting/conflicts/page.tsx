@@ -69,7 +69,7 @@ export default async function AdminVoteConflictsPage({
 
   return (
     <main className="min-h-screen px-6 py-8">
-      <section className="mx-auto max-w-[calc(var(--page-max)-3rem)]">
+      <section className="mx-auto max-w-5xl">
         <div className="mb-6 border-b border-[var(--border)] pb-5">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="flex items-center gap-3">

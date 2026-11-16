@@ -352,7 +352,7 @@ export default async function AdminDashboardPage() {
 
   return (
     <main className="min-h-screen px-6 py-8">
-      <section className="mx-auto max-w-[calc(var(--page-max)-3rem)]">
+      <section className="mx-auto max-w-5xl">
         <div className="mb-6 border-b border-[var(--border)] pb-5">
           <h1 className="text-2xl font-semibold">{t.title}</h1>
           <p className="mt-1 text-sm text-[var(--muted)]">
