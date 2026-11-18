@@ -233,6 +233,7 @@ export async function AdminWorkspace({
 
         <MeetingsSection
           approvedMeetingIds={approvedMeetingIds}
+          committeeMembers={committeeMembers}
           lockedMeetingIds={lockedMeetingIds}
           drawer={drawer}
           focusedMeetingId={focusedMeetingId}

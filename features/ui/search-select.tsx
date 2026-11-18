@@ -18,6 +18,8 @@ export type SearchSelectText = {
   /** "{count} more. Type to narrow the list." */
   more: string;
   clear: string;
+  /** With allowCustom: "Use “{text}”". */
+  useTyped?: string;
 };
 
 // Letters and digits only, lower case: "A-108" matches "a108" and "a 108".
@@ -37,6 +39,7 @@ export function SearchSelect({
   defaultValue = "",
   text,
   autoFocus,
+  allowCustom = false,
   maxResults = 20,
   "aria-describedby": describedBy,
   "aria-invalid": invalid,
@@ -46,6 +49,8 @@ export function SearchSelect({
   defaultValue?: string;
   text: SearchSelectText;
   autoFocus?: boolean;
+  /** Also accept typed text that is not in the list (the value is the text). */
+  allowCustom?: boolean;
   maxResults?: number;
   "aria-describedby"?: string;
   "aria-invalid"?: "true";
@@ -106,8 +111,15 @@ export function SearchSelect({
           .map((entry) => entry.option);
   }, [indexed, query]);
 
-  const shown = matches.slice(0, maxResults);
-  const selected = options.find((option) => option.value === value);
+  const typed = query.trim();
+  const customRow: SearchSelectOption | null =
+    allowCustom && typed && !options.some((option) => normalize(option.label) === normalize(typed))
+      ? { value: typed, label: typed }
+      : null;
+  const shown = [...matches.slice(0, maxResults), ...(customRow ? [customRow] : [])];
+  const selected =
+    options.find((option) => option.value === value) ??
+    (allowCustom && value ? { value, label: value } : undefined);
 
   function choose(option: SearchSelectOption) {
     if (option.disabled) {
@@ -156,6 +168,11 @@ export function SearchSelect({
           className="min-h-11 w-full rounded-md border border-[var(--border)] bg-[var(--surface)] py-2 pl-3 pr-11 text-sm font-normal"
           data-focus-for={name}
           onBlur={() => {
+            // Free text counts as the answer when the box is left.
+            if (allowCustom && typed) {
+              setValue(typed);
+            }
+
             setQuery("");
             setOpen(false);
           }}
@@ -204,7 +221,7 @@ export function SearchSelect({
               } ${option.disabled ? "cursor-not-allowed opacity-50" : ""}`}
               data-label={option.label}
               id={`${listId}-${index}`}
-              key={option.value}
+              key={option === customRow ? `custom:${option.value}` : option.value}
               onMouseDown={(event) => {
                 // Keep focus in the box until the row is chosen.
                 event.preventDefault();
@@ -213,20 +230,24 @@ export function SearchSelect({
               onMouseEnter={() => setActive(index)}
               role="option"
             >
-              <span className="block text-sm font-medium">{option.label}</span>
+              <span className="block text-sm font-medium">
+                {option === customRow && text.useTyped
+                  ? text.useTyped.replace("{text}", option.label)
+                  : option.label}
+              </span>
               {option.hint ? (
                 <span className="block text-xs text-[var(--muted)]">{option.hint}</span>
               ) : null}
             </li>
           ))}
-          {shown.length === 0 ? (
+          {shown.length === 0 && !customRow ? (
             <li className="px-3 py-2 text-sm text-[var(--muted)]" role="presentation">
               {text.noResults}
             </li>
           ) : null}
-          {matches.length > shown.length ? (
+          {matches.length > maxResults ? (
             <li className="px-3 py-2 text-xs text-[var(--muted)]" role="presentation">
-              {text.more.replace("{count}", String(matches.length - shown.length))}
+              {text.more.replace("{count}", String(matches.length - maxResults))}
             </li>
           ) : null}
         </ul>

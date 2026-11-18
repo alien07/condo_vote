@@ -19,7 +19,7 @@ import type {
   SharedAdminState,
 } from "@/features/admin/components/sections/shared/derived";
 
-type MeetingsSectionProps = Pick<AdminDashboardData, "meetings"> &
+type MeetingsSectionProps = Pick<AdminDashboardData, "committeeMembers" | "meetings"> &
   Pick<
     SharedAdminState,
     "approvedMeetingIds" | "lockedMeetingIds"
@@ -40,6 +40,7 @@ function isVotingOpen(status: string, endsAt: string) {
 
 export async function MeetingsSection({
   approvedMeetingIds,
+  committeeMembers,
   lockedMeetingIds,
   drawer,
   focusedMeetingId,
@@ -500,6 +501,7 @@ export async function MeetingsSection({
       {showMeetingDrawer ? (
         <MeetingCrudDrawer
           closeHref={meetingListHref}
+          committeeMembers={committeeMembers}
           meeting={selectedMeeting}
           mode={drawer?.mode === "edit" ? "edit" : "create"}
         />

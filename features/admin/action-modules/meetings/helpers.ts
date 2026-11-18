@@ -79,6 +79,11 @@ export function validateMeetingForm(
     fieldErrors.required_approvals = "Committee approvals must be a whole number from 1 to 20.";
   }
 
+  // Fiscal year is a 4-digit year, for example 2569 (2026-11-18).
+  if (values.fiscal_year && !/^\d{4}$/.test(values.fiscal_year.trim())) {
+    fieldErrors.fiscal_year = "Fiscal year must be a 4-digit year, for example 2569.";
+  }
+
   if (values.ballot_secrecy && !["open", "secret"].includes(values.ballot_secrecy)) {
     fieldErrors.ballot_secrecy = "Choose open or secret ballot.";
   }

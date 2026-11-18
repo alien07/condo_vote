@@ -14,6 +14,7 @@ import { AdminCrudDrawer } from "@/features/admin/components/admin-crud-drawer";
 import { FieldLabel, RequiredNote } from "@/features/admin/components/field-label";
 import { FormResetButton } from "@/features/admin/components/form-controls";
 import { PendingSubmitButton } from "@/features/debug/tracked-submit-button";
+import { SearchSelect } from "@/features/ui/search-select";
 
 type MeetingRecord = {
   chairperson_name: string | null;
@@ -35,11 +36,29 @@ type MeetingRecord = {
   video_url: string | null;
 };
 
+type CommitteeMemberOption = {
+  active: boolean;
+  full_name: string;
+  position_title: string;
+};
+
 type MeetingCrudDrawerProps = {
   closeHref: string;
+  committeeMembers?: CommitteeMemberOption[];
   meeting?: MeetingRecord;
   mode: "create" | "edit";
 };
+
+// The committee chair, for a new meeting's chairperson (2026-11-18): an
+// active member whose title is chair, not vice chair.
+function committeeChair(members: CommitteeMemberOption[]) {
+  return members.find(
+    (member) =>
+      member.active &&
+      /ประธาน|chair/i.test(member.position_title) &&
+      !/รอง|vice/i.test(member.position_title),
+  )?.full_name;
+}
 
 const emptyState: MeetingActionState = {};
 
@@ -120,11 +139,19 @@ export function MeetingRowFocus({ meetingId }: { meetingId?: string | null }) {
 
 export function MeetingCrudDrawer({
   closeHref,
+  committeeMembers = [],
   meeting,
   mode,
 }: MeetingCrudDrawerProps) {
   const tm = useMessageText();
   const { s } = useStaffText();
+  const chairOptions = committeeMembers
+    .filter((member) => member.active)
+    .map((member) => ({
+      value: member.full_name,
+      label: member.full_name,
+      hint: member.position_title,
+    }));
   const formRef = useRef<HTMLFormElement>(null);
   const searchParams = useSearchParams();
   const [state, formAction] = useActionState(
@@ -225,7 +252,7 @@ export function MeetingCrudDrawer({
             meeting?.meeting_number,
           )}
           name="meeting_number"
-          placeholder={s.meetings.meetingNo}
+          placeholder={s.meetings.meetingNoHint}
         />
         <label className="grid gap-1 text-sm font-medium">
           <FieldLabel required>{s.meetings.meetingType}</FieldLabel>
@@ -246,28 +273,45 @@ export function MeetingCrudDrawer({
           </select>
           <FieldError fieldName="meeting_type" state={state} />
         </label>
-        <input
-          className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-          defaultValue={stateValue(state, "fiscal_year", meeting?.fiscal_year)}
-          name="fiscal_year"
-          placeholder={s.meetings.fiscalYear}
-        />
+        <label className="grid gap-1 text-sm font-medium">
+          <input
+            {...fieldProps("fiscal_year", state)}
+            className="rounded-md border border-[var(--border)] px-3 py-2 text-sm font-normal"
+            defaultValue={stateValue(state, "fiscal_year", meeting?.fiscal_year)}
+            inputMode="numeric"
+            maxLength={4}
+            name="fiscal_year"
+            placeholder={s.meetings.fiscalYearHint}
+          />
+          <FieldError fieldName="fiscal_year" state={state} />
+        </label>
         <input
           className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
           defaultValue={stateValue(state, "location", meeting?.location)}
           name="location"
           placeholder={s.meetings.location}
         />
-        <input
-          className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-          defaultValue={stateValue(
-            state,
-            "chairperson_name",
-            meeting?.chairperson_name,
-          )}
-          name="chairperson_name"
-          placeholder={s.meetings.chairperson}
-        />
+        <label className="grid gap-1 text-sm font-medium">
+          {s.meetings.chairperson}
+          {/* Pick a committee member or type another name (2026-11-18). */}
+          <SearchSelect
+            allowCustom
+            defaultValue={stateValue(
+              state,
+              "chairperson_name",
+              meeting ? meeting.chairperson_name : committeeChair(committeeMembers),
+            )}
+            name="chairperson_name"
+            options={chairOptions}
+            text={{
+              clear: s.common.searchClear,
+              more: s.common.searchMore,
+              noResults: s.common.searchNoResults,
+              placeholder: s.meetings.chairpersonPick,
+              useTyped: s.common.searchUseTyped,
+            }}
+          />
+        </label>
         <label className="grid gap-1 text-sm font-medium">
           <FieldLabel required>{s.meetings.quorumRule}</FieldLabel>
           <select

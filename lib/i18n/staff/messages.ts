@@ -98,6 +98,7 @@ const EXACT: Record<string, string> = {
   "Choose at least one person who signs the record.": "เลือกผู้ลงนามอย่างน้อยหนึ่งคน",
   "Choose open or secret ballot.": "เลือกลงคะแนนเปิดเผยหรือลงคะแนนลับ",
   "Committee approvals must be a whole number from 1 to 20.": "จำนวนกรรมการที่ต้องอนุมัติต้องเป็นจำนวนเต็ม 1 ถึง 20",
+  "Fiscal year must be a 4-digit year, for example 2569.": "ปีบัญชีต้องเป็นปี 4 หลัก เช่น 2569",
   "Committee member added": "เพิ่มกรรมการแล้ว",
   "Committee member updated": "แก้ไขกรรมการแล้ว",
   "Conflict resolved": "บันทึกแหล่งที่เลือกแล้ว",
