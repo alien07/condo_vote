@@ -150,6 +150,8 @@ export async function createMeeting(spec) {
             choice_text: text,
             choice_text_en: en(text),
             display_order: order + 1,
+            // A batch insert sends the same columns for every row.
+            is_abstain: false,
           })),
           { question_id: row.id, choice_text: "Abstain", choice_text_en: "Abstain", display_order: 999, is_abstain: true },
         ],
