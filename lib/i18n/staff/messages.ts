@@ -193,6 +193,7 @@ const EXACT: Record<string, string> = {
   "Every agenda item needs a choice other than Abstain before publishing.":
     "ทุกวาระต้องมีตัวเลือกอย่างน้อย 1 ข้อ (ไม่นับงดออกเสียง) ก่อนเผยแพร่",
   "Only a draft meeting can be published.": "เผยแพร่ได้เฉพาะการประชุมที่เป็นร่าง",
+  "This agenda item has votes and cannot be deleted.": "ลบวาระนี้ไม่ได้ เพราะมีคะแนนเสียงแล้ว",
   "ABSTAIN_FIXED: The Abstain choice cannot be changed. Turn it on or off on the agenda item.":
     "แก้ตัวเลือกงดออกเสียงไม่ได้ เปิดหรือปิดได้ที่การแก้ไขวาระ",
 };

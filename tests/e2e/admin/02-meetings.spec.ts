@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/database.types";
+import { confirmInApp } from "../confirm-dialog";
 import {
   demoAdminEmail,
   demoAdminName,
@@ -427,6 +428,17 @@ test.describe("@test:e2e @test:auth @test:admin admin demo: meetings and questio
       await expect(abstainRow).toContainText("Abstain");
       await expect(abstainRow).toContainText("Cannot be combined with other choices");
       await expect(questionCard.locator("[data-choice-list] li").last()).toContainText("Abstain");
+
+      // An agenda item with choices can be deleted; its choices go with it (0042).
+      await questionCard.getByRole("button", { name: "Delete question" }).click();
+      await confirmInApp(page);
+      await expect(questionCard).toHaveCount(0);
+      const { count: choicesLeft } = await supabase
+        .from("meeting_choices")
+        .select("id", { count: "exact", head: true })
+        .eq("question_id", questionId!);
+
+      expect(choicesLeft).toBe(0);
     } finally {
       await supabase.from("meeting_questions").delete().eq("meeting_id", meeting!.id);
       await supabase.from("meetings").delete().eq("id", meeting!.id);

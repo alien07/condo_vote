@@ -211,10 +211,24 @@ export async function deleteMeetingQuestion(formData: FormData) {
 
   const id = requiredText(formData.get("id"), "Question ID");
   const supabase = await createClient();
+  const { data: question } = await supabase
+    .from("meeting_questions")
+    .select("meeting_id")
+    .eq("id", id)
+    .maybeSingle();
+  // Its choices go with it (0042).
   const { error } = await supabase.from("meeting_questions").delete().eq("id", id);
 
   if (error) {
-    throw error;
+    // Show why on the agenda page instead of an error page (2026-11-18).
+    const message =
+      error.code === "23503"
+        ? "This agenda item has votes and cannot be deleted."
+        : error.message;
+
+    redirect(
+      `/admin/meetings?tab=questions${question ? `&meeting=${encodeURIComponent(question.meeting_id)}` : ""}&feedback=error&message=${encodeURIComponent(message)}`,
+    );
   }
 
   revalidateAdminPaths();

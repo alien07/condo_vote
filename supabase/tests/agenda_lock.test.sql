@@ -1,7 +1,7 @@
 -- Agenda items and choices change only while the meeting is a draft (0039).
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(9);
+select plan(10);
 
 \set admin    '''00000000-0000-4000-8000-0000000000f1'''
 \set draft    '''10000000-0000-4000-8000-0000000000f1'''
@@ -34,6 +34,10 @@ select lives_ok(
   format($q$insert into public.meeting_choices (question_id, choice_text, display_order) values (%L, 'Agree', 1)$q$, :q_draft),
   'a draft meeting''s agenda item gets a new choice');
 
+select lives_ok(
+  format($q$delete from public.meeting_questions where id = %L$q$, :q_draft),
+  'a draft agenda item with choices can be deleted; its choices go with it (0042)');
+
 select throws_like(
   format($q$update public.meeting_questions set question_text = 'Changed after publish' where id = %L$q$, :q_pub),
   'AGENDA_LOCKED%', 'a published meeting''s agenda item cannot be edited');
@@ -50,8 +54,11 @@ select throws_like(
   format($q$delete from public.meeting_choices where question_id = %L and not is_abstain$q$, :q_pub),
   'AGENDA_LOCKED%', 'a published meeting''s choice cannot be deleted');
 
+insert into public.meeting_questions (meeting_id, question_text, display_order)
+values (:draft, 'Second draft question', 2);
+
 select throws_like(
-  format($q$update public.meeting_questions set meeting_id = %L where id = %L$q$, :pub, :q_draft),
+  format($q$update public.meeting_questions set meeting_id = %L where question_text = 'Second draft question'$q$, :pub),
   'AGENDA_LOCKED%', 'an agenda item cannot be moved into a published meeting');
 
 select lives_ok(
