@@ -402,6 +402,11 @@ test.describe("@test:e2e @test:auth @test:admin admin demo: meetings and questio
       await editDrawer
         .locator('input[name="question_text"]')
         .fill(updatedQuestionText);
+      // Abstain is off until the item needs it (0041).
+      const hasAbstain = editDrawer.getByLabel("Has an Abstain choice");
+
+      await expect(hasAbstain).not.toBeChecked();
+      await hasAbstain.check();
       await editDrawer.getByRole("button", { name: "Save question" }).click();
       await page.waitForURL(
         (url) =>
@@ -416,6 +421,12 @@ test.describe("@test:e2e @test:auth @test:admin admin demo: meetings and questio
         (id) => document.activeElement?.getAttribute("data-question-id") === id,
         questionId,
       );
+      // Abstain is last, fixed, and cannot be edited.
+      const abstainRow = questionCard.locator("[data-abstain-row]");
+
+      await expect(abstainRow).toContainText("Abstain");
+      await expect(abstainRow).toContainText("Cannot be combined with other choices");
+      await expect(questionCard.locator("[data-choice-list] li").last()).toContainText("Abstain");
     } finally {
       await supabase.from("meeting_questions").delete().eq("meeting_id", meeting!.id);
       await supabase.from("meetings").delete().eq("id", meeting!.id);
