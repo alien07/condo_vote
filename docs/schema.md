@@ -661,6 +661,7 @@ Called with `supabase.rpc(name, args)`. Rules and permissions: [rls-policies.md]
 | `profile_access_active` | `p_profile_id: string` | `boolean` |
 | `profile_has_consent` | `p_profile_id: string` | `boolean` |
 | `propose_close_voting` | `p_close_at?: string, p_meeting_id: string, p_reason: string` | `Json` |
+| `proxy_holder_barred` | `p_profile_id: string` | `string` |
 | `publish_result_if_ready` | `p_actor: string, p_result_snapshot_id: string` | `boolean` |
 | `queue_result_approved_emails` | `p_meeting_id: string` | `number` |
 | `queue_staff_email` | `p_profile_id: string, p_template_key: string` | `undefined` |

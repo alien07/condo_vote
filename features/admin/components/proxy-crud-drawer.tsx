@@ -55,6 +55,8 @@ type ProxyAuthorization = {
 type ProxyCrudDrawerProps = {
   authorization?: ProxyAuthorization;
   closeHref: string;
+  /** Profiles that cannot hold a proxy, and why (section 47, 0043). */
+  barredProfiles: Record<string, "committee" | "office">;
   /** Meetings that take a new proxy (features/admin/proxy-meetings.ts). */
   meetingOptions: SearchSelectOption[];
   mode: "create" | "edit";
@@ -143,6 +145,7 @@ export function ProxyRowFocus({
 
 export function ProxyCrudDrawer({
   authorization,
+  barredProfiles,
   closeHref,
   meetingOptions,
   mode,
@@ -154,7 +157,20 @@ export function ProxyCrudDrawer({
   const { s } = useStaffText();
   const roomOptions = roomSearchOptions(rooms);
   const ownerOptions = ownerSearchOptions(owners);
-  const profileOptions = profileSearchOptions(profiles);
+  // Barred holders stay visible but cannot be picked, with the reason
+  // (Condominium Act section 47, 0043).
+  const profileOptions = profileSearchOptions(profiles).map((option) =>
+    barredProfiles[option.value]
+      ? {
+          ...option,
+          disabled: true,
+          hint:
+            barredProfiles[option.value] === "committee"
+              ? s.proxies.barredCommittee
+              : s.proxies.barredOffice,
+        }
+      : option,
+  );
   const searchText = {
     clear: s.common.searchClear,
     more: s.common.searchMore,
@@ -279,8 +295,22 @@ export function ProxyCrudDrawer({
                 options={profileOptions}
                 text={{ ...searchText, placeholder: s.proxies.selectProxy }}
               />
+              <span className="text-xs font-normal text-[var(--muted)]">{s.proxies.outsiderNote}</span>
               <FieldError fieldName="proxy_profile_id" state={state} />
             </label>
+            <label className="flex min-h-11 items-start gap-2 rounded-md border border-[var(--border)] p-3 text-sm">
+              <input
+                {...fieldProps("section47_confirmed", state)}
+                className="mt-1"
+                defaultChecked={stateValue(state, "section47_confirmed") === "on"}
+                name="section47_confirmed"
+                type="checkbox"
+              />
+              <span>
+                <FieldLabel required>{s.proxies.section47Confirm}</FieldLabel>
+              </span>
+            </label>
+            <FieldError fieldName="section47_confirmed" state={state} />
             <label className="grid gap-1 text-sm font-medium">
               {s.proxies.validFrom}
               <input

@@ -168,6 +168,14 @@ const EXACT: Record<string, string> = {
   "Question added": "เพิ่มวาระแล้ว",
   "Question updated": "แก้ไขวาระแล้ว",
   "Question deleted": "ลบวาระแล้ว",
+  "A committee member cannot hold a proxy (Condominium Act section 47).":
+    "กรรมการรับมอบฉันทะไม่ได้ (พ.ร.บ.อาคารชุด มาตรา 47)",
+  "The manager or juristic office staff cannot hold a proxy (Condominium Act section 47).":
+    "ผู้จัดการหรือเจ้าหน้าที่นิติบุคคลรับมอบฉันทะไม่ได้ (พ.ร.บ.อาคารชุด มาตรา 47)",
+  "Confirm that the proxy holder is not barred by section 47.":
+    "โปรดยืนยันว่าผู้รับมอบฉันทะไม่ใช่บุคคลต้องห้ามตามมาตรา 47",
+  "One proxy can hold at most three rooms per meeting.":
+    "ผู้รับมอบฉันทะหนึ่งคนรับได้ไม่เกิน 3 ห้องต่อการประชุม",
   "A proxy can only be added to a draft meeting or one still open for voting.":
     "เพิ่มการมอบฉันทะได้เฉพาะการประชุมที่เป็นร่าง หรือยังเปิดลงคะแนนอยู่",
   "Meeting archived": "เก็บถาวรการประชุมแล้ว",

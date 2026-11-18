@@ -64,12 +64,18 @@ export async function createProxyAuthorizationWithState(
       .single();
 
     if (error) {
-      return { error: toVoteError(error).message, values };
+      const voteError = toVoteError(error);
+
+      // A barred holder (section 47, 0043) is a problem with that field.
+      return voteError.code === "VOTE_PROXY_NOT_ALLOWED"
+        ? { error: voteError.message, fieldErrors: { proxy_profile_id: voteError.message }, values }
+        : { error: voteError.message, values };
     }
 
     await writeAuditLog(supabase, {
       action: "proxy_authorization.created",
       actorProfileId: admin.id,
+      details: { section47_confirmed: true },
       entityId: authorization.id,
       entityType: "proxy_authorization",
     });

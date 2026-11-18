@@ -38,6 +38,7 @@ and mapped to `VoteError` in `features/voting/core/ballot-service.ts`.
 | `VOTE_FORBIDDEN` | The action needs the admin role. | Non-admin calls a manual ballot or conflict function. |
 | `VOTE_INVALID_CONFLICT` | Conflict input does not match the meeting and room. | Stale conflict form after data changed. |
 | `VOTE_PROXY_LIMIT` | The proxy already holds three rooms in this meeting (D012). | Admin adds a fourth room for the same proxy. |
+| `VOTE_PROXY_NOT_ALLOWED` | The proxy holder is barred by Condominium Act section 47: a committee member, or the manager / juristic office staff (0043). | Admin picks a committee member or an admin/staff account as proxy holder. |
 | `VOTE_ROOM_ALREADY_VOTED` | The room already voted, so its proxy cannot change (D011). | Approving or revoking a proxy after the room voted. |
 | `VOTE_SECRECY_LOCKED` | Ballot secrecy cannot change after publishing (D015). | Editing a published meeting from open to secret. |
 

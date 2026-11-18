@@ -20,6 +20,11 @@ const en = {
   proxySummary: "Proxy: {name}",
   selectMeeting: "Select meeting",
   meetingDraft: "Draft",
+  barredCommittee: "Committee member: cannot hold a proxy (section 47)",
+  barredOffice: "Manager or office staff: cannot hold a proxy (section 47)",
+  section47Confirm:
+    "I checked that the proxy holder is not a committee member, the manager, a spouse of either, or staff of the juristic person, its contractors or the managing company (Condominium Act section 47).",
+  outsiderNote: "A proxy holder may be someone from outside the condo. One person holds at most 3 rooms per meeting.",
   meetingOpenUntil: "Open for voting until {date}",
   meetingHelp: "Only draft meetings and meetings still open for voting take a new proxy.",
   noOpenMeetings: "No meeting takes a new proxy now: add one to a draft meeting or a meeting still open for voting.",
@@ -60,6 +65,11 @@ const th: typeof en = {
   proxySummary: "ผู้รับมอบฉันทะ: {name}",
   selectMeeting: "เลือกการประชุม",
   meetingDraft: "ร่าง",
+  barredCommittee: "กรรมการ: รับมอบฉันทะไม่ได้ (มาตรา 47)",
+  barredOffice: "ผู้จัดการหรือเจ้าหน้าที่นิติ: รับมอบฉันทะไม่ได้ (มาตรา 47)",
+  section47Confirm:
+    "ตรวจแล้วว่าผู้รับมอบฉันทะไม่ใช่กรรมการ ผู้จัดการ คู่สมรสของบุคคลดังกล่าว หรือพนักงาน/ลูกจ้างของนิติบุคคล ผู้รับจ้างของนิติบุคคล หรือบริษัทผู้จัดการ (พ.ร.บ.อาคารชุด มาตรา 47)",
+  outsiderNote: "ผู้รับมอบฉันทะเป็นคนนอกคอนโดได้ คนหนึ่งรับได้ไม่เกิน 3 ห้องต่อการประชุม",
   meetingOpenUntil: "เปิดลงคะแนนถึง {date}",
   meetingHelp: "แสดงเฉพาะการประชุมที่เป็นร่าง หรือยังเปิดลงคะแนนอยู่",
   noOpenMeetings: "ตอนนี้ไม่มีการประชุมที่รับมอบฉันทะได้ ต้องเป็นการประชุมที่เป็นร่าง หรือยังเปิดลงคะแนนอยู่",

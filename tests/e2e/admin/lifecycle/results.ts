@@ -13,6 +13,7 @@ export async function results(page: Page, ctx: AfterIdentityConflicts) {
     updatedChoiceText,
     activeAppOrigin,
     voteDetailUrl,
+    voterPage,
     persistedMeetingResult,
     persistedRoomResult,
   } = ctx;
@@ -74,8 +75,9 @@ export async function results(page: Page, ctx: AfterIdentityConflicts) {
   await expect(
     publishedMeetingRow.getByRole("cell", { name: "closed", exact: true }),
   ).toBeVisible();
-  await page.goto(voteDetailUrl);
-  const closedVoteCard = page
+  // The proxy holder's own view of the closed ballot.
+  await voterPage.goto(voteDetailUrl);
+  const closedVoteCard = voterPage
     .getByRole("heading", { name: meetingTitle })
     .locator("xpath=ancestor::main[1]");
   await expect(closedVoteCard.getByText("Submitted v2")).toBeVisible();

@@ -100,6 +100,14 @@ Status: implemented (migration 0020)
 One proxy can hold at most three rooms per meeting (Condominium Act
 section 47). Enforce it when creating and approving proxy authorizations.
 
+- Added 2026-11-19 (migration 0043): section 47 also bars committee members,
+  the manager, their spouses, and staff of the juristic person, its
+  contractors or a managing company. The database refuses committee members
+  (active roster or committee role) and admin/staff accounts
+  (`VOTE_PROXY_NOT_ALLOWED`). Spouses and contractor staff are not in the
+  system, so the admin ticks a section 47 confirmation on the proxy form
+  (kept in the audit log). A proxy holder may be from outside the condo.
+
 ### D013 - Configurable Pass Thresholds
 Status: implemented (migration 0022, [resolution-rules.md](resolution-rules.md))
 

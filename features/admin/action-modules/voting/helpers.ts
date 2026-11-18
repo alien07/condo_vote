@@ -39,6 +39,7 @@ export function proxyFormValues(formData: FormData) {
       "valid_from",
       "valid_until",
       "status",
+      "section47_confirmed",
     ].map((field) => [field, String(formData.get(field) ?? "")]),
   );
 }
@@ -127,8 +128,17 @@ export function validateProxyCreate(values: Record<string, string>) {
     }
   });
 
+  // Spouses and contractor staff are not in the system (0043): the admin
+  // confirms them (Condominium Act section 47).
+  if (values.section47_confirmed !== "on") {
+    fieldErrors.section47_confirmed = SECTION47_CONFIRM_REQUIRED;
+  }
+
   return fieldErrors;
 }
+
+export const SECTION47_CONFIRM_REQUIRED =
+  "Confirm that the proxy holder is not barred by section 47.";
 
 export function validateProxyReview(values: Record<string, string>) {
   const fieldErrors: Record<string, string> = {};

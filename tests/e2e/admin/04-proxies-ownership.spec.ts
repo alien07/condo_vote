@@ -108,6 +108,27 @@ test.describe("@test:e2e @test:auth @test:admin admin demo: proxies and ownershi
       .single();
 
     expect(meetingError).toBeNull();
+    // The proxy holder is someone from outside the condo; the demo admin is
+    // office staff and cannot hold a proxy (section 47, 0043).
+    const outsiderEmail = `proxy-outsider-${stamp}@example.test`;
+    const { data: outsiderUser, error: outsiderUserError } =
+      await supabase.auth.admin.createUser({ email: outsiderEmail, email_confirm: true });
+
+    expect(outsiderUserError).toBeNull();
+    const { data: outsider, error: outsiderError } = await supabase
+      .from("profiles")
+      .insert({
+        auth_user_id: outsiderUser.user!.id,
+        email: outsiderEmail,
+        full_name: `Proxy Outsider ${stamp}`,
+        approval_status: "approved",
+        default_status: "proxy",
+        preferred_language: "en",
+      })
+      .select("id")
+      .single();
+
+    expect(outsiderError).toBeNull();
     const { data: link, error: linkError } =
       await supabase.auth.admin.generateLink({
         type: "magiclink",
@@ -135,13 +156,26 @@ test.describe("@test:e2e @test:auth @test:admin admin demo: proxies and ownershi
 
       await addDrawer.getByRole("button", { name: "Add proxy authorization" }).click();
       await expect(addDrawer.getByText("Meeting is required.")).toBeVisible();
+      await expect(
+        addDrawer.getByText("Confirm that the proxy holder is not barred by section 47."),
+      ).toBeVisible();
       await expect(addDrawer.locator('[data-focus-for="meeting_id"]')).toBeFocused();
 
       // Only meetings that take a new proxy are offered (2026-11-19).
       await chooseSearchOption(addDrawer, "meeting_id", meetingTitle);
       await chooseSearchOption(addDrawer, "room_id", roomNumber);
       await chooseSearchOption(addDrawer, "owner_id", ownerName);
-      await chooseSearchOption(addDrawer, "proxy_profile_id", demoAdminEmail);
+      // Office staff are shown but cannot be picked (section 47).
+      const proxyBox = addDrawer.locator('[data-focus-for="proxy_profile_id"]');
+
+      await proxyBox.click();
+      await proxyBox.fill(demoAdminEmail);
+      await expect(
+        addDrawer.locator('[role="option"][aria-disabled="true"]').first(),
+      ).toContainText("cannot hold a proxy");
+      await proxyBox.fill("");
+      await chooseSearchOption(addDrawer, "proxy_profile_id", outsiderEmail);
+      await addDrawer.getByLabel(/not a committee member, the manager/).check();
       await addDrawer.getByRole("button", { name: "Add proxy authorization" }).click();
       await page.waitForURL((url) => Boolean(url.searchParams.get("focusProxyId")));
 
@@ -187,6 +221,15 @@ test.describe("@test:e2e @test:auth @test:admin admin demo: proxies and ownershi
 
       if (room?.id) {
         await supabase.from("rooms").delete().eq("id", room.id);
+      }
+
+      if (outsider?.id) {
+        await supabase.from("eligible_voters_snapshot").delete().eq("profile_id", outsider.id);
+        await supabase.from("profiles").delete().eq("id", outsider.id);
+      }
+
+      if (outsiderUser.user) {
+        await supabase.auth.admin.deleteUser(outsiderUser.user.id);
       }
     }
   });

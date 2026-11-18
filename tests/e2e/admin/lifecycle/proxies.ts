@@ -2,11 +2,11 @@
 import type { Page } from "@playwright/test";
 import { expect } from "@playwright/test";
 import { confirmInApp } from "../../confirm-dialog";
-import { chooseSearchOption, demoAdminEmail, gotoWithRetry } from "../admin-helpers";
+import { chooseSearchOption, gotoWithRetry } from "../admin-helpers";
 import type { AfterPeople } from "./people";
 
 export async function proxies(page: Page, ctx: AfterPeople) {
-  const { roomNumber, ownerName, meetingTitle, activeAppOrigin } = ctx;
+  const { roomNumber, ownerName, meetingTitle, activeAppOrigin, proxyHolder } = ctx;
 
   await gotoWithRetry(page, `${activeAppOrigin}/admin/proxies`, {
     waitUntil: "commit",
@@ -16,7 +16,8 @@ export async function proxies(page: Page, ctx: AfterPeople) {
   await chooseSearchOption(addProxyDrawer, "meeting_id", meetingTitle);
   await chooseSearchOption(addProxyDrawer, "room_id", roomNumber);
   await chooseSearchOption(addProxyDrawer, "owner_id", ownerName);
-  await chooseSearchOption(addProxyDrawer, "proxy_profile_id", demoAdminEmail);
+  await chooseSearchOption(addProxyDrawer, "proxy_profile_id", proxyHolder.email);
+  await addProxyDrawer.getByLabel(/not a committee member, the manager/).check();
   await addProxyDrawer.getByRole("button", { name: "Add proxy authorization" }).click();
   await page.waitForTimeout(1_000);
   await gotoWithRetry(
