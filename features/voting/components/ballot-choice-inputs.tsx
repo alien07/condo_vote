@@ -44,7 +44,11 @@ export function BallotChoiceInputs({
   );
 
   return (
-    <div className="mt-3 grid gap-2">
+    <div
+      className="mt-3 grid gap-2"
+      data-choice-group
+      data-max-choices={multiple && question.max_choices ? question.max_choices : undefined}
+    >
       {multiple ? (
         <p className="text-xs text-[var(--muted)]">
           {question.max_choices
@@ -58,7 +62,7 @@ export function BallotChoiceInputs({
           className={[
             "flex min-h-11 cursor-pointer items-center gap-3 rounded-md border border-[var(--border)] px-3 py-2 text-sm",
             "has-[:checked]:border-[var(--primary)] has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-[var(--primary)]",
-            "has-[:disabled]:cursor-not-allowed",
+            "has-[:disabled]:cursor-not-allowed has-[:disabled]:opacity-60",
             // Abstain is a real choice, so it reads like one; a gap sets it apart.
             choice.is_abstain ? "mt-2" : "",
           ].join(" ")}
@@ -66,6 +70,7 @@ export function BallotChoiceInputs({
         >
           <input
             className="h-4 w-4 shrink-0 accent-[var(--primary)]"
+            data-abstain={choice.is_abstain ? "" : undefined}
             defaultChecked={selectedChoiceIds.has(choice.id)}
             disabled={disabled}
             name={`choice:${question.id}`}

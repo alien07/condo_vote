@@ -33,6 +33,12 @@ Background: [compliance.md](compliance.md),
    ([resolution-rules.md](resolution-rules.md)) before they are used for a
    real meeting.
 
+### Abstain (D017)
+1. **Must every agenda item offer "Abstain"?** Since 2026-11-18 the admin
+   chooses per agenda item (off by default), and Abstain counts as voting
+   in the pass rules. Confirm whether the law or common practice requires
+   it on resolutions, and whether it should count toward "votes cast".
+
 ### Records and documents (D019)
 6. Does the Land Office accept the printed meeting record?
 7. Is a digital signature required on the record or the result?

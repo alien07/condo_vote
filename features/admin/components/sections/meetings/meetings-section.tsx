@@ -2,13 +2,12 @@ import { getStaffI18n } from "@/lib/i18n/server";
 import { codeLabel, fill } from "@/lib/i18n/template";
 import { CalendarDays } from "lucide-react";
 import { PerPageSelect } from "@/features/admin/components/table-controls";
-import { archiveMeeting, generateResultSnapshot, publishMeeting } from "@/features/admin/actions";
 import { createClient } from "@/lib/supabase/server";
-import { PendingSubmitButton } from "@/features/debug/tracked-submit-button";
-import { ConfirmSubmitButton } from "@/features/admin/components/form-controls";
 import { MeetingCrudDrawer, MeetingRowFocus } from "@/features/admin/components/meeting-crud-drawer";
 import { EnglishNextStep } from "@/features/english/english-next-step";
 import { meetingDrawerHref, meetingHref } from "@/features/admin/components/sections/meetings/meeting-hrefs";
+import { MeetingRowActions } from "@/features/admin/components/sections/meetings/meeting-row-actions";
+import { meetingReadiness } from "@/features/admin/meeting-readiness";
 import { formatDateTime } from "@/features/admin/components/sections/shared/format";
 import { tablePage, tablePerPage } from "@/features/admin/components/sections/shared/table";
 import type {
@@ -61,11 +60,12 @@ export async function MeetingsSection({
     .maybeSingle();
   const bilingual = Boolean(condoSettings?.bilingual_documents);
   const meetingTableFilters: Required<MeetingTableFilters> = {
-    dir: meetingFilters?.dir ?? "asc",
+    // Newest first, so a new draft is on top (2026-11-18 review).
+    dir: meetingFilters?.dir ?? (meetingFilters?.sort ? "asc" : "desc"),
     noType: meetingFilters?.noType ?? "",
     page: tablePage(meetingFilters?.page),
     perPage: tablePerPage(meetingFilters?.perPage),
-    sort: meetingFilters?.sort ?? "title",
+    sort: meetingFilters?.sort ?? "window",
     status: meetingFilters?.status ?? "all",
     title: meetingFilters?.title ?? "",
   };
@@ -167,6 +167,23 @@ export async function MeetingsSection({
         ? " ↑"
         : " ↓"
       : "";
+  const rowActionProps = (meeting: (typeof meetings)[number]) => {
+    const meetingQuestions = questions.filter((question) => question.meeting_id === meeting.id);
+
+    return {
+      agendaCount: meetingQuestions.length,
+      bilingual,
+      listHref: meetingListHref,
+      meeting,
+      pendingManualCount: pendingManualBallotsByMeetingId.get(meeting.id)?.length ?? 0,
+      readiness: meetingReadiness(meetingQuestions),
+      // Any committee approval locks results (no new snapshots).
+      resultLocked: lockedMeetingIds.has(meeting.id),
+      // Voting closes at ends_at or by committee approvals (D014), so
+      // results wait until then.
+      votingOpen: isVotingOpen(meeting.status, meeting.ends_at),
+    };
+  };
   const selectedMeeting = meetings.find((meeting) => meeting.id === drawer?.id);
   const showMeetingDrawer =
     drawer?.type === "meeting" &&
@@ -294,7 +311,42 @@ export async function MeetingsSection({
 
       {/* Saved: offer the English page next (two-language documents). */}
       <EnglishNextStep meeting={meetings.find((meeting) => meeting.id === focusedMeetingId)} />
-      <div className="overflow-x-auto">
+      {/* Phones: one card per meeting instead of a wide table. */}
+      <ul className="grid gap-3 md:hidden" data-meeting-cards>
+        {pagedMeetings.map((meeting) => (
+          <li
+            className={[
+              "rounded-lg border border-[var(--border)] p-4",
+              meetingFocusId === meeting.id ? "border-l-4 border-l-[var(--primary)] bg-[var(--accent)]" : "",
+            ].join(" ")}
+            data-meeting-id={meeting.id}
+            key={meeting.id}
+            tabIndex={-1}
+          >
+            <div className="flex items-start justify-between gap-3">
+              <a
+                className="font-semibold text-[var(--primary)] [overflow-wrap:anywhere]"
+                href={`/admin/meetings?tab=questions&meeting=${meeting.id}`}
+              >
+                {meeting.title}
+              </a>
+              <span className="shrink-0 rounded-full bg-[var(--background)] px-2 py-0.5 text-xs font-medium">
+                {codeLabel(s.common.code, approvedMeetingIds.has(meeting.id) ? "approved" : meeting.status)}
+              </span>
+            </div>
+            <p className="mt-1 text-sm text-[var(--muted)]">
+              {meeting.meeting_number ?? "-"} / {codeLabel(s.meetings.types, meeting.meeting_type)}
+            </p>
+            <p className="text-sm text-[var(--muted)]">
+              {formatDateTime(meeting.starts_at)} - {formatDateTime(meeting.ends_at)}
+            </p>
+            <div className="mt-3">
+              <MeetingRowActions {...rowActionProps(meeting)} />
+            </div>
+          </li>
+        ))}
+      </ul>
+      <div className="hidden overflow-x-auto md:block">
         <table className="w-full border-collapse text-left text-sm">
           <thead className="border-b border-[var(--border)] text-[var(--muted)]">
             <tr>
@@ -324,14 +376,6 @@ export async function MeetingsSection({
           <tbody>
             {pagedMeetings.map((meeting) => {
               const hasApprovedResult = approvedMeetingIds.has(meeting.id);
-              // Any committee approval locks results (no new snapshots).
-              const resultLocked = lockedMeetingIds.has(meeting.id);
-              // Voting closes at ends_at or by committee approvals (D014),
-              // so results wait until then.
-              const votingOpen = isVotingOpen(meeting.status, meeting.ends_at);
-              const pendingManualCount =
-                pendingManualBallotsByMeetingId.get(meeting.id)?.length ?? 0;
-
               const focused = meetingFocusId === meeting.id;
 
               return (
@@ -346,7 +390,11 @@ export async function MeetingsSection({
                   key={meeting.id}
                   tabIndex={-1}
                 >
-                  <td className="py-2 pr-3">{meeting.title}</td>
+                  <td className="py-2 pr-3 font-medium">
+                    <a className="text-[var(--primary)] underline-offset-2 hover:underline" href={`/admin/meetings?tab=questions&meeting=${meeting.id}`}>
+                      {meeting.title}
+                    </a>
+                  </td>
                   <td className="py-2 pr-3">
                     {meeting.meeting_number ?? "-"} / {codeLabel(s.meetings.types, meeting.meeting_type)}
                   </td>
@@ -354,113 +402,11 @@ export async function MeetingsSection({
                     {formatDateTime(meeting.starts_at)} -{" "}
                     {formatDateTime(meeting.ends_at)}
                   </td>
-                  <td className="py-2 pr-3">
+                  <td className="whitespace-nowrap py-2 pr-3">
                     {codeLabel(s.common.code, hasApprovedResult ? "approved" : meeting.status)}
                   </td>
                   <td className="py-2">
-                    <div className="flex flex-wrap gap-2">
-                      {meeting.status === "draft" ? (
-                        <>
-                          <a
-                            className="rounded-md border border-[var(--border)] px-3 py-1 text-sm font-medium text-[var(--primary)]"
-                            href={meetingDrawerHref(meetingListHref, {
-                              id: meeting.id,
-                              mode: "edit",
-                            })}
-                          >
-                            {s.common.edit}
-                          </a>
-                          <form action={publishMeeting}>
-                            <input name="id" type="hidden" value={meeting.id} />
-                            <PendingSubmitButton
-                              className="rounded-md border border-[var(--border)] px-3 py-1 text-sm font-medium text-[var(--primary)]"
-                              pendingLabel={s.meetings.publishing}
-                              type="submit"
-                            >
-                              {s.meetings.publish}
-                            </PendingSubmitButton>
-                          </form>
-                        </>
-                      ) : null}
-                      {/* Meeting -> agenda -> choices (2026-11-18). */}
-                      <a
-                        className="rounded-md border border-[var(--border)] px-3 py-1 text-sm font-medium text-[var(--primary)]"
-                        data-agenda-link
-                        href={`/admin/meetings?tab=questions&meeting=${meeting.id}`}
-                      >
-                        {fill(s.meetings.agendaButton, {
-                          count: questions.filter((question) => question.meeting_id === meeting.id).length,
-                        })}
-                      </a>
-                      {meeting.status !== "archived" ? (
-                        <a
-                          className="rounded-md border border-[var(--border)] px-3 py-1 text-sm font-medium text-[var(--primary)]"
-                          href={`/admin/meetings/${meeting.id}/english`}
-                        >
-                          {s.english.openEditor}
-                          {bilingual && (!meeting.title_en || !meeting.english_checked_at) ? (
-                            <span className="ml-2 rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-900">
-                              {!meeting.title_en ? s.english.missing : s.english.needsCheck}
-                            </span>
-                          ) : null}
-                        </a>
-                      ) : null}
-                      {meeting.status !== "archived" ? (
-                        <form action={archiveMeeting}>
-                          <input name="id" type="hidden" value={meeting.id} />
-                          <ConfirmSubmitButton
-                            className="rounded-md border border-red-200 px-3 py-1 text-sm font-medium text-red-700"
-                            confirmMessage={fill(s.meetings.confirmArchive, { title: meeting.title })}
-                            pendingLabel={s.meetings.archiving}
-                            type="submit"
-                          >
-                            {s.meetings.archive}
-                          </ConfirmSubmitButton>
-                        </form>
-                      ) : null}
-                      {votingOpen ? (
-                        <span className="inline-flex items-center rounded-full border border-[var(--border)] bg-[var(--background)] px-3 py-1 text-xs font-medium text-[var(--muted)]">
-                          {s.meetings.votingOpen}
-                        </span>
-                      ) : null}
-                      {meeting.status !== "draft" ? (
-                        <a
-                          className="rounded-md border border-[var(--border)] px-3 py-1 text-sm font-medium text-[var(--primary)]"
-                          href={`/admin/meetings/${meeting.id}/record`}
-                        >
-                          {s.meetings.record}
-                        </a>
-                      ) : null}
-                      {(meeting.status === "published" ||
-                        meeting.status === "closed") &&
-                      !resultLocked &&
-                      (pendingManualCount > 0 || !votingOpen) ? (
-                        pendingManualCount > 0 ? (
-                          <a
-                            className="inline-flex items-center rounded-md border border-amber-300 bg-amber-50 px-3 py-1 text-sm font-medium text-amber-800"
-                            href="/admin/voting"
-                          >
-                            {fill(s.meetings.resolvePending, { count: pendingManualCount })}
-                          </a>
-                        ) : (
-                          <form action={generateResultSnapshot}>
-                            <input name="id" type="hidden" value={meeting.id} />
-                            <PendingSubmitButton
-                              className="rounded-md border border-[var(--border)] px-3 py-1 text-sm font-medium text-[var(--primary)]"
-                              pendingLabel={s.meetings.generating}
-                              type="submit"
-                            >
-                              {s.meetings.generate}
-                            </PendingSubmitButton>
-                          </form>
-                        )
-                      ) : null}
-                      {resultLocked ? (
-                        <span className="inline-flex items-center rounded-full border border-[var(--border)] bg-[var(--background)] px-3 py-1 text-xs font-medium text-[var(--muted)]">
-                          {s.meetings.locked}
-                        </span>
-                      ) : null}
-                    </div>
+                    <MeetingRowActions {...rowActionProps(meeting)} />
                   </td>
                 </tr>
               );

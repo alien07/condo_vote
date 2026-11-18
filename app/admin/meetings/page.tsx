@@ -41,10 +41,11 @@ function getMeetingFilters(
     params.sort === "title" ||
     params.sort === "window"
       ? params.sort
-      : "title";
+      : undefined;
 
   return {
-    dir: params.dir === "desc" ? "desc" : "asc",
+    // No sort chosen: newest first (2026-11-18 review).
+    dir: params.dir === "desc" ? "desc" : params.dir === "asc" ? "asc" : undefined,
     noType: params.noType,
     page: positiveInteger(params.page, 1),
     perPage: positiveInteger(params.perPage, 25),

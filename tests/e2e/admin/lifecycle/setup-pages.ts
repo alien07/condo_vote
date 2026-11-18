@@ -44,7 +44,7 @@ export async function setupPages(page: Page, ctx: AfterAccess) {
     .click();
   await storageSection.getByRole("link", { name: "Open Documents" }).click();
   await page.getByRole("link", { name: "Register document" }).click();
-  const registerDocumentDrawer = page.getByRole("complementary", {
+  const registerDocumentDrawer = page.getByRole("dialog", {
     name: "Register document",
   });
   await registerDocumentDrawer.locator('input[name="owner_id"]').fill(profile!.id);

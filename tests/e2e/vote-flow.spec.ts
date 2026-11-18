@@ -319,11 +319,11 @@ test.describe("@test:e2e @test:voting owner/proxy vote flow", () => {
 
     expect(questionError).toBeNull();
 
+    // This agenda item has Abstain (added by the admin, 0041).
     const { data: abstainChoice } = await supabase
       .from("meeting_choices")
+      .insert({ question_id: fixture.questionId, choice_text: "Abstain", display_order: 999, is_abstain: true })
       .select("id")
-      .eq("question_id", fixture.questionId)
-      .eq("is_abstain", true)
       .single();
 
     expect(abstainChoice?.id).toBeTruthy();

@@ -9,7 +9,7 @@ export async function people(page: Page, ctx: AfterMeetings) {
 
   await page.goto(`${activeAppOrigin}/admin/people?tab=rooms`);
   await page.getByRole("link", { name: "Add room" }).click();
-  const addRoomDrawer = page.getByRole("complementary", { name: "Add room" });
+  const addRoomDrawer = page.getByRole("dialog", { name: "Add room" });
   await addRoomDrawer.locator('input[name="room_number"]').fill(roomNumber);
   await addRoomDrawer.locator('input[name="ownership_percent"]').fill("1.25");
   await addRoomDrawer.getByRole("button", { name: "Create room" }).click();
@@ -56,7 +56,7 @@ export async function people(page: Page, ctx: AfterMeetings) {
 
   await page.goto(`${activeAppOrigin}/admin/people?tab=owners`);
   await page.getByRole("link", { name: "Add owner" }).click();
-  const addOwnerDrawer = page.getByRole("complementary", { name: "Add owner" });
+  const addOwnerDrawer = page.getByRole("dialog", { name: "Add owner" });
   await addOwnerDrawer.locator('input[name="full_name"]').fill(ownerName);
   await addOwnerDrawer.locator('input[name="email"]').fill("owner.demo@example.com");
   await addOwnerDrawer.getByRole("button", { name: "Create owner" }).click();

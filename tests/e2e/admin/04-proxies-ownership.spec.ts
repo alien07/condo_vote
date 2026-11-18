@@ -129,7 +129,7 @@ test.describe("@test:e2e @test:auth @test:admin admin demo: proxies and ownershi
         )}&sort=meeting&dir=asc&perPage=25`,
       );
       await page.getByRole("link", { name: "Add proxy authorization" }).click();
-      const addDrawer = page.getByRole("complementary", {
+      const addDrawer = page.getByRole("dialog", {
         name: "Add proxy authorization",
       });
 
@@ -159,7 +159,7 @@ test.describe("@test:e2e @test:auth @test:admin admin demo: proxies and ownershi
       await expect(proxyRow).toContainText("pending");
 
       await proxyRow.getByRole("link", { name: "Review" }).click();
-      const reviewDrawer = page.getByRole("complementary", {
+      const reviewDrawer = page.getByRole("dialog", {
         name: "Review proxy authorization",
       });
 
@@ -290,7 +290,7 @@ test.describe("@test:e2e @test:auth @test:admin admin demo: proxies and ownershi
         )}&status=all&sort=room&dir=asc&perPage=25`,
       );
       await page.getByRole("link", { name: "Create ownership link" }).click();
-      const createDrawer = page.getByRole("complementary", {
+      const createDrawer = page.getByRole("dialog", {
         name: "Create ownership link",
       });
 
@@ -322,7 +322,7 @@ test.describe("@test:e2e @test:auth @test:admin admin demo: proxies and ownershi
       await expect(ownershipRow).toHaveClass(/border-l-\[var\(--primary\)\]/);
 
       await ownershipRow.getByRole("link", { name: "Edit dates" }).click();
-      const editDrawer = page.getByRole("complementary", {
+      const editDrawer = page.getByRole("dialog", {
         name: "Edit ownership dates",
       });
 
@@ -331,7 +331,7 @@ test.describe("@test:e2e @test:auth @test:admin admin demo: proxies and ownershi
       await expect(ownershipRow).toContainText(yesterday, { timeout: 15_000 });
 
       await ownershipRow.getByRole("link", { name: "End Link" }).click();
-      const endDrawer = page.getByRole("complementary", {
+      const endDrawer = page.getByRole("dialog", {
         name: "End ownership link",
       });
 

@@ -27,7 +27,7 @@ export async function identityConflicts(page: Page, ctx: AfterVoting) {
     .filter({ hasText: meetingTitle })
     .filter({ hasText: roomNumber });
   await pendingManualVoteRow.getByRole("link", { name: "Link profile" }).click();
-  const resolveIdentityDrawer = page.getByRole("complementary", {
+  const resolveIdentityDrawer = page.getByRole("dialog", {
     name: "Resolve manual vote identity",
   });
   await expect(resolveIdentityDrawer).toBeVisible({ timeout: 15_000 });

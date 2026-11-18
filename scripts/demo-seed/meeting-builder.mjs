@@ -112,7 +112,7 @@ export async function createMeeting(spec) {
   );
   meetingIds[spec.key] = meeting.id;
 
-  // Questions; a database trigger adds the Abstain choice to each.
+  // Questions, each with its choices and an Abstain choice (fixed text, 0041).
   const questions = [];
 
   for (const [index, question] of (spec.questions ?? STANDARD_QUESTIONS).entries()) {
@@ -144,12 +144,15 @@ export async function createMeeting(spec) {
     );
     await must(
       db.from("meeting_choices").insert(
-        question.choices.map((text, order) => ({
-          question_id: row.id,
-          choice_text: text,
-          choice_text_en: en(text),
-          display_order: order + 1,
-        })),
+        [
+          ...question.choices.map((text, order) => ({
+            question_id: row.id,
+            choice_text: text,
+            choice_text_en: en(text),
+            display_order: order + 1,
+          })),
+          { question_id: row.id, choice_text: "Abstain", choice_text_en: "Abstain", display_order: 999, is_abstain: true },
+        ],
       ),
       "choices",
     );

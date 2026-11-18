@@ -37,7 +37,7 @@ export async function proxies(page: Page, ctx: AfterPeople) {
   await gotoWithRetry(page, new URL(proxyReviewHref ?? "", activeAppOrigin).toString(), {
     waitUntil: "commit",
   });
-  const reviewProxyDrawer = page.getByRole("complementary", {
+  const reviewProxyDrawer = page.getByRole("dialog", {
     name: "Review proxy authorization",
   });
   await expect(reviewProxyDrawer).toBeVisible({ timeout: 15_000 });

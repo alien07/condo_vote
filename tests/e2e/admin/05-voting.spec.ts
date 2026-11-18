@@ -168,7 +168,7 @@ test.describe("@test:e2e @test:auth @test:admin admin demo: paper ballots and co
         )}&sort=meeting&dir=asc&perPage=25`,
       );
       await page.getByRole("link", { name: "Import manual vote" }).click();
-      const importDrawer = page.getByRole("complementary", {
+      const importDrawer = page.getByRole("dialog", {
         name: "Import manual vote",
       });
 
@@ -196,7 +196,7 @@ test.describe("@test:e2e @test:auth @test:admin admin demo: paper ballots and co
         .filter({ hasText: pendingName });
 
       await pendingRow.getByRole("link", { name: "Link profile" }).click();
-      const resolveDrawer = page.getByRole("complementary", {
+      const resolveDrawer = page.getByRole("dialog", {
         name: "Resolve manual vote identity",
       });
 

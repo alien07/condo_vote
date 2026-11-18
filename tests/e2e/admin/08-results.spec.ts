@@ -155,7 +155,7 @@ test.describe("@test:e2e @test:auth @test:admin admin demo: results", () => {
       waitUntil: "commit",
     });
 
-    const approvalDrawer = page.getByRole("complementary", {
+    const approvalDrawer = page.getByRole("dialog", {
       name: "Approve result",
     });
 

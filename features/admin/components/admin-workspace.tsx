@@ -147,13 +147,8 @@ export async function AdminWorkspace({
 
         {sections.length > 1 ? (
           <div className="sticky top-0 z-10 mb-5 border-b border-[var(--border)] bg-[var(--background)] py-3">
-            <div className="mb-3">
-              <h2 className="text-sm font-semibold">{s.adminHome.tabsTitle}</h2>
-              <p className="mt-1 text-xs text-[var(--muted)]">
-                {s.adminHome.tabsIntro}
-              </p>
-            </div>
-            <nav className="flex gap-2 overflow-x-auto text-sm">
+            {/* The tabs explain themselves; the name is for screen readers. */}
+            <nav aria-label={s.adminHome.tabsTitle} className="flex gap-2 overflow-x-auto text-sm">
               {sections.map((section) => {
                 const active = section === activeSection;
                 const badge = section === "owners" ? unlinkedActiveOwners : 0;

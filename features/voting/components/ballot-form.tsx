@@ -1,15 +1,16 @@
 "use client";
 
-import type { FormEvent, ReactNode } from "react";
+import { useEffect, useRef, type FormEvent, type ReactNode } from "react";
+import { applyChoiceLimits, syncAllChoiceLimits } from "@/features/voting/components/choice-limits";
 
 // Checks required questions before submitting and shows the message under the
 // question itself. The browser's own bubble pointed at questions hidden under
 // the header on phones. The voting core service still validates on the server.
-function questionIsAnswered(fieldset: Element) {
+export function questionIsAnswered(fieldset: Element) {
   return Boolean(fieldset.querySelector("input:checked"));
 }
 
-function setQuestionError(fieldset: Element, invalid: boolean) {
+export function setQuestionError(fieldset: Element, invalid: boolean) {
   const message = fieldset.querySelector<HTMLElement>("[data-question-error]");
 
   if (message) {
@@ -52,12 +53,22 @@ export function BallotForm({
     }
   }
 
+  const formRef = useRef<HTMLFormElement>(null);
+
+  // A saved ballot may already be at the limit.
+  useEffect(() => {
+    if (formRef.current) {
+      syncAllChoiceLimits(formRef.current);
+    }
+  }, []);
+
   return (
     <form
       action={action}
       className={className}
       noValidate
       onChange={(event) => {
+        applyChoiceLimits(event.target);
         const fieldset = (event.target as HTMLElement).closest("fieldset");
 
         if (fieldset && questionIsAnswered(fieldset)) {
@@ -65,6 +76,7 @@ export function BallotForm({
         }
       }}
       onSubmit={handleSubmit}
+      ref={formRef}
     >
       {children}
     </form>

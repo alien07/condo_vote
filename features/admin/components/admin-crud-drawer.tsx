@@ -3,7 +3,8 @@
 import { useStaffText } from "@/lib/i18n/staff/client";
 
 import Link from "next/link";
-import { useEffect, useSyncExternalStore } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useId, useRef, useSyncExternalStore } from "react";
 import { Maximize2, Minimize2, X } from "lucide-react";
 
 type AdminCrudDrawerProps = {
@@ -59,7 +60,59 @@ export function AdminCrudDrawer({
   title,
 }: AdminCrudDrawerProps) {
   const { s } = useStaffText();
+  const router = useRouter();
+  const titleId = useId();
+  const panelRef = useRef<HTMLElement>(null);
   const wide = useSyncExternalStore(subscribeWide, readWide, () => false);
+
+  // A modal panel (2026-11-18 review): Esc closes it, and Tab stays inside.
+  // Esc is left alone when a search list or a confirm dialog inside the
+  // panel handles it first.
+  useEffect(() => {
+    function onKeyDown(event: KeyboardEvent) {
+      const panel = panelRef.current;
+
+      if (!panel || event.defaultPrevented || document.querySelector("dialog[open]")) {
+        return;
+      }
+
+      if (event.key === "Escape") {
+        event.preventDefault();
+        router.push(closeHref, { scroll: false });
+        return;
+      }
+
+      if (event.key !== "Tab") {
+        return;
+      }
+
+      const focusable = [
+        ...panel.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), summary, [tabindex]:not([tabindex="-1"])',
+        ),
+      ].filter((element) => element.getClientRects().length > 0);
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+
+      if (!first || !last) {
+        return;
+      }
+
+      if (!panel.contains(document.activeElement)) {
+        event.preventDefault();
+        first.focus();
+      } else if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    }
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [closeHref, router]);
 
   useEffect(() => {
     if (!lockScroll) {
@@ -81,19 +134,21 @@ export function AdminCrudDrawer({
   return (
     <div className="fixed inset-0 z-40 flex justify-end overflow-hidden bg-black/10">
       <aside
-        aria-label={title}
+        aria-labelledby={titleId}
+        aria-modal="true"
         className={[
           "flex h-full w-full max-w-full flex-col border-l border-[var(--border)] bg-[var(--surface)] shadow-xl transition-[max-width] duration-200 motion-reduce:transition-none",
           // Wide keeps a strip of the page visible, so it is still clear
           // which list the drawer belongs to.
           wide ? "sm:max-w-[90vw]" : "sm:max-w-xl",
         ].join(" ")}
-        role="complementary"
+        ref={panelRef}
+        role="dialog"
       >
         <div className="border-b border-[var(--border)] px-5 py-4">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <h2 className="text-lg font-semibold">{title}</h2>
+              <h2 className="text-lg font-semibold" id={titleId}>{title}</h2>
               {summary?.length ? (
                 <dl className="mt-2 grid gap-1 text-sm text-[var(--muted)]">
                   {summary.map((item) => (
