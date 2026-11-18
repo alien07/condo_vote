@@ -1,7 +1,7 @@
 // Admin lifecycle step: Rooms, paper ballot import, owners and ownership links.
 import type { Page } from "@playwright/test";
 import { expect } from "@playwright/test";
-import { gotoWithRetry } from "../admin-helpers";
+import { chooseSearchOption, gotoWithRetry } from "../admin-helpers";
 import type { AfterMeetings } from "./meetings";
 
 export async function people(page: Page, ctx: AfterMeetings) {
@@ -75,12 +75,8 @@ export async function people(page: Page, ctx: AfterMeetings) {
     .locator("xpath=ancestor::section[1]");
   await roomOwnershipSection.getByRole("link", { name: "Create ownership link" }).click();
   const createOwnershipDrawer = page.getByLabel("Create ownership link");
-  await createOwnershipDrawer
-    .locator('select[name="room_id"]')
-    .selectOption({ label: roomNumber });
-  await createOwnershipDrawer
-    .locator('select[name="owner_id"]')
-    .selectOption({ label: ownerName });
+  await chooseSearchOption(createOwnershipDrawer, "room_id", roomNumber);
+  await chooseSearchOption(createOwnershipDrawer, "owner_id", ownerName);
   await createOwnershipDrawer.locator('input[name="starts_at"]').fill("2026-06-01");
   await createOwnershipDrawer.getByRole("button", { name: "Create ownership link" }).click();
   await page.waitForTimeout(1_000);

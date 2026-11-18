@@ -4,14 +4,18 @@ import type { OwnershipActionState } from "@/features/admin/actions";
 
 export type Room = {
   active: boolean | null;
+  building?: string | null;
+  floor?: string | number | null;
   id: string;
   room_number: string;
 };
 
 export type Owner = {
   active: boolean | null;
+  email?: string | null;
   full_name: string;
   id: string;
+  phone?: string | null;
 };
 
 export type RoomOwnerLink = {
@@ -104,12 +108,17 @@ export function focusFirstInvalidField(
   }
 
   const field = form?.elements.namedItem(firstInvalidField);
+  // A SearchSelect submits through a hidden input; focus its search box.
+  const searchBox = form?.querySelector<HTMLElement>(
+    `[data-focus-for="${escapeSelectorValue(firstInvalidField)}"]`,
+  );
   const element =
-    field instanceof RadioNodeList
+    searchBox ??
+    (field instanceof RadioNodeList
       ? field[0]
       : field instanceof HTMLElement
         ? field
-        : null;
+        : null);
 
   element?.focus();
   element?.scrollIntoView({ behavior: "smooth", block: "center" });
