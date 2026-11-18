@@ -41,8 +41,10 @@ export function roomTableParams(state: RoomTableState) {
 export function ownerTableStateFromParams(params: URLSearchParams): OwnerTableState {
   const sort = params.get("sort");
   const status = params.get("status");
+  const account = params.get("account");
 
   return {
+    account: account === "linked" || account === "unlinked" ? account : "all",
     dir: params.get("dir") === "desc" ? "desc" : "asc",
     name: params.get("name") ?? "",
     page: positiveInteger(params.get("page"), 1),
@@ -57,6 +59,7 @@ export function ownerTableStateFromParams(params: URLSearchParams): OwnerTableSt
 
 export function ownerTableParams(state: OwnerTableState) {
   return {
+    account: state.account === "all" ? null : state.account,
     dir: state.dir,
     name: state.name || null,
     page: state.page > 1 ? String(state.page) : null,

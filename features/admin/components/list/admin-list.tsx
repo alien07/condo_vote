@@ -136,7 +136,9 @@ export function AdminListCard({
   const resultsRef = useResultFade(resultKey);
 
   return (
-    <section className="rounded-lg border border-[var(--border)] bg-[var(--surface)]">
+    // min-w-0: inside a grid or flex parent the card must not grow to the
+    // table's width; the table scrolls inside it instead.
+    <section className="min-w-0 rounded-lg border border-[var(--border)] bg-[var(--surface)]">
       <div className="flex flex-wrap items-start justify-between gap-3 px-5 pt-5 pb-4">
         <div className="flex min-w-0 items-start gap-2">
           {icon ? <span className="mt-0.5 text-[var(--primary)]">{icon}</span> : null}

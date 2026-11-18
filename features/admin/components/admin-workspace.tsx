@@ -1,5 +1,6 @@
 import { getAdminDashboardData } from "@/features/admin/data";
 import { getStaffI18n } from "@/lib/i18n/server";
+import { fill } from "@/lib/i18n/template";
 import { isAdmin, isSystemAdmin } from "@/lib/auth/permissions";
 import { AdminSoftNavigation } from "@/features/admin/components/admin-soft-navigation";
 import { ShieldCheck } from "lucide-react";
@@ -121,6 +122,11 @@ export async function AdminWorkspace({
       : sections[0];
   const visibleSections = new Set([activeSection]);
   const { s } = await getStaffI18n();
+  // Owners tab shows how many active owners still have no account (D024),
+  // so the work is seen from the other tabs too (2026-11-17).
+  const unlinkedActiveOwners = canManageOwnerAccounts
+    ? owners.filter((owner) => owner.active && !owner.profile_id).length
+    : 0;
 
   return (
     <main className="min-h-screen px-6 py-8">
@@ -149,12 +155,13 @@ export async function AdminWorkspace({
             <nav className="flex gap-2 overflow-x-auto text-sm">
               {sections.map((section) => {
                 const active = section === activeSection;
+                const badge = section === "owners" ? unlinkedActiveOwners : 0;
 
                 return (
                   <a
                     aria-current={active ? "page" : undefined}
                     className={[
-                      "shrink-0 rounded-md border px-3 py-2 font-medium",
+                      "inline-flex shrink-0 items-center gap-2 rounded-md border px-3 py-2 font-medium",
                       active
                         ? "border-[var(--primary)] bg-[var(--primary)] text-[var(--primary-foreground)]"
                         : "border-[var(--border)] bg-[var(--surface)]",
@@ -163,6 +170,19 @@ export async function AdminWorkspace({
                     key={section}
                   >
                     {s.adminHome.tabs[section]}
+                    {badge > 0 ? (
+                      <>
+                        <span
+                          aria-hidden="true"
+                          className="inline-flex min-w-5 justify-center rounded-full border border-[var(--warning-border)] bg-[var(--warning-surface)] px-1.5 text-xs font-semibold text-[var(--warning)] tabular-nums"
+                        >
+                          {badge}
+                        </span>
+                        <span className="sr-only">
+                          {fill(s.people.accountTabBadge, { count: badge })}
+                        </span>
+                      </>
+                    ) : null}
                   </a>
                 );
               })}

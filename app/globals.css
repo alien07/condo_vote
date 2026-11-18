@@ -13,6 +13,10 @@
      --background; the error surface keeps it above 4.5:1. */
   --danger: #b91c1c;
   --danger-surface: #fef2f2;
+  /* Work waiting for an admin: #92400e is 6.8:1 on the warning surface. */
+  --warning: #92400e;
+  --warning-surface: #fffbeb;
+  --warning-border: #fcd34d;
 }
 
 /* Base rules live in a layer so Tailwind utilities (text colors on links,

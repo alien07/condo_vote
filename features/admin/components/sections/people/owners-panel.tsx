@@ -3,7 +3,7 @@
 import { useStaffText } from "@/lib/i18n/staff/client";
 import { fill } from "@/lib/i18n/template";
 import Link from "next/link";
-import { UserRound } from "lucide-react";
+import { History, TriangleAlert, UserRound } from "lucide-react";
 import { deactivateOwner, reactivateOwner } from "@/features/admin/actions";
 import { ConfirmSubmitButton } from "@/features/admin/components/form-controls";
 import { AdminCrudDrawer } from "@/features/admin/components/admin-crud-drawer";
@@ -30,7 +30,7 @@ import { useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { OwnerForm } from "@/features/admin/components/sections/people/owner-form";
 import { OwnerAccountPanel } from "@/features/admin/components/sections/people/owner-account-panel";
-import { OwnerAccountReview } from "@/features/admin/components/sections/people/owner-account-review";
+import { OwnerAccountHistory } from "@/features/admin/components/sections/people/owner-account-history";
 import { mergeParams, ownerTableParams, ownerTableStateFromParams } from "@/features/admin/components/sections/people/people-table-state";
 import type { OwnerTableState, PeopleCrudPilotProps } from "@/features/admin/components/sections/people/people-types";
 
@@ -93,6 +93,23 @@ export function OwnersPanel({
       return null;
     }
 
+    if (drawer?.mode === "history" && drawer.type === "owner" && canManageOwnerAccounts) {
+      return {
+        content: (
+          <OwnerAccountHistory
+            buildOwnerHref={(ownerId) =>
+              mergeParams(searchParams, { id: ownerId, mode: "edit", tab: "owners", type: "owner" })
+            }
+            events={ownerAccountEvents}
+            owners={owners}
+            profiles={profiles}
+          />
+        ),
+        summary: [],
+        title: s.people.accountHistory,
+      };
+    }
+
     if (drawer?.mode === "create" && drawer.type === "owner") {
       return {
         content: <OwnerForm closeHref={closeHref} mode="create" />,
@@ -138,7 +155,10 @@ export function OwnersPanel({
     closeHref,
     drawer?.mode,
     drawer?.type,
+    ownerAccountEvents,
+    owners,
     profiles,
+    searchParams,
     selectedOwner,
   ]);
   const profileEmailById = useMemo(
@@ -161,10 +181,18 @@ export function OwnersPanel({
           : ownerTableState.status === "active"
             ? Boolean(owner.active)
             : !owner.active;
+      const matchesAccount =
+        ownerTableState.account === "all"
+          ? true
+          : ownerTableState.account === "linked"
+            ? Boolean(owner.profile_id)
+            : !owner.profile_id;
 
-      return matchesName && matchesStatus;
+      return matchesName && matchesStatus && matchesAccount;
     });
-  }, [ownerTableState.name, ownerTableState.status, owners]);
+  }, [ownerTableState.account, ownerTableState.name, ownerTableState.status, owners]);
+  // Work waiting for the admin (D024): active owners with no account.
+  const unlinkedActiveCount = owners.filter((owner) => owner.active && !owner.profile_id).length;
   const sortedOwners = useMemo(() => {
     const direction = ownerTableState.dir === "asc" ? 1 : -1;
 
@@ -208,6 +236,7 @@ export function OwnersPanel({
     });
   const clearOwnerTable = () =>
     updateOwnerTable({
+      account: "all",
       dir: "asc",
       name: "",
       page: 1,
@@ -238,7 +267,22 @@ export function OwnersPanel({
           },
         ]
       : []),
+    ...(ownerTableState.account !== "all"
+      ? [
+          {
+            key: "account",
+            label: `${s.people.account}: ${
+              ownerTableState.account === "linked"
+                ? s.people.accountLinkedFilter
+                : s.people.accountNotLinked
+            }`,
+            onRemove: () => updateOwnerTable({ ...ownerTableState, account: "all", page: 1 }),
+          },
+        ]
+      : []),
   ];
+  const showUnlinkedOwners = () =>
+    updateOwnerTable({ ...ownerTableState, account: "unlinked", page: 1, status: "active" });
   const ownerShowing = fill(s.common.showing, {
     start: ownerPageStart,
     end: ownerPageEnd,
@@ -254,9 +298,40 @@ export function OwnersPanel({
   return (
     <>
       <div className="grid gap-5">
+        {canManageOwnerAccounts && unlinkedActiveCount > 0 ? (
+          // Work waiting for the admin sits above the list, not below it
+          // (2026-11-17), so it is seen without scrolling.
+          <div
+            className="flex min-w-0 flex-wrap items-center justify-between gap-3 rounded-lg border border-[var(--warning-border)] bg-[var(--warning-surface)] px-4 py-3 text-sm text-[var(--warning)]"
+            role="status"
+          >
+            <p className="flex items-center gap-2 font-medium">
+              <TriangleAlert aria-hidden="true" size={18} />
+              {fill(s.people.accountUnlinkedCount, { count: unlinkedActiveCount })}
+            </p>
+            {ownerTableState.account === "unlinked" ? null : (
+              <button
+                className="min-h-9 rounded-md border border-[var(--warning-border)] bg-[var(--surface)] px-3 font-medium"
+                onClick={showUnlinkedOwners}
+                type="button"
+              >
+                {s.people.accountShowUnlinked}
+              </button>
+            )}
+          </div>
+        ) : null}
         <AdminListCard
           actions={
             <>
+              {canManageOwnerAccounts ? (
+                <Link
+                  className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md border border-[var(--border)] bg-[var(--surface)] px-4 py-2 text-sm font-medium"
+                  href={buildHref({ id: null, mode: "history", tab: "owners", type: "owner" })}
+                >
+                  <History aria-hidden="true" size={16} />
+                  {s.people.accountHistory}
+                </Link>
+              ) : null}
               <Link
                 className="inline-flex min-h-10 items-center justify-center rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)]"
                 href={buildHref({ mode: "create", tab: "owners", type: "owner" })}
@@ -333,6 +408,22 @@ export function OwnersPanel({
                   <option value="inactive">{s.common.inactive}</option>
                 </select>
               </label>
+              <label className={`${listFieldClass} w-full sm:w-44`}>
+                {s.people.account}
+                <select
+                  className={listInputClass}
+                  onChange={(event) => {
+                    const value = event.currentTarget.value as OwnerTableState["account"];
+
+                    setOwnerCriteria((current) => ({ ...current, account: value }));
+                  }}
+                  value={ownerCriteria.account}
+                >
+                  <option value="all">{s.people.accountAll}</option>
+                  <option value="linked">{s.people.accountLinkedFilter}</option>
+                  <option value="unlinked">{s.people.accountNotLinked}</option>
+                </select>
+              </label>
             </AdminListToolbar>
           }
         >
@@ -377,7 +468,9 @@ export function OwnersPanel({
                       {owner.profile_id ? (
                         profileEmailById.get(owner.profile_id) ?? "-"
                       ) : (
-                        <span className="text-[var(--muted)]">{s.people.accountNotLinked}</span>
+                        <span className="inline-flex rounded-full border border-[var(--warning-border)] bg-[var(--warning-surface)] px-2 py-0.5 text-xs font-medium whitespace-nowrap text-[var(--warning)]">
+                          {s.people.accountNotLinked}
+                        </span>
                       )}
                     </td>
                     <td className={listTdClass}>
@@ -427,17 +520,6 @@ export function OwnersPanel({
             />
           ) : null}
         </AdminListCard>
-
-        {canManageOwnerAccounts ? (
-          <OwnerAccountReview
-            buildOwnerHref={(ownerId) =>
-              buildHref({ id: ownerId, mode: "edit", tab: "owners", type: "owner" })
-            }
-            events={ownerAccountEvents}
-            owners={owners}
-            profiles={profiles}
-          />
-        ) : null}
       </div>
 
       {drawerContent ? (
