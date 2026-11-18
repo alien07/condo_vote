@@ -175,11 +175,9 @@ test.describe("@test:e2e @test:auth @test:admin admin demo: paper ballots and co
       await importDrawer.getByRole("button", { name: "Continue to vote form" }).click();
       await expect(importDrawer.getByText("Meeting is required.")).toBeVisible();
       await expect(importDrawer.getByText("Room is required.")).toBeVisible();
-      await expect(importDrawer.locator('select[name="meeting_id"]')).toBeFocused();
+      await expect(importDrawer.locator('[data-focus-for="meeting_id"]')).toBeFocused();
 
-      await importDrawer
-        .locator('select[name="meeting_id"]')
-        .selectOption({ label: meetingTitle });
+      await chooseSearchOption(importDrawer, "meeting_id", meetingTitle);
       await chooseSearchOption(importDrawer, "room_id", roomNumber);
       await importDrawer.locator('input[name="voter_identity_text"]').fill(pendingName);
       await importDrawer.getByRole("button", { name: "Continue to vote form" }).click();

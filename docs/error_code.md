@@ -32,7 +32,7 @@ and mapped to `VoteError` in `features/voting/core/ballot-service.ts`.
 | --- | --- | --- |
 | `VOTE_NOT_SIGNED_IN` | No signed-in profile. | Session expired before submit. |
 | `VOTE_NOT_ELIGIBLE` | The profile is not the room's voter in `eligible_voters_snapshot`. | Resident or a voter for another room opens a ballot URL. |
-| `VOTE_CLOSED` | The meeting is not published or is outside its voting window. | Submit after `ends_at` or before `starts_at`. |
+| `VOTE_CLOSED` | The meeting is not published or is outside its voting window. For a paper ballot: the meeting is not published (draft, or its result is generated). | Submit after `ends_at` or before `starts_at`; a paper ballot for a draft or closed meeting (0044). |
 | `VOTE_ROOM_LOCKED` | Another voter already submitted this room's ballot (D011). | The room voter changed after the first vote. |
 | `VOTE_INVALID_ANSWERS` | Answers fail validation. | Missing required question, two choices on single choice, or a choice from another question. |
 | `VOTE_FORBIDDEN` | The action needs the admin role. | Non-admin calls a manual ballot or conflict function. |

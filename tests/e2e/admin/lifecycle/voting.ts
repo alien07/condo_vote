@@ -3,6 +3,7 @@ import type { Page } from "@playwright/test";
 import { expect } from "@playwright/test";
 import type { AfterProxies } from "./proxies";
 import { confirmInApp } from "../../confirm-dialog";
+import { enterPaperBallot } from "./people";
 
 export async function voting(page: Page, ctx: AfterProxies) {
   const {
@@ -129,6 +130,10 @@ export async function voting(page: Page, ctx: AfterProxies) {
       .map((version) => version.version_number)
       .sort((left, right) => left - right),
   ).toEqual([1, 2]);
+
+  // The paper ballot for the same room, now that the meeting is published;
+  // with the online vote it makes the conflict the next step resolves.
+  await enterPaperBallot(page, ctx);
 
   return { voteDetailUrl, voterPage, persistedMeetingResult, persistedRoomResult };
 }

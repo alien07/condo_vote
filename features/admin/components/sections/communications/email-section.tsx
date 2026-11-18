@@ -6,6 +6,7 @@ import { PerPageSelect } from "@/features/admin/components/table-controls";
 import { EmailLogDetailDrawer, EmailLogRowFocus } from "@/features/admin/components/email-log-detail-drawer";
 import { emailHref } from "@/features/admin/components/sections/communications/email-hrefs";
 import { formatDateTime } from "@/features/admin/components/sections/shared/format";
+import { takesVoteInvitations } from "@/features/admin/meeting-pickers";
 import { tablePage, tablePerPage } from "@/features/admin/components/sections/shared/table";
 import type {
   AdminDashboardData,
@@ -32,6 +33,16 @@ export async function EmailSection({
   hidden,
 }: EmailSectionProps) {
   const { s } = await getStaffI18n();
+  // Vote links only for meetings still open for voting (2026-11-19).
+  const inviteMeetingOptions = meetings
+    .filter((meeting) => takesVoteInvitations(meeting))
+    .sort((left, right) => left.ends_at.localeCompare(right.ends_at))
+    .map((meeting) => ({
+      value: meeting.id,
+      label: `${meeting.title} · ${fill(s.communications.meetingOpenUntil, {
+        date: formatDateTime(meeting.ends_at),
+      })}`,
+    }));
   const emailTableFilters: Required<EmailTableFilters> = {
     created: emailFilters?.created ?? "",
     dir: emailFilters?.dir ?? "asc",
@@ -131,7 +142,7 @@ export async function EmailSection({
         <ListChecks className="text-[var(--primary)]" size={20} />
         <h2 className="text-lg font-semibold">{s.communications.queueTitle}</h2>
       </div>
-      <EmailInviteControls meetings={meetings} />
+      <EmailInviteControls meetingOptions={inviteMeetingOptions} />
       <section className="mb-5 rounded-lg border border-[var(--border)] bg-[var(--background)] p-4">
         <div className="mb-3">
           <h3 className="text-sm font-semibold">{s.common.searchCriteria}</h3>

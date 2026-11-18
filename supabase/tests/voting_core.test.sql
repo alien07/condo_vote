@@ -2,7 +2,7 @@
 -- Run: npm run test:db  (needs local Supabase: npm run supabase:start)
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(20);
+select plan(23);
 
 -- Fixed ids keep the assertions readable.
 \set owner_a   '''00000000-0000-4000-8000-0000000000a1'''
@@ -18,6 +18,8 @@ select plan(20);
 \set c_m1      '''30000000-0000-4000-8000-000000000003'''
 \set c_m2      '''30000000-0000-4000-8000-000000000004'''
 \set c_closed  '''30000000-0000-4000-8000-000000000005'''
+\set draft_m   '''10000000-0000-4000-8000-000000000003'''
+\set result_m  '''10000000-0000-4000-8000-000000000004'''
 
 -- Setup (as postgres) ---------------------------------------------------------
 insert into auth.users (id, email) values
@@ -40,7 +42,9 @@ from generate_series(1, 6) as n;
 
 insert into public.meetings (id, title, status, starts_at, ends_at) values
   (:meeting, 'Open test meeting', 'published', now() - interval '1 hour', now() + interval '1 hour'),
-  (:closed_m, 'Closed test meeting', 'published', now() - interval '2 hours', now() - interval '1 hour');
+  (:closed_m, 'Closed test meeting', 'published', now() - interval '2 hours', now() - interval '1 hour'),
+  (:draft_m, 'Draft test meeting', 'draft', now() + interval '1 day', now() + interval '2 days'),
+  (:result_m, 'Result test meeting', 'closed', now() - interval '2 days', now() - interval '1 day');
 
 insert into public.meeting_questions (id, meeting_id, question_text, question_type, required, display_order) values
   (:q_single, :meeting, 'Single question', 'single_choice', true, 1),
@@ -192,6 +196,20 @@ select ok(
   (public.submit_manual_ballot(:meeting, '40000000-0000-4000-8000-000000000001', :owner_a, null, 'paper',
     jsonb_build_array(jsonb_build_object('question_id', :q_single, 'choice_ids', jsonb_build_array(:c_yes))))->>'manual_ballot_id') is not null,
   'admin imports a manual ballot');
+
+-- Paper ballots only while the meeting takes them (0044).
+select ok(
+  (public.submit_manual_ballot(:closed_m, '40000000-0000-4000-8000-000000000001', :owner_a, null, 'after voting ended',
+    jsonb_build_array(jsonb_build_object('question_id', '20000000-0000-4000-8000-000000000003', 'choice_ids', jsonb_build_array(:c_closed))))->>'manual_ballot_id') is not null,
+  'paper ballot after voting ends, before the result');
+
+select throws_like(
+  format($q$select public.submit_manual_ballot(%L, %L, %L, null, null, '[]'::jsonb)$q$, :draft_m, '40000000-0000-4000-8000-000000000001', :owner_a),
+  'VOTE_CLOSED%', 'no paper ballot for a draft meeting');
+
+select throws_like(
+  format($q$select public.submit_manual_ballot(%L, %L, %L, null, null, '[]'::jsonb)$q$, :result_m, '40000000-0000-4000-8000-000000000001', :owner_a),
+  'VOTE_CLOSED%', 'no paper ballot once the result is generated');
 
 -- Read ballot ids as postgres; RLS hides them from the test role.
 reset role;

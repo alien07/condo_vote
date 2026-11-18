@@ -1,11 +1,12 @@
-// Admin lifecycle step: Rooms, paper ballot import, owners and ownership links.
+// Admin lifecycle step: Rooms, owners and ownership links. The paper ballot
+// (enterPaperBallot) runs in the voting step, once the meeting is published.
 import type { Page } from "@playwright/test";
 import { expect } from "@playwright/test";
 import { chooseSearchOption, gotoWithRetry } from "../admin-helpers";
 import type { AfterMeetings } from "./meetings";
 
 export async function people(page: Page, ctx: AfterMeetings) {
-  const { roomNumber, ownerName, meetingTitle, choiceText, manualAuditNote, activeAppOrigin } = ctx;
+  const { roomNumber, ownerName, activeAppOrigin } = ctx;
 
   await page.goto(`${activeAppOrigin}/admin/people?tab=rooms`);
   await page.getByRole("link", { name: "Add room" }).click();
@@ -20,39 +21,6 @@ export async function people(page: Page, ctx: AfterMeetings) {
   await expect(page.getByRole("cell", { name: roomNumber })).toBeVisible({
     timeout: 15_000,
   });
-
-  await page.goto(`${activeAppOrigin}/admin/voting`);
-  const manualVotesSection = page
-    .getByRole("heading", { name: "Manual Votes" })
-    .locator("xpath=ancestor::section[1]");
-  await manualVotesSection.getByRole("link", { name: "Import manual vote" }).click();
-  const importManualVoteDrawer = page.getByLabel("Import manual vote");
-  await importManualVoteDrawer
-    .locator('select[name="meeting_id"]')
-    .selectOption({ label: meetingTitle });
-  await chooseSearchOption(importManualVoteDrawer, "room_id", roomNumber);
-  await importManualVoteDrawer
-    .getByPlaceholder("Name on paper ballot when profile is not registered yet")
-    .fill(manualAuditNote);
-  await importManualVoteDrawer
-    .getByRole("button", { name: "Continue to vote form" })
-    .click();
-  await expect(
-    page.getByRole("heading", { name: `Manual vote entry: ${meetingTitle}` }),
-  ).toBeVisible({ timeout: 15_000 });
-  await page.getByLabel(choiceText).check();
-  await page.getByRole("button", { name: "Save manual vote" }).click();
-  await page.waitForURL("**/admin/voting", { waitUntil: "domcontentloaded" });
-  await page.goto(`${activeAppOrigin}/admin/voting`);
-  const pendingManualIdentitySection = page
-    .getByRole("heading", { name: "Pending manual vote identities" })
-    .locator("xpath=ancestor::section[1]");
-  await expect(
-    pendingManualIdentitySection
-      .locator("[data-pending-ballot-id]")
-      .filter({ hasText: roomNumber })
-      .filter({ hasText: manualAuditNote }),
-  ).toBeVisible({ timeout: 15_000 });
 
   await page.goto(`${activeAppOrigin}/admin/people?tab=owners`);
   await page.getByRole("link", { name: "Add owner" }).click();
@@ -91,3 +59,42 @@ export async function people(page: Page, ctx: AfterMeetings) {
 }
 
 export type AfterPeople = AfterMeetings;
+
+/** Paper ballot with a voter name only (pending identity). Runs after the
+ * meeting is published: paper ballots need a published meeting (0044). */
+export async function enterPaperBallot(page: Page, ctx: AfterMeetings) {
+  const { roomNumber, meetingTitle, choiceText, manualAuditNote, activeAppOrigin } = ctx;
+
+  await page.goto(`${activeAppOrigin}/admin/voting`);
+  const manualVotesSection = page
+    .getByRole("heading", { name: "Manual Votes" })
+    .locator("xpath=ancestor::section[1]");
+  await manualVotesSection.getByRole("link", { name: "Import manual vote" }).click();
+  const importManualVoteDrawer = page.getByLabel("Import manual vote");
+  await chooseSearchOption(importManualVoteDrawer, "meeting_id", meetingTitle);
+  await chooseSearchOption(importManualVoteDrawer, "room_id", roomNumber);
+  await importManualVoteDrawer
+    .getByPlaceholder("Name on paper ballot when profile is not registered yet")
+    .fill(manualAuditNote);
+  await importManualVoteDrawer
+    .getByRole("button", { name: "Continue to vote form" })
+    .click();
+  await expect(
+    page.getByRole("heading", { name: `Manual vote entry: ${meetingTitle}` }),
+  ).toBeVisible({ timeout: 15_000 });
+  await page.getByLabel(choiceText).check();
+  await page.getByRole("button", { name: "Save manual vote" }).click();
+  await page.waitForURL(/\/admin\/voting\?[\s\S]*feedback=success/, {
+    waitUntil: "domcontentloaded",
+  });
+  await page.goto(`${activeAppOrigin}/admin/voting`);
+  const pendingManualIdentitySection = page
+    .getByRole("heading", { name: "Pending manual vote identities" })
+    .locator("xpath=ancestor::section[1]");
+  await expect(
+    pendingManualIdentitySection
+      .locator("[data-pending-ballot-id]")
+      .filter({ hasText: roomNumber })
+      .filter({ hasText: manualAuditNote }),
+  ).toBeVisible({ timeout: 15_000 });
+}

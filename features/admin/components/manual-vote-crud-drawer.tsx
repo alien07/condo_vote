@@ -19,15 +19,10 @@ import { PendingSubmitButton } from "@/features/debug/tracked-submit-button";
 import {
   SearchSelect,
   invalidFieldElement,
+  type SearchSelectOption,
   profileSearchOptions,
   roomSearchOptions,
 } from "@/features/ui/search-select";
-
-type MeetingOption = {
-  id: string;
-  status: string;
-  title: string;
-};
 
 type ProfileOption = {
   email: string;
@@ -51,7 +46,8 @@ type PendingManualBallot = {
 
 type ManualVoteImportDrawerProps = {
   closeHref: string;
-  meetings: MeetingOption[];
+  /** Meetings that take paper ballots (takesPaperBallots), with a hint. */
+  meetingOptions: SearchSelectOption[];
   profiles: ProfileOption[];
   rooms: RoomOption[];
 };
@@ -177,7 +173,7 @@ export function ManualVoteRowFocus({
 
 export function ManualVoteImportDrawer({
   closeHref,
-  meetings,
+  meetingOptions,
   profiles,
   rooms,
 }: ManualVoteImportDrawerProps) {
@@ -218,23 +214,21 @@ export function ManualVoteImportDrawer({
         <ActionMessage state={state} />
         <label className="grid gap-1 text-sm font-medium">
           <FieldLabel required>{s.voting.meeting}</FieldLabel>
-          <select
-            {...fieldProps("meeting_id", state)}
-            autoFocus
-            className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-            defaultValue={stateValue(state, "meeting_id")}
-            name="meeting_id"
-            required
-          >
-            <option value="">{s.voting.selectMeeting}</option>
-            {meetings
-              .filter((meeting) => meeting.status !== "archived")
-              .map((meeting) => (
-                <option key={meeting.id} value={meeting.id}>
-                  {meeting.title}
-                </option>
-              ))}
-          </select>
+          {meetingOptions.length ? (
+            <SearchSelect
+              {...fieldProps("meeting_id", state)}
+              autoFocus
+              defaultValue={stateValue(state, "meeting_id")}
+              name="meeting_id"
+              options={meetingOptions}
+              text={{ ...searchText, placeholder: s.voting.selectMeeting }}
+            />
+          ) : (
+            <span className="text-sm font-normal text-[var(--warning)]" data-no-paper-meetings>
+              {s.voting.noPaperMeetings}
+            </span>
+          )}
+          <span className="text-xs font-normal text-[var(--muted)]">{s.voting.paperMeetingHelp}</span>
           <FieldError fieldName="meeting_id" state={state} />
         </label>
         <label className="grid gap-1 text-sm font-medium">

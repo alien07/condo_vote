@@ -13,6 +13,7 @@ import { submitManualBallot } from "@/features/admin/action-modules/voting";
 import { PendingSubmitButton } from "@/features/debug/tracked-submit-button";
 import { requireOfficeStaff } from "@/lib/auth/permissions";
 import { createClient } from "@/lib/supabase/server";
+import { takesPaperBallots } from "@/features/admin/meeting-pickers";
 
 type ManualVotePageProps = {
   params: Promise<{
@@ -136,7 +137,15 @@ export default async function ManualVotePage({
             </div>
           </div>
 
-          {questionsResult.data.length === 0 ? (
+          {!takesPaperBallots(meeting) ? (
+            <p
+              className="mt-4 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900"
+              data-paper-meeting-closed
+              role="status"
+            >
+              {s.voting.paperMeetingClosed}
+            </p>
+          ) : questionsResult.data.length === 0 ? (
             <p className="mt-4 text-sm text-[var(--muted)]">
               {s.voting.noQuestions}
             </p>

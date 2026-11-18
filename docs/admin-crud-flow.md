@@ -125,6 +125,22 @@ Standard since 2026-11-19: every admin action tells the user what happened.
   `runAndRedirect`).
 - Messages are English in code; add the Thai to `lib/i18n/staff/messages.ts`.
 
+## Meeting Pickers
+
+Standard since 2026-11-19: a form that picks a meeting lists only the
+meetings where what it saves still means something, with the state as the
+hint (never the raw status code). The server checks the same rule; the
+database too where a wrong meeting would change a result.
+
+| Form | Meetings offered | Rule | Database |
+| --- | --- | --- | --- |
+| Add agenda item | Draft | `question-crud-drawer.tsx` | 0039 `AGENDA_LOCKED` |
+| Add proxy | Draft, or published and voting not ended | `takesNewProxy` (`proxy-meetings.ts`) | 0020 trigger after publish |
+| Paper ballot | Published, until the result is generated (also after voting ends) | `takesPaperBallots` (`meeting-pickers.ts`) | 0044 `VOTE_CLOSED` |
+| Send vote links | Published and voting not ended | `takesVoteInvitations` (`meeting-pickers.ts`) | - |
+
+Search filters on list pages (meeting name boxes) still match every meeting.
+
 ## Destructive Actions
 
 - Prefer `Deactivate`, `Reactivate`, `Archive`, `Revoke`, `End Link`, or `Cancel scheduled link` over hard delete.

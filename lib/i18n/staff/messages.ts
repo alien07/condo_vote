@@ -132,7 +132,6 @@ const EXACT: Record<string, string> = {
   "Document registered": "ลงทะเบียนเอกสารแล้ว",
   "Document storage config saved": "บันทึกที่เก็บเอกสารแล้ว",
   "Effective until must be on or after Effective from.": "วันที่มีผลถึงต้องไม่ก่อนวันที่มีผลตั้งแต่",
-  "Eligible voter links can only be queued for published meetings.": "ส่งลิงก์ให้ผู้มีสิทธิ์ได้เฉพาะการประชุมที่เผยแพร่แล้ว",
   "End time must be after start time.": "เวลาสิ้นสุดต้องอยู่หลังเวลาเริ่ม",
   "Excel file has no owner rows to upsert.": "ไฟล์ Excel ไม่มีข้อมูลเจ้าของ",
   "Excel file has no room rows to upsert.": "ไฟล์ Excel ไม่มีข้อมูลห้อง",
@@ -178,6 +177,11 @@ const EXACT: Record<string, string> = {
     "ผู้รับมอบฉันทะหนึ่งคนรับได้ไม่เกิน 3 ห้องต่อการประชุม",
   "A proxy can only be added to a draft meeting or one still open for voting.":
     "เพิ่มการมอบฉันทะได้เฉพาะการประชุมที่เป็นร่าง หรือยังเปิดลงคะแนนอยู่",
+  "Paper ballots can only be entered for a published meeting whose result has not been generated.":
+    "บันทึกบัตรกระดาษได้เฉพาะการประชุมที่เผยแพร่แล้วและยังไม่ออกผล",
+  "Vote links can only be sent for a published meeting still open for voting.":
+    "ส่งลิงก์ลงคะแนนได้เฉพาะการประชุมที่เผยแพร่แล้วและยังเปิดลงคะแนนอยู่",
+  "Paper ballot saved": "บันทึกบัตรกระดาษแล้ว",
   "Meeting archived": "เก็บถาวรการประชุมแล้ว",
   "Role revoked": "ถอนสิทธิ์แล้ว",
   "Owner deactivated": "ปิดใช้งานเจ้าของร่วมแล้ว",
@@ -207,7 +211,6 @@ const EXACT: Record<string, string> = {
     "ห้องนี้มีเจ้าของที่ใช้งานมากกว่าหนึ่งราย สิ้นสุดการผูกที่ซ้ำก่อนผูกใหม่",
   "Upload must be an .xlsx file from the Excel template.": "ต้องอัปโหลดไฟล์ .xlsx จากแม่แบบ Excel",
   "Version must be a whole number greater than 0.": "ฉบับที่ต้องเป็นจำนวนเต็มมากกว่า 0",
-  "Vote invitation links can only be resent for published meetings.": "ส่งคำเชิญซ้ำได้เฉพาะการประชุมที่เผยแพร่แล้ว",
   "Voter profile or pending voter identity is required.": "ต้องเลือกผู้ลงคะแนน หรือกรอกชื่อผู้ลงคะแนน",
   "Voting is still open. Results can be generated after the end time or after the committee approves closing voting.":
     "ยังเปิดลงคะแนนอยู่ สร้างผลได้หลังเวลาปิด หรือหลังกรรมการอนุมัติปิดลงคะแนน",

@@ -1,6 +1,6 @@
 "use server";
 
-import { redirect } from "next/navigation";
+import { redirect, unstable_rethrow } from "next/navigation";
 import {
   createClient,
   optionalText,
@@ -9,6 +9,8 @@ import {
   revalidateAdminPaths,
 } from "@/features/admin/action-modules/shared";
 import { writeAuditLog } from "@/lib/audit/business-audit";
+import { backToPage } from "@/features/admin/action-modules/feedback";
+import { PAPER_BALLOT_MEETING_CLOSED, takesPaperBallots } from "@/features/admin/meeting-pickers";
 import {
   answersFromFormData,
   submitManualBallotRecord,
@@ -104,6 +106,18 @@ export async function importManualVoteEntry(formData: FormData) {
   revalidateAdminPaths();
 }
 
+/** Whether the meeting takes paper ballots now (2026-11-19). */
+async function meetingTakesPaperBallots(meetingId: string) {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("meetings")
+    .select("status, ends_at")
+    .eq("id", meetingId)
+    .maybeSingle();
+
+  return Boolean(data && takesPaperBallots(data));
+}
+
 export async function startManualVoteImport(formData: FormData) {
   await requireOfficeStaff();
 
@@ -114,6 +128,10 @@ export async function startManualVoteImport(formData: FormData) {
 
   if (!voterProfileId && !voterIdentityText) {
     throw new Error("Voter profile or pending voter identity is required.");
+  }
+
+  if (!(await meetingTakesPaperBallots(meetingId))) {
+    throw new Error(PAPER_BALLOT_MEETING_CLOSED);
   }
 
   const params = new URLSearchParams();
@@ -146,6 +164,10 @@ export async function startManualVoteImportWithState(
 
     if (validation) {
       return validation;
+    }
+
+    if (!(await meetingTakesPaperBallots(values.meeting_id))) {
+      return { fieldErrors: { meeting_id: PAPER_BALLOT_MEETING_CLOSED }, values };
     }
 
     const params = new URLSearchParams();
@@ -187,17 +209,25 @@ export async function submitManualBallot(formData: FormData) {
   const supabase = await createClient();
 
   // Answer validation, upsert, answers, and audit run in one transaction in
-  // the voting core service.
-  await submitManualBallotRecord(supabase, {
-    meetingId,
-    roomId,
-    voterProfileId,
-    voterIdentityText,
-    auditNote: optionalText(formData.get("audit_note")),
-    answers: answersFromFormData(formData),
-  });
+  // the voting core service; it refuses a meeting that does not take paper
+  // ballots (0044). A refusal stays on the form with the reason (admin
+  // action standard).
+  try {
+    await submitManualBallotRecord(supabase, {
+      meetingId,
+      roomId,
+      voterProfileId,
+      voterIdentityText,
+      auditNote: optionalText(formData.get("audit_note")),
+      answers: answersFromFormData(formData),
+    });
+  } catch (error) {
+    unstable_rethrow(error);
+    await backToPage("error", error instanceof Error ? error.message : String(error));
+  }
+
   revalidateAdminPaths();
-  redirect("/admin/voting");
+  redirect(`/admin/voting?${new URLSearchParams({ feedback: "success", message: "Paper ballot saved" })}`);
 }
 
 export async function resolveManualBallotIdentity(formData: FormData) {

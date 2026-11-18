@@ -10,6 +10,7 @@ import {
   revalidateAdminPaths,
   type EmailInviteState,
 } from "@/features/admin/action-modules/shared";
+import { VOTE_INVITATION_MEETING_CLOSED, takesVoteInvitations } from "@/features/admin/meeting-pickers";
 
 export async function resendVoteInvitation(
   _previousState: EmailInviteState,
@@ -29,7 +30,7 @@ export async function resendVoteInvitation(
   const [meetingResult, profileResult] = await Promise.all([
     supabase
       .from("meetings")
-      .select("id, status")
+      .select("id, status, ends_at")
       .eq("id", meetingId)
       .single(),
     supabase
@@ -47,8 +48,8 @@ export async function resendVoteInvitation(
     return { error: profileResult.error.message };
   }
 
-  if (meetingResult.data.status !== "published") {
-    return { error: "Vote invitation links can only be resent for published meetings." };
+  if (!takesVoteInvitations(meetingResult.data)) {
+    return { error: VOTE_INVITATION_MEETING_CLOSED };
   }
 
   if (!profileResult.data) {
@@ -95,7 +96,7 @@ export async function queueVoteInvitationGroup(
   const supabase = await createClient();
   const { data: meeting, error: meetingError } = await supabase
     .from("meetings")
-    .select("id, status")
+    .select("id, status, ends_at")
     .eq("id", meetingId)
     .single();
 
@@ -107,8 +108,9 @@ export async function queueVoteInvitationGroup(
     return { error: "Invalid group resend mode." };
   }
 
-  if (groupMode === "eligible" && meeting.status !== "published") {
-    return { error: "Eligible voter links can only be queued for published meetings." };
+  // Vote links only while voting is open, for either group (2026-11-19).
+  if (!takesVoteInvitations(meeting)) {
+    return { error: VOTE_INVITATION_MEETING_CLOSED };
   }
 
   const { data: eligibleRows, error: eligibleError } = await supabase

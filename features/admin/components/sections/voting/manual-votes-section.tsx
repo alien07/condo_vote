@@ -1,6 +1,9 @@
 import { getStaffI18n } from "@/lib/i18n/server";
 import { fill } from "@/lib/i18n/template";
 import { ListChecks } from "lucide-react";
+import { ballotAnswers, type BallotAnswer } from "@/features/admin/components/sections/voting/ballot-answers";
+import { formatDateTime } from "@/features/admin/components/sections/shared/format";
+import { takesPaperBallots, votingOpen } from "@/features/admin/meeting-pickers";
 import { PerPageSelect } from "@/features/admin/components/table-controls";
 import { ManualVoteIdentityDrawer, ManualVoteImportDrawer, ManualVoteRowFocus } from "@/features/admin/components/manual-vote-crud-drawer";
 import { tablePage, tablePerPage } from "@/features/admin/components/sections/shared/table";
@@ -27,6 +30,8 @@ type ManualVotesSectionProps = Pick<
   hidden: boolean;
 };
 
+const ANSWERS_SHOWN = 3;
+
 export async function ManualVotesSection({
   drawer,
   focusedManualBallotId,
@@ -38,6 +43,18 @@ export async function ManualVotesSection({
   hidden,
 }: ManualVotesSectionProps) {
   const { s } = await getStaffI18n();
+  // Only meetings that take paper ballots (2026-11-19), newest first, with
+  // whether voting is still open as the hint.
+  const paperMeetingOptions = meetings
+    .filter((meeting) => takesPaperBallots(meeting))
+    .sort((left, right) => right.starts_at.localeCompare(left.starts_at))
+    .map((meeting) => ({
+      value: meeting.id,
+      label: meeting.title,
+      hint: votingOpen(meeting)
+        ? fill(s.voting.meetingOpenUntil, { date: formatDateTime(meeting.ends_at) })
+        : s.voting.meetingVotingEnded,
+    }));
   const manualVoteTableFilters: Required<ManualVoteTableFilters> = {
     dir: manualVoteFilters?.dir ?? "asc",
     meeting: manualVoteFilters?.meeting ?? "",
@@ -91,11 +108,7 @@ export async function ManualVotesSection({
   // One row per paper ballot, its answers listed inside (was one row per
   // answer, so a room repeated once per agenda item).
   const manualVoteRows = manualBallots.map((manualBallot) => ({
-    answers: manualBallot.manual_ballot_answers.map((answer) => ({
-      id: answer.id,
-      question: answer.meeting_questions?.question_text ?? "-",
-      choice: answer.meeting_choices?.choice_text ?? "-",
-    })),
+    answers: ballotAnswers(manualBallot.manual_ballot_answers),
     counted: manualBallot.status !== "draft",
     identityStatus: manualBallot.identity_status ?? "legacy",
     manualBallotId: manualBallot.id,
@@ -204,17 +217,31 @@ export async function ManualVotesSection({
       {identityText(status)}
     </span>
   );
-  const answerList = (row: (typeof manualVoteRows)[number]) => (
-    <ul className="mt-1 grid gap-1">
-      {row.answers.map((answer) => (
-        <li key={answer.id}>
-          <span className="text-[var(--muted)]">{answer.question}</span>
-          <span aria-hidden="true"> → </span>
-          <span className="font-medium">{answer.choice}</span>
-        </li>
-      ))}
-    </ul>
+  // Long agendas (2026-11-19): the first few items, the rest folded away,
+  // so a ballot stays a few lines high however many items the meeting has.
+  const answerItem = (answer: BallotAnswer) => (
+    <li key={answer.questionId}>
+      <span className="text-[var(--muted)]">{answer.question}</span>
+      <span aria-hidden="true"> → </span>
+      <span className="font-medium">{answer.choices}</span>
+    </li>
   );
+  const answerList = (row: (typeof manualVoteRows)[number]) =>
+    row.answers.length === 0 ? (
+      <p className="mt-1 text-[var(--muted)]">{s.voting.noAnswers}</p>
+    ) : (
+      <div className="mt-1">
+        <ul className="grid gap-1">{row.answers.slice(0, ANSWERS_SHOWN).map(answerItem)}</ul>
+        {row.answers.length > ANSWERS_SHOWN ? (
+          <details className="mt-1">
+            <summary className="cursor-pointer text-xs font-medium text-[var(--primary)]">
+              {fill(s.voting.moreAgendaItems, { count: row.answers.length - ANSWERS_SHOWN })}
+            </summary>
+            <ul className="mt-1 grid gap-1">{row.answers.slice(ANSWERS_SHOWN).map(answerItem)}</ul>
+          </details>
+        ) : null}
+      </div>
+    );
   const voterBlock = (row: (typeof manualVoteRows)[number]) => (
     <div className="mt-2 grid gap-1 md:mt-0">
       <span className="font-medium [overflow-wrap:anywhere]">{row.voter}</span>
@@ -500,7 +527,7 @@ export async function ManualVotesSection({
       {drawer?.mode === "create" && drawer.type === "manual_vote" ? (
         <ManualVoteImportDrawer
           closeHref={manualVoteListHref}
-          meetings={meetings}
+          meetingOptions={paperMeetingOptions}
           profiles={profiles}
           rooms={rooms}
         />
