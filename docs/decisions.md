@@ -386,3 +386,37 @@ with no audit entry, and office staff could do it.
   account becomes a resident.
 - Migration 0037 links existing owners once, with the same exact-one-match
   rule; owners it cannot link stay unlinked until the account signs in.
+
+### D025 - Admin-Confirmed Owner Links
+Status: accepted 2026-11-18, not yet implemented
+
+D024 links an owner of record to an account automatically when the
+account's email matches exactly one active owner. A wrong email in the
+owners file then links the wrong person, and nobody checks who signed in.
+Some condos want the office to verify each owner before they can vote.
+
+- Setting `owner_link_mode` in `app_settings`: `auto` (D024, the default
+  for every condo) or `admin_confirm`. Only an admin changes it; each change
+  is audited (`settings.owner_link_mode_changed`). Changing the mode does
+  not undo existing links.
+- In `admin_confirm` mode no link is made automatically. An account that
+  has given privacy consent and has no owner, proxy or other role waits in
+  a "waiting for verification" list. It cannot vote and sees a page that
+  says the office will verify it.
+- The admin confirms from that list. The owner whose email matches is
+  suggested, and the admin can pick another owner. Confirming needs:
+  - verification method (required): ID card at the office, video call,
+    phone call, known in person, document sent, or other;
+  - reason / note (required, free text).
+  Both are written to the audit log (`owner.profile_linked`,
+  `source: admin_confirmed`, `method`, `reason`).
+- The admin can also reject an account in the list (reason required). It
+  stays a signed-in account with no voting rights.
+- Admin link, move and unlink (D024, migration 0038) also take the
+  verification method next to the reason they already require, in both
+  modes.
+- `auto` mode is unchanged. A link made automatically records
+  `method: email_match`.
+- The waiting list reuses the owners page banner, tab count and account
+  history drawer (2026-11-17), so waiting accounts are seen without
+  scrolling.
