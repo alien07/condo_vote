@@ -16,6 +16,13 @@ import {
   FormResetButton,
 } from "@/features/admin/components/form-controls";
 import { PendingSubmitButton } from "@/features/debug/tracked-submit-button";
+import {
+  SearchSelect,
+  invalidFieldElement,
+  ownerSearchOptions,
+  profileSearchOptions,
+  roomSearchOptions,
+} from "@/features/ui/search-select";
 
 type MeetingOption = {
   id: string;
@@ -149,6 +156,14 @@ export function ProxyCrudDrawer({
 }: ProxyCrudDrawerProps) {
   const tm = useMessageText();
   const { s } = useStaffText();
+  const roomOptions = roomSearchOptions(rooms);
+  const ownerOptions = ownerSearchOptions(owners);
+  const profileOptions = profileSearchOptions(profiles);
+  const searchText = {
+    clear: s.common.searchClear,
+    more: s.common.searchMore,
+    noResults: s.common.searchNoResults,
+  };
   const formRef = useRef<HTMLFormElement>(null);
   const searchParams = useSearchParams();
   const [state, formAction] = useActionState(
@@ -162,13 +177,7 @@ export function ProxyCrudDrawer({
     const firstInvalidField = Object.keys(state.fieldErrors ?? {})[0];
 
     if (firstInvalidField) {
-      const field = formRef.current?.elements.namedItem(firstInvalidField);
-      const element =
-        field instanceof RadioNodeList
-          ? field[0]
-          : field instanceof HTMLElement
-            ? field
-            : null;
+      const element = invalidFieldElement(formRef.current, firstInvalidField);
 
       element?.focus();
       element?.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -244,57 +253,33 @@ export function ProxyCrudDrawer({
             </label>
             <label className="grid gap-1 text-sm font-medium">
               <FieldLabel required>{s.proxies.room}</FieldLabel>
-              <select
+              <SearchSelect
                 {...fieldProps("room_id", state)}
-                className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
                 defaultValue={stateValue(state, "room_id")}
                 name="room_id"
-                required
-              >
-                <option value="">{s.proxies.selectRoom}</option>
-                {rooms
-                  .filter((room) => room.active)
-                  .map((room) => (
-                    <option key={room.id} value={room.id}>
-                      {room.room_number}
-                    </option>
-                  ))}
-              </select>
+                options={roomOptions}
+                text={{ ...searchText, placeholder: s.proxies.selectRoom }}
+              />
               <FieldError fieldName="room_id" state={state} />
             </label>
             <label className="grid gap-1 text-sm font-medium">
               {s.proxies.owner}
-              <select
-                className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+              <SearchSelect
                 defaultValue={stateValue(state, "owner_id")}
                 name="owner_id"
-              >
-                <option value="">{s.proxies.ownerOptional}</option>
-                {owners
-                  .filter((owner) => owner.active)
-                  .map((owner) => (
-                    <option key={owner.id} value={owner.id}>
-                      {owner.full_name}
-                    </option>
-                  ))}
-              </select>
+                options={ownerOptions}
+                text={{ ...searchText, placeholder: s.proxies.ownerOptional }}
+              />
             </label>
             <label className="grid gap-1 text-sm font-medium">
               <FieldLabel required>{s.proxies.proxyProfile}</FieldLabel>
-              <select
+              <SearchSelect
                 {...fieldProps("proxy_profile_id", state)}
-                className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
                 defaultValue={stateValue(state, "proxy_profile_id")}
                 name="proxy_profile_id"
-                required
-              >
-                <option value="">{s.proxies.selectProxy}</option>
-                {profiles.map((profile) => (
-                  <option key={profile.id} value={profile.id}>
-                    {profile.full_name ?? profile.email} ({profile.email})
-                  </option>
-                ))}
-              </select>
+                options={profileOptions}
+                text={{ ...searchText, placeholder: s.proxies.selectProxy }}
+              />
               <FieldError fieldName="proxy_profile_id" state={state} />
             </label>
             <label className="grid gap-1 text-sm font-medium">

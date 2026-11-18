@@ -234,3 +234,54 @@ export function SearchSelect({
     </div>
   );
 }
+
+/** The element to focus for a field with an error: a SearchSelect's search
+ * box when there is one, otherwise the form control with that name. */
+export function invalidFieldElement(form: HTMLFormElement | null | undefined, name: string) {
+  const box = form?.querySelector<HTMLElement>(`[data-focus-for="${CSS.escape(name)}"]`);
+
+  if (box) {
+    return box;
+  }
+
+  const field = form?.elements.namedItem(name);
+  return field instanceof RadioNodeList
+    ? (field[0] as HTMLElement | undefined) ?? null
+    : field instanceof HTMLElement
+      ? field
+      : null;
+}
+
+type PersonLike = { email: string; full_name: string | null; id: string };
+
+/** People (accounts): name first, email as the hint, both searchable. */
+export function profileSearchOptions(profiles: PersonLike[]): SearchSelectOption[] {
+  return profiles.map((profile) => ({
+    value: profile.id,
+    label: profile.full_name ?? profile.email,
+    hint: profile.full_name ? profile.email : undefined,
+    keywords: profile.email,
+  }));
+}
+
+type RoomLike = { active: boolean | null; id: string; room_number: string; building?: string | null };
+
+/** Active rooms by number; the building helps when numbers repeat. */
+export function roomSearchOptions(rooms: RoomLike[]): SearchSelectOption[] {
+  return rooms
+    .filter((room) => room.active)
+    .map((room) => ({ value: room.id, label: room.room_number, hint: room.building ?? undefined }));
+}
+
+type OwnerLike = { active: boolean | null; full_name: string; id: string; email?: string | null; phone?: string | null };
+
+/** Active owners of record by name; email and phone as the hint. */
+export function ownerSearchOptions(owners: OwnerLike[]): SearchSelectOption[] {
+  return owners
+    .filter((owner) => owner.active)
+    .map((owner) => ({
+      value: owner.id,
+      label: owner.full_name,
+      hint: [owner.email, owner.phone].filter(Boolean).join(" · ") || undefined,
+    }));
+}

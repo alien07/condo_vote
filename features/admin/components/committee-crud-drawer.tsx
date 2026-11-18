@@ -13,6 +13,11 @@ import { AdminCrudDrawer } from "@/features/admin/components/admin-crud-drawer";
 import { FieldLabel, RequiredNote } from "@/features/admin/components/field-label";
 import { FormResetButton } from "@/features/admin/components/form-controls";
 import { PendingSubmitButton } from "@/features/debug/tracked-submit-button";
+import {
+  SearchSelect,
+  invalidFieldElement,
+  profileSearchOptions,
+} from "@/features/ui/search-select";
 
 type CommitteeMember = {
   active: boolean;
@@ -120,6 +125,12 @@ export function CommitteeCrudDrawer({
 }: CommitteeCrudDrawerProps) {
   const tm = useMessageText();
   const { s } = useStaffText();
+  const profileOptions = profileSearchOptions(profiles);
+  const searchText = {
+    clear: s.common.searchClear,
+    more: s.common.searchMore,
+    noResults: s.common.searchNoResults,
+  };
   const formRef = useRef<HTMLFormElement>(null);
   const searchParams = useSearchParams();
   const [state, formAction] = useActionState(
@@ -133,13 +144,7 @@ export function CommitteeCrudDrawer({
     const firstInvalidField = Object.keys(state.fieldErrors ?? {})[0];
 
     if (firstInvalidField) {
-      const field = formRef.current?.elements.namedItem(firstInvalidField);
-      const element =
-        field instanceof RadioNodeList
-          ? field[0]
-          : field instanceof HTMLElement
-            ? field
-            : null;
+      const element = invalidFieldElement(formRef.current, firstInvalidField);
 
       element?.focus();
       element?.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -200,18 +205,12 @@ export function CommitteeCrudDrawer({
         ) : null}
         <label className="grid gap-1 text-sm font-medium">
           {s.setup.profile}
-          <select
-            className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+          <SearchSelect
             defaultValue={stateValue(state, "profile_id", member?.profile_id)}
             name="profile_id"
-          >
-            <option value="">{s.setup.profileOptional}</option>
-            {profiles.map((profile) => (
-              <option key={profile.id} value={profile.id}>
-                {profile.full_name ?? profile.email} ({profile.email})
-              </option>
-            ))}
-          </select>
+            options={profileOptions}
+            text={{ ...searchText, placeholder: s.setup.profileOptional }}
+          />
         </label>
         <label className="grid gap-1 text-sm font-medium">
           <FieldLabel required>{s.setup.memberName}</FieldLabel>

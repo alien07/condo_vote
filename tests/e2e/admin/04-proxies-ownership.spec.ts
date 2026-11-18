@@ -140,15 +140,9 @@ test.describe("@test:e2e @test:auth @test:admin admin demo: proxies and ownershi
       await addDrawer
         .locator('select[name="meeting_id"]')
         .selectOption({ label: meetingTitle });
-      await addDrawer
-        .locator('select[name="room_id"]')
-        .selectOption({ label: roomNumber });
-      await addDrawer
-        .locator('select[name="owner_id"]')
-        .selectOption({ label: ownerName });
-      await addDrawer
-        .locator('select[name="proxy_profile_id"]')
-        .selectOption({ label: `${demoAdminName} (${demoAdminEmail})` });
+      await chooseSearchOption(addDrawer, "room_id", roomNumber);
+      await chooseSearchOption(addDrawer, "owner_id", ownerName);
+      await chooseSearchOption(addDrawer, "proxy_profile_id", demoAdminEmail);
       await addDrawer.getByRole("button", { name: "Add proxy authorization" }).click();
       await page.waitForURL((url) => Boolean(url.searchParams.get("focusProxyId")));
 

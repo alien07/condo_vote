@@ -30,9 +30,7 @@ export async function people(page: Page, ctx: AfterMeetings) {
   await importManualVoteDrawer
     .locator('select[name="meeting_id"]')
     .selectOption({ label: meetingTitle });
-  await importManualVoteDrawer
-    .locator('select[name="room_id"]')
-    .selectOption({ label: roomNumber });
+  await chooseSearchOption(importManualVoteDrawer, "room_id", roomNumber);
   await importManualVoteDrawer
     .getByPlaceholder("Name on paper ballot when profile is not registered yet")
     .fill(manualAuditNote);

@@ -3,6 +3,7 @@ import { confirmInApp } from "../confirm-dialog";
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/database.types";
 import {
+  chooseSearchOption,
   demoAdminEmail,
   demoAdminName,
   appUrl,
@@ -209,9 +210,7 @@ test.describe("@test:e2e @test:auth @test:admin admin demo: manual vote identity
     await expect(pendingRow).toBeVisible();
     await pendingRow.getByRole("link", { name: "Link profile" }).click();
     const resolveDrawer = page.getByLabel("Resolve manual vote identity");
-    await resolveDrawer
-      .locator('select[name="voter_profile_id"]')
-      .selectOption(profile!.id);
+    await chooseSearchOption(resolveDrawer, "voter_profile_id", demoAdminEmail);
     await resolveDrawer.getByRole("button", { name: "Link profile" }).click();
     await confirmInApp(page);
 

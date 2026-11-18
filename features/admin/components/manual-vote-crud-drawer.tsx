@@ -16,6 +16,12 @@ import {
   FormResetButton,
 } from "@/features/admin/components/form-controls";
 import { PendingSubmitButton } from "@/features/debug/tracked-submit-button";
+import {
+  SearchSelect,
+  invalidFieldElement,
+  profileSearchOptions,
+  roomSearchOptions,
+} from "@/features/ui/search-select";
 
 type MeetingOption = {
   id: string;
@@ -106,13 +112,7 @@ function focusFirstInvalidField(
     return false;
   }
 
-  const field = form?.elements.namedItem(firstInvalidField);
-  const element =
-    field instanceof RadioNodeList
-      ? field[0]
-      : field instanceof HTMLElement
-        ? field
-        : null;
+  const element = invalidFieldElement(form, firstInvalidField);
 
   element?.focus();
   element?.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -179,6 +179,13 @@ export function ManualVoteImportDrawer({
   rooms,
 }: ManualVoteImportDrawerProps) {
   const { s } = useStaffText();
+  const roomOptions = roomSearchOptions(rooms);
+  const profileOptions = profileSearchOptions(profiles);
+  const searchText = {
+    clear: s.common.searchClear,
+    more: s.common.searchMore,
+    noResults: s.common.searchNoResults,
+  };
   const formRef = useRef<HTMLFormElement>(null);
   const [state, formAction] = useActionState(
     startManualVoteImportWithState,
@@ -229,39 +236,24 @@ export function ManualVoteImportDrawer({
         </label>
         <label className="grid gap-1 text-sm font-medium">
           <FieldLabel required>{s.voting.room}</FieldLabel>
-          <select
+          <SearchSelect
             {...fieldProps("room_id", state)}
-            className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
             defaultValue={stateValue(state, "room_id")}
             name="room_id"
-            required
-          >
-            <option value="">{s.voting.selectRoom}</option>
-            {rooms
-              .filter((room) => room.active)
-              .map((room) => (
-                <option key={room.id} value={room.id}>
-                  {room.room_number}
-                </option>
-              ))}
-          </select>
+            options={roomOptions}
+            text={{ ...searchText, placeholder: s.voting.selectRoom }}
+          />
           <FieldError fieldName="room_id" state={state} />
         </label>
         <label className="grid gap-1 text-sm font-medium">
           {s.voting.voterProfile}
-          <select
+          <SearchSelect
             {...fieldProps("voter_profile_id", state)}
-            className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
             defaultValue={stateValue(state, "voter_profile_id")}
             name="voter_profile_id"
-          >
-            <option value="">{s.voting.usePending}</option>
-            {profiles.map((profile) => (
-              <option key={profile.id} value={profile.id}>
-                {profile.full_name ?? profile.email} ({profile.email})
-              </option>
-            ))}
-          </select>
+            options={profileOptions}
+            text={{ ...searchText, placeholder: s.voting.usePending }}
+          />
           <FieldError fieldName="voter_profile_id" state={state} />
         </label>
         <label className="grid gap-1 text-sm font-medium">
@@ -305,6 +297,12 @@ export function ManualVoteIdentityDrawer({
   profiles,
 }: ManualVoteIdentityDrawerProps) {
   const { s } = useStaffText();
+  const profileOptions = profileSearchOptions(profiles);
+  const searchText = {
+    clear: s.common.searchClear,
+    more: s.common.searchMore,
+    noResults: s.common.searchNoResults,
+  };
   const formRef = useRef<HTMLFormElement>(null);
   const searchParams = useSearchParams();
   const [state, formAction] = useActionState(
@@ -354,21 +352,14 @@ export function ManualVoteIdentityDrawer({
         </p>
         <label className="grid gap-1 text-sm font-medium">
           <FieldLabel required>{s.voting.voterProfile}</FieldLabel>
-          <select
+          <SearchSelect
             {...fieldProps("voter_profile_id", state)}
             autoFocus
-            className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
             defaultValue={stateValue(state, "voter_profile_id")}
             name="voter_profile_id"
-            required
-          >
-            <option value="">{s.voting.selectProfile}</option>
-            {profiles.map((profile) => (
-              <option key={profile.id} value={profile.id}>
-                {profile.full_name ?? profile.email} ({profile.email})
-              </option>
-            ))}
-          </select>
+            options={profileOptions}
+            text={{ ...searchText, placeholder: s.voting.selectProfile }}
+          />
           <FieldError fieldName="voter_profile_id" state={state} />
         </label>
         <div className="flex flex-wrap gap-2 pt-2">

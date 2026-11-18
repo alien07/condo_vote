@@ -2,7 +2,7 @@
 import type { Page } from "@playwright/test";
 import { expect } from "@playwright/test";
 import { confirmInApp } from "../../confirm-dialog";
-import { demoAdminEmail, demoAdminName } from "../admin-helpers";
+import { chooseSearchOption, demoAdminEmail } from "../admin-helpers";
 import type { AfterVoting } from "./voting";
 
 export async function identityConflicts(page: Page, ctx: AfterVoting) {
@@ -31,9 +31,7 @@ export async function identityConflicts(page: Page, ctx: AfterVoting) {
     name: "Resolve manual vote identity",
   });
   await expect(resolveIdentityDrawer).toBeVisible({ timeout: 15_000 });
-  await resolveIdentityDrawer
-    .locator('select[name="voter_profile_id"]')
-    .selectOption({ label: `${demoAdminName} (${demoAdminEmail})` });
+  await chooseSearchOption(resolveIdentityDrawer, "voter_profile_id", demoAdminEmail);
   await resolveIdentityDrawer.getByRole("button", { name: "Link profile" }).click();
   await confirmInApp(page);
   await page.waitForURL(/\/admin\/voting\?[\s\S]*feedback=success/, {
