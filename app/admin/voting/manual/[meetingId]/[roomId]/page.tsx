@@ -32,7 +32,7 @@ export default async function ManualVotePage({
   params,
   searchParams,
 }: ManualVotePageProps) {
-  const { s } = await getStaffI18n();
+  const { locale, s } = await getStaffI18n();
   await requireOfficeStaff();
 
   const { meetingId, roomId } = await params;
@@ -178,6 +178,7 @@ export default async function ManualVotePage({
                   ) : null}
                   <BallotChoiceInputs
                     choices={question.meeting_choices}
+                    locale={locale}
                     question={question}
                     selectedChoiceIds={
                       answerByQuestion.get(question.id) ?? new Set<string>()

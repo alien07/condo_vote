@@ -42,7 +42,7 @@ export async function ManualVotesSection({
   rooms,
   hidden,
 }: ManualVotesSectionProps) {
-  const { s } = await getStaffI18n();
+  const { locale, s } = await getStaffI18n();
   // Only meetings that take paper ballots (2026-11-19), newest first, with
   // whether voting is still open as the hint.
   const paperMeetingOptions = meetings
@@ -108,7 +108,7 @@ export async function ManualVotesSection({
   // One row per paper ballot, its answers listed inside (was one row per
   // answer, so a room repeated once per agenda item).
   const manualVoteRows = manualBallots.map((manualBallot) => ({
-    answers: ballotAnswers(manualBallot.manual_ballot_answers),
+    answers: ballotAnswers(manualBallot.manual_ballot_answers, locale),
     counted: manualBallot.status !== "draft",
     identityStatus: manualBallot.identity_status ?? "legacy",
     manualBallotId: manualBallot.id,

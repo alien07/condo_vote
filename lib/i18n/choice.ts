@@ -16,3 +16,10 @@ export function choiceLabel(
 
   return text ?? "-";
 }
+
+/** Choice names from voter comments (0040 returns names only, no flag):
+ * the fixed Abstain name, which the database keeps as "Abstain" (0041), in
+ * the reader's language (2026-11-19). */
+export function choiceTextsLabel(texts: string[], locale: Locale) {
+  return texts.map((text) => choiceLabel(text, text.trim() === DEFAULT_ABSTAIN, locale)).join(", ");
+}

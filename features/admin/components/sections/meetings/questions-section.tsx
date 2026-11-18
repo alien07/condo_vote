@@ -1,4 +1,4 @@
-import { choiceLabel } from "@/lib/i18n/choice";
+import { choiceLabel, choiceTextsLabel } from "@/lib/i18n/choice";
 import { getStaffI18n } from "@/lib/i18n/server";
 import { createClient } from "@/lib/supabase/server";
 import { codeLabel, fill } from "@/lib/i18n/template";
@@ -360,7 +360,7 @@ export async function QuestionsSection({
                         key={index}
                       >
                         {row.choice_texts.length ? (
-                          <span className="mr-2 text-xs font-medium text-[var(--muted)]">[{row.choice_texts.join(", ")}]</span>
+                          <span className="mr-2 text-xs font-medium text-[var(--muted)]">[{choiceTextsLabel(row.choice_texts, locale)}]</span>
                         ) : null}
                         {row.comment}
                       </li>
