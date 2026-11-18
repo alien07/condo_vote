@@ -1,5 +1,6 @@
 "use server";
 
+import { withFeedback } from "@/features/admin/action-modules/feedback";
 import {
   createClient,
   optionalText,
@@ -165,7 +166,12 @@ export async function grantAppRole(formData: FormData) {
   revalidateAdminPaths();
 }
 
+/** Reports the outcome on the same page (admin action standard, 2026-11-19). */
 export async function revokeAppRole(formData: FormData) {
+  await withFeedback("Role revoked", () => revokeAppRoleNow(formData));
+}
+
+async function revokeAppRoleNow(formData: FormData) {
   const admin = await requireAdmin();
 
   const id = requiredText(formData.get("id"), "Role ID");

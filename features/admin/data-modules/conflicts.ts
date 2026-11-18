@@ -1,4 +1,7 @@
 import type { createClient } from "@/lib/supabase/server";
+import { choiceLabel } from "@/lib/i18n/choice";
+import type { Locale } from "@/lib/i18n/locales";
+import { getLocale } from "@/lib/i18n/server";
 
 type SupabaseServerClient = Awaited<ReturnType<typeof createClient>>;
 
@@ -14,7 +17,7 @@ export type VoteConflictFilters = {
 
 type VoteAnswer = {
   choice_id: string;
-  meeting_choices: { choice_text: string | null } | null;
+  meeting_choices: { choice_text: string | null; is_abstain?: boolean | null } | null;
   meeting_questions: {
     agenda_no: string | null;
     question_text: string | null;
@@ -22,10 +25,13 @@ type VoteAnswer = {
   question_id: string;
 };
 
-function normalizeAnswers(answers: VoteAnswer[]) {
+function normalizeAnswers(answers: VoteAnswer[], locale: Locale) {
   return answers.map((answer) => ({
     choiceId: answer.choice_id,
-    choiceText: answer.meeting_choices?.choice_text ?? "-",
+    // The fixed Abstain choice in the reader's language (2026-11-19).
+    choiceText: answer.meeting_choices
+      ? choiceLabel(answer.meeting_choices.choice_text, answer.meeting_choices.is_abstain, locale) || "-"
+      : "-",
     questionId: answer.question_id,
     questionText: [
       answer.meeting_questions?.agenda_no,
@@ -40,6 +46,7 @@ export async function fetchVoteConflictRows(
   supabase: SupabaseServerClient,
   filters: VoteConflictFilters = {},
 ) {
+  const locale = await getLocale();
   const page = Math.max(1, filters.page ?? 1);
   const perPage = Math.min(Math.max(filters.perPage ?? 25, 10), 100);
   const direction = filters.dir === "asc" ? 1 : -1;
@@ -47,14 +54,14 @@ export async function fetchVoteConflictRows(
     supabase
       .from("manual_ballots")
       .select(
-        "id, meeting_id, room_id, source_label, audit_note, identity_status, voter_profile_id, voter_identity_text, status, imported_at, meetings(id, title), rooms(id, room_number), manual_ballot_answers(question_id, choice_id, meeting_questions(agenda_no, question_text), meeting_choices(choice_text))",
+        "id, meeting_id, room_id, source_label, audit_note, identity_status, voter_profile_id, voter_identity_text, status, imported_at, meetings(id, title), rooms(id, room_number), manual_ballot_answers(question_id, choice_id, meeting_questions(agenda_no, question_text), meeting_choices(choice_text, is_abstain))",
       )
       .eq("status", "submitted")
       .neq("identity_status", "pending"),
     supabase
       .from("ballots")
       .select(
-        "id, meeting_id, room_id, status, submitted_at, meetings(id, title, ballot_secrecy), rooms(id, room_number), ballot_answers(question_id, choice_id, meeting_questions(agenda_no, question_text), meeting_choices(choice_text))",
+        "id, meeting_id, room_id, status, submitted_at, meetings(id, title, ballot_secrecy), rooms(id, room_number), ballot_answers(question_id, choice_id, meeting_questions(agenda_no, question_text), meeting_choices(choice_text, is_abstain))",
       )
       .eq("status", "submitted"),
     supabase
@@ -103,6 +110,7 @@ export async function fetchVoteConflictRows(
         key,
         manualAnswers: normalizeAnswers(
           manualBallot.manual_ballot_answers as VoteAnswer[],
+          locale,
         ),
         manualBallotId: manualBallot.id,
         manualIdentityStatus: manualBallot.identity_status,
@@ -114,6 +122,7 @@ export async function fetchVoteConflictRows(
         meetingTitle: manualBallot.meetings?.title ?? "-",
         onlineAnswers: normalizeAnswers(
           onlineBallot.ballot_answers as VoteAnswer[],
+          locale,
         ),
         onlineAnswersHidden: onlineBallot.meetings?.ballot_secrecy === "secret",
         onlineBallotId: onlineBallot.id,

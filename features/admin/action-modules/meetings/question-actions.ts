@@ -206,18 +206,72 @@ export async function createMeetingQuestion(formData: FormData) {
   );
 }
 
+/** Back to the meeting's agenda with a message, so every agenda change says
+ * what happened, and an error shows on the page instead of an error page
+ * (2026-11-19). */
+function backToAgenda(
+  meetingId: string | null | undefined,
+  feedback: "success" | "error",
+  message: string,
+  focusQuestionId?: string,
+): never {
+  const params = new URLSearchParams({ tab: "questions" });
+
+  if (meetingId) {
+    params.set("meeting", meetingId);
+  }
+
+  if (focusQuestionId) {
+    params.set("focusQuestionId", focusQuestionId);
+  }
+
+  params.set("feedback", feedback);
+  params.set("message", message);
+  redirect(`/admin/meetings?${params.toString()}`);
+}
+
+async function questionMeeting(supabase: ServerClient, questionId: string) {
+  const { data } = await supabase
+    .from("meeting_questions")
+    .select("meeting_id")
+    .eq("id", questionId)
+    .maybeSingle();
+
+  return data?.meeting_id ?? null;
+}
+
+async function choiceQuestion(supabase: ServerClient, choiceId: string) {
+  const { data } = await supabase
+    .from("meeting_choices")
+    .select("question_id, meeting_questions(meeting_id)")
+    .eq("id", choiceId)
+    .maybeSingle();
+
+  return {
+    questionId: data?.question_id,
+    meetingId: data?.meeting_questions?.meeting_id ?? null,
+  };
+}
+
 export async function deleteMeetingQuestion(formData: FormData) {
   await requireAdmin();
 
   const id = requiredText(formData.get("id"), "Question ID");
   const supabase = await createClient();
+  const meetingId = await questionMeeting(supabase, id);
+  // Its choices go with it (0042).
   const { error } = await supabase.from("meeting_questions").delete().eq("id", id);
 
   if (error) {
-    throw error;
+    backToAgenda(
+      meetingId,
+      "error",
+      error.code === "23503" ? "This agenda item has votes and cannot be deleted." : error.message,
+    );
   }
 
   revalidateAdminPaths();
+  backToAgenda(meetingId, "success", "Question deleted");
 }
 
 export async function createMeetingChoice(formData: FormData) {
@@ -228,9 +282,10 @@ export async function createMeetingChoice(formData: FormData) {
   const choiceText = requiredText(formData.get("choice_text"), "Choice");
   const givenOrder = String(formData.get("display_order") ?? "").trim();
   let displayOrder = Number(givenOrder || 0);
+  const meetingId = await questionMeeting(supabase, questionId);
 
-  // No order given: after the other choices, before the default Abstain
-  // (order 999) (2026-11-18 review).
+  // No order given: after the other choices, before Abstain (order 999)
+  // (2026-11-18 review).
   if (!givenOrder) {
     const { data: last } = await supabase
       .from("meeting_choices")
@@ -251,10 +306,11 @@ export async function createMeetingChoice(formData: FormData) {
   });
 
   if (error) {
-    throw error;
+    backToAgenda(meetingId, "error", error.message, questionId);
   }
 
   revalidateAdminPaths();
+  backToAgenda(meetingId, "success", "Choice added", questionId);
 }
 
 /** Edits a choice's text and order (2026-11-18). Draft meetings only:
@@ -262,7 +318,9 @@ export async function createMeetingChoice(formData: FormData) {
 export async function updateMeetingChoice(formData: FormData) {
   await requireAdmin();
 
+  const id = requiredText(formData.get("id"), "Choice ID");
   const supabase = await createClient();
+  const { questionId, meetingId } = await choiceQuestion(supabase, id);
   const { error } = await supabase
     .from("meeting_choices")
     .update({
@@ -270,13 +328,14 @@ export async function updateMeetingChoice(formData: FormData) {
       // Order starts at 1 (2026-11-18).
       display_order: Math.max(1, Math.trunc(Number(formData.get("display_order") ?? 1)) || 1),
     })
-    .eq("id", requiredText(formData.get("id"), "Choice ID"));
+    .eq("id", id);
 
   if (error) {
-    throw error;
+    backToAgenda(meetingId, "error", error.message, questionId);
   }
 
   revalidateAdminPaths();
+  backToAgenda(meetingId, "success", "Choice updated", questionId);
 }
 
 export async function deleteMeetingChoice(formData: FormData) {
@@ -284,11 +343,18 @@ export async function deleteMeetingChoice(formData: FormData) {
 
   const id = requiredText(formData.get("id"), "Choice ID");
   const supabase = await createClient();
+  const { questionId, meetingId } = await choiceQuestion(supabase, id);
   const { error } = await supabase.from("meeting_choices").delete().eq("id", id);
 
   if (error) {
-    throw error;
+    backToAgenda(
+      meetingId,
+      "error",
+      error.code === "23503" ? "This choice has votes and cannot be deleted." : error.message,
+      questionId,
+    );
   }
 
   revalidateAdminPaths();
+  backToAgenda(meetingId, "success", "Choice deleted", questionId);
 }

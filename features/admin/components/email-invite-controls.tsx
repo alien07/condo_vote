@@ -12,11 +12,9 @@ import {
 } from "@/features/admin/actions";
 
 type EmailInviteControlsProps = {
-  meetings: {
-    id: string;
-    title: string;
-    status: string;
-  }[];
+  /** Published meetings still open for voting (takesVoteInvitations),
+   * labelled with the closing time. */
+  meetingOptions: { value: string; label: string }[];
 };
 
 const initialState: EmailInviteState = {};
@@ -42,7 +40,35 @@ function StatusMessage({ state }: { state: EmailInviteState }) {
   return null;
 }
 
-export function EmailInviteControls({ meetings }: EmailInviteControlsProps) {
+function MeetingSelect({ meetingOptions }: EmailInviteControlsProps) {
+  const { s } = useStaffText();
+
+  return (
+    <label className="grid gap-1 text-sm font-medium">
+      <FieldLabel required>{s.communications.meeting}</FieldLabel>
+      <select
+        className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+        name="meeting_id"
+        required
+      >
+        <option value="">{s.communications.selectMeeting}</option>
+        {meetingOptions.map((meeting) => (
+          <option key={meeting.value} value={meeting.value}>
+            {meeting.label}
+          </option>
+        ))}
+      </select>
+      {meetingOptions.length ? null : (
+        <span className="text-sm font-normal text-[var(--warning)]" data-no-invite-meetings>
+          {s.communications.noInviteMeetings}
+        </span>
+      )}
+      <span className="text-xs font-normal text-[var(--muted)]">{s.communications.inviteMeetingHelp}</span>
+    </label>
+  );
+}
+
+export function EmailInviteControls({ meetingOptions }: EmailInviteControlsProps) {
   const { s } = useStaffText();
   const [singleState, singleAction, singlePending] = useActionState(
     resendVoteInvitation,
@@ -52,7 +78,6 @@ export function EmailInviteControls({ meetings }: EmailInviteControlsProps) {
     queueVoteInvitationGroup,
     initialState,
   );
-  const activeMeetings = meetings.filter((meeting) => meeting.status !== "archived");
 
   return (
     <div className="mb-5 grid gap-4 lg:grid-cols-2">
@@ -63,21 +88,7 @@ export function EmailInviteControls({ meetings }: EmailInviteControlsProps) {
         </div>
         <form action={singleAction} className="grid gap-3">
           <RequiredNote />
-          <label className="grid gap-1 text-sm font-medium">
-            <FieldLabel required>{s.communications.meeting}</FieldLabel>
-            <select
-              className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-              name="meeting_id"
-              required
-            >
-              <option value="">{s.communications.selectMeeting}</option>
-              {activeMeetings.map((meeting) => (
-                <option key={meeting.id} value={meeting.id}>
-                  {meeting.title} ({meeting.status})
-                </option>
-              ))}
-            </select>
-          </label>
+          <MeetingSelect meetingOptions={meetingOptions} />
           <label className="grid gap-1 text-sm font-medium">
             <FieldLabel required>{s.communications.recipientEmail}</FieldLabel>
             <input
@@ -108,21 +119,7 @@ export function EmailInviteControls({ meetings }: EmailInviteControlsProps) {
         </div>
         <form action={groupAction} className="grid gap-3">
           <RequiredNote />
-          <label className="grid gap-1 text-sm font-medium">
-            <FieldLabel required>{s.communications.meeting}</FieldLabel>
-            <select
-              className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-              name="meeting_id"
-              required
-            >
-              <option value="">{s.communications.selectMeeting}</option>
-              {activeMeetings.map((meeting) => (
-                <option key={meeting.id} value={meeting.id}>
-                  {meeting.title} ({meeting.status})
-                </option>
-              ))}
-            </select>
-          </label>
+          <MeetingSelect meetingOptions={meetingOptions} />
           <label className="grid gap-1 text-sm font-medium">
             <FieldLabel required>{s.communications.policy}</FieldLabel>
             <select

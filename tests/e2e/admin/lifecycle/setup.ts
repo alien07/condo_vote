@@ -88,6 +88,29 @@ export async function fixtures(page: Page) {
 
   expect(roleError).toBeNull();
 
+  // The proxy holder is someone from outside the condo: the demo admin is
+  // office staff and cannot hold a proxy (section 47, 0043).
+  const proxyHolderEmail = `lifecycle-proxy-${Date.now()}@example.test`;
+  const { data: proxyHolderUser, error: proxyHolderUserError } =
+    await supabase.auth.admin.createUser({ email: proxyHolderEmail, email_confirm: true });
+
+  expect(proxyHolderUserError).toBeNull();
+  const { data: proxyHolderProfile, error: proxyHolderError } = await supabase
+    .from("profiles")
+    .insert({
+      auth_user_id: proxyHolderUser.user!.id,
+      email: proxyHolderEmail,
+      full_name: `Lifecycle Proxy ${Date.now()}`,
+      approval_status: "approved",
+      default_status: "proxy",
+      preferred_language: "en",
+    })
+    .select("id")
+    .single();
+
+  expect(proxyHolderError).toBeNull();
+  const proxyHolder = { id: proxyHolderProfile!.id, email: proxyHolderEmail };
+
   const futureStartsAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
   const futureEndsAt = new Date(Date.now() + 25 * 60 * 60 * 1000);
   const closedStartsAt = new Date(Date.now() - 25 * 60 * 60 * 1000);
@@ -242,6 +265,7 @@ export async function fixtures(page: Page) {
     startsAt,
     endsAt,
     profile,
+    proxyHolder,
     activeAppOrigin,
   };
 }

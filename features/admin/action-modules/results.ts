@@ -1,5 +1,6 @@
 "use server";
 
+import { withFeedback } from "@/features/admin/action-modules/feedback";
 import { redirect } from "next/navigation";
 import {
   createClient,
@@ -85,7 +86,12 @@ async function assertNoPendingManualVoteIdentities(
   }
 }
 
+/** Reports the outcome on the same page (admin action standard, 2026-11-19). */
 export async function generateResultSnapshot(formData: FormData) {
+  await withFeedback("Result generated", () => generateResultSnapshotNow(formData));
+}
+
+async function generateResultSnapshotNow(formData: FormData) {
   const generator = await requireAdmin();
 
   const meetingId = requiredText(formData.get("id"), "Meeting ID");

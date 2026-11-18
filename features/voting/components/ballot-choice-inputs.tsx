@@ -26,12 +26,13 @@ type BallotQuestion = {
 export function BallotChoiceInputs({
   choices,
   disabled = false,
-  locale = "en",
+  locale,
   question,
   selectedChoiceIds,
 }: {
   /** Owner's language on the online ballot; the admin form stays English. */
-  locale?: Locale;
+  /** Required: without it the fixed Abstain choice showed in English on Thai pages (2026-11-19). */
+  locale: Locale;
   choices: BallotChoice[];
   disabled?: boolean;
   question: BallotQuestion;

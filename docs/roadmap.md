@@ -91,6 +91,15 @@
     committee term dates required.
   - V2-c: custom roles, the permission table, and warnings for permissions
     that should not go together.
+- One owner, several rooms: vote once for all (user request 2026-11-19).
+  Today an owner of several rooms votes room by room. Proposed: on the vote
+  page the owner picks either room by room (as today) or "all my rooms",
+  fills one ballot, and the same answers are saved for every room they can
+  vote for in that meeting. Free-text answers (meeting comments) are not
+  copied: each room keeps its own. To decide: rooms already voted (skip,
+  or overwrite with a confirmation); rooms held as a proxy (include or
+  only own rooms); one ballot row per room stays (D011 one voting right per
+  room, results and audit unchanged).
 
 ## Later
 - Direct private document upload adapters and Google Drive API synchronization after credential and sharing policy approval.

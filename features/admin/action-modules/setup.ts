@@ -1,5 +1,6 @@
 "use server";
 
+import { withFeedback } from "@/features/admin/action-modules/feedback";
 import { redirect } from "next/navigation";
 import {
   createClient,
@@ -462,7 +463,12 @@ export async function updateCommitteeMember(formData: FormData) {
   revalidateAdminPaths();
 }
 
+/** Reports the outcome on the same page (admin action standard, 2026-11-19). */
 export async function deactivateCommitteeMember(formData: FormData) {
+  await withFeedback("Committee member deactivated", () => deactivateCommitteeMemberNow(formData));
+}
+
+async function deactivateCommitteeMemberNow(formData: FormData) {
   await requireAdmin();
 
   const id = requiredText(formData.get("id"), "Committee member ID");
@@ -479,7 +485,12 @@ export async function deactivateCommitteeMember(formData: FormData) {
   revalidateAdminPaths();
 }
 
+/** Reports the outcome on the same page (admin action standard, 2026-11-19). */
 export async function reactivateCommitteeMember(formData: FormData) {
+  await withFeedback("Committee member reactivated", () => reactivateCommitteeMemberNow(formData));
+}
+
+async function reactivateCommitteeMemberNow(formData: FormData) {
   await requireAdmin();
 
   const id = requiredText(formData.get("id"), "Committee member ID");

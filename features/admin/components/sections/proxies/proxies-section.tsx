@@ -1,8 +1,11 @@
 import { getStaffI18n } from "@/lib/i18n/server";
+import { createClient } from "@/lib/supabase/server";
 import { codeLabel, fill } from "@/lib/i18n/template";
 import { UserCheck } from "lucide-react";
 import { PerPageSelect } from "@/features/admin/components/table-controls";
 import { ProxyCrudDrawer, ProxyRowFocus } from "@/features/admin/components/proxy-crud-drawer";
+import { formatDateTime } from "@/features/admin/components/sections/shared/format";
+import { takesNewProxy } from "@/features/admin/proxy-meetings";
 import { proxyHref } from "@/features/admin/components/sections/proxies/proxy-hrefs";
 import { tablePage, tablePerPage } from "@/features/admin/components/sections/shared/table";
 import type {
@@ -40,6 +43,46 @@ export async function ProxiesSection({
   hidden,
 }: ProxiesSectionProps) {
   const { s } = await getStaffI18n();
+  // Who cannot hold a proxy, as the database checks it (section 47, 0043).
+  const supabase = await createClient();
+  const today = new Date().toISOString().slice(0, 10);
+  const [{ data: committeeRows }, { data: roleRows }] = await Promise.all([
+    supabase
+      .from("committee_members")
+      .select("profile_id, term_ends_at")
+      .eq("active", true)
+      .not("profile_id", "is", null),
+    supabase.from("app_roles").select("profile_id, role").in("role", ["committee", "admin", "staff"]),
+  ]);
+  const barredProfiles: Record<string, "committee" | "office"> = {};
+
+  for (const row of roleRows ?? []) {
+    if (row.role !== "committee") {
+      barredProfiles[row.profile_id] = "office";
+    }
+  }
+
+  for (const row of [
+    ...(committeeRows ?? []).filter((member) => !member.term_ends_at || member.term_ends_at >= today),
+    ...(roleRows ?? []).filter((role) => role.role === "committee"),
+  ]) {
+    if (row.profile_id) {
+      barredProfiles[row.profile_id] = "committee";
+    }
+  }
+  // Only meetings where a new proxy still changes who votes (2026-11-19),
+  // newest voting first, with the status as the hint.
+  const proxyMeetingOptions = meetings
+    .filter((meeting) => takesNewProxy(meeting))
+    .sort((left, right) => right.starts_at.localeCompare(left.starts_at))
+    .map((meeting) => ({
+      value: meeting.id,
+      label: meeting.title,
+      hint:
+        meeting.status === "draft"
+          ? s.proxies.meetingDraft
+          : fill(s.proxies.meetingOpenUntil, { date: formatDateTime(meeting.ends_at) }),
+    }));
   const proxyTableFilters: Required<ProxyTableFilters> = {
     dir: proxyFilters?.dir ?? "asc",
     meeting: proxyFilters?.meeting ?? "",
@@ -385,7 +428,8 @@ export async function ProxiesSection({
       {drawer?.mode === "create" && drawer.type === "proxy_authorization" ? (
         <ProxyCrudDrawer
           closeHref={proxyListHref}
-          meetings={meetings}
+          barredProfiles={barredProfiles}
+          meetingOptions={proxyMeetingOptions}
           mode="create"
           owners={owners}
           profiles={profiles}
@@ -400,7 +444,8 @@ export async function ProxiesSection({
                 authorization={authorization}
                 closeHref={proxyListHref}
                 key={authorization.id}
-                meetings={meetings}
+                barredProfiles={barredProfiles}
+                meetingOptions={proxyMeetingOptions}
                 mode="edit"
                 owners={owners}
                 profiles={profiles}

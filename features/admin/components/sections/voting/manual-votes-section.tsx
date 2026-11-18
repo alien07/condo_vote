@@ -1,6 +1,9 @@
 import { getStaffI18n } from "@/lib/i18n/server";
-import { codeLabel, fill } from "@/lib/i18n/template";
+import { fill } from "@/lib/i18n/template";
 import { ListChecks } from "lucide-react";
+import { ballotAnswers, type BallotAnswer } from "@/features/admin/components/sections/voting/ballot-answers";
+import { formatDateTime } from "@/features/admin/components/sections/shared/format";
+import { takesPaperBallots, votingOpen } from "@/features/admin/meeting-pickers";
 import { PerPageSelect } from "@/features/admin/components/table-controls";
 import { ManualVoteIdentityDrawer, ManualVoteImportDrawer, ManualVoteRowFocus } from "@/features/admin/components/manual-vote-crud-drawer";
 import { tablePage, tablePerPage } from "@/features/admin/components/sections/shared/table";
@@ -27,6 +30,8 @@ type ManualVotesSectionProps = Pick<
   hidden: boolean;
 };
 
+const ANSWERS_SHOWN = 3;
+
 export async function ManualVotesSection({
   drawer,
   focusedManualBallotId,
@@ -37,7 +42,19 @@ export async function ManualVotesSection({
   rooms,
   hidden,
 }: ManualVotesSectionProps) {
-  const { s } = await getStaffI18n();
+  const { locale, s } = await getStaffI18n();
+  // Only meetings that take paper ballots (2026-11-19), newest first, with
+  // whether voting is still open as the hint.
+  const paperMeetingOptions = meetings
+    .filter((meeting) => takesPaperBallots(meeting))
+    .sort((left, right) => right.starts_at.localeCompare(left.starts_at))
+    .map((meeting) => ({
+      value: meeting.id,
+      label: meeting.title,
+      hint: votingOpen(meeting)
+        ? fill(s.voting.meetingOpenUntil, { date: formatDateTime(meeting.ends_at) })
+        : s.voting.meetingVotingEnded,
+    }));
   const manualVoteTableFilters: Required<ManualVoteTableFilters> = {
     dir: manualVoteFilters?.dir ?? "asc",
     meeting: manualVoteFilters?.meeting ?? "",
@@ -67,24 +84,40 @@ export async function ManualVotesSection({
 
     return matchesMeeting && matchesRoom;
   });
-  const manualVoteRows = manualBallots.flatMap((manualBallot) =>
-    manualBallot.manual_ballot_answers.map((answer) => ({
-      auditText: [
-        manualBallot.source_label ?? "manual",
-        manualBallot.identity_status ?? "legacy",
-        manualBallot.voter_identity_text ??
-          manualBallot.voter_profile_id ??
-          manualBallot.audit_note ??
-          "-",
-      ].join(" / "),
-      choiceText: answer.meeting_choices?.choice_text ?? "-",
-      id: answer.id,
-      manualBallotId: manualBallot.id,
-      meetingTitle: manualBallot.meetings?.title ?? "-",
-      questionText: answer.meeting_questions?.question_text ?? "-",
-      roomNumber: manualBallot.rooms?.room_number ?? "-",
-    })),
+  // Words instead of codes (2026-11-19 review): where the paper ballot came
+  // from, whether it is linked to a user, and the voter's name, not an id.
+  const profileName = new Map(
+    profiles.map((profile) => [profile.id, profile.full_name ?? profile.email]),
   );
+  const sourceText = (label: string | null) =>
+    label === "manual_on_site"
+      ? s.voting.sourceOnSite
+      : label === "manual_pending_identity"
+        ? s.voting.sourcePendingIdentity
+        : label?.trim() || s.voting.sourcePaper;
+  const identityText = (status: string | null) =>
+    status === "linked"
+      ? s.voting.identityLinked
+      : status === "pending"
+        ? s.voting.identityPending
+        : s.voting.identityLegacy;
+  const voterName = (manualBallot: (typeof manualBallots)[number]) =>
+    (manualBallot.voter_profile_id && profileName.get(manualBallot.voter_profile_id)) ||
+    manualBallot.voter_identity_text ||
+    "-";
+  // One row per paper ballot, its answers listed inside (was one row per
+  // answer, so a room repeated once per agenda item).
+  const manualVoteRows = manualBallots.map((manualBallot) => ({
+    answers: ballotAnswers(manualBallot.manual_ballot_answers, locale),
+    counted: manualBallot.status !== "draft",
+    identityStatus: manualBallot.identity_status ?? "legacy",
+    manualBallotId: manualBallot.id,
+    meetingTitle: manualBallot.meetings?.title ?? "-",
+    note: manualBallot.audit_note,
+    roomNumber: manualBallot.rooms?.room_number ?? "-",
+    source: sourceText(manualBallot.source_label),
+    voter: voterName(manualBallot),
+  }));
   const filteredManualVoteRows = manualVoteRows.filter((row) => {
     const meetingQuery = manualVoteTableFilters.meeting.trim().toLowerCase();
     const roomQuery = manualVoteTableFilters.room.trim().toLowerCase();
@@ -99,20 +132,14 @@ export async function ManualVotesSection({
   });
   const sortedManualVoteRows = [...filteredManualVoteRows].sort((left, right) => {
     const direction = manualVoteTableFilters.dir === "asc" ? 1 : -1;
-    const leftValue =
-      manualVoteTableFilters.sort === "question"
-        ? left.questionText
-        : manualVoteTableFilters.sort === "room"
-          ? left.roomNumber
-          : left.meetingTitle;
-    const rightValue =
-      manualVoteTableFilters.sort === "question"
-        ? right.questionText
-        : manualVoteTableFilters.sort === "room"
-          ? right.roomNumber
-          : right.meetingTitle;
+    const byRoom = manualVoteTableFilters.sort === "room";
+    const leftValue = byRoom ? left.roomNumber : left.meetingTitle;
+    const rightValue = byRoom ? right.roomNumber : right.meetingTitle;
 
-    return leftValue.localeCompare(rightValue) * direction;
+    return (
+      leftValue.localeCompare(rightValue) * direction ||
+      left.roomNumber.localeCompare(right.roomNumber)
+    );
   });
   const manualVoteTotal = sortedManualVoteRows.length;
   const manualVoteTotalPages = Math.max(
@@ -175,6 +202,89 @@ export async function ManualVotesSection({
     page: manualVotePage,
   });
 
+  const badgeClass = "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium";
+  const identityBadge = (status: string) => (
+    <span
+      className={[
+        badgeClass,
+        status === "linked"
+          ? "bg-green-50 text-green-800"
+          : status === "pending"
+            ? "bg-amber-100 text-amber-900"
+            : "bg-[var(--background)] text-[var(--muted)]",
+      ].join(" ")}
+    >
+      {identityText(status)}
+    </span>
+  );
+  // Long agendas (2026-11-19): the first few items, the rest folded away,
+  // so a ballot stays a few lines high however many items the meeting has.
+  const answerItem = (answer: BallotAnswer) => (
+    <li key={answer.questionId}>
+      <span className="text-[var(--muted)]">{answer.question}</span>
+      <span aria-hidden="true"> → </span>
+      <span className="font-medium">{answer.choices}</span>
+    </li>
+  );
+  const answerList = (row: (typeof manualVoteRows)[number]) =>
+    row.answers.length === 0 ? (
+      <p className="mt-1 text-[var(--muted)]">{s.voting.noAnswers}</p>
+    ) : (
+      <div className="mt-1">
+        <ul className="grid gap-1">{row.answers.slice(0, ANSWERS_SHOWN).map(answerItem)}</ul>
+        {row.answers.length > ANSWERS_SHOWN ? (
+          <details className="mt-1">
+            <summary className="cursor-pointer text-xs font-medium text-[var(--primary)]">
+              {fill(s.voting.moreAgendaItems, { count: row.answers.length - ANSWERS_SHOWN })}
+            </summary>
+            <ul className="mt-1 grid gap-1">{row.answers.slice(ANSWERS_SHOWN).map(answerItem)}</ul>
+          </details>
+        ) : null}
+      </div>
+    );
+  const voterBlock = (row: (typeof manualVoteRows)[number]) => (
+    <div className="mt-2 grid gap-1 md:mt-0">
+      <span className="font-medium [overflow-wrap:anywhere]">{row.voter}</span>
+      <span className="flex flex-wrap gap-1">
+        {identityBadge(row.identityStatus)}
+        {row.counted ? null : (
+          <span className={`${badgeClass} bg-[var(--background)] text-[var(--muted)]`}>{s.voting.ballotNotCounted}</span>
+        )}
+      </span>
+      <span className="text-xs text-[var(--muted)]">{row.source}</span>
+      {row.note ? (
+        <span className="text-xs text-[var(--muted)] [overflow-wrap:anywhere]">{fill(s.voting.note, { text: row.note })}</span>
+      ) : null}
+    </div>
+  );
+  const pendingItem = (manualBallot: (typeof manualBallots)[number]) => (
+    <li
+      className="grid gap-2 rounded-md border border-amber-200 bg-white p-3 text-sm md:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,2fr)_auto] md:items-center"
+      data-pending-ballot-id={manualBallot.id}
+      key={manualBallot.id}
+    >
+      <span className="font-medium [overflow-wrap:anywhere]">{manualBallot.meetings?.title ?? "-"}</span>
+      <span className="[overflow-wrap:anywhere]">{s.voting.room} {manualBallot.rooms?.room_number ?? "-"}</span>
+      <span className="grid gap-1">
+        <span className="[overflow-wrap:anywhere]">
+          {manualBallot.voter_identity_text ?? manualBallot.audit_note ?? "-"}
+        </span>
+        <span className="flex flex-wrap gap-1">
+          {identityBadge(manualBallot.identity_status ?? "legacy")}
+          {manualBallot.status === "draft" ? (
+            <span className={`${badgeClass} bg-white text-amber-900 ring-1 ring-amber-200`}>{s.voting.ballotNotCounted}</span>
+          ) : null}
+        </span>
+      </span>
+      <a
+        className="inline-flex min-h-11 items-center justify-center whitespace-nowrap rounded-md border border-amber-300 bg-white px-4 py-2 text-sm font-medium text-amber-900"
+        href={`${manualVoteListHref}&mode=edit&type=manual_vote_identity&id=${manualBallot.id}`}
+      >
+        {s.voting.linkProfile}
+      </a>
+    </li>
+  );
+
   return (
     <section
       className="mb-5 scroll-mt-20 rounded-lg border border-[var(--border)] bg-[var(--surface)] p-5"
@@ -182,24 +292,20 @@ export async function ManualVotesSection({
       id="voting"
     >
       <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+        {/* The page header already explains the page (2026-11-19 review). */}
         <div className="flex items-center gap-2">
           <ListChecks className="text-[var(--primary)]" size={20} />
-          <div>
-            <h2 className="text-lg font-semibold">{s.voting.title}</h2>
-            <p className="text-sm text-[var(--muted)]">
-              {s.voting.intro}
-            </p>
-          </div>
+          <h2 className="text-lg font-semibold">{s.voting.title}</h2>
         </div>
         <div className="flex flex-wrap gap-2">
           <a
-            className="inline-flex min-h-10 items-center justify-center rounded-md border border-[var(--border)] px-4 py-2 text-sm font-medium"
+            className="inline-flex min-h-11 items-center justify-center rounded-md border border-[var(--border)] px-4 py-2 text-sm font-medium"
             href="/admin/voting/conflicts"
           >
             {s.voting.reviewConflicts}
           </a>
           <a
-            className="inline-flex min-h-10 items-center justify-center rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)]"
+            className="inline-flex min-h-11 items-center justify-center rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)]"
             href={`${manualVoteListHref}&mode=create&type=manual_vote`}
           >
             {s.voting.importManual}
@@ -208,7 +314,7 @@ export async function ManualVotesSection({
       </div>
 
       {pendingManualVoteIdentities.length > 0 ? (
-        <section className="mb-5 rounded-lg border border-amber-200 bg-amber-50 p-4">
+        <section className="mb-5 rounded-lg border border-amber-200 bg-amber-50 p-4" data-pending-identities>
           <div className="mb-3">
             <h3 className="text-sm font-semibold text-amber-950">
               {s.voting.pendingTitle}
@@ -217,51 +323,21 @@ export async function ManualVotesSection({
               {s.voting.pendingText}
             </p>
           </div>
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse text-left text-sm">
-              <thead className="border-b border-amber-200 text-amber-900">
-                <tr>
-                  <th className="py-2 pr-3 font-medium">{s.voting.meeting}</th>
-                  <th className="py-2 pr-3 font-medium">{s.voting.room}</th>
-                  <th className="py-2 pr-3 font-medium">{s.voting.identity}</th>
-                  <th className="py-2 pr-3 font-medium">{s.common.status}</th>
-                  <th className="py-2 font-medium">{s.common.action}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {pendingManualVoteIdentities.map((manualBallot) => (
-                  <tr
-                    className="border-b border-amber-200 last:border-0"
-                    key={manualBallot.id}
-                  >
-                    <td className="py-2 pr-3">
-                      {manualBallot.meetings?.title ?? "-"}
-                    </td>
-                    <td className="py-2 pr-3">
-                      {manualBallot.rooms?.room_number ?? "-"}
-                    </td>
-                    <td className="py-2 pr-3">
-                      {manualBallot.voter_identity_text ??
-                        manualBallot.audit_note ??
-                        "-"}
-                    </td>
-                    <td className="py-2 pr-3">
-                      {codeLabel(s.common.code, manualBallot.identity_status)} /{" "}
-                      {codeLabel(s.common.code, manualBallot.status)}
-                    </td>
-                    <td className="py-2">
-                      <a
-                        className="inline-flex min-h-9 items-center rounded-md border border-amber-300 bg-white px-3 py-1 text-sm font-medium text-amber-900"
-                        href={`${manualVoteListHref}&mode=edit&type=manual_vote_identity&id=${manualBallot.id}`}
-                      >
-                        {s.voting.linkProfile}
-                      </a>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          {/* A list that stacks on phones; the first five, then the rest
+              behind "Show all" (2026-11-19 review). */}
+          <ul className="grid gap-2">
+            {pendingManualVoteIdentities.slice(0, 5).map((manualBallot) => pendingItem(manualBallot))}
+          </ul>
+          {pendingManualVoteIdentities.length > 5 ? (
+            <details className="mt-2">
+              <summary className="tap-target inline-flex min-h-11 cursor-pointer items-center text-sm font-medium text-amber-950">
+                {fill(s.voting.showAllPending, { count: pendingManualVoteIdentities.length })}
+              </summary>
+              <ul className="mt-2 grid gap-2">
+                {pendingManualVoteIdentities.slice(5).map((manualBallot) => pendingItem(manualBallot))}
+              </ul>
+            </details>
+          ) : null}
         </section>
       ) : null}
 
@@ -350,7 +426,26 @@ export async function ManualVotesSection({
           />
         </div>
       </div>
-      <div className="overflow-x-auto">
+      {/* Phones: one card per paper ballot. */}
+      <ul className="grid gap-3 md:hidden" data-manual-cards>
+        {pagedManualVoteRows.map((row) => (
+          <li
+            className={[
+              "rounded-lg border border-[var(--border)] p-4 text-sm",
+              focusedManualBallotId === row.manualBallotId ? "border-l-4 border-l-[var(--primary)] bg-[var(--accent)]" : "",
+            ].join(" ")}
+            data-manual-ballot-id={row.manualBallotId}
+            key={row.manualBallotId}
+            tabIndex={-1}
+          >
+            <p className="font-semibold [overflow-wrap:anywhere]">{row.meetingTitle}</p>
+            <p className="text-[var(--muted)]">{s.voting.room} {row.roomNumber}</p>
+            {answerList(row)}
+            {voterBlock(row)}
+          </li>
+        ))}
+      </ul>
+      <div className="hidden overflow-x-auto md:block">
         <table className="w-full border-collapse text-left text-sm">
           <thead className="border-b border-[var(--border)] text-[var(--muted)]">
             <tr>
@@ -364,33 +459,27 @@ export async function ManualVotesSection({
                   {s.voting.room}{manualVoteSortLabel("room")}
                 </a>
               </th>
-              <th className="py-2 pr-3 font-medium">
-                <a href={manualVoteSortHref("question")}>
-                  {s.voting.question}{manualVoteSortLabel("question")}
-                </a>
-              </th>
-              <th className="py-2 pr-3 font-medium">{s.voting.choice}</th>
-              <th className="py-2 font-medium">{s.voting.audit}</th>
+              <th className="py-2 pr-3 font-medium">{s.voting.answers}</th>
+              <th className="py-2 font-medium">{s.voting.voter}</th>
             </tr>
           </thead>
           <tbody>
             {pagedManualVoteRows.map((row) => (
               <tr
                 className={[
-                  "border-b border-[var(--border)]",
+                  "border-b border-[var(--border)] align-top",
                   focusedManualBallotId === row.manualBallotId
                     ? "border-l-4 border-l-[var(--primary)] bg-[var(--accent)]"
                     : "",
                 ].join(" ")}
                 data-manual-ballot-id={row.manualBallotId}
-                key={row.id}
+                key={row.manualBallotId}
                 tabIndex={-1}
               >
-                <td className="py-2 pr-3">{row.meetingTitle}</td>
-                <td className="py-2 pr-3">{row.roomNumber}</td>
-                <td className="py-2 pr-3">{row.questionText}</td>
-                <td className="py-2 pr-3">{row.choiceText}</td>
-                <td className="py-2">{row.auditText}</td>
+                <td className="py-3 pr-3 [overflow-wrap:anywhere]">{row.meetingTitle}</td>
+                <td className="py-3 pr-3 [overflow-wrap:anywhere]">{row.roomNumber}</td>
+                <td className="py-3 pr-3">{answerList(row)}</td>
+                <td className="py-3">{voterBlock(row)}</td>
               </tr>
             ))}
           </tbody>
@@ -438,7 +527,7 @@ export async function ManualVotesSection({
       {drawer?.mode === "create" && drawer.type === "manual_vote" ? (
         <ManualVoteImportDrawer
           closeHref={manualVoteListHref}
-          meetings={meetings}
+          meetingOptions={paperMeetingOptions}
           profiles={profiles}
           rooms={rooms}
         />

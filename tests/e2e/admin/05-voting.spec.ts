@@ -175,11 +175,9 @@ test.describe("@test:e2e @test:auth @test:admin admin demo: paper ballots and co
       await importDrawer.getByRole("button", { name: "Continue to vote form" }).click();
       await expect(importDrawer.getByText("Meeting is required.")).toBeVisible();
       await expect(importDrawer.getByText("Room is required.")).toBeVisible();
-      await expect(importDrawer.locator('select[name="meeting_id"]')).toBeFocused();
+      await expect(importDrawer.locator('[data-focus-for="meeting_id"]')).toBeFocused();
 
-      await importDrawer
-        .locator('select[name="meeting_id"]')
-        .selectOption({ label: meetingTitle });
+      await chooseSearchOption(importDrawer, "meeting_id", meetingTitle);
       await chooseSearchOption(importDrawer, "room_id", roomNumber);
       await importDrawer.locator('input[name="voter_identity_text"]').fill(pendingName);
       await importDrawer.getByRole("button", { name: "Continue to vote form" }).click();
@@ -191,7 +189,7 @@ test.describe("@test:e2e @test:auth @test:admin admin demo: paper ballots and co
         )}&sort=meeting&dir=asc&perPage=25`,
       );
       const pendingRow = page
-        .getByRole("row")
+        .locator("[data-pending-ballot-id]")
         .filter({ hasText: meetingTitle })
         .filter({ hasText: pendingName });
 
@@ -214,7 +212,9 @@ test.describe("@test:e2e @test:auth @test:admin admin demo: paper ballots and co
       );
 
       await expect(resultRow).toBeVisible({ timeout: 15_000 });
-      await expect(resultRow).toContainText("linked");
+      // Words, not codes (2026-11-19).
+      await expect(resultRow).toContainText("Linked to a user");
+      await expect(resultRow).not.toContainText("manual_");
     } finally {
       if (manualBallotId) {
         await supabase.from("audit_logs").delete().eq("entity_id", manualBallotId);

@@ -3,6 +3,7 @@ import type { Page } from "@playwright/test";
 import { expect } from "@playwright/test";
 import type { AfterProxies } from "./proxies";
 import { confirmInApp } from "../../confirm-dialog";
+import { enterPaperBallot } from "./people";
 
 export async function voting(page: Page, ctx: AfterProxies) {
   const {
@@ -12,7 +13,7 @@ export async function voting(page: Page, ctx: AfterProxies) {
     questionText,
     choiceText,
     updatedChoiceText,
-    profile,
+    proxyHolder,
     activeAppOrigin,
   } = ctx;
 
@@ -27,15 +28,33 @@ export async function voting(page: Page, ctx: AfterProxies) {
     meetingRow.getByRole("cell", { name: "published", exact: true }),
   ).toBeVisible();
 
-  await page.goto(`${activeAppOrigin}/vote`);
-  const voteAssignment = page
+  // The proxy holder votes in their own browser (section 47: the admin
+  // cannot hold a proxy).
+  const voterContext = await page.context().browser()!.newContext();
+  const voterPage = await voterContext.newPage();
+  const { data: link, error: linkError } = await supabase.auth.admin.generateLink({
+    type: "magiclink",
+    email: proxyHolder.email,
+    options: { redirectTo: `${activeAppOrigin}/auth/callback` },
+  });
+
+  expect(linkError).toBeNull();
+  await voterPage.goto(
+    `${activeAppOrigin}/auth/callback?token_hash=${encodeURIComponent(
+      link.properties!.hashed_token,
+    )}&type=${link.properties!.verification_type}`,
+  );
+  await expect(voterPage).toHaveURL(/:3000\/$/);
+
+  await voterPage.goto(`${activeAppOrigin}/vote`);
+  const voteAssignment = voterPage
     .getByRole("heading", { name: meetingTitle })
     .locator("xpath=ancestor::section[1]");
   await expect(voteAssignment.getByText(`Room ${roomNumber}`)).toBeVisible();
   await voteAssignment.getByRole("link", { name: "Open ballot" }).click();
-  await expect(page).toHaveURL(/\/vote\/[^/]+\/[^/]+$/);
-  const voteDetailUrl = page.url();
-  const voteCard = page
+  await expect(voterPage).toHaveURL(/\/vote\/[^/]+\/[^/]+$/);
+  const voteDetailUrl = voterPage.url();
+  const voteCard = voterPage
     .getByRole("heading", { name: meetingTitle })
     .locator("xpath=ancestor::main[1]");
   await expect(
@@ -49,7 +68,7 @@ export async function voting(page: Page, ctx: AfterProxies) {
   await voteCard.getByLabel(updatedChoiceText).check();
   await voteCard.getByRole("button", { name: "Update ballot" }).click();
   await expect(voteCard.getByText("Submitted v2")).toBeVisible();
-  const versionHistory = page
+  const versionHistory = voterPage
     .getByRole("heading", { name: "Version history" })
     .locator("xpath=ancestor::section[1]");
   await expect(versionHistory.getByText("Version v2")).toBeVisible();
@@ -93,7 +112,7 @@ export async function voting(page: Page, ctx: AfterProxies) {
     )
     .eq("meeting_id", persistedMeetingResult.data!.id)
     .eq("room_id", persistedRoomResult.data!.id)
-    .eq("voter_profile_id", profile!.id)
+    .eq("voter_profile_id", proxyHolder.id)
     .single();
 
   expect(persistedBallotError).toBeNull();
@@ -112,7 +131,11 @@ export async function voting(page: Page, ctx: AfterProxies) {
       .sort((left, right) => left - right),
   ).toEqual([1, 2]);
 
-  return { voteDetailUrl, persistedMeetingResult, persistedRoomResult };
+  // The paper ballot for the same room, now that the meeting is published;
+  // with the online vote it makes the conflict the next step resolves.
+  await enterPaperBallot(page, ctx);
+
+  return { voteDetailUrl, voterPage, persistedMeetingResult, persistedRoomResult };
 }
 
 export type AfterVoting = AfterProxies & Awaited<ReturnType<typeof voting>>;

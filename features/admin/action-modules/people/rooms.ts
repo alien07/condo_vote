@@ -1,5 +1,6 @@
 "use server";
 
+import { withFeedback } from "@/features/admin/action-modules/feedback";
 import {
   assertUpsertAction,
   createClient,
@@ -228,7 +229,12 @@ export async function importRoomsExcelWithState(
   return importExcelWithState(formData, importRoomsExcel, "Rooms import completed.");
 }
 
+/** Reports the outcome on the same page (admin action standard, 2026-11-19). */
 export async function deactivateRoom(formData: FormData) {
+  await withFeedback("Room deactivated", () => deactivateRoomNow(formData));
+}
+
+async function deactivateRoomNow(formData: FormData) {
   await requireOfficeStaff();
 
   const id = requiredText(formData.get("id"), "Room ID");
@@ -245,7 +251,12 @@ export async function deactivateRoom(formData: FormData) {
   revalidateAdminPaths();
 }
 
+/** Reports the outcome on the same page (admin action standard, 2026-11-19). */
 export async function reactivateRoom(formData: FormData) {
+  await withFeedback("Room reactivated", () => reactivateRoomNow(formData));
+}
+
+async function reactivateRoomNow(formData: FormData) {
   await requireOfficeStaff();
 
   const id = requiredText(formData.get("id"), "Room ID");

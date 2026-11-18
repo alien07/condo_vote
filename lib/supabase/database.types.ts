@@ -1958,6 +1958,7 @@ export type Database = {
         Args: { p_close_at?: string; p_meeting_id: string; p_reason: string }
         Returns: Json
       }
+      proxy_holder_barred: { Args: { p_profile_id: string }; Returns: string }
       publish_result_if_ready: {
         Args: { p_actor: string; p_result_snapshot_id: string }
         Returns: boolean

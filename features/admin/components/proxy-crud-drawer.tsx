@@ -18,17 +18,12 @@ import {
 import { PendingSubmitButton } from "@/features/debug/tracked-submit-button";
 import {
   SearchSelect,
+  type SearchSelectOption,
   invalidFieldElement,
   ownerSearchOptions,
   profileSearchOptions,
   roomSearchOptions,
 } from "@/features/ui/search-select";
-
-type MeetingOption = {
-  id: string;
-  status: string;
-  title: string;
-};
 
 type OwnerOption = {
   active: boolean;
@@ -60,7 +55,10 @@ type ProxyAuthorization = {
 type ProxyCrudDrawerProps = {
   authorization?: ProxyAuthorization;
   closeHref: string;
-  meetings: MeetingOption[];
+  /** Profiles that cannot hold a proxy, and why (section 47, 0043). */
+  barredProfiles: Record<string, "committee" | "office">;
+  /** Meetings that take a new proxy (features/admin/proxy-meetings.ts). */
+  meetingOptions: SearchSelectOption[];
   mode: "create" | "edit";
   owners: OwnerOption[];
   profiles: ProfileOption[];
@@ -147,8 +145,9 @@ export function ProxyRowFocus({
 
 export function ProxyCrudDrawer({
   authorization,
+  barredProfiles,
   closeHref,
-  meetings,
+  meetingOptions,
   mode,
   owners,
   profiles,
@@ -158,7 +157,20 @@ export function ProxyCrudDrawer({
   const { s } = useStaffText();
   const roomOptions = roomSearchOptions(rooms);
   const ownerOptions = ownerSearchOptions(owners);
-  const profileOptions = profileSearchOptions(profiles);
+  // Barred holders stay visible but cannot be picked, with the reason
+  // (Condominium Act section 47, 0043).
+  const profileOptions = profileSearchOptions(profiles).map((option) =>
+    barredProfiles[option.value]
+      ? {
+          ...option,
+          disabled: true,
+          hint:
+            barredProfiles[option.value] === "committee"
+              ? s.proxies.barredCommittee
+              : s.proxies.barredOffice,
+        }
+      : option,
+  );
   const searchText = {
     clear: s.common.searchClear,
     more: s.common.searchMore,
@@ -232,23 +244,26 @@ export function ProxyCrudDrawer({
           <>
             <label className="grid gap-1 text-sm font-medium">
               <FieldLabel required>{s.proxies.meeting}</FieldLabel>
-              <select
-                {...fieldProps("meeting_id", state)}
-                autoFocus
-                className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-                defaultValue={stateValue(state, "meeting_id")}
-                name="meeting_id"
-                required
-              >
-                <option value="">{s.proxies.selectMeeting}</option>
-                {meetings
-                  .filter((meeting) => meeting.status !== "archived")
-                  .map((meeting) => (
-                    <option key={meeting.id} value={meeting.id}>
-                      {meeting.title}
-                    </option>
-                  ))}
-              </select>
+              {meetingOptions.length ? (
+                <SearchSelect
+                  {...fieldProps("meeting_id", state)}
+                  autoFocus
+                  defaultValue={stateValue(state, "meeting_id")}
+                  name="meeting_id"
+                  options={meetingOptions}
+                  text={{
+                    clear: s.common.searchClear,
+                    more: s.common.searchMore,
+                    noResults: s.common.searchNoResults,
+                    placeholder: s.proxies.selectMeeting,
+                  }}
+                />
+              ) : (
+                <span className="text-sm font-normal text-[var(--warning)]" data-no-proxy-meetings>
+                  {s.proxies.noOpenMeetings}
+                </span>
+              )}
+              <span className="text-xs font-normal text-[var(--muted)]">{s.proxies.meetingHelp}</span>
               <FieldError fieldName="meeting_id" state={state} />
             </label>
             <label className="grid gap-1 text-sm font-medium">
@@ -280,8 +295,22 @@ export function ProxyCrudDrawer({
                 options={profileOptions}
                 text={{ ...searchText, placeholder: s.proxies.selectProxy }}
               />
+              <span className="text-xs font-normal text-[var(--muted)]">{s.proxies.outsiderNote}</span>
               <FieldError fieldName="proxy_profile_id" state={state} />
             </label>
+            <label className="flex min-h-11 items-start gap-2 rounded-md border border-[var(--border)] p-3 text-sm">
+              <input
+                {...fieldProps("section47_confirmed", state)}
+                className="mt-1"
+                defaultChecked={stateValue(state, "section47_confirmed") === "on"}
+                name="section47_confirmed"
+                type="checkbox"
+              />
+              <span>
+                <FieldLabel required>{s.proxies.section47Confirm}</FieldLabel>
+              </span>
+            </label>
+            <FieldError fieldName="section47_confirmed" state={state} />
             <label className="grid gap-1 text-sm font-medium">
               {s.proxies.validFrom}
               <input

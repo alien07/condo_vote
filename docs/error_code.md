@@ -32,12 +32,13 @@ and mapped to `VoteError` in `features/voting/core/ballot-service.ts`.
 | --- | --- | --- |
 | `VOTE_NOT_SIGNED_IN` | No signed-in profile. | Session expired before submit. |
 | `VOTE_NOT_ELIGIBLE` | The profile is not the room's voter in `eligible_voters_snapshot`. | Resident or a voter for another room opens a ballot URL. |
-| `VOTE_CLOSED` | The meeting is not published or is outside its voting window. | Submit after `ends_at` or before `starts_at`. |
+| `VOTE_CLOSED` | The meeting is not published or is outside its voting window. For a paper ballot: the meeting is not published (draft, or its result is generated). | Submit after `ends_at` or before `starts_at`; a paper ballot for a draft or closed meeting (0044). |
 | `VOTE_ROOM_LOCKED` | Another voter already submitted this room's ballot (D011). | The room voter changed after the first vote. |
 | `VOTE_INVALID_ANSWERS` | Answers fail validation. | Missing required question, two choices on single choice, or a choice from another question. |
 | `VOTE_FORBIDDEN` | The action needs the admin role. | Non-admin calls a manual ballot or conflict function. |
 | `VOTE_INVALID_CONFLICT` | Conflict input does not match the meeting and room. | Stale conflict form after data changed. |
 | `VOTE_PROXY_LIMIT` | The proxy already holds three rooms in this meeting (D012). | Admin adds a fourth room for the same proxy. |
+| `VOTE_PROXY_NOT_ALLOWED` | The proxy holder is barred by Condominium Act section 47: a committee member, or the manager / juristic office staff (0043). | Admin picks a committee member or an admin/staff account as proxy holder. |
 | `VOTE_ROOM_ALREADY_VOTED` | The room already voted, so its proxy cannot change (D011). | Approving or revoking a proxy after the room voted. |
 | `VOTE_SECRECY_LOCKED` | Ballot secrecy cannot change after publishing (D015). | Editing a published meeting from open to secret. |
 

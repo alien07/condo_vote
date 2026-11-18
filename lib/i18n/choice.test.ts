@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { choiceLabel } from "@/lib/i18n/choice";
+import { choiceLabel, choiceTextsLabel } from "@/lib/i18n/choice";
 
 describe("choiceLabel", () => {
   it("translates the default Abstain choice", () => {
@@ -11,5 +11,13 @@ describe("choiceLabel", () => {
     expect(choiceLabel("ไม่ออกเสียง", true, "en")).toBe("ไม่ออกเสียง");
     expect(choiceLabel("Abstain", false, "th")).toBe("Abstain");
     expect(choiceLabel("เห็นด้วย", false, "en")).toBe("เห็นด้วย");
+  });
+});
+
+describe("choiceTextsLabel", () => {
+  it("joins comment choice names, Abstain in the reader's language", () => {
+    expect(choiceTextsLabel(["เห็นด้วย"], "th")).toBe("เห็นด้วย");
+    expect(choiceTextsLabel(["Abstain"], "th")).toBe("งดออกเสียง");
+    expect(choiceTextsLabel(["A", "B"], "en")).toBe("A, B");
   });
 });

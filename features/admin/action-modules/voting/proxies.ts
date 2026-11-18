@@ -11,6 +11,7 @@ import {
 } from "@/features/admin/action-modules/shared";
 import { writeAuditLog } from "@/lib/audit/business-audit";
 import { toVoteError } from "@/features/voting/core/ballot-service";
+import { PROXY_MEETING_CLOSED, takesNewProxy } from "@/features/admin/proxy-meetings";
 import {
   type ProxyActionState,
   proxyFormValues,
@@ -34,6 +35,21 @@ export async function createProxyAuthorizationWithState(
     }
 
     const supabase = await createClient();
+    // Only where the proxy can still change who votes (2026-11-19).
+    const { data: meeting } = await supabase
+      .from("meetings")
+      .select("status, ends_at")
+      .eq("id", values.meeting_id)
+      .maybeSingle();
+
+    if (!meeting || !takesNewProxy(meeting)) {
+      return {
+        error: PROXY_MEETING_CLOSED,
+        fieldErrors: { meeting_id: PROXY_MEETING_CLOSED },
+        values,
+      };
+    }
+
     const { data: authorization, error } = await supabase
       .from("proxy_authorizations")
       .insert({
@@ -48,12 +64,18 @@ export async function createProxyAuthorizationWithState(
       .single();
 
     if (error) {
-      return { error: toVoteError(error).message, values };
+      const voteError = toVoteError(error);
+
+      // A barred holder (section 47, 0043) is a problem with that field.
+      return voteError.code === "VOTE_PROXY_NOT_ALLOWED"
+        ? { error: voteError.message, fieldErrors: { proxy_profile_id: voteError.message }, values }
+        : { error: voteError.message, values };
     }
 
     await writeAuditLog(supabase, {
       action: "proxy_authorization.created",
       actorProfileId: admin.id,
+      details: { section47_confirmed: true },
       entityId: authorization.id,
       entityType: "proxy_authorization",
     });

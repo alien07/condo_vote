@@ -1,5 +1,6 @@
 import { ChoiceResultsTable, type ChoiceResult } from "@/features/results/choice-results-table";
 import { QuestionOutcomeLine, type QuestionOutcomePayload } from "@/features/results/question-outcome";
+import { choiceTextsLabel } from "@/lib/i18n/choice";
 import { outcomeText } from "@/features/results/thai-labels";
 import { localized } from "@/lib/i18n/content";
 import type { Locale } from "@/lib/i18n/locales";
@@ -114,7 +115,7 @@ export function ResultAgenda({
                   key={rowIndex}
                 >
                   {row.choice_texts.length ? (
-                    <span className="mr-2 text-xs font-medium text-[var(--muted)]">[{row.choice_texts.join(", ")}]</span>
+                    <span className="mr-2 text-xs font-medium text-[var(--muted)]">[{choiceTextsLabel(row.choice_texts, locale)}]</span>
                   ) : null}
                   {row.comment}
                 </li>

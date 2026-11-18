@@ -23,7 +23,7 @@ export async function identityConflicts(page: Page, ctx: AfterVoting) {
 
   await page.goto(`${activeAppOrigin}/admin/voting`);
   const pendingManualVoteRow = page
-    .getByRole("row")
+    .locator("[data-pending-ballot-id]")
     .filter({ hasText: meetingTitle })
     .filter({ hasText: roomNumber });
   await pendingManualVoteRow.getByRole("link", { name: "Link profile" }).click();
