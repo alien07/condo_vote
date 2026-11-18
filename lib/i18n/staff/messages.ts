@@ -168,6 +168,8 @@ const EXACT: Record<string, string> = {
   "Question added": "เพิ่มวาระแล้ว",
   "Question updated": "แก้ไขวาระแล้ว",
   "Question deleted": "ลบวาระแล้ว",
+  "A proxy can only be added to a draft meeting or one still open for voting.":
+    "เพิ่มการมอบฉันทะได้เฉพาะการประชุมที่เป็นร่าง หรือยังเปิดลงคะแนนอยู่",
   "Meeting archived": "เก็บถาวรการประชุมแล้ว",
   "Role revoked": "ถอนสิทธิ์แล้ว",
   "Owner deactivated": "ปิดใช้งานเจ้าของร่วมแล้ว",

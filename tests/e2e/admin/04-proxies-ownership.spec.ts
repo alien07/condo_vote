@@ -135,11 +135,10 @@ test.describe("@test:e2e @test:auth @test:admin admin demo: proxies and ownershi
 
       await addDrawer.getByRole("button", { name: "Add proxy authorization" }).click();
       await expect(addDrawer.getByText("Meeting is required.")).toBeVisible();
-      await expect(addDrawer.locator('select[name="meeting_id"]')).toBeFocused();
+      await expect(addDrawer.locator('[data-focus-for="meeting_id"]')).toBeFocused();
 
-      await addDrawer
-        .locator('select[name="meeting_id"]')
-        .selectOption({ label: meetingTitle });
+      // Only meetings that take a new proxy are offered (2026-11-19).
+      await chooseSearchOption(addDrawer, "meeting_id", meetingTitle);
       await chooseSearchOption(addDrawer, "room_id", roomNumber);
       await chooseSearchOption(addDrawer, "owner_id", ownerName);
       await chooseSearchOption(addDrawer, "proxy_profile_id", demoAdminEmail);

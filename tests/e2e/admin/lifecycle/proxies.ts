@@ -13,9 +13,7 @@ export async function proxies(page: Page, ctx: AfterPeople) {
   });
   await page.getByRole("link", { name: "Add proxy authorization" }).click();
   const addProxyDrawer = page.getByLabel("Add proxy authorization");
-  await addProxyDrawer
-    .locator('select[name="meeting_id"]')
-    .selectOption({ label: meetingTitle });
+  await chooseSearchOption(addProxyDrawer, "meeting_id", meetingTitle);
   await chooseSearchOption(addProxyDrawer, "room_id", roomNumber);
   await chooseSearchOption(addProxyDrawer, "owner_id", ownerName);
   await chooseSearchOption(addProxyDrawer, "proxy_profile_id", demoAdminEmail);
