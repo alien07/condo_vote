@@ -1,7 +1,7 @@
 import { getStaffI18n } from "@/lib/i18n/server";
+import { BackLink } from "@/features/shell/back-link";
 import { fill } from "@/lib/i18n/template";
 import { formatBangkokDateTime } from "@/lib/datetime";
-import Link from "next/link";
 import {
   BallotChoiceInputs,
   selectedChoicesByQuestion,
@@ -107,9 +107,7 @@ export default async function ManualVotePage({
         <div className="mb-6 flex items-center gap-3">
           <Vote className="text-[var(--primary)]" size={26} />
           <div>
-            <Link className="text-sm text-[var(--muted)]" href="/admin/voting">
-              {s.voting.backToManual}
-            </Link>
+            <BackLink href="/admin/voting">{s.voting.backToManual}</BackLink>
             <h1 className="mt-1 text-2xl font-semibold">
               {fill(s.voting.entryTitle, { title: meeting.title })}
             </h1>

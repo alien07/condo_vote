@@ -1,5 +1,5 @@
 import { getStaffI18n } from "@/lib/i18n/server";
-import Link from "next/link";
+import { BackLink } from "@/features/shell/back-link";
 import { ListChecks } from "lucide-react";
 import {
   VoteConflictsTable,
@@ -75,9 +75,7 @@ export default async function AdminVoteConflictsPage({
             <div className="flex items-center gap-3">
               <ListChecks className="text-[var(--primary)]" size={26} />
               <div>
-                <Link className="text-sm text-[var(--muted)]" href="/admin/voting">
-                  {s.voting.backToManual}
-                </Link>
+                <BackLink href="/admin/voting">{s.voting.backToManual}</BackLink>
                 <h1 className="mt-1 text-2xl font-semibold">
                   {s.voting.conflictsTitle}
                 </h1>
