@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/server";
 import { PendingSubmitButton } from "@/features/debug/tracked-submit-button";
 import { ConfirmSubmitButton } from "@/features/admin/components/form-controls";
 import { MeetingCrudDrawer, MeetingRowFocus } from "@/features/admin/components/meeting-crud-drawer";
+import { EnglishNextStep } from "@/features/english/english-next-step";
 import { meetingDrawerHref, meetingHref } from "@/features/admin/components/sections/meetings/meeting-hrefs";
 import { formatDateTime } from "@/features/admin/components/sections/shared/format";
 import { tablePage, tablePerPage } from "@/features/admin/components/sections/shared/table";
@@ -290,6 +291,8 @@ export async function MeetingsSection({
         </div>
       </div>
 
+      {/* Saved: offer the English page next (two-language documents). */}
+      <EnglishNextStep meeting={meetings.find((meeting) => meeting.id === focusedMeetingId)} />
       <div className="overflow-x-auto">
         <table className="w-full border-collapse text-left text-sm">
           <thead className="border-b border-[var(--border)] text-[var(--muted)]">

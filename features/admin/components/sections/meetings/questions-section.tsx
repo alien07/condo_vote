@@ -1,3 +1,4 @@
+import { EnglishNextStep } from "@/features/english/english-next-step";
 import { getStaffI18n } from "@/lib/i18n/server";
 import { fill } from "@/lib/i18n/template";
 import { ListChecks } from "lucide-react";
@@ -57,6 +58,14 @@ export async function QuestionsSection({
         </a>
       </div>
 
+      {/* Saved: the agenda item's English is on the meeting's English page. */}
+      <EnglishNextStep
+        always
+        meeting={meetings.find(
+          (meeting) =>
+            meeting.id === questions.find((question) => question.id === focusedQuestionId)?.meeting_id,
+        )}
+      />
       <div className="grid gap-4">
         {questions.map((question) => {
           const focused = questionFocusId === question.id;
