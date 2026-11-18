@@ -29,6 +29,8 @@ export type AdminWorkspaceProps = {
     mode?: string;
     type?: string;
   };
+  /** Agenda tab: whose agenda to show (`?meeting=`). */
+  agendaMeetingId?: string;
   focusedCommitteeId?: string;
   focusedEmailLogId?: string;
   focusedMeetingId?: string;

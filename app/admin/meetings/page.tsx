@@ -9,6 +9,7 @@ type AdminMeetingsPageProps = {
     focusMeetingId?: string;
     focusQuestionId?: string;
     id?: string;
+    meeting?: string;
     mode?: string;
     noType?: string;
     page?: string;
@@ -64,6 +65,7 @@ export default async function AdminMeetingsPage({
   return (
     <AdminWorkspace
       activeSection={params.tab}
+      agendaMeetingId={params.meeting}
       description={s.adminHome.pages.meetingsText}
       drawer={{
         id: params.id,

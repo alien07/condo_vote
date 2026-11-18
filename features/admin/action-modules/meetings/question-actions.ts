@@ -174,6 +174,27 @@ export async function createMeetingChoice(formData: FormData) {
   revalidateAdminPaths();
 }
 
+/** Edits a choice's text and order (2026-11-18). Draft meetings only:
+ * the database refuses others (0039, AGENDA_LOCKED). */
+export async function updateMeetingChoice(formData: FormData) {
+  await requireAdmin();
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("meeting_choices")
+    .update({
+      choice_text: requiredText(formData.get("choice_text"), "Choice"),
+      display_order: Number(formData.get("display_order") ?? 0),
+    })
+    .eq("id", requiredText(formData.get("id"), "Choice ID"));
+
+  if (error) {
+    throw error;
+  }
+
+  revalidateAdminPaths();
+}
+
 export async function deleteMeetingChoice(formData: FormData) {
   await requireAdmin();
 

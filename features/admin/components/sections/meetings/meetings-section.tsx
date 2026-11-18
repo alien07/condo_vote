@@ -20,7 +20,7 @@ import type {
   SharedAdminState,
 } from "@/features/admin/components/sections/shared/derived";
 
-type MeetingsSectionProps = Pick<AdminDashboardData, "committeeMembers" | "meetings"> &
+type MeetingsSectionProps = Pick<AdminDashboardData, "committeeMembers" | "meetings" | "questions"> &
   Pick<
     SharedAdminState,
     "approvedMeetingIds" | "lockedMeetingIds"
@@ -42,6 +42,7 @@ function isVotingOpen(status: string, endsAt: string) {
 export async function MeetingsSection({
   approvedMeetingIds,
   committeeMembers,
+  questions,
   lockedMeetingIds,
   drawer,
   focusedMeetingId,
@@ -381,6 +382,16 @@ export async function MeetingsSection({
                           </form>
                         </>
                       ) : null}
+                      {/* Meeting -> agenda -> choices (2026-11-18). */}
+                      <a
+                        className="rounded-md border border-[var(--border)] px-3 py-1 text-sm font-medium text-[var(--primary)]"
+                        data-agenda-link
+                        href={`/admin/meetings?tab=questions&meeting=${meeting.id}`}
+                      >
+                        {fill(s.meetings.agendaButton, {
+                          count: questions.filter((question) => question.meeting_id === meeting.id).length,
+                        })}
+                      </a>
                       {meeting.status !== "archived" ? (
                         <a
                           className="rounded-md border border-[var(--border)] px-3 py-1 text-sm font-medium text-[var(--primary)]"

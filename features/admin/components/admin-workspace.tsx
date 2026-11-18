@@ -52,6 +52,7 @@ export async function AdminWorkspace({
   activeSection: requestedActiveSection,
   auditFilters,
   committeeFilters,
+  agendaMeetingId,
   drawer,
   emailFilters,
   focusedEmailLogId,
@@ -234,6 +235,7 @@ export async function AdminWorkspace({
         <MeetingsSection
           approvedMeetingIds={approvedMeetingIds}
           committeeMembers={committeeMembers}
+          questions={questions}
           lockedMeetingIds={lockedMeetingIds}
           drawer={drawer}
           focusedMeetingId={focusedMeetingId}
@@ -244,6 +246,7 @@ export async function AdminWorkspace({
         />
 
         <QuestionsSection
+          agendaMeetingId={agendaMeetingId}
           drawer={drawer}
           focusedQuestionId={focusedQuestionId}
           hidden={!visibleSections.has("questions")}

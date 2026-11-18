@@ -41,6 +41,8 @@ type QuestionRecord = {
 
 type QuestionCrudDrawerProps = {
   closeHref: string;
+  /** The meeting picked on the Agenda tab, for a new agenda item. */
+  defaultMeetingId?: string;
   meetings: MeetingOption[];
   mode: "create" | "edit";
   question?: QuestionRecord;
@@ -132,6 +134,7 @@ export function QuestionRowFocus({ questionId }: { questionId?: string | null })
 
 export function QuestionCrudDrawer({
   closeHref,
+  defaultMeetingId,
   meetings,
   mode,
   question,
@@ -209,7 +212,7 @@ export function QuestionCrudDrawer({
             {...fieldProps("meeting_id", state)}
             autoFocus
             className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-            defaultValue={stateValue(state, "meeting_id", question?.meeting_id)}
+            defaultValue={stateValue(state, "meeting_id", question?.meeting_id ?? defaultMeetingId)}
             name="meeting_id"
           >
             <option value="">{s.meetings.selectMeeting}</option>

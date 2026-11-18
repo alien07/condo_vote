@@ -41,6 +41,7 @@ export function SearchSelect({
   autoFocus,
   allowCustom = false,
   maxResults = 20,
+  onChange,
   "aria-describedby": describedBy,
   "aria-invalid": invalid,
 }: {
@@ -52,6 +53,8 @@ export function SearchSelect({
   /** Also accept typed text that is not in the list (the value is the text). */
   allowCustom?: boolean;
   maxResults?: number;
+  /** Called with the new value when a row is picked. */
+  onChange?: (value: string) => void;
   "aria-describedby"?: string;
   "aria-invalid"?: "true";
 }) {
@@ -129,6 +132,7 @@ export function SearchSelect({
     setValue(option.value);
     setQuery("");
     setOpen(false);
+    onChange?.(option.value);
   }
 
   function onKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {

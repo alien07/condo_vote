@@ -1,8 +1,14 @@
 import { EnglishNextStep } from "@/features/english/english-next-step";
 import { getStaffI18n } from "@/lib/i18n/server";
-import { fill } from "@/lib/i18n/template";
+import { codeLabel, fill } from "@/lib/i18n/template";
 import { ListChecks } from "lucide-react";
-import { createMeetingChoice, deleteMeetingChoice, deleteMeetingQuestion } from "@/features/admin/actions";
+import {
+  createMeetingChoice,
+  deleteMeetingChoice,
+  deleteMeetingQuestion,
+  updateMeetingChoice,
+} from "@/features/admin/actions";
+import { AgendaMeetingPicker } from "@/features/admin/components/sections/meetings/agenda-meeting-picker";
 import { ConfirmSubmitButton, FormResetButton } from "@/features/admin/components/form-controls";
 import { FieldLabel } from "@/features/admin/components/field-label";
 import { PendingSubmitButton } from "@/features/debug/tracked-submit-button";
@@ -13,19 +19,41 @@ import type {
 } from "@/features/admin/components/sections/types";
 
 type QuestionsSectionProps = Pick<AdminDashboardData, "meetings" | "questions"> &
-  Pick<AdminWorkspaceProps, "drawer" | "focusedQuestionId"> & {
+  Pick<AdminWorkspaceProps, "agendaMeetingId" | "drawer" | "focusedQuestionId"> & {
   hidden: boolean;
 };
 
 export async function QuestionsSection({
+  agendaMeetingId,
   drawer,
   focusedQuestionId,
   meetings,
-  questions,
+  questions: allQuestions,
   hidden,
 }: QuestionsSectionProps) {
   const { s } = await getStaffI18n();
-  const selectedQuestion = questions.find((question) => question.id === drawer?.id);
+  const selectedQuestion = allQuestions.find((question) => question.id === drawer?.id);
+  // One meeting's agenda at a time (2026-11-18): the meeting in the URL,
+  // else the meeting of the item just saved or being edited, else the
+  // newest draft, else the newest meeting.
+  const openMeetings = meetings.filter((meeting) => meeting.status !== "archived");
+  const byNewest = [...openMeetings].sort((a, b) => Date.parse(b.starts_at) - Date.parse(a.starts_at));
+  const meetingId =
+    (agendaMeetingId && meetings.some((meeting) => meeting.id === agendaMeetingId) ? agendaMeetingId : undefined) ??
+    allQuestions.find((question) => question.id === (focusedQuestionId ?? drawer?.id))?.meeting_id ??
+    byNewest.find((meeting) => meeting.status === "draft")?.id ??
+    byNewest[0]?.id;
+  const meeting = meetings.find((item) => item.id === meetingId);
+  const editable = meeting?.status === "draft";
+  const questions = allQuestions
+    .filter((question) => question.meeting_id === meetingId)
+    .sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0));
+  const tabHref = `/admin/meetings?tab=questions${meetingId ? `&meeting=${meetingId}` : ""}`;
+  const meetingOptions = byNewest.map((item) => ({
+    value: item.id,
+    label: item.title,
+    hint: [codeLabel(s.common.code, item.status), item.meeting_number].filter(Boolean).join(" · "),
+  }));
   const showQuestionDrawer =
     drawer?.type === "question" &&
     (drawer.mode === "create" ||
@@ -50,12 +78,36 @@ export async function QuestionsSection({
             </p>
           </div>
         </div>
-        <a
-          className="inline-flex min-h-10 items-center justify-center rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)]"
-          href="/admin/meetings?tab=questions&mode=create&type=question"
-        >
-          {s.meetings.addQuestion}
-        </a>
+        {editable || !meeting ? (
+          <a
+            className="inline-flex min-h-10 items-center justify-center rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)]"
+            href={`${tabHref}&mode=create&type=question`}
+          >
+            {s.meetings.addQuestion}
+          </a>
+        ) : null}
+      </div>
+
+      <div className="mb-4 grid gap-2 rounded-lg border border-[var(--border)] bg-[var(--background)] p-4">
+        <AgendaMeetingPicker options={meetingOptions} value={meetingId ?? ""} />
+        {meeting ? (
+          <p className="text-sm text-[var(--muted)]" data-agenda-meeting>
+            {fill(s.meetings.agendaMeetingLine, {
+              status: codeLabel(s.common.code, meeting.status),
+              count: questions.length,
+            })}
+          </p>
+        ) : null}
+        {meeting && !editable ? (
+          <p className="rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-900" data-agenda-locked>
+            {s.meetings.agendaLocked}{" "}
+            {meeting.status !== "archived" ? (
+              <a className="font-medium underline" href={`/admin/meetings/${meeting.id}/english`}>
+                {s.english.openEditor}
+              </a>
+            ) : null}
+          </p>
+        ) : null}
       </div>
 
       {/* Saved: the agenda item's English is on the meeting's English page. */}
@@ -105,10 +157,11 @@ export async function QuestionsSection({
                   </div>
                 ) : null}
               </div>
+              {editable ? (
               <div className="flex flex-wrap gap-2">
                 <a
                   className="rounded-md border border-[var(--border)] px-3 py-1 text-sm font-medium text-[var(--primary)]"
-                  href={`/admin/meetings?tab=questions&mode=edit&type=question&id=${question.id}`}
+                  href={`${tabHref}&mode=edit&type=question&id=${question.id}`}
                 >
                   {s.common.edit}
                 </a>
@@ -124,7 +177,9 @@ export async function QuestionsSection({
                   </ConfirmSubmitButton>
                 </form>
               </div>
+              ) : null}
             </div>
+            {editable ? (
             <form
               action={createMeetingChoice}
               className="mt-4 grid gap-3 md:grid-cols-[1fr_120px_160px]"
@@ -157,34 +212,75 @@ export async function QuestionsSection({
                 <FormResetButton label="Clear form" />
               </div>
             </form>
+            ) : null}
             <div className="mt-3 flex flex-wrap gap-2">
               {question.meeting_choices
                 .sort((left, right) => left.display_order - right.display_order)
-                .map((choice) => (
-                  <form
-                    action={deleteMeetingChoice}
-                    className="inline-flex items-center gap-2 rounded-md border border-[var(--border)] px-3 py-1 text-sm"
-                    key={choice.id}
-                  >
-                    <span>
-                      {choice.choice_text}
-                      {choice.is_abstain ? (
-                        <span className="ml-1 text-xs text-[var(--muted)]">
-                          {s.meetings.defaultRemovable}
-                        </span>
-                      ) : null}
-                    </span>
-                    <input name="id" type="hidden" value={choice.id} />
-                    <ConfirmSubmitButton
-                      className="font-medium text-red-700"
-                      confirmMessage={fill(s.meetings.confirmDeleteChoice, { text: choice.choice_text })}
-                      pendingLabel={s.common.deleting}
-                      type="submit"
+                .map((choice) =>
+                  editable ? (
+                    <details
+                      className="rounded-md border border-[var(--border)] px-3 py-1 text-sm"
+                      data-choice-id={choice.id}
+                      key={choice.id}
                     >
-                      {s.common.delete}
-                    </ConfirmSubmitButton>
-                  </form>
-                ))}
+                      <summary className="tap-target cursor-pointer">
+                        <span>{choice.choice_text}</span>
+                        {choice.is_abstain ? (
+                          <span className="ml-1 text-xs text-[var(--muted)]">
+                            {s.meetings.defaultRemovable}
+                          </span>
+                        ) : null}
+                        <span className="ml-2 text-xs font-medium text-[var(--primary)]">{s.common.edit}</span>
+                      </summary>
+                      {/* Edit the text and order in place (2026-11-18). */}
+                      <form action={updateMeetingChoice} className="mt-2 grid gap-2 sm:grid-cols-[1fr_96px_auto]">
+                        <input name="id" type="hidden" value={choice.id} />
+                        <input
+                          aria-label={s.meetings.choice}
+                          className="min-h-11 rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+                          defaultValue={choice.choice_text}
+                          maxLength={500}
+                          name="choice_text"
+                          required
+                        />
+                        <input
+                          aria-label={s.meetings.order}
+                          className="min-h-11 rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+                          defaultValue={choice.display_order}
+                          min={0}
+                          name="display_order"
+                          type="number"
+                        />
+                        <PendingSubmitButton
+                          className="min-h-11 rounded-md border border-[var(--border)] px-3 py-2 text-sm font-medium"
+                          pendingLabel={s.common.saving}
+                          type="submit"
+                        >
+                          {s.meetings.saveChoice}
+                        </PendingSubmitButton>
+                      </form>
+                      <form action={deleteMeetingChoice} className="mt-2">
+                        <input name="id" type="hidden" value={choice.id} />
+                        <ConfirmSubmitButton
+                          className="min-h-11 font-medium text-red-700"
+                          confirmMessage={fill(s.meetings.confirmDeleteChoice, { text: choice.choice_text })}
+                          pendingLabel={s.common.deleting}
+                          type="submit"
+                        >
+                          {s.common.delete}
+                        </ConfirmSubmitButton>
+                      </form>
+                    </details>
+                  ) : (
+                    <span
+                      className="rounded-md border border-[var(--border)] px-3 py-1 text-sm"
+                      data-choice-id={choice.id}
+                      key={choice.id}
+                    >
+                      {choice.choice_text}
+                    </span>
+                  ),
+                )}
             </div>
             </div>
           );
@@ -198,7 +294,8 @@ export async function QuestionsSection({
       ) : null}
       {showQuestionDrawer ? (
         <QuestionCrudDrawer
-          closeHref="/admin/meetings?tab=questions"
+          closeHref={tabHref}
+          defaultMeetingId={meetingId}
           meetings={meetings}
           mode={drawer?.mode === "edit" ? "edit" : "create"}
           question={selectedQuestion}

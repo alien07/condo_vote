@@ -187,6 +187,8 @@ const EXACT: Record<string, string> = {
   "Voting is still open. Results can be generated after the end time or after the committee approves closing voting.":
     "ยังเปิดลงคะแนนอยู่ สร้างผลได้หลังเวลาปิด หรือหลังกรรมการอนุมัติปิดลงคะแนน",
   "Please fix 1 field before saving.": "โปรดแก้ไข 1 ช่องก่อนบันทึก",
+  "AGENDA_LOCKED: Agenda items and choices can only change while the meeting is a draft.":
+    "แก้วาระและตัวเลือกได้เฉพาะตอนที่การประชุมยังเป็นร่าง",
 };
 
 const PATTERNS: [RegExp, (m: RegExpMatchArray) => string][] = [
