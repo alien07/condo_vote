@@ -9,6 +9,8 @@ import { useEffect, useId, useRef, useState } from "react";
  */
 export function CountedText({
   className,
+  defaultValue = "",
+  disabled = false,
   form,
   maxLength,
   multiline = false,
@@ -17,6 +19,9 @@ export function CountedText({
   rows = 2,
 }: {
   className: string;
+  /** Text already saved, for example the voter's earlier comment. */
+  defaultValue?: string;
+  disabled?: boolean;
   /** Id of the form this field belongs to, when it sits outside it. */
   form?: string;
   maxLength: number;
@@ -25,14 +30,14 @@ export function CountedText({
   required?: boolean;
   rows?: number;
 }) {
-  const [length, setLength] = useState(0);
+  const [length, setLength] = useState(defaultValue.length);
   const counterId = useId();
   const fieldRef = useRef<HTMLInputElement & HTMLTextAreaElement>(null);
 
   // "Cancel" resets the form; the counter goes back to 0 with it.
   useEffect(() => {
     const form = fieldRef.current?.form;
-    const reset = () => setLength(0);
+    const reset = () => setLength(fieldRef.current?.defaultValue.length ?? 0);
     form?.addEventListener("reset", reset);
     return () => form?.removeEventListener("reset", reset);
   }, []);
@@ -40,6 +45,8 @@ export function CountedText({
   const shared = {
     "aria-describedby": counterId,
     className,
+    defaultValue,
+    disabled,
     form,
     maxLength,
     name,

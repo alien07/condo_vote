@@ -37,6 +37,7 @@ type QuestionRecord = {
   pass_percent?: number | string;
   requires_land_office_registration: boolean;
   resolution_type: string;
+  allow_comment?: boolean | null;
 };
 
 type QuestionCrudDrawerProps = {
@@ -434,6 +435,19 @@ export function QuestionCrudDrawer({
             type="checkbox"
           />
           {s.meetings.landOfficeField}
+        </label>
+        {/* Voters may add a comment of up to 500 characters (2026-11-18). */}
+        <label className="flex min-h-11 items-start gap-2 text-sm">
+          <input
+            className="mt-1"
+            defaultChecked={checkedValue(state, "allow_comment", question?.allow_comment ?? false)}
+            name="allow_comment"
+            type="checkbox"
+          />
+          <span>
+            {s.meetings.allowComment}
+            <span className="block text-xs text-[var(--muted)]">{s.meetings.allowCommentHelp}</span>
+          </span>
         </label>
         <textarea
           className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"

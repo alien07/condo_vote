@@ -10,6 +10,7 @@ import { RequiredMark } from "@/features/admin/components/field-label";
 import { PendingSubmitButton } from "@/features/debug/tracked-submit-button";
 import { submitBallot } from "@/features/voting/actions";
 import { BallotForm } from "@/features/voting/components/ballot-form";
+import { CountedText } from "@/features/committee/counted-text";
 import {
   describeVoterRoom,
   describeVotingWindow,
@@ -207,6 +208,24 @@ export default async function VoteDetailPage({ params }: VoteDetailPageProps) {
                       answerByQuestion.get(question.id) ?? new Set<string>()
                     }
                   />
+                  {question.allow_comment ? (
+                    // Optional comment with any answer (0040).
+                    <label className="mt-3 grid gap-1 text-sm font-medium">
+                      {t.commentLabel}
+                      <span className="text-xs font-normal text-[var(--muted)]">{t.commentHelp}</span>
+                      <CountedText
+                        className="min-h-11 rounded-md border border-[var(--border)] px-3 py-2 text-sm font-normal"
+                        defaultValue={
+                          ballot?.ballot_comments?.find((row) => row.question_id === question.id)?.comment ?? ""
+                        }
+                        disabled={!votingStatus.canSubmit}
+                        maxLength={500}
+                        multiline
+                        name={`comment:${question.id}`}
+                        rows={3}
+                      />
+                    </label>
+                  ) : null}
                 </fieldset>
               ))}
               <p className="text-sm text-[var(--muted)]">

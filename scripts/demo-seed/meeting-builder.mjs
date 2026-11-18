@@ -35,6 +35,8 @@ export const STANDARD_QUESTIONS = [
     question_type: "single_choice",
     required_threshold: "majority_submitted",
     choices: AGREE_DISAGREE,
+    // Voters may add a comment (0040).
+    allow_comment: true,
   },
   {
     agenda_no: "2",
@@ -134,6 +136,7 @@ export async function createMeeting(spec) {
           legal_note_en: en(question.legal_note),
           display_order: index + 1,
           required: true,
+          allow_comment: question.allow_comment ?? false,
         })
         .select("id, question_type, agenda_no")
         .single(),

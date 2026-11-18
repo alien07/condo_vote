@@ -193,6 +193,7 @@ export const questionFormFields = [
   "display_order",
   "required",
   "requires_land_office_registration",
+  "allow_comment",
   "legal_note",
 ];
 
@@ -322,5 +323,7 @@ export function questionPayload(values: Record<string, string>) {
     legal_note: optionalText(values.legal_note),
     display_order: Number(values.display_order || 0),
     required: values.required === "on",
+    // Voters may add a comment (0040).
+    allow_comment: values.allow_comment === "on",
   };
 }

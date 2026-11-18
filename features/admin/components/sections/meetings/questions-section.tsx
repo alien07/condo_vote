@@ -1,5 +1,6 @@
 import { EnglishNextStep } from "@/features/english/english-next-step";
 import { getStaffI18n } from "@/lib/i18n/server";
+import { createClient } from "@/lib/supabase/server";
 import { codeLabel, fill } from "@/lib/i18n/template";
 import { ListChecks } from "lucide-react";
 import {
@@ -49,6 +50,14 @@ export async function QuestionsSection({
     .filter((question) => question.meeting_id === meetingId)
     .sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0));
   const tabHref = `/admin/meetings?tab=questions${meetingId ? `&meeting=${meetingId}` : ""}`;
+  // Voter comments without room or name (0040).
+  const { data: comments } = meetingId
+    ? await (await createClient()).rpc("meeting_comments", { p_meeting_id: meetingId })
+    : { data: [] };
+  const commentsByQuestion = new Map<string, { choice_texts: string[]; comment: string }[]>();
+  for (const row of comments ?? []) {
+    commentsByQuestion.set(row.question_id, [...(commentsByQuestion.get(row.question_id) ?? []), row]);
+  }
   const meetingOptions = byNewest.map((item) => ({
     value: item.id,
     label: item.title,
@@ -151,6 +160,11 @@ export async function QuestionsSection({
                   </div>
                 ) : null}
                 <h3 className="mt-1 font-semibold">{question.question_text}</h3>
+                {question.allow_comment ? (
+                  <span className="mt-1 inline-block rounded-full bg-[var(--primary)]/10 px-2 py-0.5 text-xs font-medium text-[var(--primary)]">
+                    {s.meetings.commentsBadge}
+                  </span>
+                ) : null}
                 {question.requires_land_office_registration ? (
                   <div className="mt-1 text-xs text-[var(--muted)]">
                     {s.meetings.landOffice}
@@ -282,6 +296,30 @@ export async function QuestionsSection({
                   ),
                 )}
             </div>
+            {question.allow_comment ? (
+              <details className="mt-3 text-sm" data-voter-comments>
+                <summary className="tap-target inline-flex min-h-11 cursor-pointer items-center font-medium text-[var(--primary)]">
+                  {fill(s.meetings.voterComments, { count: commentsByQuestion.get(question.id)?.length ?? 0 })}
+                </summary>
+                {commentsByQuestion.get(question.id)?.length ? (
+                  <ul className="mt-1 grid gap-2">
+                    {commentsByQuestion.get(question.id)?.map((row, index) => (
+                      <li
+                        className="whitespace-pre-line rounded-md bg-[var(--background)] px-3 py-2 [overflow-wrap:anywhere]"
+                        key={index}
+                      >
+                        {row.choice_texts.length ? (
+                          <span className="mr-2 text-xs font-medium text-[var(--muted)]">[{row.choice_texts.join(", ")}]</span>
+                        ) : null}
+                        {row.comment}
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="mt-1 text-[var(--muted)]">{s.meetings.noVoterComments}</p>
+                )}
+              </details>
+            ) : null}
             </div>
           );
         })}

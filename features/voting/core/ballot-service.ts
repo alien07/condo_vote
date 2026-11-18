@@ -9,6 +9,8 @@ type Client = SupabaseClient<Database>;
 export type BallotAnswerInput = {
   question_id: string;
   choice_ids: string[];
+  /** Optional voter comment, up to 500 characters (0040). */
+  comment?: string;
 };
 
 export type VoteErrorCode =
@@ -66,10 +68,12 @@ export function answersFromFormData(formData: FormData): BallotAnswerInput[] {
     byQuestion.set(questionId, [...(byQuestion.get(questionId) ?? []), choiceId]);
   }
 
-  return [...byQuestion].map(([question_id, choice_ids]) => ({
-    question_id,
-    choice_ids,
-  }));
+  return [...byQuestion].map(([question_id, choice_ids]) => {
+    // Field `comment:<questionId>`; kept only with an answer to the question.
+    const comment = String(formData.get(`comment:${question_id}`) ?? "").trim();
+
+    return comment ? { question_id, choice_ids, comment } : { question_id, choice_ids };
+  });
 }
 
 export async function submitOnlineBallot(

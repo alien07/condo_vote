@@ -2,7 +2,7 @@ import { LongText } from "@/features/ui/long-text";
 import { ApproverList } from "@/features/committee/approver-list";
 import { changedAgendaItems } from "@/features/committee/changed-items";
 import { ResultActions } from "@/features/committee/result-actions";
-import { ResultAgenda, type AgendaQuestion } from "@/features/committee/result-agenda";
+import { ResultAgenda, type AgendaQuestion, type VoterComment } from "@/features/committee/result-agenda";
 import { ResultCorrections } from "@/features/committee/result-corrections";
 import type { CommitteeOverview } from "@/features/results/committee-service";
 import { quorumText } from "@/features/results/thai-labels";
@@ -27,12 +27,14 @@ type PendingPayload = {
 /** A result waiting for approval: counts, who approved, corrections, and the
  * approve and correction forms (demo feedback items 11 and 12). */
 export function PendingResultCard({
+  comments,
   result,
   members,
   locale,
   formatDateTime,
   t,
 }: {
+  comments?: VoterComment[];
   result: PendingResult;
   members: CommitteeOverview["members"];
   locale: Locale;
@@ -154,7 +156,13 @@ export function PendingResultCard({
         ) : null}
       </div>
 
-      <ResultAgenda locale={locale} questions={payload.questions} snapshotId={result.snapshot_id} t={t} />
+      <ResultAgenda
+        comments={comments}
+        locale={locale}
+        questions={payload.questions}
+        snapshotId={result.snapshot_id}
+        t={t}
+      />
 
       {regeneratedAfter ? (
         <div className="rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-900" data-regenerated>

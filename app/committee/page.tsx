@@ -25,6 +25,15 @@ export default async function CommitteePage() {
 
   const supabase = await createClient();
   const overview = await getCommitteeOverview(supabase);
+  // Voter comments per meeting, without room or name (0040).
+  const commentsByMeeting = new Map(
+    await Promise.all(
+      [...new Set(overview.pending_results.map((result) => result.meeting_id))].map(async (meetingId) => {
+        const { data } = await supabase.rpc("meeting_comments", { p_meeting_id: meetingId });
+        return [meetingId, data ?? []] as const;
+      }),
+    ),
+  );
   const { locale, s } = await getStaffI18n();
   const t = s.committee;
   const formatDateTime = (value: string) => formatDateTimeIn(locale, value);
@@ -84,6 +93,7 @@ export default async function CommitteePage() {
             <div className="grid gap-4">
               {overview.pending_results.map((result) => (
                 <PendingResultCard
+                  comments={commentsByMeeting.get(result.meeting_id)}
                   formatDateTime={formatDateTime}
                   key={result.snapshot_id}
                   locale={locale}

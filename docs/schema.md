@@ -21,6 +21,7 @@ Types are the TypeScript types the app sees: `string` also covers `uuid`, `text`
 | [approval_requests](#approval_requests) | 9 | Tracks user requests to become an approved owner, resident, or proxy voter. |
 | [audit_logs](#audit_logs) | 7 | Append-only business action records for traceability and troubleshooting. |
 | [ballot_answers](#ballot_answers) | 5 | Current effective answers for a ballot. |
+| [ballot_comments](#ballot_comments) | 6 |  |
 | [ballot_versions](#ballot_versions) | 5 | Historical ballot payloads whenever a voter edits before close. |
 | [ballots](#ballots) | 9 | Current ballot record per meeting and room. |
 | [committee_approvals](#committee_approvals) | 6 | One committee member's approval of a result snapshot. |
@@ -36,7 +37,7 @@ Types are the TypeScript types the app sees: `string` also covers `uuid`, `text`
 | [meeting_close_request_answers](#meeting_close_request_answers) | 6 |  |
 | [meeting_close_requests](#meeting_close_requests) | 9 |  |
 | [meeting_incidents](#meeting_incidents) | 8 | Problems during voting and what was done, for the official record. |
-| [meeting_questions](#meeting_questions) | 20 | Questions shown inside a meeting vote/survey. |
+| [meeting_questions](#meeting_questions) | 21 | Questions shown inside a meeting vote/survey. |
 | [meetings](#meetings) | 31 | Voting event or condominium meeting configuration. |
 | [owners](#owners) | 9 | Master data for legal owners from juristic office records or verified admin input. |
 | [privacy_settings](#privacy_settings) | 9 | One row: PDPA privacy notice, its version, and retention periods. |
@@ -115,6 +116,17 @@ Current effective answers for a ballot. More in [data-model.md](data-model.md#ba
 | `choice_id` | `string` |  |  | [meeting_choices.id](#meeting_choices) |
 | `created_at` | `string` |  | default |  |
 | `id` | `string` |  | default |  |
+| `question_id` | `string` |  |  | [meeting_questions.id](#meeting_questions) |
+
+## ballot_comments
+
+| Column | Type | Null | Default | FK |
+| --- | --- | :---: | :---: | --- |
+| `ballot_id` | `string` |  |  | [ballots.id](#ballots) |
+| `comment` | `string` |  |  |  |
+| `created_at` | `string` |  | default |  |
+| `id` | `string` |  | default |  |
+| `meeting_id` | `string` |  |  | [meetings.id](#meetings) |
 | `question_id` | `string` |  |  | [meeting_questions.id](#meeting_questions) |
 
 ## ballot_versions
@@ -362,6 +374,7 @@ Questions shown inside a meeting vote/survey. More in [data-model.md](data-model
 | `agenda_no` | `string` | null |  |  |
 | `agenda_title` | `string` | null |  |  |
 | `agenda_title_en` | `string` | null |  |  |
+| `allow_comment` | `boolean` |  | default |  |
 | `created_at` | `string` |  | default |  |
 | `display_order` | `number` |  | default |  |
 | `id` | `string` |  | default |  |
@@ -640,6 +653,7 @@ Called with `supabase.rpc(name, args)`. Rules and permissions: [rls-policies.md]
 | `is_office_staff` |  | `boolean` |
 | `link_my_owner_record` |  | `string` |
 | `mask_email` | `p_email: string` | `string` |
+| `meeting_comments` | `p_meeting_id: string` | `{ choice_texts: string[] comment: string question_id: string }[]` |
 | `meeting_early_close` | `p_meeting_id: string` | `string` |
 | `meeting_online_tally` | `p_meeting_id: string` | `{ choice_id: string ownership: number vote_count: number }[]` |
 | `my_member_access` |  | `Json` |
