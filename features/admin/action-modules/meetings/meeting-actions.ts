@@ -1,5 +1,6 @@
 "use server";
 
+import { withFeedback } from "@/features/admin/action-modules/feedback";
 import { englishGaps, getEnglishMeeting } from "@/features/english/data";
 import { getStaffI18n } from "@/lib/i18n/server";
 import { redirect } from "next/navigation";
@@ -205,7 +206,12 @@ export async function updateDraftMeeting(formData: FormData) {
   revalidateAdminPaths();
 }
 
+/** Reports the outcome on the same page (admin action standard, 2026-11-19). */
 export async function archiveMeeting(formData: FormData) {
+  await withFeedback("Meeting archived", () => archiveMeetingNow(formData));
+}
+
+async function archiveMeetingNow(formData: FormData) {
   await requireAdmin();
 
   const id = requiredText(formData.get("id"), "Meeting ID");

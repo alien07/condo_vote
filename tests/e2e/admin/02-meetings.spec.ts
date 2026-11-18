@@ -369,6 +369,8 @@ test.describe("@test:e2e @test:auth @test:admin admin demo: meetings and questio
       await expect(agendaStep).toContainText("No choices yet");
       await questionCard.getByRole("textbox", { name: "New choice" }).fill("Approve");
       await questionCard.getByRole("button", { name: "Add choice" }).click();
+      // Every agenda change says what happened (2026-11-19).
+      await expect(page.getByText("Choice added")).toBeVisible();
       await expect(questionCard.locator("[data-choice-list] li").first()).toContainText("Approve");
       await expect(agendaStep).toHaveAttribute("data-step-done", "true");
 
@@ -432,6 +434,7 @@ test.describe("@test:e2e @test:auth @test:admin admin demo: meetings and questio
       // An agenda item with choices can be deleted; its choices go with it (0042).
       await questionCard.getByRole("button", { name: "Delete question" }).click();
       await confirmInApp(page);
+      await expect(page.getByText("Question deleted")).toBeVisible();
       await expect(questionCard).toHaveCount(0);
       const { count: choicesLeft } = await supabase
         .from("meeting_choices")

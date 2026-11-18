@@ -1,5 +1,6 @@
 "use server";
 
+import { withFeedback } from "@/features/admin/action-modules/feedback";
 import {
   assertUpsertAction,
   createClient,
@@ -193,7 +194,12 @@ export async function importOwnersExcelWithState(
   );
 }
 
+/** Reports the outcome on the same page (admin action standard, 2026-11-19). */
 export async function deactivateOwner(formData: FormData) {
+  await withFeedback("Owner deactivated", () => deactivateOwnerNow(formData));
+}
+
+async function deactivateOwnerNow(formData: FormData) {
   await requireOfficeStaff();
 
   const id = requiredText(formData.get("id"), "Owner ID");
@@ -210,7 +216,12 @@ export async function deactivateOwner(formData: FormData) {
   revalidateAdminPaths();
 }
 
+/** Reports the outcome on the same page (admin action standard, 2026-11-19). */
 export async function reactivateOwner(formData: FormData) {
+  await withFeedback("Owner reactivated", () => reactivateOwnerNow(formData));
+}
+
+async function reactivateOwnerNow(formData: FormData) {
   await requireOfficeStaff();
 
   const id = requiredText(formData.get("id"), "Owner ID");

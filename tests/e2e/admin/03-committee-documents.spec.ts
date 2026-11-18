@@ -165,12 +165,15 @@ test.describe("@test:e2e @test:auth @test:admin admin demo: committee and docume
 
       await memberRow.getByRole("button", { name: "Deactivate" }).click();
       await confirmInApp(page);
+      // Every action says what happened (2026-11-19).
+      await expect(page.getByText("Committee member deactivated")).toBeVisible({ timeout: 15_000 });
       await expect(
         memberRow.getByRole("button", { name: "Reactivate" }),
       ).toBeVisible({ timeout: 15_000 });
 
       await memberRow.getByRole("button", { name: "Reactivate" }).click();
       await confirmInApp(page);
+      await expect(page.getByText("Committee member reactivated")).toBeVisible({ timeout: 15_000 });
       await expect(
         memberRow.getByRole("button", { name: "Deactivate" }),
       ).toBeVisible({ timeout: 15_000 });
