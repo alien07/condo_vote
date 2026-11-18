@@ -75,6 +75,15 @@ features/admin/
      form that one of them needs opens below the row, and ends with
      [Cancel] [Send ...] on the right.
    Admin tables are brought in line during the admin review.
+8. **Long lists are searched, not scrolled (2026-11-18).** A choice from a
+   list that can grow with the condo (rooms, owners, people) uses
+   `SearchSelect` (features/ui/search-select.tsx): type a room number,
+   name, email or phone; each row shows a hint (floor, current owner,
+   email) so the right one is picked. It submits through a hidden input,
+   and its box has `data-focus-for` for "focus the first field with an
+   error". In e2e use `chooseSearchOption` (tests/e2e/admin/admin-helpers.ts).
+   Done: new room-owner link form. Still plain `<select>`: proxies, paper
+   ballots, committee, owner account, documents, vote conflicts.
 
 ## Backlog
 Split on 2026-11-15 (no behaviour change; old import paths still work):

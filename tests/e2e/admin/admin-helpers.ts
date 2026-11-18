@@ -1,7 +1,7 @@
 import { isoToBangkokLocalInput } from "@/lib/datetime";
 import fs from "node:fs";
 import path from "node:path";
-import { expect, type Page } from "@playwright/test";
+import { expect, type Locator, type Page } from "@playwright/test";
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/database.types";
 
@@ -89,4 +89,13 @@ export async function findUserByEmail(
 
     page += 1;
   }
+}
+
+/** Picks a row in a SearchSelect (type-to-search box) by its exact label. */
+export async function chooseSearchOption(scope: Locator, name: string, label: string) {
+  const box = scope.locator(`[data-focus-for="${name}"]`);
+  await box.click();
+  await box.fill(label);
+  await scope.locator(`[role="option"][data-label=${JSON.stringify(label)}]`).first().click();
+  await expect(scope.locator(`input[type="hidden"][name="${name}"]`)).not.toHaveValue("");
 }

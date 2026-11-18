@@ -9,6 +9,7 @@ import {
   supabaseUrl,
   serviceKey,
   findUserByEmail,
+  chooseSearchOption,
 } from "./admin-helpers";
 
 test.describe("@test:e2e @test:auth @test:admin admin demo: proxies and ownership", () => {
@@ -302,14 +303,10 @@ test.describe("@test:e2e @test:auth @test:admin admin demo: proxies and ownershi
       await createDrawer.getByRole("button", { name: "Create ownership link" }).click();
       await expect(createDrawer.getByText("Room is required.")).toBeVisible();
       await expect(createDrawer.getByText("Owner is required.")).toBeVisible();
-      await expect(createDrawer.locator('select[name="room_id"]')).toBeFocused();
+      await expect(createDrawer.locator('[data-focus-for="room_id"]')).toBeFocused();
 
-      await createDrawer
-        .locator('select[name="room_id"]')
-        .selectOption({ label: roomNumber });
-      await createDrawer
-        .locator('select[name="owner_id"]')
-        .selectOption({ label: ownerName });
+      await chooseSearchOption(createDrawer, "room_id", roomNumber);
+      await chooseSearchOption(createDrawer, "owner_id", ownerName);
       await createDrawer.getByRole("button", { name: "Create ownership link" }).click();
       await page.waitForURL((url) =>
         Boolean(url.searchParams.get("focusOwnershipId")),

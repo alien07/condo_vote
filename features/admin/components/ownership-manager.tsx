@@ -9,6 +9,7 @@ import { FieldLabel, RequiredNote } from "@/features/admin/components/field-labe
 import { AdminCrudDrawer } from "@/features/admin/components/admin-crud-drawer";
 import { FormResetButton } from "@/features/admin/components/form-controls";
 import { PendingSubmitButton } from "@/features/debug/tracked-submit-button";
+import { SearchSelect, type SearchSelectOption } from "@/features/ui/search-select";
 import {
   type OwnershipManagerProps,
   type OwnershipTableState,
@@ -71,6 +72,63 @@ export function OwnershipManager({
       ),
     [roomOwners],
   );
+  // Type-to-search lists for the new-link form (2026-11-18): a long condo
+  // made the plain dropdowns hard to use.
+  const roomOptions = useMemo<SearchSelectOption[]>(
+    () =>
+      rooms
+        .filter((room) => room.active)
+        .map((room) => {
+          const owner = activeRoomOwnerByRoom.get(room.id)?.owners?.full_name;
+          const place = [
+            room.building,
+            room.floor != null && room.floor !== "" ? fill(s.ownership.floorHint, { floor: room.floor }) : null,
+          ].filter(Boolean);
+
+          return {
+            value: room.id,
+            label: room.room_number,
+            hint: [...place, owner ? fill(s.ownership.ownerHint, { name: owner }) : s.ownership.noOwnerHint].join(" · "),
+            keywords: owner ?? "",
+          };
+        }),
+    [rooms, activeRoomOwnerByRoom, s],
+  );
+  const ownerOptions = useMemo<SearchSelectOption[]>(() => {
+    const roomsByOwner = new Map<string, string[]>();
+
+    for (const link of activeRoomOwnerByRoom.values()) {
+      const ownerId = link.owners?.id;
+
+      if (ownerId && link.rooms?.room_number) {
+        roomsByOwner.set(ownerId, [...(roomsByOwner.get(ownerId) ?? []), link.rooms.room_number]);
+      }
+    }
+
+    return owners
+      .filter((owner) => owner.active)
+      .map((owner) => {
+        const ownedRooms = roomsByOwner.get(owner.id) ?? [];
+
+        return {
+          value: owner.id,
+          label: owner.full_name,
+          hint: [
+            owner.email,
+            owner.phone,
+            ownedRooms.length > 0 ? fill(s.ownership.roomsHint, { count: ownedRooms.length }) : null,
+          ]
+            .filter(Boolean)
+            .join(" · "),
+          keywords: ownedRooms.join(" "),
+        };
+      });
+  }, [owners, activeRoomOwnerByRoom, s]);
+  const searchText = {
+    clear: s.common.searchClear,
+    more: s.common.searchMore,
+    noResults: s.common.searchNoResults,
+  };
   const defaultEndDate = todayLocalDate();
   const listHref = mergeParams(searchParams, {
     id: null,
@@ -478,52 +536,25 @@ export function OwnershipManager({
             <ActionMessage state={createState} />
             <label className="grid gap-1 text-sm font-medium">
               <FieldLabel required>{s.ownership.room}</FieldLabel>
-              <select
+              <SearchSelect
                 {...fieldProps("room_id", createState)}
                 autoFocus
-                className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
                 defaultValue={stateValue(createState, "room_id")}
                 name="room_id"
-                required
-              >
-                <option value="">{s.ownership.selectRoom}</option>
-                {rooms
-                  .filter((room) => room.active)
-                  .map((room) => {
-                    const activeLink = activeRoomOwnerByRoom.get(room.id);
-
-                    return (
-                      <option key={room.id} value={room.id}>
-                        {room.room_number}
-                        {activeLink
-                          ? fill(s.ownership.currentOwner, {
-                              name: activeLink.owners?.full_name ?? s.ownership.ownerWord,
-                            })
-                          : ""}
-                      </option>
-                    );
-                  })}
-              </select>
+                options={roomOptions}
+                text={{ ...searchText, placeholder: s.ownership.searchRoomPick }}
+              />
               <FieldError fieldName="room_id" state={createState} />
             </label>
             <label className="grid gap-1 text-sm font-medium">
               <FieldLabel required>{s.ownership.owner}</FieldLabel>
-              <select
+              <SearchSelect
                 {...fieldProps("owner_id", createState)}
-                className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
                 defaultValue={stateValue(createState, "owner_id")}
                 name="owner_id"
-                required
-              >
-                <option value="">{s.ownership.selectOwner}</option>
-                {owners
-                  .filter((owner) => owner.active)
-                  .map((owner) => (
-                    <option key={owner.id} value={owner.id}>
-                      {owner.full_name}
-                    </option>
-                  ))}
-              </select>
+                options={ownerOptions}
+                text={{ ...searchText, placeholder: s.ownership.searchOwnerPick }}
+              />
               <FieldError fieldName="owner_id" state={createState} />
             </label>
             <label className="grid gap-1 text-sm font-medium">
