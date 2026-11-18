@@ -148,8 +148,9 @@ npm run build
 
 Run database tests when any of these paths change:
 - `supabase/**`
-- `docs/schema-draft.sql`
 - `lib/supabase/database.types.ts`
+
+After `npm run types:supabase`, `docs/schema.md` is regenerated too; commit it with the types. The unit test `lib/supabase/schema-doc.test.ts` fails when it is out of date (`node scripts/gen-schema-doc.mjs` fixes it).
 
 Run e2e tests when any of these paths change:
 - `app/**`

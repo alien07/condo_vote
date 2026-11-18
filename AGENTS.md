@@ -21,7 +21,7 @@ condoVotes lets condominium admins create online meetings, questions, and choice
 - Communication: [docs/communication.md](docs/communication.md)
 - Data model: [docs/data-model.md](docs/data-model.md)
 - Local development: [docs/local-development.md](docs/local-development.md)
-- SQL draft: [docs/schema-draft.sql](docs/schema-draft.sql)
+- Schema reference (generated, every table and column): [docs/schema.md](docs/schema.md)
 - Security and privacy: [docs/security-privacy.md](docs/security-privacy.md)
 - Compliance: [docs/compliance.md](docs/compliance.md)
 - Operations: [docs/operations.md](docs/operations.md)
