@@ -267,6 +267,7 @@ export function MeetingCrudDrawer({
             name="meeting_type"
           >
             <option value="online_vote">{s.meetings.onlineVote}</option>
+            <option value="first_general">{s.meetings.firstGeneral}</option>
             <option value="agm">{s.meetings.agm}</option>
             <option value="egm">{s.meetings.egm}</option>
             <option value="committee">{s.meetings.committeeType}</option>

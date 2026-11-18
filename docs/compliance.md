@@ -2,6 +2,8 @@
 
 Legal and privacy requirements for running a real meeting with condoVotes.
 Legal points here still need lawyer confirmation unless marked otherwise.
+All open questions for a lawyer are listed in
+[legal-questions.md](legal-questions.md).
 
 ## Electronic Meeting Decree (2020)
 Decision: [D018](decisions.md#d018---electronic-meeting-compliance-in-v1).
