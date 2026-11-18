@@ -38,8 +38,9 @@ const en = {
     "Meetings need English text, checked by an admin, before publishing. Results already generated keep their text.",
   projectNameEn: "Project name (English)",
   juristicNameEn: "Juristic person name (English)",
-  overviewTitle: "Meetings missing English",
+  overviewTitle: "Meetings missing English ({count})",
   overviewText: "Two-language documents are on. These meetings need English text or a check.",
+  overviewMore: "Show {count} more",
 };
 
 const th: typeof en = {
@@ -81,8 +82,9 @@ const th: typeof en = {
     "การประชุมต้องมีข้อความภาษาอังกฤษที่ผู้ดูแลตรวจแล้วก่อนเผยแพร่ ผลที่สร้างไว้แล้วคงข้อความเดิม",
   projectNameEn: "ชื่อโครงการ (ภาษาอังกฤษ)",
   juristicNameEn: "ชื่อนิติบุคคล (ภาษาอังกฤษ)",
-  overviewTitle: "การประชุมที่ยังขาดภาษาอังกฤษ",
+  overviewTitle: "การประชุมที่ยังขาดภาษาอังกฤษ ({count})",
   overviewText: "เปิดใช้เอกสารสองภาษาอยู่ การประชุมเหล่านี้ยังต้องกรอกหรือตรวจภาษาอังกฤษ",
+  overviewMore: "แสดงอีก {count} รายการ",
 };
 
 export const englishText = { en, th };
