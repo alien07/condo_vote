@@ -18,7 +18,7 @@ This folder contains the working specification for condoVotes.
 - [Demo manual steps](demo-manual-steps.md)
 - [Demo script (live test)](demo-script.md)
 - [Help and user guides plan](help-outline.md)
-- [SQL schema draft](schema-draft.sql)
+- [Schema reference](schema.md) (generated from the database types: every table, column, foreign key and database function)
 - [Security and privacy](security-privacy.md)
 - [Compliance](compliance.md)
 - [Operations](operations.md)

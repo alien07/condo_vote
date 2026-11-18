@@ -82,11 +82,11 @@ erDiagram
 | [audit_logs](#audit_logs) | Append-only business action records for traceability and troubleshooting. |
 | [email_logs](#email_logs) | Delivery log for invitations, reminders, and result notifications. |
 
-SQL draft: [schema-draft.sql](schema-draft.sql). This is not final and must be reviewed before migration.
+Every column, type and foreign key: [schema.md](schema.md) (generated from `lib/supabase/database.types.ts`; the migrations in `supabase/migrations/` are the source of truth).
 
 ## Table Notes
 
-This section explains table responsibilities at the domain level. Column types and migration details live in [schema-draft.sql](schema-draft.sql).
+This section explains table responsibilities at the domain level. Columns and types of each table: [schema.md](schema.md), under the same heading (for example [schema.md#owners](schema.md#owners)).
 
 ### rooms
 Purpose: Stores one condominium unit.
