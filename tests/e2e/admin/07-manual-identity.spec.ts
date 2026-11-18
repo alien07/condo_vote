@@ -203,7 +203,7 @@ test.describe("@test:e2e @test:auth @test:admin admin demo: manual vote identity
       .getByRole("heading", { name: "Pending manual vote identities" })
       .locator("xpath=ancestor::section[1]");
     const pendingRow = pendingPanel
-      .getByRole("row")
+      .locator("[data-pending-ballot-id]")
       .filter({ hasText: meetingTitle })
       .filter({ hasText: pendingIdentity });
 
@@ -214,7 +214,8 @@ test.describe("@test:e2e @test:auth @test:admin admin demo: manual vote identity
     await resolveDrawer.getByRole("button", { name: "Link profile" }).click();
     await confirmInApp(page);
 
-    await expect(pendingPanel.getByRole("row").filter({ hasText: meetingTitle })).toHaveCount(0);
+    await expect(page).toHaveURL(/focusManualBallotId=/);
+    await expect(pendingRow).toHaveCount(0);
 
     const { data: resolvedManualBallot, error: resolvedManualBallotError } =
       await supabase

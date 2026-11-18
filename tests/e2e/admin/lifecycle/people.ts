@@ -49,7 +49,7 @@ export async function people(page: Page, ctx: AfterMeetings) {
     .locator("xpath=ancestor::section[1]");
   await expect(
     pendingManualIdentitySection
-      .getByRole("row")
+      .locator("[data-pending-ballot-id]")
       .filter({ hasText: roomNumber })
       .filter({ hasText: manualAuditNote }),
   ).toBeVisible({ timeout: 15_000 });

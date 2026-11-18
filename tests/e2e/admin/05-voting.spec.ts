@@ -191,7 +191,7 @@ test.describe("@test:e2e @test:auth @test:admin admin demo: paper ballots and co
         )}&sort=meeting&dir=asc&perPage=25`,
       );
       const pendingRow = page
-        .getByRole("row")
+        .locator("[data-pending-ballot-id]")
         .filter({ hasText: meetingTitle })
         .filter({ hasText: pendingName });
 
@@ -214,7 +214,9 @@ test.describe("@test:e2e @test:auth @test:admin admin demo: paper ballots and co
       );
 
       await expect(resultRow).toBeVisible({ timeout: 15_000 });
-      await expect(resultRow).toContainText("linked");
+      // Words, not codes (2026-11-19).
+      await expect(resultRow).toContainText("Linked to a user");
+      await expect(resultRow).not.toContainText("manual_");
     } finally {
       if (manualBallotId) {
         await supabase.from("audit_logs").delete().eq("entity_id", manualBallotId);

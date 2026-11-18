@@ -154,9 +154,12 @@ export function ManualVoteRowFocus({
     }
 
     const frame = window.requestAnimationFrame(() => {
-      const row = document.querySelector<HTMLElement>(
-        `[data-manual-ballot-id="${escapeSelectorValue(manualBallotId)}"]`,
-      );
+      // The table row on wide screens, the card on phones: the visible one.
+      const row = Array.from(
+        document.querySelectorAll<HTMLElement>(
+          `[data-manual-ballot-id="${escapeSelectorValue(manualBallotId)}"]`,
+        ),
+      ).find((element) => element.getClientRects().length > 0);
 
       if (!row) {
         return;
