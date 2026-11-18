@@ -111,14 +111,14 @@ export async function getVotingAssignmentData(meetingId: string, roomId: string)
     supabase
       .from("meeting_questions")
       .select(
-        "id, meeting_id, agenda_no, agenda_title, agenda_title_en, question_text, question_text_en, question_type, max_choices, display_order, required, meeting_choices(id, choice_text, choice_text_en, display_order, is_abstain)",
+        "id, meeting_id, agenda_no, agenda_title, agenda_title_en, question_text, question_text_en, question_type, max_choices, display_order, required, allow_comment, meeting_choices(id, choice_text, choice_text_en, display_order, is_abstain)",
       )
       .eq("meeting_id", meetingId)
       .order("display_order", { ascending: true }),
     supabase
       .from("ballots")
       .select(
-        "id, meeting_id, room_id, status, submitted_at, version_number, ballot_answers(id, question_id, choice_id), ballot_versions(id, version_number, created_at, payload_json)",
+        "id, meeting_id, room_id, status, submitted_at, version_number, ballot_answers(id, question_id, choice_id), ballot_versions(id, version_number, created_at, payload_json), ballot_comments(question_id, comment)",
       )
       .eq("meeting_id", meetingId)
       .eq("room_id", roomId)

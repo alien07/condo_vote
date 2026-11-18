@@ -95,7 +95,7 @@ test.describe("@test:e2e @test:auth @test:admin admin demo: people", () => {
       page.getByRole("heading", { name: "Rooms", exact: true }),
     ).toBeVisible();
     await page.getByRole("link", { name: "Add room" }).click();
-    const addRoomDrawer = page.getByRole("complementary", { name: "Add room" });
+    const addRoomDrawer = page.getByRole("dialog", { name: "Add room" });
     await expect(addRoomDrawer).toBeVisible();
     await addRoomDrawer.getByRole("button", { name: "Create room" }).click();
     await expect(
@@ -129,7 +129,7 @@ test.describe("@test:e2e @test:auth @test:admin admin demo: people", () => {
 
     const pilotRoomRow = page.getByRole("row").filter({ hasText: pilotRoomNumber });
     await pilotRoomRow.getByRole("link", { name: "Edit" }).click();
-    const editRoomDrawer = page.getByRole("complementary", { name: "Edit room" });
+    const editRoomDrawer = page.getByRole("dialog", { name: "Edit room" });
     await expect(editRoomDrawer.getByText(`Room: ${pilotRoomNumber}`)).toBeVisible();
     await expect(pilotRoomRow).toHaveClass(/border-l-\[var\(--primary\)\]/);
     await editRoomDrawer.getByRole("link", { name: "Cancel" }).click();
@@ -140,7 +140,7 @@ test.describe("@test:e2e @test:auth @test:admin admin demo: people", () => {
     const profileRow = page.getByRole("row").filter({ hasText: demoAdminEmail });
     await profileRow.getByRole("link", { name: "Edit roles/status" }).click();
     await expect(
-      page.getByRole("complementary", { name: "Edit roles/status" }),
+      page.getByRole("dialog", { name: "Edit roles/status" }),
     ).toBeVisible();
     await page.getByLabel("Close drawer").click();
     await expect(page).toHaveURL(/tab=profiles/);
@@ -151,7 +151,7 @@ test.describe("@test:e2e @test:auth @test:admin admin demo: people", () => {
       page.getByRole("heading", { exact: true, name: "Owners" }),
     ).toBeVisible();
     await page.getByRole("link", { name: "Add owner" }).click();
-    const addOwnerMobileDrawer = page.getByRole("complementary", {
+    const addOwnerMobileDrawer = page.getByRole("dialog", {
       name: "Add owner",
     });
     await expect(addOwnerMobileDrawer).toBeVisible();

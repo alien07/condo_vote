@@ -127,7 +127,7 @@ test.describe("@test:e2e @test:auth @test:admin admin demo: communications and s
       waitUntil: "commit",
     });
 
-    const detailDrawer = page.getByRole("complementary", {
+    const detailDrawer = page.getByRole("dialog", {
       name: "Email log details",
     });
 

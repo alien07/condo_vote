@@ -82,8 +82,11 @@ features/admin/
    email) so the right one is picked. It submits through a hidden input,
    and its box has `data-focus-for` for "focus the first field with an
    error". In e2e use `chooseSearchOption` (tests/e2e/admin/admin-helpers.ts).
-   Done: new room-owner link form. Still plain `<select>`: proxies, paper
-   ballots, committee, owner account, documents, vote conflicts.
+   Use the shared builders `roomSearchOptions`, `ownerSearchOptions`,
+   `profileSearchOptions` and `invalidFieldElement` from the same file.
+   Done: room-owner link, proxies (room, owner, proxy holder), paper
+   ballots (room, voter), committee (person). Meeting pickers stay plain
+   `<select>` (short lists).
 
 ## Backlog
 Split on 2026-11-15 (no behaviour change; old import paths still work):

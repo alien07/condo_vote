@@ -90,7 +90,7 @@ test.describe("@test:e2e @test:auth @test:admin admin demo: committee and docume
         `${appUrl}/admin/setup?tab=committee&sort=name&dir=desc&perPage=25`,
       );
       await page.getByRole("link", { name: "Add committee member" }).click();
-      const addDrawer = page.getByRole("complementary", {
+      const addDrawer = page.getByRole("dialog", {
         name: "Add committee member",
       });
 
@@ -141,7 +141,7 @@ test.describe("@test:e2e @test:auth @test:admin admin demo: committee and docume
       );
 
       await memberRow.getByRole("link", { name: "Edit" }).click();
-      const editDrawer = page.getByRole("complementary", {
+      const editDrawer = page.getByRole("dialog", {
         name: "Edit committee member",
       });
 
@@ -266,7 +266,7 @@ test.describe("@test:e2e @test:auth @test:admin admin demo: committee and docume
         `${appUrl}/admin/documents?sort=set&dir=asc&perPage=25`,
       );
       await page.getByRole("link", { name: "Register document" }).click();
-      const drawer = page.getByRole("complementary", {
+      const drawer = page.getByRole("dialog", {
         name: "Register document",
       });
 

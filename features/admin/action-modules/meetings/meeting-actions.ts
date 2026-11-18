@@ -12,6 +12,7 @@ import {
   revalidateAdminPaths,
 } from "@/features/admin/action-modules/shared";
 import { writeAuditLog } from "@/lib/audit/business-audit";
+import { meetingReadiness, readinessMessage } from "@/features/admin/meeting-readiness";
 import {
   type MeetingActionState,
   meetingFormValues,
@@ -226,6 +227,29 @@ export async function publishMeeting(formData: FormData) {
 
   const meetingId = requiredText(formData.get("id"), "Meeting ID");
   const supabase = await createClient();
+
+  // Publishing locks the agenda (0039), so check it first (2026-11-18
+  // review): a draft, with agenda items that each have a real choice.
+  const { data: draft, error: draftError } = await supabase
+    .from("meetings")
+    .select("status, meeting_questions(agenda_no, question_text, meeting_choices(is_abstain))")
+    .eq("id", meetingId)
+    .single();
+
+  if (draftError) {
+    throw draftError;
+  }
+
+  const notReady =
+    draft.status !== "draft"
+      ? "Only a draft meeting can be published."
+      : readinessMessage(meetingReadiness(draft.meeting_questions ?? []));
+
+  if (notReady) {
+    redirect(
+      `/admin/meetings?tab=questions&meeting=${encodeURIComponent(meetingId)}&feedback=error&message=${encodeURIComponent(notReady)}`,
+    );
+  }
 
   // Two-language documents (item 6b): English must be filled in and checked
   // before publishing. Checked here, not when saving a draft.

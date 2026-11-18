@@ -78,3 +78,12 @@ and mapped to `ResultError` in `features/results/committee-service.ts`.
   redirect URIs. Use `127.0.0.1` for local laptop tests or a public HTTPS tunnel
   for mobile OAuth tests.
 - If OAuth config changes, restart local Supabase with the Google env loaded.
+
+## Agenda
+
+Raised by `guard_agenda_change()` in
+`supabase/migrations/0039_agenda_lock.sql`.
+
+| Code | Meaning | Common scenario |
+| --- | --- | --- |
+| `AGENDA_LOCKED` | Agenda items and choices change only while the meeting is a draft; after publishing only the English text may change. | An admin edits, adds or deletes an agenda item or choice of a published or closed meeting. |

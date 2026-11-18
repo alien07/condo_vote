@@ -21,29 +21,31 @@ export async function meetings(page: Page, ctx: AfterSetupPages) {
   await page.getByRole("link", { name: "Add meeting" }).click();
   const addMeetingDrawer = page.getByLabel("Add meeting");
   await addMeetingDrawer.locator('input[name="title"]').fill(meetingTitle);
-  await addMeetingDrawer.getByPlaceholder("Meeting no.").fill("AGM-2026-001");
-  await addMeetingDrawer.getByPlaceholder("Fiscal year").fill("2026");
-  await addMeetingDrawer.getByPlaceholder("Location / platform").fill("Online");
-  await addMeetingDrawer.getByPlaceholder("Chairperson").fill(committeeName);
+  await addMeetingDrawer.locator('input[name="meeting_number"]').fill("AGM-2026-001");
+  await addMeetingDrawer.locator('input[name="fiscal_year"]').fill("2026");
+  await addMeetingDrawer.getByLabel("Location / platform").fill("Online");
+  // Chairperson is a search box that also takes a typed name.
+  const chairBox = addMeetingDrawer.locator('[data-focus-for="chairperson_name"]');
+  await chairBox.click();
+  await chairBox.fill(committeeName);
+  await chairBox.press("Tab");
+  await expect(addMeetingDrawer.locator('input[name="chairperson_name"]')).toHaveValue(committeeName);
   await addMeetingDrawer.locator('input[name="starts_at"]').fill(startsAt);
   await addMeetingDrawer.locator('input[name="ends_at"]').fill(endsAt);
   await addMeetingDrawer.getByRole("button", { name: "Add meeting" }).click();
-  await page.waitForURL(/\/admin\/meetings\?[\s\S]*focusMeetingId=/, {
+  // A new meeting opens its agenda, the next step (2026-11-18 review).
+  await page.waitForURL(/\/admin\/meetings\?[\s\S]*tab=questions[\s\S]*meeting=/, {
     waitUntil: "domcontentloaded",
   });
-  await expect(page.getByRole("cell", { name: meetingTitle })).toBeVisible();
-  await page.goto(`${activeAppOrigin}/admin/meetings?tab=questions`);
 
   const questionsSection = page
     .getByRole("heading", { name: "Questions And Choices" })
     .locator("xpath=ancestor::section[1]");
   await questionsSection.getByRole("link", { name: "Add question" }).click();
   const addQuestionDrawer = page.getByLabel("Add question");
-  await addQuestionDrawer
-    .locator('select[name="meeting_id"]')
-    .selectOption({ label: meetingTitle });
-  await addQuestionDrawer.getByPlaceholder("Agenda no.").fill("1");
-  await addQuestionDrawer.getByPlaceholder("Agenda title").fill("Approve demo agenda");
+  await expect(addQuestionDrawer.locator("[data-fixed-meeting]")).toContainText(meetingTitle);
+  await addQuestionDrawer.getByLabel("Agenda no.").fill("1");
+  await addQuestionDrawer.getByLabel("Agenda title").fill("Approve demo agenda");
   await addQuestionDrawer.locator('input[name="question_text"]').fill(questionText);
   await addQuestionDrawer
     .locator('select[name="required_threshold"]')

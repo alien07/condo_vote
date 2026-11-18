@@ -82,6 +82,7 @@ export const THAI_RESOLUTION_TYPES: Record<string, string> = {
 };
 
 export const THAI_MEETING_TYPES: Record<string, string> = {
+  first_general: "การประชุมใหญ่ครั้งแรก",
   agm: "การประชุมใหญ่สามัญประจำปี",
   egm: "การประชุมใหญ่วิสามัญ",
   online_vote: "การลงมติออนไลน์",

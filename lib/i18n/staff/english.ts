@@ -41,6 +41,9 @@ const en = {
   overviewTitle: "Meetings missing English ({count})",
   overviewText: "Two-language documents are on. These meetings need English text or a check.",
   overviewMore: "Show {count} more",
+  nextStepTitle: "Saved. Next: English.",
+  nextStepText: "“{title}” needs English text, checked, before it can be published.",
+  nextStepButton: "Add English",
 };
 
 const th: typeof en = {
@@ -85,6 +88,9 @@ const th: typeof en = {
   overviewTitle: "การประชุมที่ยังขาดภาษาอังกฤษ ({count})",
   overviewText: "เปิดใช้เอกสารสองภาษาอยู่ การประชุมเหล่านี้ยังต้องกรอกหรือตรวจภาษาอังกฤษ",
   overviewMore: "แสดงอีก {count} รายการ",
+  nextStepTitle: "บันทึกแล้ว ต่อไปใส่ภาษาอังกฤษ",
+  nextStepText: "“{title}” ต้องมีข้อความภาษาอังกฤษที่ตรวจแล้ว จึงจะเผยแพร่ได้",
+  nextStepButton: "ใส่ภาษาอังกฤษ",
 };
 
 export const englishText = { en, th };

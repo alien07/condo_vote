@@ -102,7 +102,7 @@ test.describe("@test:e2e @test:auth @test:admin admin demo: meetings and questio
         `${appUrl}/admin/meetings?tab=meetings&sort=title&dir=desc&perPage=25`,
       );
       await page.getByRole("link", { name: "Add meeting" }).click();
-      const addDrawer = page.getByRole("complementary", {
+      const addDrawer = page.getByRole("dialog", {
         name: "Add meeting",
       });
 
@@ -128,38 +128,43 @@ test.describe("@test:e2e @test:auth @test:admin admin demo: meetings and questio
         .locator('input[name="ends_at"]')
         .fill(toDateTimeLocal(new Date(Date.now() + 3 * 60 * 60 * 1000)));
       await addDrawer.getByRole("button", { name: "Add meeting" }).click();
-      await page.waitForURL((url) => Boolean(url.searchParams.get("focusMeetingId")));
+      // A new meeting opens its agenda, the next step (2026-11-18 review).
+      await page.waitForURL(
+        (url) => url.searchParams.get("tab") === "questions" && Boolean(url.searchParams.get("meeting")),
+      );
 
-      const meetingId = new URL(page.url()).searchParams.get("focusMeetingId");
+      const meetingId = new URL(page.url()).searchParams.get("meeting");
 
       expect(meetingId).toBeTruthy();
-      await expect(page).toHaveURL(/sort=title/);
-      await expect(page).toHaveURL(/dir=desc/);
-      await expect(page).toHaveURL(/perPage=25/);
+      const steps = page.locator("[data-meeting-steps]");
 
+      await expect(steps.locator('[data-step="info"]')).toContainText(createdTitle);
+      await expect(steps.locator('[data-step="agenda"]')).toContainText("No agenda item yet");
+      await expect(steps.getByRole("button", { name: "Publish" })).toHaveCount(0);
+
+      const listUrl = `${appUrl}/admin/meetings?tab=meetings&sort=title&dir=desc&perPage=25&title=${encodeURIComponent(createdTitle)}`;
+
+      await page.goto(listUrl);
       const createdRow = page.locator(
         `tr[data-meeting-id="${meetingId}"]:visible`,
       );
 
       await expect(createdRow).toBeVisible();
-      await expect(createdRow).toHaveClass(/border-l-\[var\(--primary\)\]/);
-      await expect(
-        createdRow.getByRole("button", { name: "Publish" }),
-      ).toBeVisible();
+      // A draft shows its next step; publishing waits for an agenda.
+      await expect(createdRow.getByRole("link", { name: "Agenda (0)" })).toBeVisible();
+      await expect(createdRow.getByRole("button", { name: "Publish" })).toHaveCount(0);
+      await expect(createdRow.locator("[data-publish-blocked]")).toContainText("No agenda item yet");
+      await createdRow.getByText("More", { exact: true }).click();
       await expect(
         createdRow.getByRole("button", { name: "Archive" }),
       ).toBeVisible();
-      await page.waitForFunction(
-        (id) => document.activeElement?.getAttribute("data-meeting-id") === id,
-        meetingId,
-      );
 
       await createdRow.getByRole("link", { name: "Edit" }).click();
-      const editDrawer = page.getByRole("complementary", {
+      const editDrawer = page.getByRole("dialog", {
         name: "Edit meeting",
       });
 
-      await editDrawer.getByPlaceholder("Location / platform").fill("Updated");
+      await editDrawer.getByLabel("Location / platform").fill("Updated");
       await editDrawer.getByRole("button", { name: "Save meeting" }).click();
       await page.waitForURL(
         (url) =>
@@ -175,6 +180,13 @@ test.describe("@test:e2e @test:auth @test:admin admin demo: meetings and questio
         meetingId,
       );
 
+      // Esc closes the panel (2026-11-18 review).
+      await createdRow.getByText("More", { exact: true }).click();
+      await createdRow.getByRole("link", { name: "Edit" }).click();
+      await expect(editDrawer).toBeVisible();
+      await page.keyboard.press("Escape");
+      await expect(editDrawer).toHaveCount(0);
+
       await page.goto(
         `${appUrl}/admin/meetings?tab=meetings&title=${encodeURIComponent(
           publishedTitle,
@@ -188,6 +200,7 @@ test.describe("@test:e2e @test:auth @test:admin admin demo: meetings and questio
       await expect(
         publishedRow.getByRole("link", { name: "Edit" }),
       ).toHaveCount(0);
+      await publishedRow.getByText("More", { exact: true }).click();
       await expect(
         publishedRow.getByRole("button", { name: "Archive" }),
       ).toBeVisible();
@@ -287,29 +300,30 @@ test.describe("@test:e2e @test:auth @test:admin admin demo: meetings and questio
     expect(meetingError).toBeNull();
 
     try {
-      await page.goto(`${appUrl}/admin/meetings?tab=questions`);
+      await page.goto(`${appUrl}/admin/meetings?tab=questions&meeting=${meeting!.id}`);
       await page.getByRole("link", { name: "Add question" }).click();
-      const addDrawer = page.getByRole("complementary", {
+      const addDrawer = page.getByRole("dialog", {
         name: "Add question",
       });
 
+      // The agenda belongs to the meeting it was opened from.
+      await expect(addDrawer.locator("[data-fixed-meeting]")).toContainText(meetingTitle);
       await addDrawer.getByRole("button", { name: "Add question" }).click();
-      await expect(addDrawer.getByText("Meeting is required.")).toBeVisible();
       await expect(addDrawer.getByText("Question is required.")).toBeVisible();
-      await expect(addDrawer.locator('select[name="meeting_id"]')).toBeFocused();
+      await expect(addDrawer.locator('input[name="question_text"]')).toBeFocused();
 
+      // Fields that apply only to some choices stay hidden until then.
+      await expect(addDrawer.locator('input[name="max_choices"]')).toHaveCount(0);
+      await expect(addDrawer.locator("[data-custom-rule]")).toHaveCount(0);
+      await addDrawer.locator('select[name="question_type"]').selectOption("multiple_choice");
+      await expect(addDrawer.getByLabel("Max choices (multiple choice only)")).toBeVisible();
+      await addDrawer.locator('select[name="question_type"]').selectOption("single_choice");
+      await addDrawer.locator('select[name="required_threshold"]').selectOption("custom");
+      await expect(addDrawer.locator("[data-custom-rule]")).toBeVisible();
+      await addDrawer.locator('select[name="required_threshold"]').selectOption("majority_submitted");
+
+      await addDrawer.getByLabel("Agenda no.").fill("1");
       await addDrawer.locator('input[name="question_text"]').fill(questionText);
-      await addDrawer.getByRole("button", { name: "Add question" }).click();
-      await expect(addDrawer.getByText("Meeting is required.")).toBeVisible();
-      await expect(addDrawer.locator('input[name="question_text"]')).toHaveValue(
-        questionText,
-      );
-      await expect(addDrawer.locator('select[name="meeting_id"]')).toBeFocused();
-
-      await addDrawer
-        .locator('select[name="meeting_id"]')
-        .selectOption(meeting!.id);
-      await addDrawer.locator('input[name="display_order"]').fill("1");
       await addDrawer.getByRole("button", { name: "Add question" }).click();
       await page.waitForURL((url) => Boolean(url.searchParams.get("focusQuestionId")));
 
@@ -337,8 +351,47 @@ test.describe("@test:e2e @test:auth @test:admin admin demo: meetings and questio
         questionId,
       );
 
+      // Words, not codes, and a new item goes last (order 1 here).
+      await expect(questionCard.locator("[data-agenda-line]")).toHaveText(
+        "Agenda 1 · Single choice · Ordinary · More than 50% of voting ownership",
+      );
+      const { data: saved } = await supabase
+        .from("meeting_questions")
+        .select("display_order")
+        .eq("id", questionId!)
+        .single();
+
+      expect(saved?.display_order).toBe(1);
+      // Only Abstain so far: not ready to publish.
+      const agendaStep = page.locator('[data-meeting-steps] [data-step="agenda"]');
+
+      await expect(agendaStep).toContainText("No choices yet");
+      await questionCard.getByRole("textbox", { name: "New choice" }).fill("Approve");
+      await questionCard.getByRole("button", { name: "Add choice" }).click();
+      await expect(questionCard.locator("[data-choice-list] li").first()).toContainText("Approve");
+      await expect(agendaStep).toHaveAttribute("data-step-done", "true");
+
+      // Ballot preview: try it as an owner, nothing is saved (2026-11-18).
+      await page.getByRole("link", { name: "Preview ballot" }).click();
+      const preview = page.getByRole("dialog", { name: "Ballot preview" });
+
+      await expect(preview).toBeVisible();
+      await preview.getByRole("button", { name: "Submit ballot" }).click();
+      await expect(preview.getByText("Choose an answer for this question.")).toBeVisible();
+      await preview.getByLabel("Approve").check();
+      await preview.getByRole("button", { name: "Submit ballot" }).click();
+      await expect(preview.locator("[data-preview-done]")).toBeVisible();
+      const { count: ballotCount } = await supabase
+        .from("ballots")
+        .select("id", { count: "exact", head: true })
+        .eq("meeting_id", meeting!.id);
+
+      expect(ballotCount).toBe(0);
+      await page.keyboard.press("Escape");
+      await expect(preview).toHaveCount(0);
+
       await questionCard.getByRole("link", { name: "Edit" }).click();
-      const editDrawer = page.getByRole("complementary", {
+      const editDrawer = page.getByRole("dialog", {
         name: "Edit question",
       });
 
@@ -349,6 +402,11 @@ test.describe("@test:e2e @test:auth @test:admin admin demo: meetings and questio
       await editDrawer
         .locator('input[name="question_text"]')
         .fill(updatedQuestionText);
+      // Abstain is off until the item needs it (0041).
+      const hasAbstain = editDrawer.getByLabel("Has an Abstain choice");
+
+      await expect(hasAbstain).not.toBeChecked();
+      await hasAbstain.check();
       await editDrawer.getByRole("button", { name: "Save question" }).click();
       await page.waitForURL(
         (url) =>
@@ -363,6 +421,12 @@ test.describe("@test:e2e @test:auth @test:admin admin demo: meetings and questio
         (id) => document.activeElement?.getAttribute("data-question-id") === id,
         questionId,
       );
+      // Abstain is last, fixed, and cannot be edited.
+      const abstainRow = questionCard.locator("[data-abstain-row]");
+
+      await expect(abstainRow).toContainText("Abstain");
+      await expect(abstainRow).toContainText("Cannot be combined with other choices");
+      await expect(questionCard.locator("[data-choice-list] li").last()).toContainText("Abstain");
     } finally {
       await supabase.from("meeting_questions").delete().eq("meeting_id", meeting!.id);
       await supabase.from("meetings").delete().eq("id", meeting!.id);

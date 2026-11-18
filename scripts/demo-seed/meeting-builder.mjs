@@ -35,6 +35,8 @@ export const STANDARD_QUESTIONS = [
     question_type: "single_choice",
     required_threshold: "majority_submitted",
     choices: AGREE_DISAGREE,
+    // Voters may add a comment (0040).
+    allow_comment: true,
   },
   {
     agenda_no: "2",
@@ -110,7 +112,7 @@ export async function createMeeting(spec) {
   );
   meetingIds[spec.key] = meeting.id;
 
-  // Questions; a database trigger adds the Abstain choice to each.
+  // Questions, each with its choices and an Abstain choice (fixed text, 0041).
   const questions = [];
 
   for (const [index, question] of (spec.questions ?? STANDARD_QUESTIONS).entries()) {
@@ -134,6 +136,7 @@ export async function createMeeting(spec) {
           legal_note_en: en(question.legal_note),
           display_order: index + 1,
           required: true,
+          allow_comment: question.allow_comment ?? false,
         })
         .select("id, question_type, agenda_no")
         .single(),
@@ -141,12 +144,17 @@ export async function createMeeting(spec) {
     );
     await must(
       db.from("meeting_choices").insert(
-        question.choices.map((text, order) => ({
-          question_id: row.id,
-          choice_text: text,
-          choice_text_en: en(text),
-          display_order: order + 1,
-        })),
+        [
+          ...question.choices.map((text, order) => ({
+            question_id: row.id,
+            choice_text: text,
+            choice_text_en: en(text),
+            display_order: order + 1,
+            // A batch insert sends the same columns for every row.
+            is_abstain: false,
+          })),
+          { question_id: row.id, choice_text: "Abstain", choice_text_en: "Abstain", display_order: 999, is_abstain: true },
+        ],
       ),
       "choices",
     );

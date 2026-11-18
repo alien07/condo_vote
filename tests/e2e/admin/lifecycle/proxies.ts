@@ -2,7 +2,7 @@
 import type { Page } from "@playwright/test";
 import { expect } from "@playwright/test";
 import { confirmInApp } from "../../confirm-dialog";
-import { demoAdminEmail, demoAdminName, gotoWithRetry } from "../admin-helpers";
+import { chooseSearchOption, demoAdminEmail, gotoWithRetry } from "../admin-helpers";
 import type { AfterPeople } from "./people";
 
 export async function proxies(page: Page, ctx: AfterPeople) {
@@ -16,15 +16,9 @@ export async function proxies(page: Page, ctx: AfterPeople) {
   await addProxyDrawer
     .locator('select[name="meeting_id"]')
     .selectOption({ label: meetingTitle });
-  await addProxyDrawer.locator('select[name="room_id"]').selectOption({
-    label: roomNumber,
-  });
-  await addProxyDrawer
-    .locator('select[name="owner_id"]')
-    .selectOption({ label: ownerName });
-  await addProxyDrawer
-    .locator('select[name="proxy_profile_id"]')
-    .selectOption({ label: `${demoAdminName} (${demoAdminEmail})` });
+  await chooseSearchOption(addProxyDrawer, "room_id", roomNumber);
+  await chooseSearchOption(addProxyDrawer, "owner_id", ownerName);
+  await chooseSearchOption(addProxyDrawer, "proxy_profile_id", demoAdminEmail);
   await addProxyDrawer.getByRole("button", { name: "Add proxy authorization" }).click();
   await page.waitForTimeout(1_000);
   await gotoWithRetry(
@@ -43,7 +37,7 @@ export async function proxies(page: Page, ctx: AfterPeople) {
   await gotoWithRetry(page, new URL(proxyReviewHref ?? "", activeAppOrigin).toString(), {
     waitUntil: "commit",
   });
-  const reviewProxyDrawer = page.getByRole("complementary", {
+  const reviewProxyDrawer = page.getByRole("dialog", {
     name: "Review proxy authorization",
   });
   await expect(reviewProxyDrawer).toBeVisible({ timeout: 15_000 });

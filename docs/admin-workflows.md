@@ -62,8 +62,13 @@ These workflows define the admin-facing MVP behavior. Ask before implementing an
 - In `People > Edit roles/status`, admin sets a profile's language (Thai or English, D020). Owners can also change it with the language switch.
 - Admin can preview a meeting before publication.
 - Admin can publish a meeting when the setup is complete.
+- Setup order (2026-11-18 review): add the meeting, then its agenda opens. A draft meeting's agenda page shows the steps: details, agenda and choices, English (when documents are in two languages), check and publish.
+- The agenda form belongs to one draft meeting. Fields that apply only to some items (max choices, custom pass rule) appear only then. New agenda items and choices go last; order is under "More settings".
+- In the meeting list, a draft shows its next step (agenda, English, or Publish); other actions are under "More". Newest meetings come first.
 
 ## Publishing
+- Publish asks first, with the number of agenda items and the voting window.
+- Publish needs at least one agenda item, and every item needs a choice other than Abstain (`features/admin/meeting-readiness.ts`, checked again in `publishMeeting`). After publishing, agenda items and choices are locked (0039).
 - Publishing should freeze or refresh the meeting's `eligible_voters_snapshot`.
 - After publication, invitation emails can be queued for eligible voters.
 - Editing published meetings should be restricted. If allowed, it must be audited.

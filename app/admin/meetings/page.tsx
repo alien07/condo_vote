@@ -9,6 +9,7 @@ type AdminMeetingsPageProps = {
     focusMeetingId?: string;
     focusQuestionId?: string;
     id?: string;
+    meeting?: string;
     mode?: string;
     noType?: string;
     page?: string;
@@ -40,10 +41,11 @@ function getMeetingFilters(
     params.sort === "title" ||
     params.sort === "window"
       ? params.sort
-      : "title";
+      : undefined;
 
   return {
-    dir: params.dir === "desc" ? "desc" : "asc",
+    // No sort chosen: newest first (2026-11-18 review).
+    dir: params.dir === "desc" ? "desc" : params.dir === "asc" ? "asc" : undefined,
     noType: params.noType,
     page: positiveInteger(params.page, 1),
     perPage: positiveInteger(params.perPage, 25),
@@ -64,6 +66,7 @@ export default async function AdminMeetingsPage({
   return (
     <AdminWorkspace
       activeSection={params.tab}
+      agendaMeetingId={params.meeting}
       description={s.adminHome.pages.meetingsText}
       drawer={{
         id: params.id,

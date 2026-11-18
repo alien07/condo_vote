@@ -239,6 +239,55 @@ export type Database = {
           },
         ]
       }
+      ballot_comments: {
+        Row: {
+          ballot_id: string
+          comment: string
+          created_at: string
+          id: string
+          meeting_id: string
+          question_id: string
+        }
+        Insert: {
+          ballot_id: string
+          comment: string
+          created_at?: string
+          id?: string
+          meeting_id: string
+          question_id: string
+        }
+        Update: {
+          ballot_id?: string
+          comment?: string
+          created_at?: string
+          id?: string
+          meeting_id?: string
+          question_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ballot_comments_ballot_id_fkey"
+            columns: ["ballot_id"]
+            isOneToOne: false
+            referencedRelation: "ballots"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ballot_comments_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ballot_comments_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "meeting_questions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ballot_versions: {
         Row: {
           ballot_id: string
@@ -993,6 +1042,7 @@ export type Database = {
           agenda_no: string | null
           agenda_title: string | null
           agenda_title_en: string | null
+          allow_comment: boolean
           created_at: string
           display_order: number
           id: string
@@ -1015,6 +1065,7 @@ export type Database = {
           agenda_no?: string | null
           agenda_title?: string | null
           agenda_title_en?: string | null
+          allow_comment?: boolean
           created_at?: string
           display_order?: number
           id?: string
@@ -1037,6 +1088,7 @@ export type Database = {
           agenda_no?: string | null
           agenda_title?: string | null
           agenda_title_en?: string | null
+          allow_comment?: boolean
           created_at?: string
           display_order?: number
           id?: string
@@ -1878,6 +1930,14 @@ export type Database = {
       is_office_staff: { Args: never; Returns: boolean }
       link_my_owner_record: { Args: never; Returns: string }
       mask_email: { Args: { p_email: string }; Returns: string }
+      meeting_comments: {
+        Args: { p_meeting_id: string }
+        Returns: {
+          choice_texts: string[]
+          comment: string
+          question_id: string
+        }[]
+      }
       meeting_early_close: { Args: { p_meeting_id: string }; Returns: string }
       meeting_online_tally: {
         Args: { p_meeting_id: string }

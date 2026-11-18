@@ -1,7 +1,5 @@
-import {
-  BallotChoiceInputs,
-  selectedChoicesByQuestion,
-} from "@/features/voting/components/ballot-choice-inputs";
+import { selectedChoicesByQuestion } from "@/features/voting/components/ballot-choice-inputs";
+import { BallotQuestion } from "@/features/voting/components/ballot-question";
 import { notFound } from "next/navigation";
 import { Vote } from "lucide-react";
 import { choiceLabel } from "@/lib/i18n/choice";
@@ -159,55 +157,14 @@ export default async function VoteDetailPage({ params }: VoteDetailPageProps) {
               <input name="meeting_id" type="hidden" value={eligible.meeting_id} />
               <input name="room_id" type="hidden" value={eligible.room_id} />
               {questions.map((question) => (
-                <fieldset
-                  aria-describedby={`question-error-${question.id}`}
-                  className="scroll-mt-28 rounded-md border border-[var(--border)] p-4 aria-[invalid=true]:border-2 aria-[invalid=true]:border-[var(--danger)] aria-[invalid=true]:bg-[var(--danger-surface)]"
-                  data-required={question.required ? "true" : "false"}
+                <BallotQuestion
+                  comment={ballot?.ballot_comments?.find((row) => row.question_id === question.id)?.comment ?? ""}
+                  disabled={!votingStatus.canSubmit}
                   key={question.id}
-                >
-                  {/* Floated legend sits inside the card instead of on its
-                      border, so long questions wrap cleanly. */}
-                  <legend className="float-left w-full">
-                    {question.agenda_no || question.agenda_title ? (
-                      <span className="block text-xs font-medium text-[var(--muted)]">
-                        {[
-                          question.agenda_no ? t.agenda(question.agenda_no) : null,
-                          localized(locale, question.agenda_title, question.agenda_title_en),
-                        ]
-                          .filter(Boolean)
-                          .join(" · ")}
-                      </span>
-                    ) : null}
-                    <span className="mt-1 block text-base font-semibold">
-                      {localized(locale, question.question_text, question.question_text_en)}
-                      {question.required ? (
-                        <>
-                          {" "}
-                          <RequiredMark />
-                        </>
-                      ) : null}
-                    </span>
-                  </legend>
-                  <p
-                    className="clear-both pt-2 text-sm font-medium text-[var(--danger)]"
-                    data-question-error
-                    hidden
-                    id={`question-error-${question.id}`}
-                    role="alert"
-                  >
-                    {t.chooseAnswer}
-                  </p>
-                  <div className="clear-both" />
-                  <BallotChoiceInputs
-                    choices={question.meeting_choices}
-                    disabled={!votingStatus.canSubmit}
-                    locale={locale}
-                    question={question}
-                    selectedChoiceIds={
-                      answerByQuestion.get(question.id) ?? new Set<string>()
-                    }
-                  />
-                </fieldset>
+                  locale={locale}
+                  question={question}
+                  selectedChoiceIds={answerByQuestion.get(question.id) ?? new Set<string>()}
+                />
               ))}
               <p className="text-sm text-[var(--muted)]">
                 {t.canChange}

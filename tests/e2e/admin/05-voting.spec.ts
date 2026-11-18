@@ -3,6 +3,7 @@ import { confirmInApp } from "../confirm-dialog";
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/database.types";
 import {
+  chooseSearchOption,
   demoAdminEmail,
   demoAdminName,
   appUrl,
@@ -167,7 +168,7 @@ test.describe("@test:e2e @test:auth @test:admin admin demo: paper ballots and co
         )}&sort=meeting&dir=asc&perPage=25`,
       );
       await page.getByRole("link", { name: "Import manual vote" }).click();
-      const importDrawer = page.getByRole("complementary", {
+      const importDrawer = page.getByRole("dialog", {
         name: "Import manual vote",
       });
 
@@ -179,9 +180,7 @@ test.describe("@test:e2e @test:auth @test:admin admin demo: paper ballots and co
       await importDrawer
         .locator('select[name="meeting_id"]')
         .selectOption({ label: meetingTitle });
-      await importDrawer
-        .locator('select[name="room_id"]')
-        .selectOption({ label: roomNumber });
+      await chooseSearchOption(importDrawer, "room_id", roomNumber);
       await importDrawer.locator('input[name="voter_identity_text"]').fill(pendingName);
       await importDrawer.getByRole("button", { name: "Continue to vote form" }).click();
       await expect(page).toHaveURL(/\/admin\/voting\/manual\//);
@@ -197,18 +196,16 @@ test.describe("@test:e2e @test:auth @test:admin admin demo: paper ballots and co
         .filter({ hasText: pendingName });
 
       await pendingRow.getByRole("link", { name: "Link profile" }).click();
-      const resolveDrawer = page.getByRole("complementary", {
+      const resolveDrawer = page.getByRole("dialog", {
         name: "Resolve manual vote identity",
       });
 
       await resolveDrawer.getByRole("button", { name: "Link profile" }).click();
       await confirmInApp(page);
       await expect(resolveDrawer.getByText("Voter profile is required.")).toBeVisible();
-      await expect(resolveDrawer.locator('select[name="voter_profile_id"]')).toBeFocused();
+      await expect(resolveDrawer.locator('[data-focus-for="voter_profile_id"]')).toBeFocused();
 
-      await resolveDrawer
-        .locator('select[name="voter_profile_id"]')
-        .selectOption({ label: `${demoAdminName} (${demoAdminEmail})` });
+      await chooseSearchOption(resolveDrawer, "voter_profile_id", demoAdminEmail);
       await resolveDrawer.getByRole("button", { name: "Link profile" }).click();
       await confirmInApp(page);
 

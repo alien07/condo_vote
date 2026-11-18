@@ -79,6 +79,11 @@ export function validateMeetingForm(
     fieldErrors.required_approvals = "Committee approvals must be a whole number from 1 to 20.";
   }
 
+  // Fiscal year is a 4-digit year, for example 2569 (2026-11-18).
+  if (values.fiscal_year && !/^\d{4}$/.test(values.fiscal_year.trim())) {
+    fieldErrors.fiscal_year = "Fiscal year must be a 4-digit year, for example 2569.";
+  }
+
   if (values.ballot_secrecy && !["open", "secret"].includes(values.ballot_secrecy)) {
     fieldErrors.ballot_secrecy = "Choose open or secret ballot.";
   }
@@ -188,6 +193,8 @@ export const questionFormFields = [
   "display_order",
   "required",
   "requires_land_office_registration",
+  "allow_comment",
+  "has_abstain",
   "legal_note",
 ];
 
@@ -223,10 +230,11 @@ export function validateQuestionForm(
     }
   }
 
-  const displayOrder = Number(values.display_order || 0);
+  // Order starts at 1; empty means "last" (2026-11-18).
+  const displayOrder = Number(values.display_order || 1);
 
-  if (!Number.isInteger(displayOrder) || displayOrder < 0) {
-    fieldErrors.display_order = "Order must be a whole number of 0 or greater.";
+  if (!Number.isInteger(displayOrder) || displayOrder < 1) {
+    fieldErrors.display_order = "Order must be a whole number of 1 or greater.";
   }
 
   if (values.required_threshold === "custom") {
@@ -315,7 +323,9 @@ export function questionPayload(values: Record<string, string>) {
     requires_land_office_registration:
       values.requires_land_office_registration === "on",
     legal_note: optionalText(values.legal_note),
-    display_order: Number(values.display_order || 0),
+    display_order: Number(values.display_order || 1),
     required: values.required === "on",
+    // Voters may add a comment (0040).
+    allow_comment: values.allow_comment === "on",
   };
 }

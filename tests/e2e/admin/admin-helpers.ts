@@ -91,11 +91,17 @@ export async function findUserByEmail(
   }
 }
 
-/** Picks a row in a SearchSelect (type-to-search box) by its exact label. */
-export async function chooseSearchOption(scope: Locator, name: string, label: string) {
+/**
+ * Picks a row in a SearchSelect (type-to-search box): types `text`, then
+ * clicks the row whose label is exactly `text`, or the first row (use an
+ * email, which is unique, to pick a person).
+ */
+export async function chooseSearchOption(scope: Locator, name: string, text: string) {
   const box = scope.locator(`[data-focus-for="${name}"]`);
   await box.click();
-  await box.fill(label);
-  await scope.locator(`[role="option"][data-label=${JSON.stringify(label)}]`).first().click();
+  await box.fill(text);
+  await expect(scope.locator('[role="option"]').first()).toBeVisible();
+  const exact = scope.locator(`[role="option"][data-label=${JSON.stringify(text)}]`);
+  await ((await exact.count()) > 0 ? exact.first() : scope.locator('[role="option"]').first()).click();
   await expect(scope.locator(`input[type="hidden"][name="${name}"]`)).not.toHaveValue("");
 }

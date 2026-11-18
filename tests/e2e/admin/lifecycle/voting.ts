@@ -2,6 +2,7 @@
 import type { Page } from "@playwright/test";
 import { expect } from "@playwright/test";
 import type { AfterProxies } from "./proxies";
+import { confirmInApp } from "../../confirm-dialog";
 
 export async function voting(page: Page, ctx: AfterProxies) {
   const {
@@ -20,6 +21,8 @@ export async function voting(page: Page, ctx: AfterProxies) {
   );
   const meetingRow = page.getByRole("row").filter({ hasText: meetingTitle });
   await meetingRow.getByRole("button", { name: "Publish" }).click();
+  // Publishing locks the agenda, so it asks first (2026-11-18 review).
+  await confirmInApp(page, "1 agenda item");
   await expect(
     meetingRow.getByRole("cell", { name: "published", exact: true }),
   ).toBeVisible();

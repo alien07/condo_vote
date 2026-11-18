@@ -185,6 +185,11 @@ Status: implemented (migration 0021)
 - Every question gets an "Abstain" choice by default. Admin can remove it
   while setting up choices. The choice carries an abstain flag so results
   can count it as its own group.
+- Changed 2026-11-18 (migration 0041): Abstain is a fixed choice. An agenda
+  item has it only when the admin ticks "Has an Abstain choice" (off by
+  default; some items do not need it). Its text is always "Abstain"
+  ("งดออกเสียง" in Thai) and it is always last; the app cannot rename it.
+  Renamed Abstain choices got the fixed text back.
 - Multiple choice questions can set `max_choices`. Abstain cannot be
   combined with other choices. Questions of draft meetings got the default
   Abstain choice when this shipped; published meetings were not changed.

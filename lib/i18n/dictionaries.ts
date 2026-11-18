@@ -131,6 +131,8 @@ const en = {
     noQuestions: "No voting questions are configured for this meeting.",
     agenda: (no: string) => `Agenda ${no}`,
     chooseAnswer: "Choose an answer for this question.",
+    commentLabel: "Comment (optional)",
+    commentHelp: "The office and the committee read this without your room or name.",
     canChange:
       "You can change your ballot until voting closes. The last ballot you submit is the one that counts.",
     submit: "Submit ballot",
@@ -379,6 +381,8 @@ const th: Dictionary = {
     noQuestions: "การประชุมนี้ยังไม่มีวาระให้ลงคะแนน",
     agenda: (no: string) => `วาระที่ ${no}`,
     chooseAnswer: "โปรดเลือกคำตอบของวาระนี้",
+    commentLabel: "ความเห็นเพิ่มเติม (ไม่บังคับ)",
+    commentHelp: "นิติบุคคลและกรรมการเห็นข้อความนี้ โดยไม่ระบุห้องหรือชื่อของท่าน",
     canChange: "ท่านแก้ไขคะแนนได้จนกว่าจะปิดลงคะแนน ระบบนับบัตรที่ส่งครั้งสุดท้าย",
     submit: "ส่งบัตรลงคะแนน",
     update: "แก้ไขบัตรลงคะแนน",

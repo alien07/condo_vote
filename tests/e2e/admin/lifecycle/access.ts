@@ -66,7 +66,7 @@ export async function access(page: Page, ctx: AfterFixtures) {
     demoAdminRow.getByRole("cell", { name: "approved", exact: true }),
   ).toBeVisible();
   await demoAdminRow.getByRole("link", { name: "Edit roles/status" }).click();
-  const profileAccessDrawer = page.getByRole("complementary", {
+  const profileAccessDrawer = page.getByRole("dialog", {
     name: "Edit roles/status",
   });
   await profileAccessDrawer.locator('select[name="role"]').selectOption("committee");

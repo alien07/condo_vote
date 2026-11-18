@@ -18,6 +18,42 @@ import {
   questionPassRule,
 } from "@/features/admin/action-modules/meetings/helpers";
 
+type ServerClient = Awaited<ReturnType<typeof createClient>>;
+
+/** Adds or removes the agenda item's Abstain choice (0041). Its text and
+ * place are fixed by the database. */
+async function setAbstain(supabase: ServerClient, questionId: string, wanted: boolean) {
+  const { data: existing, error: readError } = await supabase
+    .from("meeting_choices")
+    .select("id")
+    .eq("question_id", questionId)
+    .eq("is_abstain", true)
+    .maybeSingle();
+
+  if (readError) {
+    return readError.message;
+  }
+
+  if (wanted && !existing) {
+    const { error } = await supabase.from("meeting_choices").insert({
+      question_id: questionId,
+      choice_text: "Abstain",
+      display_order: 999,
+      is_abstain: true,
+    });
+
+    return error?.message ?? null;
+  }
+
+  if (!wanted && existing) {
+    const { error } = await supabase.from("meeting_choices").delete().eq("id", existing.id);
+
+    return error?.message ?? null;
+  }
+
+  return null;
+}
+
 export async function createMeetingQuestionWithState(
   _state: QuestionActionState,
   formData: FormData,
@@ -36,14 +72,35 @@ export async function createMeetingQuestionWithState(
     }
 
     const supabase = await createClient();
+    // No order given: put the new item last (2026-11-18 review).
+    const payload = questionPayload(values);
+
+    if (!values.display_order.trim()) {
+      const { data: last } = await supabase
+        .from("meeting_questions")
+        .select("display_order")
+        .eq("meeting_id", payload.meeting_id)
+        .order("display_order", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      payload.display_order = (last?.display_order ?? 0) + 1;
+    }
+
     const { data, error } = await supabase
       .from("meeting_questions")
-      .insert(questionPayload(values))
+      .insert(payload)
       .select("id")
       .single();
 
     if (error) {
       return { error: error.message, values };
+    }
+
+    const abstainError = await setAbstain(supabase, data.id, values.has_abstain === "on");
+
+    if (abstainError) {
+      return { error: abstainError, values };
     }
 
     revalidateAdminPaths();
@@ -87,6 +144,12 @@ export async function updateMeetingQuestionWithState(
 
     if (error) {
       return { error: error.message, values };
+    }
+
+    const abstainError = await setAbstain(supabase, data.id, values.has_abstain === "on");
+
+    if (abstainError) {
+      return { error: abstainError, values };
     }
 
     revalidateAdminPaths();
@@ -161,11 +224,53 @@ export async function createMeetingChoice(formData: FormData) {
   await requireAdmin();
 
   const supabase = await createClient();
+  const questionId = requiredText(formData.get("question_id"), "Question");
+  const choiceText = requiredText(formData.get("choice_text"), "Choice");
+  const givenOrder = String(formData.get("display_order") ?? "").trim();
+  let displayOrder = Number(givenOrder || 0);
+
+  // No order given: after the other choices, before the default Abstain
+  // (order 999) (2026-11-18 review).
+  if (!givenOrder) {
+    const { data: last } = await supabase
+      .from("meeting_choices")
+      .select("display_order")
+      .eq("question_id", questionId)
+      .eq("is_abstain", false)
+      .order("display_order", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    displayOrder = (last?.display_order ?? 0) + 1;
+  }
+
   const { error } = await supabase.from("meeting_choices").insert({
-    question_id: requiredText(formData.get("question_id"), "Question"),
-    choice_text: requiredText(formData.get("choice_text"), "Choice"),
-    display_order: Number(formData.get("display_order") ?? 0),
+    question_id: questionId,
+    choice_text: choiceText,
+    display_order: displayOrder,
   });
+
+  if (error) {
+    throw error;
+  }
+
+  revalidateAdminPaths();
+}
+
+/** Edits a choice's text and order (2026-11-18). Draft meetings only:
+ * the database refuses others (0039, AGENDA_LOCKED). */
+export async function updateMeetingChoice(formData: FormData) {
+  await requireAdmin();
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("meeting_choices")
+    .update({
+      choice_text: requiredText(formData.get("choice_text"), "Choice"),
+      // Order starts at 1 (2026-11-18).
+      display_order: Math.max(1, Math.trunc(Number(formData.get("display_order") ?? 1)) || 1),
+    })
+    .eq("id", requiredText(formData.get("id"), "Choice ID"));
 
   if (error) {
     throw error;

@@ -98,6 +98,7 @@ const EXACT: Record<string, string> = {
   "Choose at least one person who signs the record.": "เลือกผู้ลงนามอย่างน้อยหนึ่งคน",
   "Choose open or secret ballot.": "เลือกลงคะแนนเปิดเผยหรือลงคะแนนลับ",
   "Committee approvals must be a whole number from 1 to 20.": "จำนวนกรรมการที่ต้องอนุมัติต้องเป็นจำนวนเต็ม 1 ถึง 20",
+  "Fiscal year must be a 4-digit year, for example 2569.": "ปีบัญชีต้องเป็นปี 4 หลัก เช่น 2569",
   "Committee member added": "เพิ่มกรรมการแล้ว",
   "Committee member updated": "แก้ไขกรรมการแล้ว",
   "Conflict resolved": "บันทึกแหล่งที่เลือกแล้ว",
@@ -151,7 +152,7 @@ const EXACT: Record<string, string> = {
   "Only a system admin can grant the System admin role.": "เฉพาะผู้ดูแลระบบเท่านั้นที่ให้สิทธิ์ผู้ดูแลระบบได้",
   "Only draft meetings can be edited.": "แก้ไขได้เฉพาะการประชุมที่เป็นร่าง",
   "Only scheduled ownership links can be cancelled.": "ยกเลิกได้เฉพาะการผูกที่รอเริ่ม",
-  "Order must be a whole number of 0 or greater.": "ลำดับต้องเป็นจำนวนเต็มตั้งแต่ 0",
+  "Order must be a whole number of 1 or greater.": "ลำดับต้องเป็นจำนวนเต็มตั้งแต่ 1",
   "Owner UUID must be a valid UUID.": "รหัส (UUID) ไม่ถูกต้อง",
   "Owners import completed.": "นำเข้าเจ้าของเสร็จแล้ว",
   "Ownership dates updated.": "แก้ไขวันที่กรรมสิทธิ์แล้ว",
@@ -186,6 +187,14 @@ const EXACT: Record<string, string> = {
   "Voting is still open. Results can be generated after the end time or after the committee approves closing voting.":
     "ยังเปิดลงคะแนนอยู่ สร้างผลได้หลังเวลาปิด หรือหลังกรรมการอนุมัติปิดลงคะแนน",
   "Please fix 1 field before saving.": "โปรดแก้ไข 1 ช่องก่อนบันทึก",
+  "AGENDA_LOCKED: Agenda items and choices can only change while the meeting is a draft.":
+    "แก้วาระและตัวเลือกได้เฉพาะตอนที่การประชุมยังเป็นร่าง",
+  "Add at least one agenda item before publishing.": "เพิ่มวาระอย่างน้อย 1 วาระก่อนเผยแพร่",
+  "Every agenda item needs a choice other than Abstain before publishing.":
+    "ทุกวาระต้องมีตัวเลือกอย่างน้อย 1 ข้อ (ไม่นับงดออกเสียง) ก่อนเผยแพร่",
+  "Only a draft meeting can be published.": "เผยแพร่ได้เฉพาะการประชุมที่เป็นร่าง",
+  "ABSTAIN_FIXED: The Abstain choice cannot be changed. Turn it on or off on the agenda item.":
+    "แก้ตัวเลือกงดออกเสียงไม่ได้ เปิดหรือปิดได้ที่การแก้ไขวาระ",
 };
 
 const PATTERNS: [RegExp, (m: RegExpMatchArray) => string][] = [

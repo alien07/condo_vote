@@ -1,4 +1,4 @@
--- Database tests for multiple choice and the default Abstain choice (D017).
+-- Database tests for multiple choice and the Abstain choice (D017, 0041).
 begin;
 create extension if not exists pgtap with schema extensions;
 select plan(7);
@@ -18,12 +18,15 @@ insert into public.meeting_questions (id, meeting_id, question_text, question_ty
 values (:q_multi, :meeting, 'Pick projects', 'multiple_choice', true, 2, 1);
 insert into public.meeting_choices (question_id, choice_text, display_order)
 select :q_multi, 'Project ' || n, n from generate_series(1, 3) as n;
+-- Abstain is added when the agenda item has it (0041).
+insert into public.meeting_choices (question_id, choice_text, display_order, is_abstain)
+values (:q_multi, 'Abstain', 999, true);
 insert into public.eligible_voters_snapshot (meeting_id, room_id, profile_id, voter_type, ownership_percent, source)
 values (:meeting, :room, :voter, 'owner', 10, 'owner_master');
 
 select is(
   (select count(*)::int from public.meeting_choices where question_id = :q_multi and is_abstain),
-  1, 'a new question gets one Abstain choice');
+  1, 'the agenda item has one Abstain choice');
 
 select throws_ok(
   format($q$insert into public.meeting_choices (question_id, choice_text, display_order, is_abstain) values (%L, 'Abstain 2', 5, true)$q$, :q_multi),
