@@ -15,7 +15,7 @@ const en = {
   eligibleOnly: "Eligible voters only",
   allActive: "All active recipients, policy checked",
   queueing: "Queueing...",
-  queueGroup: "Queue group email",
+  queueGroup: "Send invitations to the group",
   filter: "Filter email logs by recipient, status, and created date.",
   recipient: "Recipient",
   searchEmail: "Search email",
@@ -39,6 +39,14 @@ const en = {
   providerId: "Provider message ID",
   preview: "Content preview",
   placeholders: "Placeholders in braces are filled in when the email is sent.",
+  notSentYet:
+    "Emails are not sent yet: every email waits in the queue until sending is set up (Google SMTP).",
+  templateKey: "Template code",
+  countQueued: "Queued {count}",
+  countSending: "Sending {count}",
+  countSent: "Sent {count}",
+  countFailed: "Failed {count}",
+  countPermanentFailed: "Permanent failed {count}",
 };
 
 const th: typeof en = {
@@ -57,7 +65,7 @@ const th: typeof en = {
   eligibleOnly: "เฉพาะผู้มีสิทธิ์ลงคะแนน",
   allActive: "ผู้รับที่ใช้งานทั้งหมด ตามเงื่อนไขที่ตั้งไว้",
   queueing: "กำลังเข้าคิว...",
-  queueGroup: "เข้าคิวอีเมลกลุ่ม",
+  queueGroup: "ส่งคำเชิญให้ทั้งกลุ่ม",
   filter: "ค้นหาบันทึกอีเมลตามผู้รับ สถานะ และวันที่สร้าง",
   recipient: "ผู้รับ",
   searchEmail: "ค้นหาอีเมล",
@@ -81,6 +89,14 @@ const th: typeof en = {
   providerId: "รหัสข้อความจากผู้ให้บริการ",
   preview: "ตัวอย่างเนื้อหา",
   placeholders: "ข้อความในวงเล็บปีกกาจะถูกแทนที่ตอนส่งอีเมล",
+  notSentYet:
+    "ระบบยังไม่ได้ส่งอีเมลจริง อีเมลทุกฉบับรออยู่ในคิวจนกว่าจะตั้งค่าการส่ง (Google SMTP)",
+  templateKey: "รหัสแม่แบบ",
+  countQueued: "อยู่ในคิว {count}",
+  countSending: "กำลังส่ง {count}",
+  countSent: "ส่งแล้ว {count}",
+  countFailed: "ไม่สำเร็จ {count}",
+  countPermanentFailed: "ไม่สำเร็จถาวร {count}",
 };
 
 export const communicationsText = { en, th };

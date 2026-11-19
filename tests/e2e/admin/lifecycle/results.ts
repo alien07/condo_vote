@@ -268,7 +268,10 @@ export async function results(page: Page, ctx: AfterIdentityConflicts) {
   await expect(
     page.getByRole("heading", { name: "Communications" }),
   ).toBeVisible();
-  await expect(page.getByText(/result_approved:/).first()).toBeVisible();
+  // Emails are named in words (2026-11-19), not "result_approved:<id>".
+  await expect(
+    page.locator("tr[data-email-log-id]").getByText(`Voting results: ${meetingTitle}`).first(),
+  ).toBeVisible();
 }
 
 export type AfterResults = AfterIdentityConflicts;

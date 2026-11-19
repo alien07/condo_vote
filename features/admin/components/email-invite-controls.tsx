@@ -44,10 +44,12 @@ function MeetingSelect({ meetingOptions }: EmailInviteControlsProps) {
   const { s } = useStaffText();
 
   return (
-    <label className="grid gap-1 text-sm font-medium">
+    <label className="grid min-w-0 gap-1 text-sm font-medium">
       <FieldLabel required>{s.communications.meeting}</FieldLabel>
+      {/* w-full min-w-0: a long meeting name must not widen the form past
+          its card (2026-11-19 review). */}
       <select
-        className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+        className="w-full min-w-0 rounded-md border border-[var(--border)] px-3 py-2 text-sm"
         name="meeting_id"
         required
       >
@@ -80,19 +82,20 @@ export function EmailInviteControls({ meetingOptions }: EmailInviteControlsProps
   );
 
   return (
-    <div className="mb-5 grid gap-4 lg:grid-cols-2">
-      <section className="rounded-md border border-[var(--border)] p-4">
+    <div className="mb-5 grid gap-3">
+    <RequiredNote />
+    <div className="grid gap-4 lg:grid-cols-2">
+      <section className="min-w-0 rounded-md border border-[var(--border)] p-4">
         <div className="mb-3 flex items-center gap-2">
           <Mail className="text-[var(--primary)]" size={18} />
           <h3 className="font-semibold">{s.communications.resendOne}</h3>
         </div>
         <form action={singleAction} className="grid gap-3">
-          <RequiredNote />
           <MeetingSelect meetingOptions={meetingOptions} />
           <label className="grid gap-1 text-sm font-medium">
             <FieldLabel required>{s.communications.recipientEmail}</FieldLabel>
             <input
-              className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+              className="w-full min-w-0 rounded-md border border-[var(--border)] px-3 py-2 text-sm"
               name="email"
               placeholder="recipient@example.com"
               required
@@ -112,18 +115,17 @@ export function EmailInviteControls({ meetingOptions }: EmailInviteControlsProps
         <StatusMessage state={singleState} />
       </section>
 
-      <section className="rounded-md border border-[var(--border)] p-4">
+      <section className="min-w-0 rounded-md border border-[var(--border)] p-4">
         <div className="mb-3 flex items-center gap-2">
           <Mail className="text-[var(--primary)]" size={18} />
           <h3 className="font-semibold">{s.communications.group}</h3>
         </div>
         <form action={groupAction} className="grid gap-3">
-          <RequiredNote />
           <MeetingSelect meetingOptions={meetingOptions} />
           <label className="grid gap-1 text-sm font-medium">
             <FieldLabel required>{s.communications.policy}</FieldLabel>
             <select
-              className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+              className="w-full min-w-0 rounded-md border border-[var(--border)] px-3 py-2 text-sm"
               defaultValue="eligible"
               name="group_mode"
               required
@@ -146,6 +148,7 @@ export function EmailInviteControls({ meetingOptions }: EmailInviteControlsProps
         </form>
         <StatusMessage state={groupState} />
       </section>
+    </div>
     </div>
   );
 }

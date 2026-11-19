@@ -24,6 +24,8 @@ type EmailLogDetailDrawerProps = {
   createdLabel: string;
   log: EmailLog;
   sentLabel: string;
+  /** The email in words (emailTemplateLabel). */
+  templateLabel: string;
 };
 
 function escapeSelectorValue(value: string) {
@@ -41,9 +43,12 @@ export function EmailLogRowFocus({ logId }: { logId?: string | null }) {
     }
 
     const frame = window.requestAnimationFrame(() => {
-      const row = document.querySelector<HTMLElement>(
-        `[data-email-log-id="${escapeSelectorValue(logId)}"]`,
-      );
+      // The table row on wide screens, the card on phones: the visible one.
+      const row = Array.from(
+        document.querySelectorAll<HTMLElement>(
+          `[data-email-log-id="${escapeSelectorValue(logId)}"]`,
+        ),
+      ).find((element) => element.getClientRects().length > 0);
 
       if (!row) {
         return;
@@ -64,6 +69,7 @@ export function EmailLogDetailDrawer({
   createdLabel,
   log,
   sentLabel,
+  templateLabel,
 }: EmailLogDetailDrawerProps) {
   const { s } = useStaffText();
   const templateName = templateNameFromKey(log.template_key);
@@ -72,7 +78,8 @@ export function EmailLogDetailDrawer({
     : null;
   const detailRows = [
     [s.communications.recipient, log.recipient_email],
-    [s.communications.template, log.template_key],
+    [s.communications.template, templateLabel],
+    [s.communications.templateKey, log.template_key],
     [s.communications.language, log.language === "en" ? s.communications.english : s.communications.thai],
     [s.common.status, codeLabel(s.common.code, log.status)],
     [s.communications.created, createdLabel],

@@ -5,7 +5,8 @@ import { EmailInviteControls } from "@/features/admin/components/email-invite-co
 import { PerPageSelect } from "@/features/admin/components/table-controls";
 import { EmailLogDetailDrawer, EmailLogRowFocus } from "@/features/admin/components/email-log-detail-drawer";
 import { emailHref } from "@/features/admin/components/sections/communications/email-hrefs";
-import { formatDateTime } from "@/features/admin/components/sections/shared/format";
+import { formatDateTimeIn } from "@/lib/i18n/format";
+import { emailTemplateLabel } from "@/features/email/template-label";
 import { takesVoteInvitations } from "@/features/admin/meeting-pickers";
 import { tablePage, tablePerPage } from "@/features/admin/components/sections/shared/table";
 import type {
@@ -32,7 +33,8 @@ export async function EmailSection({
   meetings,
   hidden,
 }: EmailSectionProps) {
-  const { s } = await getStaffI18n();
+  const { locale, s } = await getStaffI18n();
+  const meetingTitleById = new Map(meetings.map((meeting) => [meeting.id, meeting.title]));
   // Vote links only for meetings still open for voting (2026-11-19).
   const inviteMeetingOptions = meetings
     .filter((meeting) => takesVoteInvitations(meeting))
@@ -40,16 +42,17 @@ export async function EmailSection({
     .map((meeting) => ({
       value: meeting.id,
       label: `${meeting.title} · ${fill(s.communications.meetingOpenUntil, {
-        date: formatDateTime(meeting.ends_at),
+        date: formatDateTimeIn(locale, meeting.ends_at),
       })}`,
     }));
   const emailTableFilters: Required<EmailTableFilters> = {
     created: emailFilters?.created ?? "",
-    dir: emailFilters?.dir ?? "asc",
+    // Newest first by default (2026-11-19 review).
+    dir: emailFilters?.dir ?? "desc",
     page: tablePage(emailFilters?.page),
     perPage: tablePerPage(emailFilters?.perPage),
     recipient: emailFilters?.recipient ?? "",
-    sort: emailFilters?.sort ?? "recipient",
+    sort: emailFilters?.sort ?? "created",
     status: emailFilters?.status ?? "all",
   };
   const filteredEmailLogs = emailLogs.filter((log) => {
@@ -132,6 +135,57 @@ export async function EmailSection({
         : " ↓"
       : "";
 
+  const rows = pagedEmailLogs.map((log) => ({
+    log,
+    createdLabel: formatDateTimeIn(locale, log.created_at),
+    highlighted:
+      focusedEmailLogId === log.id ||
+      (drawer?.mode === "view" && drawer.type === "email_log" && drawer.id === log.id),
+    templateLabel: emailTemplateLabel(log.template_key, locale, meetingTitleById),
+  }));
+  type Row = (typeof rows)[number];
+  const badge = "inline-flex items-center whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-medium";
+  const statusTone: Record<string, string> = {
+    queued: "bg-slate-100 text-slate-700",
+    sending: "bg-sky-100 text-sky-800",
+    sent: "bg-emerald-100 text-emerald-800",
+    failed: "bg-red-100 text-red-800",
+    permanent_failed: "bg-red-200 text-red-900",
+  };
+  const countLabels: Record<string, string> = {
+    queued: s.communications.countQueued,
+    sending: s.communications.countSending,
+    sent: s.communications.countSent,
+    failed: s.communications.countFailed,
+    permanent_failed: s.communications.countPermanentFailed,
+  };
+  const statusCounts = Object.keys(countLabels)
+    .map((status) => ({
+      status,
+      label: countLabels[status],
+      count: emailLogs.filter((log) => log.status === status).length,
+    }))
+    .filter(({ count }) => count > 0);
+  // The error shows under the status, only when there is one.
+  const statusBlock = (row: Row) => (
+    <div className="grid gap-1">
+      <span className={`${badge} w-fit ${statusTone[row.log.status] ?? statusTone.queued}`}>
+        {codeLabel(s.common.code, row.log.status)}
+      </span>
+      {row.log.error_message ? (
+        <span className="text-xs text-red-700 [overflow-wrap:anywhere]">{row.log.error_message}</span>
+      ) : null}
+    </div>
+  );
+  const detailsLink = (row: Row) => (
+    <a
+      className="inline-flex min-h-10 w-fit items-center justify-center whitespace-nowrap rounded-md border border-[var(--border)] px-3 py-1 text-sm font-medium"
+      href={`${emailListHref}&mode=view&type=email_log&id=${row.log.id}`}
+    >
+      {s.common.viewDetails}
+    </a>
+  );
+
   return (
     <section
       className="mb-5 scroll-mt-20 rounded-lg border border-[var(--border)] bg-[var(--surface)] p-5"
@@ -142,6 +196,14 @@ export async function EmailSection({
         <ListChecks className="text-[var(--primary)]" size={20} />
         <h2 className="text-lg font-semibold">{s.communications.queueTitle}</h2>
       </div>
+      {/* V1 only queues emails (P002 not set up yet), say so (2026-11-19 review). */}
+      <p
+        className="mb-4 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900"
+        data-email-not-sent
+        role="note"
+      >
+        {s.communications.notSentYet}
+      </p>
       <EmailInviteControls meetingOptions={inviteMeetingOptions} />
       <section className="mb-5 rounded-lg border border-[var(--border)] bg-[var(--background)] p-4">
         <div className="mb-3">
@@ -213,6 +275,19 @@ export async function EmailSection({
           <p className="mt-1 text-xs text-[var(--muted)]">
             {fill(s.common.showing, { start: emailPageStart, end: emailPageEnd, total: emailTotal })}
           </p>
+          {/* Counts by status; each one filters the list. */}
+          <div className="mt-2 flex flex-wrap gap-2" data-email-status-counts>
+            {statusCounts.map(({ status, count, label }) => (
+              <a
+                aria-current={emailTableFilters.status === status ? "true" : undefined}
+                className={`${badge} ${statusTone[status] ?? statusTone.queued} min-h-8 px-3 aria-[current=true]:ring-2 aria-[current=true]:ring-[var(--primary)]`}
+                href={emailHref({ ...emailTableFilters, page: 1, status })}
+                key={status}
+              >
+                {fill(label, { count })}
+              </a>
+            ))}
+          </div>
         </div>
         <div className="flex flex-wrap items-center gap-2 rounded-md border border-[var(--border)] bg-[var(--background)] px-3 py-2">
           <PerPageSelect
@@ -235,7 +310,26 @@ export async function EmailSection({
           />
         </div>
       </div>
-      <div className="overflow-x-auto">
+      <ul className="grid gap-3 md:hidden" data-email-cards>
+        {rows.map((row) => (
+          <li
+            className={[
+              "grid gap-2 rounded-lg border border-[var(--border)] p-3 text-sm",
+              row.highlighted ? "border-l-4 border-l-[var(--primary)] bg-[var(--accent)]" : "",
+            ].join(" ")}
+            data-email-log-id={row.log.id}
+            key={row.log.id}
+            tabIndex={-1}
+          >
+            <span className="font-medium [overflow-wrap:anywhere]">{row.log.recipient_email}</span>
+            <span>{row.templateLabel}</span>
+            <span className="text-xs text-[var(--muted)]">{row.createdLabel}</span>
+            {statusBlock(row)}
+            {detailsLink(row)}
+          </li>
+        ))}
+      </ul>
+      <div className="hidden md:block">
         <table className="w-full border-collapse text-left text-sm">
           <thead className="border-b border-[var(--border)] text-[var(--muted)]">
             <tr>
@@ -255,48 +349,27 @@ export async function EmailSection({
                   {s.communications.created}{emailSortLabel("created")}
                 </a>
               </th>
-              <th className="py-2 pr-3 font-medium">{s.communications.error}</th>
               <th className="py-2 font-medium">{s.common.action}</th>
             </tr>
           </thead>
           <tbody>
-            {pagedEmailLogs.map((log) => {
-              const selected =
-                drawer?.mode === "view" &&
-                drawer.type === "email_log" &&
-                drawer.id === log.id;
-              const focused = focusedEmailLogId === log.id;
-
-              return (
-                <tr
-                  className={[
-                    "border-b border-[var(--border)]",
-                    selected || focused
-                      ? "border-l-4 border-l-[var(--primary)] bg-[var(--accent)]"
-                      : "",
-                  ].join(" ")}
-                  data-email-log-id={log.id}
-                  key={log.id}
-                  tabIndex={-1}
-                >
-                  <td className="py-2 pr-3">{log.recipient_email}</td>
-                  <td className="py-2 pr-3">{log.template_key}</td>
-                  <td className="py-2 pr-3">{codeLabel(s.common.code, log.status)}</td>
-                  <td className="py-2 pr-3">
-                    {formatDateTime(log.created_at)}
-                  </td>
-                  <td className="py-2 pr-3">{log.error_message ?? "-"}</td>
-                  <td className="py-2">
-                    <a
-                      className="inline-flex min-h-9 items-center justify-center rounded-md border border-[var(--border)] px-3 py-1 text-sm font-medium"
-                      href={`${emailListHref}&mode=view&type=email_log&id=${log.id}`}
-                    >
-                      {s.common.viewDetails}
-                    </a>
-                  </td>
-                </tr>
-              );
-            })}
+            {rows.map((row) => (
+              <tr
+                className={[
+                  "border-b border-[var(--border)] align-top",
+                  row.highlighted ? "border-l-4 border-l-[var(--primary)] bg-[var(--accent)]" : "",
+                ].join(" ")}
+                data-email-log-id={row.log.id}
+                key={row.log.id}
+                tabIndex={-1}
+              >
+                <td className="py-3 pr-3 [overflow-wrap:anywhere]">{row.log.recipient_email}</td>
+                <td className="py-3 pr-3">{row.templateLabel}</td>
+                <td className="py-3 pr-3">{statusBlock(row)}</td>
+                <td className="whitespace-nowrap py-3 pr-3">{row.createdLabel}</td>
+                <td className="py-3">{detailsLink(row)}</td>
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>
@@ -345,10 +418,11 @@ export async function EmailSection({
             .map((log) => (
               <EmailLogDetailDrawer
                 closeHref={emailListHref}
-                createdLabel={formatDateTime(log.created_at)}
+                createdLabel={formatDateTimeIn(locale, log.created_at)}
                 key={log.id}
                 log={log}
-                sentLabel={log.sent_at ? formatDateTime(log.sent_at) : "-"}
+                sentLabel={log.sent_at ? formatDateTimeIn(locale, log.sent_at) : "-"}
+                templateLabel={emailTemplateLabel(log.template_key, locale, meetingTitleById)}
               />
             ))
         : null}
