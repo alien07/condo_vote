@@ -37,11 +37,12 @@ function getEmailFilters(
     params.sort === "recipient" ||
     params.sort === "status"
       ? params.sort
-      : "recipient";
+      : "created";
 
+  // Newest first when nothing is chosen (2026-11-19 review).
   return {
     created: params.created,
-    dir: params.dir === "desc" ? "desc" : "asc",
+    dir: params.dir === "asc" || params.dir === "desc" ? params.dir : params.sort ? "asc" : "desc",
     page: positiveInteger(params.page, 1),
     perPage: positiveInteger(params.perPage, 25),
     recipient: params.recipient,
