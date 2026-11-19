@@ -132,6 +132,34 @@ Acceptance: on `/audit`, picking a meeting shows only that meeting's results, co
 
 ---
 
+## req_0008: admin overview `/admin`: what to do now, and fit to show in a meeting (status: approved, waiting for the user to start Claude Code)
+Branch `feat/req-0008-admin-overview`. UI review by the chat 2026-11-20 at 1440/768/375 (dev 84d8fd3), lens "daily use + presenting". The user approved every item. Main file `app/admin/page.tsx` (MetricCard list, groups master / readiness / attention / results, links grid), `features/english/missing-english-panel.tsx`, words in `lib/i18n/staff/admin-home.ts`.
+
+The page is the admin's first stop: it should say what is waiting for them now, and when shown on a screen in a meeting, the state of the live meeting at a glance. Today it lists all-time totals and puts the work waiting far down the page.
+
+Must fix
+1. **Priorities upside down.** "ต้องดำเนินการ" (attention) starts about 1,350 px down on desktop and 2,400 px on a phone; the top is the missing-English box and master data that is mostly at 100%. → New order: attention → meetings happening now (item 2) → readiness → master data. Cards with nothing waiting become compact (one line) so the page gets shorter.
+2. **No spotlight on the meeting happening now.** → At the top, one large card per meeting that is open for voting or opens within the next 7 days (published, not closed): title, open/close time and time left (or "opens in …"), turnout so far as rooms voted / eligible and ownership voted / total, and whether the quorum rule of that meeting is met yet (reuse the quorum logic already used for results, e.g. `features/results` / meeting readiness helpers; do not duplicate the rule), with a progress bar and a button to the meeting. **Never show votes per choice or any result before committee approval** (secret ballot D015, results only after approval): turnout and quorum only. If none, one quiet line "ไม่มีการประชุมที่เปิดลงคะแนน" with the next draft meeting if any. Keep counts correct for the admin role and RLS; reuse existing data modules where possible.
+3. **The missing-English box (153) is almost all meetings that cannot be fixed**: every listed one is already published, and editing text after publishing is a V2 item. → Count and list only meetings whose English can still be filled in (drafts; check `features/english` for the exact rule), and show it as one card in "ต้องดำเนินการ" linking to the list, instead of a big yellow box on top. Hide it when bilingual documents are off or the count is 0.
+
+Should fix
+4. **Not clear which cards are clickable**: some cards have a 16px footer text link ("ดูผู้ใช้", "จัดการการประชุม"), some none. → The whole card is the link (min 44px target, hover/focus state, "→"), and cards without a destination look plainly informational.
+5. **Colour meanings mixed**: amber marks both "needs action" (pending accounts, proxy requests) and readiness percentages (room links 16%, approvals 52%, eligible voters 73%). → Amber only for "something is waiting for you"; readiness uses the progress bar on a white card; green only for complete.
+6. **Some numbers do not say what to do**: "การอนุมัติ 33 / 64 · กรรมการอนุมัติแล้ว 33 ครั้ง", "บัตรกระดาษ 39 · 11% ของผู้มีสิทธิ์", "การประชุม 166", "วาระ 145", "ผลการลงมติ 64". → Replace all-time totals with actionable states, e.g. "ผลรออนุมัติ n ชุด", "บัตรกระดาษรอผูกผู้ใช้ n ใบ", "ห้องที่ลงสองช่องทาง n", "การประชุมร่าง n · เปิดลงคะแนน n"; each links to the filtered list where one exists.
+7. **The "งานของผู้ดูแล" links grid repeats the top menu** (8 links) → remove it.
+8. **Stacked headings**: page title "ผู้ดูแลระบบ" does not match the menu "ภาพรวม", and "ภาพรวมการทำงาน" sits above the group headings → title "ภาพรวม" / "Overview", drop the extra heading.
+
+Nice to have
+9. Phones: the page is 4,589 px with every card full width → small metric cards two per row on phones; the meeting spotlight stays full width.
+10. "อีเมลในคิว 492" is always amber because emails are only queued (not sent yet, see `/admin/communications`) → neutral card with the same "not sent yet" wording as the communications page, not a warning.
+
+Acceptance: at 1440 / 768 / 375 px the first screen shows what is waiting (or that nothing is) and the meeting happening now with turnout and quorum (no per-choice votes); every card is either a clear link or plainly informational; amber only means waiting work; no links grid; title "ภาพรวม"; the missing-English card counts only meetings that can still be fixed; no horizontal scroll. TH/EN. Unit tests for new helpers (spotlight selection, actionable counts); e2e in the admin overview spec for the attention order, the spotlight (a published open meeting in demo data) and that no per-choice result appears before approval.
+
+### Result
+(Claude Code writes here: PR number, what changed, checks run, anything left)
+
+---
+
 ## Before req numbers: demo-feedback #16 and #17 (status: done, PR #64 merged, checked by the chat 2026-11-19)
 Back link on the record page `/record/[snapshotId]` and rename of the two result actions to "ดูบันทึกผล (หน้าเว็บ)" / "View record (web page)" and "ดาวน์โหลด PDF ฉบับทางการ" / "Download official PDF".
 
