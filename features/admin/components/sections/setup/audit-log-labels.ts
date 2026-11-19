@@ -78,12 +78,56 @@ function fieldLabel(words: AuditLogWords, key: string) {
   return plain.charAt(0).toUpperCase() + plain.slice(1);
 }
 
-function valueText(
-  words: AuditLogWords,
-  codes: Record<string, string>,
-  locale: Locale,
-  value: unknown,
-): string {
+/**
+ * Detail fields whose values are stored codes (req_0002, 2026-11-19): the
+ * code is shown in words. Any other field shows its value as stored, so
+ * text that people typed (a reason, a correction answer, a name) stays as
+ * typed. `answer` holds a typed correction answer or a close-request code
+ * (approve / object), so only those two codes are words there.
+ */
+const CODE_FIELDS = new Set([
+  "approval_status",
+  "category",
+  "chosen_source",
+  "default_status",
+  "document_storage_provider",
+  "document_type",
+  "from",
+  "granted_role",
+  "level",
+  "meeting_round",
+  "preferred_language",
+  "previous_approval_status",
+  "previous_default_status",
+  "source",
+  "status",
+  "storage_provider",
+  "to",
+]);
+const ANSWER_CODES = new Set(["approve", "object"]);
+const CODE = /^[a-z][a-z0-9_]*$/;
+
+type AuditWords = Pick<StaffDictionary, "auditLog" | "committee" | "common">;
+
+/** A stored code in words, looked up for the field it is in. */
+function codeText(s: AuditWords, key: string, value: string) {
+  const words = s.auditLog;
+
+  return (
+    words.fieldValues[key]?.[value] ??
+    (key === "category" ? s.committee.categories[value] : undefined) ??
+    (key === "level" || key === "from" || key === "to" ? s.committee.levels[value] : undefined) ??
+    words.values[value] ??
+    // Thai has words for the shared codes; English shows the code there,
+    // so English needs the word in auditLog.values.
+    (s.common.code[value] !== value ? s.common.code[value] : undefined) ??
+    value
+  );
+}
+
+function valueText(s: AuditWords, locale: Locale, key: string, value: unknown): string {
+  const words = s.auditLog;
+
   if (value === null || value === undefined || value === "") {
     return "-";
   }
@@ -109,11 +153,15 @@ function valueText(
       return formatDateTimeIn(locale, value);
     }
 
-    return words.values[value] ?? codes[value] ?? value;
+    if (CODE.test(value) && (CODE_FIELDS.has(key) || (key === "answer" && ANSWER_CODES.has(value)))) {
+      return codeText(s, key, value);
+    }
+
+    return value;
   }
 
   if (Array.isArray(value)) {
-    return value.map((item) => valueText(words, codes, locale, item)).join(", ");
+    return value.map((item) => valueText(s, locale, key, item)).join(", ");
   }
 
   return JSON.stringify(value);
@@ -126,7 +174,7 @@ export type AuditDetailPair = { key: string; label: string; value: string };
  * (meeting_id, room_id, ...) are left out: the full data stays in "Raw data".
  */
 export function auditDetailPairs(
-  s: Pick<StaffDictionary, "auditLog" | "common">,
+  s: AuditWords,
   locale: Locale,
   details: unknown,
 ): AuditDetailPair[] {
@@ -142,7 +190,7 @@ export function auditDetailPairs(
     .map(([key, value]) => ({
       key,
       label: fieldLabel(s.auditLog, key),
-      value: valueText(s.auditLog, s.common.code, locale, value),
+      value: valueText(s, locale, key, value),
     }));
 }
 

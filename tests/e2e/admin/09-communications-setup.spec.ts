@@ -348,6 +348,20 @@ test.describe("@test:e2e @test:auth @test:admin admin demo: communications and s
       .single();
 
     expect(auditError).toBeNull();
+    // A level change, stored as codes (req_0002).
+    const { data: levelRow, error: levelError } = await supabase
+      .from("audit_logs")
+      .insert({
+        action: "result.correction_level_raised",
+        actor_profile_id: profile!.id,
+        details_json: { from: "low", to: "high", reason: "low turnout", request_id: snapshotId },
+        entity_id: snapshotId,
+        entity_type: "result_snapshot",
+      })
+      .select("id")
+      .single();
+
+    expect(levelError).toBeNull();
 
     const { data: link, error: linkError } = await supabase.auth.admin.generateLink({
       email: demoAdminEmail,
@@ -397,6 +411,15 @@ test.describe("@test:e2e @test:auth @test:admin admin demo: communications and s
       await expect(auditSection.getByRole("cell", { name: "Result", exact: true }).first()).toBeVisible();
       await expect(auditSection.locator("[data-audit-details]").first()).toContainText("Status: Fixed");
       await expect(auditSection.getByRole("checkbox", { name: "Result correction answered" })).toBeChecked();
+
+      // Codes in words, typed text as typed (req_0002).
+      await gotoWithRetry(page, `${appUrl}/admin/setup?tab=audit&actions=result.correction_level_raised`, {
+        waitUntil: "domcontentloaded",
+      });
+      const levelDetails = auditSection.locator("[data-audit-details]").first();
+      await expect(levelDetails).toContainText("From: Low");
+      await expect(levelDetails).toContainText("To: High");
+      await expect(levelDetails).toContainText("Reason: low turnout");
 
       // Every tab at three widths: no sideways scroll, nothing past the edge,
       // and no raw codes or long ids in the audit rows.
@@ -459,6 +482,9 @@ test.describe("@test:e2e @test:auth @test:admin admin demo: communications and s
       await page.setViewportSize({ width: 1280, height: 720 });
       if (auditRow) {
         await supabase.from("audit_logs").delete().eq("id", auditRow.id);
+      }
+      if (levelRow) {
+        await supabase.from("audit_logs").delete().eq("id", levelRow.id);
       }
     }
   });

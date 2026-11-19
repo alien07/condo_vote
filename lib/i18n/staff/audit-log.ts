@@ -1,5 +1,33 @@
+import { commonText } from "@/lib/i18n/staff/common";
+
 // Admin > Setup > Audit log: stored action and record codes in words
 // (setup page review 2026-11-19). A code missing here is shown as stored.
+
+// Codes shared with other pages (req_0002). Thai takes the words from
+// common.code; English common.code shows the code itself, so the English
+// words are here.
+const sharedCodeWords = {
+  pending: "Pending",
+  approved: "Approved",
+  rejected: "Rejected",
+  revoked: "Revoked",
+  cancelled: "Cancelled",
+  owner: "Owner",
+  resident: "Resident",
+  proxy: "Proxy",
+  admin: "Admin",
+  committee: "Committee",
+  system_admin: "System admin",
+  staff: "Office staff",
+  auditor: "Auditor",
+  draft: "Draft",
+  published: "Published",
+  closed: "Closed",
+  archived: "Archived",
+  online: "Online",
+  manual: "Paper",
+};
+
 const en = {
   actions: {
     "meeting.published": "Meeting published",
@@ -107,6 +135,7 @@ const en = {
     checked: "Checked",
     pending_identity: "Voter to be identified",
     members: "Members",
+    preferred_language: "Language",
   } as Record<string, string>,
   groups: {
     meetings: "Meetings",
@@ -129,7 +158,21 @@ const en = {
     proxy_authorization: "Proxy form",
     meeting_attachment: "Meeting attachment",
     result_pdf: "Result PDF",
+    other: "Other",
+    ...sharedCodeWords,
+    th: "Thai",
+    en: "English",
   } as Record<string, string>,
+  /** Codes whose words depend on the field (req_0002). */
+  fieldValues: {
+    // How an owner was linked to an account (0037, 0038).
+    source: {
+      sign_in: "Matched at sign-in",
+      owner_email: "Matched by owner email",
+      admin: "Linked by an admin",
+      migration_0037: "Matched by the system update",
+    },
+  } as Record<string, Record<string, string>>,
   rawData: "Raw data",
   noDetails: "No details",
   yes: "Yes",
@@ -244,6 +287,7 @@ const th: typeof en = {
     checked: "ตรวจแล้ว",
     pending_identity: "รอระบุผู้ลงคะแนน",
     members: "กรรมการ",
+    preferred_language: "ภาษา",
   },
   groups: {
     meetings: "การประชุม",
@@ -265,6 +309,20 @@ const th: typeof en = {
     proxy_authorization: "หนังสือมอบฉันทะ",
     meeting_attachment: "เอกสารแนบการประชุม",
     result_pdf: "ไฟล์ PDF ผลการลงมติ",
+    other: "อื่น ๆ",
+    th: "ไทย",
+    en: "อังกฤษ",
+    ...Object.fromEntries(
+      Object.keys(sharedCodeWords).map((code) => [code, commonText.th.code[code] ?? code]),
+    ),
+  },
+  fieldValues: {
+    source: {
+      sign_in: "จับคู่ตอนเข้าสู่ระบบ",
+      owner_email: "จับคู่จากอีเมลเจ้าของ",
+      admin: "ผู้ดูแลผูกให้",
+      migration_0037: "ระบบจับคู่ตอนปรับปรุงระบบ",
+    },
   },
   rawData: "ข้อมูลดิบ",
   noDetails: "ไม่มีรายละเอียด",
