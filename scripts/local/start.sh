@@ -70,7 +70,7 @@ if [ "$dev" = 1 ]; then
 else
   # Code state = commit + a hash of uncommitted changes to tracked files.
   head="$(git rev-parse HEAD 2>/dev/null || true)"
-  changes="$(git diff HEAD -- . ':(exclude)next-env.d.ts' 2>/dev/null | git hash-object --stdin 2>/dev/null || true)"
+  changes="$(git diff HEAD 2>/dev/null | git hash-object --stdin 2>/dev/null || true)"
   state="$head $changes"
   marker="$root/.next/local-build-head"
   built="$(cat "$marker" 2>/dev/null || true)"

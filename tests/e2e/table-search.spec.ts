@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/database.types";
 import { chooseSearchOption } from "./admin/admin-helpers";
@@ -168,11 +168,23 @@ test.describe("@test:e2e @test:admin @test:table-search table search", () => {
     await expect(auditPageSelect).toHaveValue("1");
     await expect(auditResults.getByText("Showing 1-25 of 35")).toBeVisible();
 
-    await auditSection.getByRole("button", { name: "Search" }).click();
+    // Search and Clear reload the list, and the answer resets the form to
+    // the filters it was sent with. Wait for it before the next step, or a
+    // late answer clears the actor picked below (the values checked here
+    // were already true before the click, so they do not wait by
+    // themselves; seen when this spec ran after tests/e2e/admin/).
+    await Promise.all([
+      waitForAuditList(page),
+      auditSection.getByRole("button", { name: "Search" }).click(),
+    ]);
     await expect(auditPerPageSelect).toHaveValue("25");
     await expect(page).toHaveURL(/perPage=25/);
 
-    await auditSection.getByRole("button", { name: "Clear" }).click();
+    await Promise.all([
+      waitForAuditList(page),
+      auditSection.getByRole("button", { name: "Clear" }).click(),
+    ]);
+    await expect(page).not.toHaveURL(/actions=/);
     await expect(auditPerPageSelect).toHaveValue("25");
     await expect(auditPageSelect).toHaveValue("1");
 
@@ -183,6 +195,13 @@ test.describe("@test:e2e @test:admin @test:table-search table search", () => {
     await expect(page).toHaveURL(new RegExp(`actor=${profile!.id}`));
   });
 });
+
+/** The audit list's reload request (Search, Clear, paging) has answered. */
+function waitForAuditList(page: Page) {
+  return page.waitForResponse(
+    (response) => response.url().includes("/api/admin/audit-logs") && response.ok(),
+  );
+}
 
 async function findUserByEmail(
   supabase: ReturnType<typeof createClient<Database>>,
