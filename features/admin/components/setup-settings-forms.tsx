@@ -369,7 +369,7 @@ export function JuristicProfileForm({
         >
           {s.setup.saveJuristic}
         </PendingSubmitButton>
-        <FormResetButton label={s.common.resetChanges} />
+        <FormResetButton label="Reset changes" />
       </div>
     </form>
   );
@@ -438,7 +438,7 @@ export function DocumentStorageSettingsForm({
         >
           {t.saveStorage}
         </PendingSubmitButton>
-        <FormResetButton label={staff.common.resetChanges} />
+        <FormResetButton label="Reset changes" />
       </div>
     </form>
   );
