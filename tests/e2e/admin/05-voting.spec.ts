@@ -185,7 +185,7 @@ test.describe("@test:e2e @test:auth @test:admin admin demo: paper ballots and co
       // Meeting and room filters: type to search, pick, search. The URL
       // carries the ids, not the title or room number (2026-11-19).
       await page.goto(`${appUrl}/admin/voting?sort=meeting&dir=asc&perPage=25`);
-      const manualFilter = page.locator("form").filter({ has: page.locator('[data-focus-for="meeting"]') });
+      const manualFilter = page.locator("form:visible").filter({ has: page.locator('[data-focus-for="meeting"]') });
       await chooseSearchOption(manualFilter, "meeting", meetingTitle);
       await chooseSearchOption(manualFilter, "room", roomNumber);
       await manualFilter.getByRole("button", { name: "Search", exact: true }).click();
@@ -492,7 +492,7 @@ test.describe("@test:e2e @test:auth @test:admin admin demo: paper ballots and co
       // Meeting and room filters: type to search, pick, search; the URL
       // carries the ids (2026-11-19).
       await page.goto(`${appUrl}/admin/voting/conflicts`);
-      const conflictFilter = page.locator("form").filter({ has: page.locator('[data-focus-for="meeting"]') });
+      const conflictFilter = page.locator("form:visible").filter({ has: page.locator('[data-focus-for="meeting"]') });
       await chooseSearchOption(conflictFilter, "meeting", meetingTitle);
       await chooseSearchOption(conflictFilter, "room", roomNumber);
       await conflictFilter.getByRole("button", { name: "Search", exact: true }).click();

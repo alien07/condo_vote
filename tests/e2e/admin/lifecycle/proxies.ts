@@ -23,7 +23,7 @@ export async function proxies(page: Page, ctx: AfterPeople) {
   // Meeting and room filters: type to search, pick, search. The URL then
   // carries the ids, not the title or room number (2026-11-19).
   await gotoWithRetry(page, `${activeAppOrigin}/admin/proxies`, { waitUntil: "load" });
-  const proxyFilter = page.locator("form").filter({ has: page.locator('[data-focus-for="meeting"]') });
+  const proxyFilter = page.locator("form:visible").filter({ has: page.locator('[data-focus-for="meeting"]') });
   await chooseSearchOption(proxyFilter, "meeting", meetingTitle);
   await chooseSearchOption(proxyFilter, "room", roomNumber);
   await proxyFilter.getByRole("button", { name: "Search", exact: true }).click();

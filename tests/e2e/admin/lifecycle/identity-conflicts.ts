@@ -41,7 +41,7 @@ export async function identityConflicts(page: Page, ctx: AfterVoting) {
   // Meeting and room filters: type to search, pick, search; the URL carries
   // the ids, not the title or room number (2026-11-19).
   await page.goto(`${activeAppOrigin}/admin/voting/conflicts`);
-  const conflictFilter = page.locator("form").filter({ has: page.locator('[data-focus-for="meeting"]') });
+  const conflictFilter = page.locator("form:visible").filter({ has: page.locator('[data-focus-for="meeting"]') });
   await chooseSearchOption(conflictFilter, "meeting", meetingTitle);
   await chooseSearchOption(conflictFilter, "room", roomNumber);
   await conflictFilter.getByRole("button", { name: "Search", exact: true }).click();

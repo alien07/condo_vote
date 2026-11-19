@@ -208,7 +208,7 @@ test.describe("@test:e2e @test:auth @test:admin admin demo: proxies and ownershi
       // Meeting and room filters: type to search, pick, search. The URL
       // carries the ids, not the title or room number (2026-11-19).
       await page.goto(`${appUrl}/admin/proxies`);
-      const proxyFilter = page.locator("form").filter({ has: page.locator('[data-focus-for="meeting"]') });
+      const proxyFilter = page.locator("form:visible").filter({ has: page.locator('[data-focus-for="meeting"]') });
       await chooseSearchOption(proxyFilter, "meeting", meetingTitle);
       await chooseSearchOption(proxyFilter, "room", roomNumber);
       await proxyFilter.getByRole("button", { name: "Search", exact: true }).click();
@@ -397,7 +397,7 @@ test.describe("@test:e2e @test:auth @test:admin admin demo: proxies and ownershi
       // Room filter: type to search, pick, search; the URL carries the room
       // id, not the number (2026-11-19).
       await page.goto(`${appUrl}/admin/ownership?status=all`);
-      const ownershipFilter = page.locator("form").filter({ has: page.locator('[data-focus-for="room"]') });
+      const ownershipFilter = page.locator("form:visible").filter({ has: page.locator('[data-focus-for="room"]') });
       await chooseSearchOption(ownershipFilter, "room", roomNumber);
       await ownershipFilter.getByRole("button", { name: "Search", exact: true }).click();
       await expect(page).toHaveURL(new RegExp(`[?&]room=${room!.id}`));

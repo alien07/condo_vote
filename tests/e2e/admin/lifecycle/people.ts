@@ -53,7 +53,7 @@ export async function people(page: Page, ctx: AfterMeetings) {
     `${activeAppOrigin}/admin/ownership?owner=${encodeURIComponent(ownerName)}`,
     { waitUntil: "load" },
   );
-  const ownershipFilter = page.locator("form").filter({ has: page.locator('[data-focus-for="room"]') });
+  const ownershipFilter = page.locator("form:visible").filter({ has: page.locator('[data-focus-for="room"]') });
   await chooseSearchOption(ownershipFilter, "room", roomNumber);
   await ownershipFilter.getByRole("button", { name: "Search", exact: true }).click();
   await expect(page).toHaveURL(/[?&]room=[0-9a-f-]{36}/);
