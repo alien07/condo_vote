@@ -25,7 +25,7 @@ Types are the TypeScript types the app sees: `string` also covers `uuid`, `text`
 | [ballot_versions](#ballot_versions) | 5 | Historical ballot payloads whenever a voter edits before close. |
 | [ballots](#ballots) | 9 | Current ballot record per meeting and room. |
 | [committee_approvals](#committee_approvals) | 6 | One committee member's approval of a result snapshot. |
-| [committee_members](#committee_members) | 11 | Real committee roster and positions for document approval/signature context. |
+| [committee_members](#committee_members) | 12 | Real committee roster and positions for document approval/signature context. |
 | [condo_profiles](#condo_profiles) | 20 | Juristic person profile used as the issuer identity for formal documents and PDFs. |
 | [documents](#documents) | 16 | Private file references for owner/proxy approval and generated PDFs. |
 | [eligible_voters_snapshot](#eligible_voters_snapshot) | 8 | Frozen voter eligibility list for a meeting. Used to make result calculation auditable. |
@@ -181,7 +181,8 @@ Real committee roster and positions for document approval/signature context. Mor
 | `display_order` | `number` |  | default |  |
 | `full_name` | `string` |  |  |  |
 | `id` | `string` |  | default |  |
-| `position_title` | `string` |  |  |  |
+| `position_code` | `string` |  | default |  |
+| `position_title` | `string` | null |  |  |
 | `profile_id` | `string` | null |  | [profiles.id](#profiles) |
 | `signature_storage_path` | `string` | null |  |  |
 | `term_ends_at` | `string` | null |  |  |
@@ -644,6 +645,8 @@ Called with `supabase.rpc(name, args)`. Rules and permissions: [rls-policies.md]
 | `committee_overview` |  | `Json` |
 | `committee_people` | `p_profile_ids: string[]` | `Json` |
 | `committee_person_name` | `p_profile_id: string` | `string` |
+| `committee_position_code_for` | `p_title: string` | `string` |
+| `committee_position_label` | `p_code: string, p_lang?: string, p_title: string` | `string` |
 | `correction_default_level` | `p_category: string` | `string` |
 | `current_profile_id` |  | `string` |
 | `evaluate_close_request` | `p_request_id: string` | `string` |

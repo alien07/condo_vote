@@ -283,4 +283,183 @@ test.describe("@test:e2e @test:auth @test:admin admin demo: communications and s
       storageSection.getByText("Document storage config saved"),
     ).toBeVisible();
   });
+  test("setup page: labelled fields, audit log in words, no overflow at 1440, 768 and 375 px", async ({
+    page,
+  }) => {
+    test.setTimeout(180_000);
+
+    const supabase = createClient<Database>(supabaseUrl!, serviceKey!, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    });
+    let user = await findUserByEmail(supabase, demoAdminEmail);
+
+    if (!user) {
+      const { data, error } = await supabase.auth.admin.createUser({
+        email: demoAdminEmail,
+        email_confirm: true,
+        user_metadata: { full_name: demoAdminName },
+      });
+
+      expect(error).toBeNull();
+      user = data.user;
+    }
+
+    const { data: profile, error: profileError } = await supabase
+      .from("profiles")
+      .upsert(
+        {
+          approval_status: "approved",
+          auth_user_id: user!.id,
+          default_status: "owner",
+          email: demoAdminEmail,
+          full_name: demoAdminName,
+          preferred_language: "en",
+        },
+        { onConflict: "auth_user_id" },
+      )
+      .select("id")
+      .single();
+
+    expect(profileError).toBeNull();
+    const { error: roleError } = await supabase
+      .from("app_roles")
+      .upsert({ profile_id: profile!.id, role: "admin" }, { onConflict: "profile_id,role" });
+
+    expect(roleError).toBeNull();
+
+    // One audit row with ids and codes in its details, as the database writes them.
+    const snapshotId = "3f2b8c1e-9a4d-4e7b-8c21-5d6f7a8b9c0d";
+    const { data: auditRow, error: auditError } = await supabase
+      .from("audit_logs")
+      .insert({
+        action: "result.correction_answered",
+        actor_profile_id: profile!.id,
+        details_json: {
+          meeting_id: "1a2b3c4d-1111-4222-8333-444455556666",
+          request_id: "9f8e7d6c-1111-4222-8333-444455556666",
+          result_snapshot_id: snapshotId,
+          status: "fixed",
+          answer: "Recounted room A-101; the total is right.",
+        },
+        entity_id: snapshotId,
+        entity_type: "result_snapshot",
+      })
+      .select("id")
+      .single();
+
+    expect(auditError).toBeNull();
+
+    const { data: link, error: linkError } = await supabase.auth.admin.generateLink({
+      email: demoAdminEmail,
+      options: { redirectTo: `${appUrl}/auth/callback` },
+      type: "magiclink",
+    });
+
+    expect(linkError).toBeNull();
+    await page.goto(
+      `${appUrl}/auth/callback?token_hash=${encodeURIComponent(
+        link.properties!.hashed_token,
+      )}&type=${link.properties!.verification_type}`,
+    );
+
+    try {
+      // Juristic profile: every field has a visible label.
+      await gotoWithRetry(page, `${appUrl}/admin/setup`, { waitUntil: "domcontentloaded" });
+      const juristicSection = page
+        .getByRole("heading", { name: "Juristic Person" })
+        .locator("xpath=ancestor::section[1]");
+
+      for (const label of [
+        "Registration no.",
+        "Tax ID",
+        "Juristic manager",
+        "Phone",
+        "Email",
+        "Address",
+        "Document footer",
+      ]) {
+        await expect(juristicSection.getByLabel(label, { exact: true })).toBeVisible();
+      }
+      await expect(juristicSection.getByLabel("Email", { exact: true })).toHaveAttribute("type", "email");
+      for (const legend of ["Registration", "Contact", "Documents"]) {
+        await expect(juristicSection.getByRole("group", { name: legend, exact: true })).toBeVisible();
+      }
+
+      // Audit log: actions and records in words, details as label: value.
+      const auditUrl = `${appUrl}/admin/setup?tab=audit&actions=result.correction_answered`;
+
+      await gotoWithRetry(page, auditUrl, { waitUntil: "domcontentloaded" });
+      const auditSection = page
+        .getByRole("heading", { name: "Business Audit Log" })
+        .locator("xpath=ancestor::section[1]");
+
+      await expect(auditSection.getByRole("cell", { name: "Result correction answered", exact: true }).first()).toBeVisible();
+      await expect(auditSection.getByRole("cell", { name: "Result", exact: true }).first()).toBeVisible();
+      await expect(auditSection.locator("[data-audit-details]").first()).toContainText("Status: Fixed");
+      await expect(auditSection.getByRole("checkbox", { name: "Result correction answered" })).toBeChecked();
+
+      // Every tab at three widths: no sideways scroll, nothing past the edge,
+      // and no raw codes or long ids in the audit rows.
+      for (const width of [1440, 768, 375]) {
+        await page.setViewportSize({ width, height: 900 });
+
+        for (const tab of ["", "?tab=storage", "?tab=committee", "?tab=audit&actions=result.correction_answered"]) {
+          await gotoWithRetry(page, `${appUrl}/admin/setup${tab}`, { waitUntil: "domcontentloaded" });
+          await expect(page.getByRole("heading", { level: 1 }).first()).toBeVisible();
+
+          const overflow = await page.evaluate(() => {
+            const width = window.innerWidth;
+            const clipped = (element: Element) => {
+              for (let parent = element.parentElement; parent; parent = parent.parentElement) {
+                const style = getComputedStyle(parent);
+
+                if (["auto", "scroll", "hidden", "clip"].includes(style.overflowX)) {
+                  return true;
+                }
+              }
+
+              return false;
+            };
+            const outside = [...document.body.querySelectorAll("*")]
+              .filter((element) => {
+                const rect = element.getBoundingClientRect();
+
+                return rect.width > 0 && rect.height > 0 && rect.right > width + 1 && !clipped(element);
+              })
+              .slice(0, 5)
+              .map((element) => `${element.tagName.toLowerCase()}.${String(element.className).slice(0, 60)}`);
+
+            return { scroll: document.documentElement.scrollWidth - width, outside };
+          });
+
+          expect(overflow, `${width}px ${tab || "juristic"}`).toEqual({ scroll: 0, outside: [] });
+        }
+
+        // The rows on screen (cards on phones, the table from md up).
+        const rowsText = await page.evaluate(() => {
+          const rows = [
+            ...document.querySelectorAll("[data-audit-cards] li, #audit table tbody tr"),
+          ].filter((element) => element.getClientRects().length > 0);
+
+          return rows
+            .map((row) => {
+              const copy = row.cloneNode(true) as HTMLElement;
+
+              copy.querySelectorAll("details").forEach((element) => element.remove());
+              return copy.textContent ?? "";
+            })
+            .join("\n");
+        });
+
+        expect(rowsText).toContain("Result correction answered");
+        expect(rowsText).not.toMatch(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i);
+        expect(rowsText).not.toMatch(/\b(result\.correction_answered|result_snapshot|request_id|meeting_id)\b/);
+      }
+    } finally {
+      await page.setViewportSize({ width: 1280, height: 720 });
+      if (auditRow) {
+        await supabase.from("audit_logs").delete().eq("id", auditRow.id);
+      }
+    }
+  });
 });

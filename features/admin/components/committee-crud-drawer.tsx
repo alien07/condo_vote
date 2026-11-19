@@ -2,7 +2,7 @@
 
 import { useMessageText, useStaffText } from "@/lib/i18n/staff/client";
 import { fill } from "@/lib/i18n/template";
-import { useActionState, useEffect, useRef } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import {
   createCommitteeMemberWithState,
@@ -18,13 +18,19 @@ import {
   invalidFieldElement,
   profileSearchOptions,
 } from "@/features/ui/search-select";
+import {
+  COMMITTEE_POSITION_CODES,
+  DEFAULT_COMMITTEE_POSITION,
+  committeePositionLabel,
+} from "@/lib/i18n/committee-position";
 
 type CommitteeMember = {
   active: boolean;
   display_order: number;
   full_name: string;
   id: string;
-  position_title: string;
+  position_code: string;
+  position_title: string | null;
   profile_id: string | null;
   term_ends_at: string | null;
   term_starts_at: string | null;
@@ -133,6 +139,10 @@ export function CommitteeCrudDrawer({
   };
   const formRef = useRef<HTMLFormElement>(null);
   const searchParams = useSearchParams();
+  // A fixed list in the page language (D026); "other" asks for the title.
+  const [positionCode, setPositionCode] = useState(
+    member?.position_code ?? DEFAULT_COMMITTEE_POSITION,
+  );
   const [state, formAction] = useActionState(
     mode === "edit"
       ? updateCommitteeMemberWithState
@@ -182,7 +192,9 @@ export function CommitteeCrudDrawer({
         mode === "edit" && member
           ? [
               fill(s.setup.memberSummary, { name: member.full_name }),
-              fill(s.setup.positionSummary, { position: member.position_title }),
+              fill(s.setup.positionSummary, {
+                position: committeePositionLabel(s.setup.positions, member.position_code, member.position_title),
+              }),
             ]
           : [s.setup.newMember]
       }
@@ -190,7 +202,13 @@ export function CommitteeCrudDrawer({
         mode === "edit" ? s.setup.editMember : s.setup.addMember
       }
     >
-      <form action={formAction} className="grid gap-3" noValidate ref={formRef}>
+      <form
+        action={formAction}
+        className="grid gap-3"
+        noValidate
+        onReset={() => setPositionCode(member?.position_code ?? DEFAULT_COMMITTEE_POSITION)}
+        ref={formRef}
+      >
         <RequiredNote />
         {state.error ? (
           <div
@@ -225,18 +243,35 @@ export function CommitteeCrudDrawer({
         </label>
         <label className="grid gap-1 text-sm font-medium">
           <FieldLabel required>{s.common.position}</FieldLabel>
-          <input
-            {...fieldProps("position_title", state)}
-            className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-            defaultValue={stateValue(
-              state,
-              "position_title",
-              member?.position_title,
-            )}
-            name="position_title"
-          />
-          <FieldError fieldName="position_title" state={state} />
+          <select
+            {...fieldProps("position_code", state)}
+            className="min-h-11 rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+            name="position_code"
+            onChange={(event) => setPositionCode(event.currentTarget.value)}
+            value={positionCode}
+          >
+            {COMMITTEE_POSITION_CODES.map((code) => (
+              <option key={code} value={code}>
+                {s.setup.positions[code]}
+              </option>
+            ))}
+          </select>
+          <FieldError fieldName="position_code" state={state} />
         </label>
+        {positionCode === "other" ? (
+          <label className="grid gap-1 text-sm font-medium">
+            <FieldLabel required>{s.setup.positionOther}</FieldLabel>
+            <input
+              {...fieldProps("position_title", state)}
+              className="min-h-11 rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+              defaultValue={stateValue(state, "position_title", member?.position_title)}
+              name="position_title"
+              placeholder={s.setup.positionOtherHelp}
+              required
+            />
+            <FieldError fieldName="position_title" state={state} />
+          </label>
+        ) : null}
         <label className="grid gap-1 text-sm font-medium">
           {s.setup.displayOrder}
           <input
@@ -282,8 +317,9 @@ export function CommitteeCrudDrawer({
           <FieldError fieldName="term_ends_at" state={state} />
         </label>
         {mode === "edit" ? (
-          <label className="flex items-center gap-2 text-sm font-medium">
+          <label className="inline-flex min-h-11 w-fit cursor-pointer items-center gap-2 rounded-md border border-[var(--border)] px-3 text-sm font-medium has-[:checked]:border-[var(--primary)] has-[:checked]:bg-[var(--accent)]">
             <input
+              className="h-5 w-5 accent-[var(--primary)]"
               defaultChecked={state.values ? state.values.active === "on" : member?.active ?? true}
               name="active"
               type="checkbox"

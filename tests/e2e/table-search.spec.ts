@@ -155,6 +155,11 @@ test.describe("@test:e2e @test:admin @test:table-search table search", () => {
       auditSection.getByRole("cell", { name: auditPaginationAction }).first(),
     ).toBeVisible();
     await expect(auditResults.getByText("Showing 1-10 of 35")).toBeVisible();
+    // The action filter is ticked boxes in words; a code without words
+    // shows as stored, and the URL keeps the code (setup review 2026-11-19).
+    const actionBox = auditSection.getByRole("checkbox", { name: auditPaginationAction });
+
+    await expect(actionBox).toBeChecked();
     await expect(auditPageSelect).toHaveValue("1");
     await expect(auditPerPageSelect).toHaveValue("10");
 
@@ -185,6 +190,7 @@ test.describe("@test:e2e @test:admin @test:table-search table search", () => {
       auditSection.getByRole("button", { name: "Clear" }).click(),
     ]);
     await expect(page).not.toHaveURL(/actions=/);
+    await expect(actionBox).not.toBeChecked();
     await expect(auditPerPageSelect).toHaveValue("25");
     await expect(auditPageSelect).toHaveValue("1");
 

@@ -1,5 +1,6 @@
 import { adminHomeText } from "@/lib/i18n/staff/admin-home";
 import { auditText } from "@/lib/i18n/staff/audit";
+import { auditLogText } from "@/lib/i18n/staff/audit-log";
 import { commonText } from "@/lib/i18n/staff/common";
 import { committeeText } from "@/lib/i18n/staff/committee";
 import { communicationsText } from "@/lib/i18n/staff/communications";
@@ -22,6 +23,7 @@ import type { Locale } from "@/lib/i18n/locales";
 const areas = {
   adminHome: adminHomeText,
   audit: auditText,
+  auditLog: auditLogText,
   common: commonText,
   committee: committeeText,
   system: systemText,

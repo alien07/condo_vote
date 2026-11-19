@@ -22,6 +22,11 @@ export async function setupPages(page: Page, ctx: AfterAccess) {
   await juristicSection
     .getByRole("textbox", { name: "Juristic manager" })
     .fill("Demo Manager");
+  // Every field has a visible label (setup review 2026-11-19).
+  for (const label of ["Tax ID", "Phone", "Email", "Address", "Document footer"]) {
+    await expect(juristicSection.getByLabel(label, { exact: true })).toBeVisible();
+  }
+  await expect(juristicSection.getByLabel("Phone", { exact: true })).toHaveAttribute("type", "tel");
   await juristicSection
     .getByRole("button", { name: "Save juristic profile" })
     .click();
@@ -42,7 +47,7 @@ export async function setupPages(page: Page, ctx: AfterAccess) {
   await storageSection
     .getByRole("button", { name: "Save document storage config" })
     .click();
-  await storageSection.getByRole("link", { name: "Open Documents" }).click();
+  await storageSection.getByRole("link", { name: "Go to documents" }).click();
   await page.getByRole("link", { name: "Register document" }).click();
   const registerDocumentDrawer = page.getByRole("dialog", {
     name: "Register document",
@@ -77,7 +82,7 @@ export async function setupPages(page: Page, ctx: AfterAccess) {
     .getByRole("heading", { name: "Business Audit Log" })
     .locator("xpath=ancestor::section[1]");
   await expect(
-    auditSection.getByRole("cell", { name: "document.registered" }).first(),
+    auditSection.getByRole("cell", { name: "Document registered", exact: true }).first(),
   ).toBeVisible();
 
   await page.goto(`${activeAppOrigin}/admin/setup?tab=committee`);
@@ -87,7 +92,8 @@ export async function setupPages(page: Page, ctx: AfterAccess) {
   await committeeSection.getByRole("link", { name: "Add committee member" }).click();
   const addCommitteeDrawer = page.getByLabel("Add committee member");
   await addCommitteeDrawer.locator('input[name="full_name"]').fill(committeeName);
-  await addCommitteeDrawer.locator('input[name="position_title"]').fill("Chairperson");
+  // The chair is the default chairperson of a new meeting (D026).
+  await addCommitteeDrawer.locator('select[name="position_code"]').selectOption("chair");
   await addCommitteeDrawer.getByRole("button", { name: "Add committee member" }).click();
   await page.waitForURL(/\/admin\/setup\?[\s\S]*memberName=/, {
     waitUntil: "domcontentloaded",

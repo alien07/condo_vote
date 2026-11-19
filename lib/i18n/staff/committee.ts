@@ -1,4 +1,6 @@
 // Committee page (D014).
+import { setupText } from "@/lib/i18n/staff/setup";
+
 const en = {
   title: "Committee",
   intro:
@@ -46,6 +48,8 @@ const en = {
   countDone: "Approved {count} of {required}",
   youApproved: "You approved",
   approversTitle: "Who answered",
+  /** Committee positions (D026), same words as Setup. */
+  positions: setupText.en.positions,
   notAnswered: "Not answered yet",
   objected: "Objected",
   approvedAt: "Approved {time}",
@@ -229,6 +233,7 @@ const th: typeof en = {
   countDone: "อนุมัติแล้ว {count} จาก {required}",
   youApproved: "ท่านอนุมัติแล้ว",
   approversTitle: "ผู้ที่ตอบแล้ว",
+  positions: setupText.th.positions,
   notAnswered: "ยังไม่อนุมัติ",
   objected: "คัดค้าน",
   approvedAt: "อนุมัติ {time}",

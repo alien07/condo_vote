@@ -72,6 +72,8 @@ const EXACT: Record<string, string> = {
   "Active ownership link ended.": "สิ้นสุดการผูกกรรมสิทธิ์แล้ว",
   "Another active owner already uses this email.": "อีเมลนี้มีเจ้าของคนอื่นใช้อยู่แล้ว",
   "Account email is required.": "ต้องกรอกอีเมลของบัญชี",
+  "Position is required.": "ต้องเลือกตำแหน่ง",
+  "Type the position title.": "พิมพ์ชื่อตำแหน่ง",
   "Give a reason of at least 5 characters.": "กรอกเหตุผลอย่างน้อย 5 ตัวอักษร",
   "No account has this email. Ask the owner to sign in once first.":
     "ไม่มีบัญชีที่ใช้อีเมลนี้ ให้เจ้าของเข้าสู่ระบบหนึ่งครั้งก่อน",

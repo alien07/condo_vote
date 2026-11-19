@@ -147,8 +147,9 @@ export async function AdminWorkspace({
 
         {sections.length > 1 ? (
           <div className="sticky top-0 z-10 mb-5 border-b border-[var(--border)] bg-[var(--background)] py-3">
-            {/* The tabs explain themselves; the name is for screen readers. */}
-            <nav aria-label={s.adminHome.tabsTitle} className="flex gap-2 overflow-x-auto text-sm">
+            {/* The tabs explain themselves; the name is for screen readers.
+                They wrap on phones, so no tab is cut off (setup review 2026-11-19). */}
+            <nav aria-label={s.adminHome.tabsTitle} className="flex flex-wrap gap-2 text-sm">
               {sections.map((section) => {
                 const active = section === activeSection;
                 const badge = section === "owners" ? unlinkedActiveOwners : 0;
@@ -157,7 +158,7 @@ export async function AdminWorkspace({
                   <a
                     aria-current={active ? "page" : undefined}
                     className={[
-                      "inline-flex shrink-0 items-center gap-2 rounded-md border px-3 py-2 font-medium",
+                      "inline-flex min-h-11 shrink-0 items-center gap-2 rounded-md border px-3 py-2 font-medium",
                       active
                         ? "border-[var(--primary)] bg-[var(--primary)] text-[var(--primary-foreground)]"
                         : "border-[var(--border)] bg-[var(--surface)]",

@@ -28,7 +28,9 @@ Current verification:
 
 ### Unit Tests
 Tool: Vitest (`npm run test:unit`, `vitest.config.ts`). CI runs it before the
-build. Current coverage: `features/results/pass-rules.test.ts`.
+build. Current coverage includes `features/results/pass-rules.test.ts`,
+`features/admin/components/sections/setup/audit-log-labels.test.ts` (audit
+codes in words) and `lib/i18n/committee-position.test.ts` (D026).
 
 Scope:
 - Pure helpers.
@@ -72,8 +74,9 @@ answer validation, proxy limit, proxy snapshot sync),
 `question_choices.test.sql` (default Abstain, multiple choice limits),
 `committee_approvals.test.sql` (approval minimum, publishing, result visibility,
 closing voting early), `secret_ballot.test.sql` (secret answers hidden
-from admins, online totals, secrecy lock), and `privacy.test.sql`
-(system_admin permissions, PDPA consent and notice versions).
+from admins, online totals, secrecy lock), `privacy.test.sql`
+(system_admin permissions, PDPA consent and notice versions), and
+`committee_position.test.sql` (built-in committee positions, D026).
 
 The local and CI seed turn PDPA consent off so e2e users can sign in
 directly. `tests/e2e/privacy.spec.ts` turns it on for its own test and back

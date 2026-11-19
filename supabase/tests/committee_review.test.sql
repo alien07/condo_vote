@@ -24,8 +24,8 @@ insert into public.app_roles (profile_id, role) values
   (:admin_a, 'admin'), (:member_b, 'committee'), (:member_c, 'committee');
 -- Only these two are active members here, even with demo data (rolled back).
 update public.committee_members set active = false;
-insert into public.committee_members (profile_id, full_name, position_title, display_order) values
-  (:member_b, 'Member B', 'Chair', 1), (:member_c, 'Member C', 'Secretary', 2);
+insert into public.committee_members (profile_id, full_name, position_code, display_order) values
+  (:member_b, 'Member B', 'chair', 1), (:member_c, 'Member C', 'secretary', 2);
 
 insert into public.meetings (id, title, status, starts_at, ends_at, required_approvals) values
   (:open_m, 'Review open meeting', 'published', now() - interval '1 hour', now() + interval '2 hours', 2),

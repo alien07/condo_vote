@@ -81,8 +81,8 @@ select throws_like(
   'Cannot generate result snapshots after%', 'no new snapshot after publishing');
 
 -- Closing voting early (0030: through a request) -------------------------------
-insert into public.committee_members (profile_id, full_name, position_title) values
-  (:member_b, 'Member B', 'Chair'), (:member_c, 'Member C', 'Member');
+insert into public.committee_members (profile_id, full_name, position_code) values
+  (:member_b, 'Member B', 'chair'), (:member_c, 'Member C', 'member');
 
 select is(
   has_function_privilege('authenticated', 'public.approve_close_voting(uuid)', 'execute'),

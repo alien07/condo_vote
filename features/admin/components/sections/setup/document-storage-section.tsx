@@ -24,9 +24,9 @@ export async function DocumentStorageSection({
       id="storage"
     >
       <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <FolderLock className="text-[var(--primary)]" size={20} />
-          <div>
+        <div className="flex min-w-0 items-start gap-2">
+          <FolderLock className="mt-1 shrink-0 text-[var(--primary)]" size={20} />
+          <div className="min-w-0">
             <h2 className="text-lg font-semibold">{s.setup.storageTitle}</h2>
             <p className="text-sm text-[var(--muted)]">
               {s.setup.storageIntro}
@@ -34,15 +34,12 @@ export async function DocumentStorageSection({
           </div>
         </div>
         <a
-          className="inline-flex min-h-10 items-center justify-center rounded-md border border-[var(--border)] px-4 py-2 text-sm font-medium"
+          className="inline-flex min-h-11 items-center justify-center rounded-md border border-[var(--border)] px-4 py-2 text-sm font-medium"
           href="/admin/documents"
         >
           {s.setup.openDocuments}
         </a>
       </div>
-      <p className="mb-4 text-sm text-[var(--muted)]">
-        {s.setup.storageHelp}
-      </p>
 
       {canEdit ? (
         <DocumentStorageSettingsForm appSettings={appSettings} />

@@ -26,9 +26,9 @@ insert into public.app_roles (profile_id, role) values
 -- Only these three are active members here, even on a database with demo
 -- data (the test rolls back, so nothing is changed for real).
 update public.committee_members set active = false;
-insert into public.committee_members (profile_id, full_name, position_title, display_order) values
-  (:member_b, 'Member B', 'Chair', 1), (:member_c, 'Member C', 'Secretary', 2),
-  (:member_e, 'Member E', 'Member', 3);
+insert into public.committee_members (profile_id, full_name, position_code, display_order) values
+  (:member_b, 'Member B', 'chair', 1), (:member_c, 'Member C', 'secretary', 2),
+  (:member_e, 'Member E', 'member', 3);
 
 insert into public.meetings (id, title, status, starts_at, ends_at, required_approvals) values
   (:open_m, 'Objection meeting', 'published', now() - interval '1 hour', now() + interval '2 hours', 2),

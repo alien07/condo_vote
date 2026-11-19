@@ -129,7 +129,14 @@ export async function answerCorrectionRequest(
   );
 }
 
-export type CommitteePerson = { profile_id: string; name: string; position: string | null };
+/** position is the Thai label; position_code and position_title give the page language (D026). */
+export type CommitteePerson = {
+  profile_id: string;
+  name: string;
+  position: string | null;
+  position_code?: string | null;
+  position_title?: string | null;
+};
 
 export type CloseRequest = {
   id: string;
