@@ -25,33 +25,22 @@ export async function access(page: Page, ctx: AfterFixtures) {
     closedVoteAssignment.locator("span").filter({ hasText: "Closed" }),
   ).toBeVisible();
 
+  // Overview (req_0008): waiting work, meetings now, readiness, master data.
   await page.goto(`${activeAppOrigin}/admin`);
   await expect(
-    page.getByRole("heading", { name: "Admin", exact: true }),
+    page.getByRole("heading", { level: 1, name: "Overview", exact: true }),
   ).toBeVisible();
-  await expect(
-    page.getByRole("heading", { name: "Master Data" }),
-  ).toBeVisible();
-  await expect(
-    page.getByRole("heading", { name: "Voting Readiness" }),
-  ).toBeVisible();
-  await expect(
-    page.getByRole("heading", { name: "Needs Attention" }),
-  ).toBeVisible();
-  await expect(
-    page.getByRole("heading", { name: "Results & Communication" }),
-  ).toBeVisible();
-  await expect(page.getByRole("link", { name: /Conflicts/ })).toHaveAttribute(
+  for (const heading of ["Waiting for you", "Meetings now", "Readiness", "Master data"]) {
+    await expect(page.getByRole("heading", { level: 2, name: heading, exact: true })).toBeVisible();
+  }
+  await expect(page.getByRole("link", { name: /Rooms that voted twice/ })).toHaveAttribute(
     "href",
-    "/admin/voting",
+    "/admin/voting/conflicts?status=unresolved",
   );
-  await expect(page.getByRole("link", { name: /Queued mail/ })).toHaveAttribute(
+  await expect(page.getByRole("link", { name: /Emails in the queue/ })).toHaveAttribute(
     "href",
     "/admin/communications",
   );
-  await expect(
-    page.getByRole("link", { name: /Eligible voters/ }),
-  ).toContainText(/% room coverage/);
   await page.goto(`${activeAppOrigin}/admin/people?tab=profiles`);
   await expect(
     page.getByRole("heading", { name: "Rooms & Owners", exact: true }),
