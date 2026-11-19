@@ -95,7 +95,7 @@ $env:ENABLE_LOCAL_AUTH_BYPASS="1"; npm run start
    - ✓ Expected: "1/2", not yet published
 7. Log out → log in with **Google** (manorin.prajak@gmail.com) → Committee → approve M6
    - ✓ Expected: published; result emails are queued (Admin › Communications)
-8. Results → M6 → **Create PDF files**, then open the **Official record**
+8. Results → M6 → **Create PDF files**, then open **View record (web page)**
    - ✓ Expected: 3 PDF files. The record shows the quorum, the conflict and the reason chosen, and the SHA-256
 
 **Checkpoint F2:** in Admin › Communications there are `result_approved` emails in Thai/English, matching each owner's language.

@@ -70,7 +70,7 @@ export default async function AuditPage() {
                 </span>
                 <Link
                   className="font-medium text-[var(--primary)] underline"
-                  href={`/record/${publication.result_snapshot_id}`}
+                  href={`/record/${publication.result_snapshot_id}?from=audit`}
                 >
                   {t.officialRecord}
                 </Link>
