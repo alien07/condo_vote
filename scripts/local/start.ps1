@@ -96,7 +96,7 @@ if ($Dev) {
   # Rebuild when the code changed since the last local build.
   # Code state = commit + a hash of uncommitted changes to tracked files.
   $head = (git rev-parse HEAD 2>$null)
-  $changes = (git diff HEAD -- . ":(exclude)next-env.d.ts" 2>$null | git hash-object --stdin 2>$null)
+  $changes = (git diff HEAD 2>$null | git hash-object --stdin 2>$null)
   $state = "$head $changes"
   $marker = Join-Path $root ".next\local-build-head"
   $builtState = if (Test-Path $marker) { (Get-Content $marker -Raw).Trim() } else { "" }

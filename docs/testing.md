@@ -7,7 +7,10 @@ Robot tests are implemented with Playwright E2E coverage.
 
 Current verification:
 - `npm run lint`
-- `npm run typecheck`
+- `npm run typecheck` (`next typegen && tsc --noEmit`: writes the route
+  types and `next-env.d.ts` first, so it works on a fresh clone;
+  `next-env.d.ts` is not committed because dev and build write it
+  differently)
 - `npm run build`
 - `npm run test:e2e`
 - Targeted auth/admin checks:
