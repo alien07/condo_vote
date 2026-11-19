@@ -1,3 +1,4 @@
+import { ChevronDown } from "lucide-react";
 import { LongText } from "@/features/ui/long-text";
 import { CountedText } from "@/features/committee/counted-text";
 import { ConfirmSubmitButton } from "@/features/admin/components/form-controls";
@@ -12,6 +13,8 @@ import { codeLabel, fill } from "@/lib/i18n/template";
 import { createClient } from "@/lib/supabase/server";
 
 const LEVELS = ["low", "medium", "high"];
+const choice =
+  "inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-md border border-[var(--border)] px-3 has-[:checked]:border-[var(--primary)] has-[:checked]:bg-[var(--accent)]";
 const input =
   "min-h-11 w-full rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm font-normal";
 
@@ -53,7 +56,7 @@ export async function CorrectionAdminPanel() {
 
           return (
             <article
-              className="grid gap-2 rounded-md border border-amber-200 bg-white p-3 text-[var(--foreground)]"
+              className="grid gap-2 rounded-md border border-[var(--border)] bg-[var(--surface)] p-3 text-[var(--foreground)]"
               data-correction-id={request.id}
               key={request.id}
             >
@@ -73,19 +76,22 @@ export async function CorrectionAdminPanel() {
                 <LongText label={t.labelReference} less={t.showLess} lines={2} more={t.showMore} text={request.legal_reference} />
               ) : null}
 
-              <div className="grid gap-3 sm:grid-cols-2">
+              {/* One task at a time (2026-11-19 review): the answer is the main
+                  form; raising the level folds away below it. */}
+              <div className="grid gap-3 border-t border-[var(--border)] pt-3">
                 <form action={answerCorrectionAsAdmin} className="grid gap-2">
                   <input name="request_id" type="hidden" value={request.id} />
-                  <div className="flex flex-wrap gap-3">
-                    <label className="inline-flex items-center gap-2">
-                      <input defaultChecked name="status" type="radio" value="fixed" />
+                  <fieldset className="flex flex-wrap gap-2">
+                    <legend className="sr-only">{t.answerText}</legend>
+                    <label className={choice}>
+                      <input className="h-4 w-4" defaultChecked name="status" type="radio" value="fixed" />
                       {t.answerFixed}
                     </label>
-                    <label className="inline-flex items-center gap-2">
-                      <input name="status" type="radio" value="no_change" />
+                    <label className={choice}>
+                      <input className="h-4 w-4" name="status" type="radio" value="no_change" />
                       {t.answerNoChange}
                     </label>
-                  </div>
+                  </fieldset>
                   <label className="grid gap-1 font-medium">
                     <span>
                       {t.answerText} <RequiredMark />
@@ -93,7 +99,7 @@ export async function CorrectionAdminPanel() {
                     <CountedText className={input} maxLength={500} multiline name="answer" required />
                   </label>
                   <ConfirmSubmitButton
-                    className="min-h-11 rounded-md bg-[var(--primary)] px-3 py-2 text-sm font-medium text-[var(--primary-foreground)]"
+                    className="min-h-11 w-fit rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)]"
                     confirmMessage={t.confirmAnswer}
                     pendingLabel={t.saving}
                     tone="primary"
@@ -103,7 +109,12 @@ export async function CorrectionAdminPanel() {
                 </form>
 
                 {higher.length > 0 ? (
-                  <form action={raiseCorrectionLevelAsAdmin} className="grid gap-2">
+                  <details className="group" data-raise-level>
+                    <summary className="inline-flex min-h-11 cursor-pointer list-none items-center gap-1 text-sm font-medium text-[var(--primary)] [&::-webkit-details-marker]:hidden">
+                      {t.raiseLevelQuestion}
+                      <ChevronDown aria-hidden="true" className="transition-transform group-open:rotate-180" size={16} />
+                    </summary>
+                  <form action={raiseCorrectionLevelAsAdmin} className="mt-2 grid gap-2">
                     <input name="request_id" type="hidden" value={request.id} />
                     <select aria-label={t.raiseLevel} className={input} name="level">
                       {higher.map((level) => (
@@ -123,13 +134,14 @@ export async function CorrectionAdminPanel() {
                       <CountedText className={input} maxLength={200} name="legal_reference" />
                     </label>
                     <ConfirmSubmitButton
-                      className="min-h-11 rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm font-medium"
+                      className="min-h-11 w-fit rounded-md border border-[var(--border)] bg-[var(--surface)] px-4 py-2 text-sm font-medium"
                       confirmMessage={t.confirmRaise}
                       pendingLabel={t.saving}
                     >
                       {t.raiseLevel}
                     </ConfirmSubmitButton>
                   </form>
+                  </details>
                 ) : null}
               </div>
             </article>

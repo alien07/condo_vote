@@ -41,11 +41,12 @@ function getResultFilters(
     params.sort === "generated" ||
     params.sort === "meeting"
       ? params.sort
-      : "meeting";
+      : "generated";
 
+  // Newest first when nothing is chosen (2026-11-19 review).
   return {
     approval: params.approval,
-    dir: params.dir === "desc" ? "desc" : "asc",
+    dir: params.dir === "asc" || params.dir === "desc" ? params.dir : params.sort ? "asc" : "desc",
     generated: params.generated,
     meeting: params.meeting,
     page: positiveInteger(params.page, 1),
