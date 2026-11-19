@@ -106,3 +106,18 @@
 form:has(select[name="position_code"] option[value="other"]:checked) .position-other {
   display: grid;
 }
+
+/* Register document: only the picker for the chosen "Document of" kind
+   shows (documents review 2026-11-19). CSS, so it follows the select
+   through form resets. */
+.owner-pick {
+  display: none;
+}
+
+form:has(select[name="owner_type"] option[value="profile"]:checked) [data-owner-pick="profile"],
+form:has(select[name="owner_type"] option[value="proxy_authorization"]:checked) [data-owner-pick="proxy_authorization"],
+form:has(select[name="owner_type"] option[value="approval_request"]:checked) [data-owner-pick="approval_request"],
+form:has(select[name="owner_type"] option[value="meeting"]:checked) [data-owner-pick="meeting"],
+form:has(select[name="owner_type"] option[value="result_snapshot"]:checked) [data-owner-pick="result_snapshot"] {
+  display: grid;
+}

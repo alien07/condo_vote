@@ -16,6 +16,10 @@ function positiveInteger(value: string | null, fallback: number) {
   return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
 }
 
+function uuidOrUndefined(value: string | null) {
+  return value && /^[0-9a-f-]{36}$/i.test(value) ? value : undefined;
+}
+
 function getDocumentFilters(searchParams: URLSearchParams): DocumentTableFilters {
   const sort = searchParams.get("sort");
   const sortBy = sort === "set" || sort === "type" || sort === "created"
@@ -24,6 +28,8 @@ function getDocumentFilters(searchParams: URLSearchParams): DocumentTableFilters
 
   return {
     dir: searchParams.get("dir") === "asc" ? "asc" : "desc",
+    owner: uuidOrUndefined(searchParams.get("owner")),
+    room: uuidOrUndefined(searchParams.get("room")),
     page: positiveInteger(searchParams.get("page"), 1),
     perPage: positiveInteger(searchParams.get("perPage"), 25),
     set: searchParams.get("set") ?? undefined,

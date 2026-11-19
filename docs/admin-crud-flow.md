@@ -31,8 +31,21 @@ Search/filter forms and single-record configuration forms do not need drawers.
 
 4. `/admin/setup?tab=storage` and `/admin/documents`
    - Storage provider settings remain inline because they are single-record app configuration.
-   - `Go to documents →` links to the dedicated private document registry.
-   - Register private document reference opens in a drawer on `/admin/documents`.
+   - `Go to documents →` links to the private document registry.
+   - Register document opens in a drawer on `/admin/documents?mode=create`,
+     in three groups: whose document (document type, "Document of", then a
+     `SearchSelect` of people, proxies, approval requests, meetings or
+     results that submits the record id), where the file is (storage,
+     folder path or private Drive link), and check data (folded, optional).
+     "Choose file to calculate" reads a file on this device and fills the
+     file name, type, size and SHA-256; the file is never uploaded.
+     Document set and version are worked out when left empty
+     (review 2026-11-19).
+   - Each row: View details (`mode=view&id=`: full path and checksum, size,
+     type, who registered it and when) and Register new version
+     (`mode=create&from=<id>`: same owner and set, next version).
+   - Filters: room and owner (`SearchSelect`, `?room=<id>`, `?owner=<id>`)
+     and document type; phones get cards, md and up the table.
 
 5. `/admin/proxies`
    - Add proxy authorization opens in drawer.

@@ -124,45 +124,59 @@ const documentFormFields = [
   "checksum_sha256",
 ];
 
+const DOCUMENT_OWNER_TYPES = ["profile", "approval_request", "proxy_authorization", "meeting", "result_snapshot"];
+
 function documentFormValues(formData: FormData) {
-  return Object.fromEntries(
+  const values: Record<string, string> = Object.fromEntries(
     documentFormFields.map((field) => [
       field,
       String(formData.get(field) ?? ""),
     ]),
   );
+
+  // One picker per "Document of" kind (owner_id_profile, ...); the chosen
+  // kind's picker gives the id (documents review 2026-11-19).
+  for (const type of DOCUMENT_OWNER_TYPES) {
+    values[`owner_id_${type}`] = String(formData.get(`owner_id_${type}`) ?? "");
+  }
+
+  if (!values.owner_id && DOCUMENT_OWNER_TYPES.includes(values.owner_type)) {
+    values.owner_id = values[`owner_id_${values.owner_type}`];
+  }
+
+  return values;
 }
 
 function validateDocumentForm(values: Record<string, string>) {
   const fieldErrors: Record<string, string> = {};
-  const requiredFields = [
-    ["storage_provider", "Storage provider"],
-    ["owner_type", "Owner type"],
-    ["document_type", "Document type"],
-    ["owner_id", "Owner UUID"],
-    ["storage_path", "Path or link"],
-    ["document_set_key", "Document set key"],
-  ] as const;
+  // Form order: document type, whose document (a picker per kind), storage, path.
+  const ownerField = DOCUMENT_OWNER_TYPES.includes(values.owner_type)
+    ? `owner_id_${values.owner_type}`
+    : "owner_type";
 
-  for (const [field, label] of requiredFields) {
-    if (!values[field].trim()) {
-      fieldErrors[field] = `${label} is required.`;
+  if (!values.document_type.trim()) {
+    fieldErrors.document_type = "Document type is required.";
+  }
+
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(values.owner_id.trim())) {
+    fieldErrors[ownerField] = "Choose whose document it is.";
+  }
+
+  if (!values.storage_provider.trim()) {
+    fieldErrors.storage_provider = "Storage provider is required.";
+  }
+
+  if (!values.storage_path.trim()) {
+    fieldErrors.storage_path = "Path or link is required.";
+  }
+
+  // Empty version: the next one of the set (worked out when saving).
+  if (values.document_version.trim()) {
+    const version = Number(values.document_version);
+
+    if (!Number.isInteger(version) || version <= 0) {
+      fieldErrors.document_version = "Version must be a whole number greater than 0.";
     }
-  }
-
-  if (
-    values.owner_id &&
-    !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
-      values.owner_id,
-    )
-  ) {
-    fieldErrors.owner_id = "Owner UUID must be a valid UUID.";
-  }
-
-  const version = Number(values.document_version);
-
-  if (!Number.isInteger(version) || version <= 0) {
-    fieldErrors.document_version = "Version must be a whole number greater than 0.";
   }
 
   if (values.file_size_bytes) {
@@ -220,14 +234,36 @@ export async function registerDocumentReferenceWithState(
     }
 
     const supabase = await createClient();
+    // Versions of one person's (meeting's, ...) document of one type share
+    // a set unless the form names one; the list shows the owner, not the key.
+    const setKey =
+      values.document_set_key.trim() ||
+      `${values.owner_type.trim()}:${values.owner_id.trim()}:${values.document_type.trim()}`;
+    let documentVersion = Number(values.document_version);
+
+    if (!values.document_version.trim()) {
+      const { data: latest, error: latestError } = await supabase
+        .from("documents")
+        .select("document_version")
+        .eq("document_set_key", setKey)
+        .order("document_version", { ascending: false })
+        .limit(1);
+
+      if (latestError) {
+        return { error: latestError.message, values };
+      }
+
+      documentVersion = (latest?.[0]?.document_version ?? 0) + 1;
+    }
+
     const documentValues = {
       owner_type: values.owner_type.trim(),
       owner_id: values.owner_id.trim(),
       document_type: values.document_type.trim(),
       storage_provider: values.storage_provider.trim(),
       storage_path: values.storage_path.trim(),
-      document_set_key: values.document_set_key.trim(),
-      document_version: Number(values.document_version),
+      document_set_key: setKey,
+      document_version: documentVersion,
       original_filename: optionalText(values.original_filename),
       mime_type: optionalText(values.mime_type),
       file_size_bytes: values.file_size_bytes
@@ -264,7 +300,7 @@ export async function registerDocumentReferenceWithState(
     return {
       recordId: document.id,
       success: "Document registered",
-      values,
+      values: { ...values, document_set_key: setKey },
     };
   } catch (error) {
     return {

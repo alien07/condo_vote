@@ -96,6 +96,15 @@ describe("audit details", () => {
     expect(shortId(uuid)).toBe("3f2b8c1e…");
   });
 
+  it("hides a key with an id inside and names document types", () => {
+    const pairs = auditDetailPairs(en, "en", {
+      document_set_key: `profile:${uuid}:owner_verification`,
+      document_type: "owner_verification",
+    });
+
+    expect(pairs).toEqual([{ key: "document_type", label: "Document type", value: "Owner verification" }]);
+  });
+
   it("returns nothing for empty or non-object details", () => {
     expect(auditDetailPairs(en, "en", null)).toEqual([]);
     expect(auditDetailPairs(en, "en", [1, 2])).toEqual([]);
