@@ -315,8 +315,10 @@ test.describe("@test:e2e @test:auth @test:admin admin demo: committee and docume
       });
 
       // Every field has a label; whose document is picked, not typed as an id.
+      // Not exact: the <label> wraps its field, so its text also holds the
+      // options of a select or the help line under a text box.
       for (const label of ["Document type", "Document of", "Storage", "Folder path or private Drive link"]) {
-        await expect(drawer.getByLabel(label, { exact: true })).toBeVisible();
+        await expect(drawer.getByLabel(label)).toBeVisible();
       }
       await expect(drawer.locator('input[name="owner_id"]')).toHaveCount(0);
       await expect(drawer.getByRole("option", { name: "owner_verification" })).toHaveCount(0);
@@ -329,7 +331,7 @@ test.describe("@test:e2e @test:auth @test:admin admin demo: committee and docume
       // Pick the person by email (SearchSelect submits the profile id).
       await chooseSearchOption(drawer, "owner_id_profile", demoAdminEmail);
       await expect(drawer.locator('input[type="hidden"][name="owner_id_profile"]')).toHaveValue(profile!.id);
-      await drawer.getByLabel("Folder path or private Drive link", { exact: true }).fill(storagePath);
+      await drawer.getByLabel("Folder path or private Drive link").fill(storagePath);
 
       // Check data: read a local file in the browser; nothing is uploaded.
       await drawer.getByText("Check data (optional)").click();
@@ -380,7 +382,7 @@ test.describe("@test:e2e @test:auth @test:admin admin demo: committee and docume
 
       await expect(versionDrawer.locator('input[type="hidden"][name="owner_id_profile"]')).toHaveValue(profile!.id);
       await versionDrawer
-        .getByLabel("Folder path or private Drive link", { exact: true })
+        .getByLabel("Folder path or private Drive link")
         .fill(storagePath.replace(".pdf", "-v2.pdf"));
       await versionDrawer.getByRole("button", { name: "Register new version" }).click();
       await page.waitForURL((url) => {
