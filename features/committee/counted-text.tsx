@@ -60,7 +60,9 @@ export function CountedText({
       {multiline ? <textarea {...shared} rows={rows} /> : <input {...shared} />}
       <span
         aria-live="polite"
-        className={`justify-self-end text-xs tabular-nums ${near ? "font-semibold text-[var(--danger)]" : "text-[var(--muted)]"}`}
+        // Hidden until the person types, so empty forms are not full of
+        // "0/500" (2026-11-19 review); the space stays so nothing jumps.
+        className={`justify-self-end text-xs tabular-nums ${length === 0 ? "invisible" : ""} ${near ? "font-semibold text-[var(--danger)]" : "text-[var(--muted)]"}`}
         id={counterId}
       >
         {length}/{maxLength}

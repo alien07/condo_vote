@@ -123,9 +123,12 @@ export function ResultSnapshotRowFocus({
     }
 
     const frame = window.requestAnimationFrame(() => {
-      const row = document.querySelector<HTMLElement>(
-        `[data-result-snapshot-id="${escapeSelectorValue(snapshotId)}"]`,
-      );
+      // The table row on wide screens, the card on phones: the visible one.
+      const row = Array.from(
+        document.querySelectorAll<HTMLElement>(
+          `[data-result-snapshot-id="${escapeSelectorValue(snapshotId)}"]`,
+        ),
+      ).find((element) => element.getClientRects().length > 0);
 
       if (!row) {
         return;

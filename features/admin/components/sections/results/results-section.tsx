@@ -1,12 +1,11 @@
 import { getStaffI18n } from "@/lib/i18n/server";
 import { fill } from "@/lib/i18n/template";
-import { ListChecks } from "lucide-react";
-import { createResultPdfs } from "@/features/results/pdf/actions";
-import { RESULT_PDF_FILES } from "@/features/results/pdf/files";
+import { formatDateTimeIn } from "@/lib/i18n/format";
+import { ResultRowActions } from "@/features/admin/components/sections/results/result-row-actions";
 import { PerPageSelect } from "@/features/admin/components/table-controls";
 import { ResultApprovalDrawer, ResultSnapshotRowFocus } from "@/features/admin/components/result-approval-drawer";
 import { resultHref } from "@/features/admin/components/sections/results/result-hrefs";
-import { formatDateTime, formatPercent, getResultTotals } from "@/features/admin/components/sections/shared/format";
+import { formatPercent, getResultTotals } from "@/features/admin/components/sections/shared/format";
 import { tablePage, tablePerPage } from "@/features/admin/components/sections/shared/table";
 import type {
   AdminDashboardData,
@@ -50,16 +49,25 @@ export async function ResultsSection({
   resultSnapshots,
   hidden,
 }: ResultsSectionProps) {
-  const { s } = await getStaffI18n();
+  const { locale, s } = await getStaffI18n();
+  // Newest first by default (2026-11-19 review), so work waiting now is on top.
   const resultTableFilters: Required<ResultTableFilters> = {
     approval: resultFilters?.approval ?? "all",
-    dir: resultFilters?.dir ?? "asc",
+    dir: resultFilters?.dir ?? "desc",
     generated: resultFilters?.generated ?? "",
     meeting: resultFilters?.meeting ?? "",
     page: tablePage(resultFilters?.page),
     perPage: tablePerPage(resultFilters?.perPage),
-    sort: resultFilters?.sort ?? "meeting",
+    sort: resultFilters?.sort ?? "generated",
   };
+  // The newest result of each meeting; any other is an older result.
+  const latestByMeeting = new Map<string, string>();
+  for (const snapshot of resultSnapshots) {
+    const latest = latestByMeeting.get(snapshot.meeting_id);
+    if (!latest || snapshot.generated_at > latest) {
+      latestByMeeting.set(snapshot.meeting_id, snapshot.generated_at);
+    }
+  }
   const filteredResultSnapshots = resultSnapshots.filter((snapshot) => {
     const meetingQuery = resultTableFilters.meeting.trim().toLowerCase();
     const generatedQuery = resultTableFilters.generated.trim();
@@ -153,16 +161,96 @@ export async function ResultsSection({
         : " ↓"
       : "";
 
+  const rows = pagedResultSnapshots.map((snapshot) => {
+    const approved = approvedResultSnapshotIds.has(snapshot.id);
+    const approvalCount = approvalCountBySnapshotId.get(snapshot.id) ?? 0;
+    const meetingApproved = approvedMeetingIds.has(snapshot.meeting_id);
+    // Another result of this meeting already collects approvals.
+    const lockedByOther = lockedMeetingIds.has(snapshot.meeting_id) && approvalCount === 0;
+    const pendingManualCount =
+      pendingManualBallotsByMeetingId.get(snapshot.meeting_id)?.length ?? 0;
+    const selected =
+      drawer?.mode === "edit" && drawer.type === "result_approval" && drawer.id === snapshot.id;
+
+    return {
+      snapshot,
+      approved,
+      approvalCount,
+      // Master PDF files (D021) are made in the background after
+      // publication; the button makes any that are missing.
+      pdfFiles: snapshot.result_documents ?? [],
+      generatedLabel: formatDateTimeIn(locale, snapshot.generated_at),
+      highlighted: selected || focusedResultSnapshotId === snapshot.id,
+      locked: (meetingApproved && !approved) || lockedByOther,
+      canApprove: !meetingApproved && !lockedByOther && pendingManualCount === 0,
+      older: latestByMeeting.get(snapshot.meeting_id) !== snapshot.generated_at,
+      pendingManualCount,
+      requiredApprovals: snapshot.meetings?.required_approvals ?? 1,
+      totals: getResultTotals(snapshot.payload_json),
+    };
+  });
+  type Row = (typeof rows)[number];
+  const badge = "inline-flex items-center whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-medium";
+  const meetingBlock = (row: Row, withDate = true) => (
+    <div className="grid gap-1">
+      <span className="font-medium [overflow-wrap:anywhere]">{row.snapshot.meetings?.title ?? "-"}</span>
+      {row.older ? (
+        <span className={`${badge} w-fit bg-slate-100 text-slate-700`} data-older-result>
+          {s.results.older}
+        </span>
+      ) : null}
+      {withDate ? (
+        <span className="text-xs text-[var(--muted)]">
+          {fill(s.results.generatedSummary, { time: row.generatedLabel })}
+        </span>
+      ) : null}
+    </div>
+  );
+  const approvalBadge = (row: Row) =>
+    row.approved ? (
+      <span className={`${badge} bg-emerald-100 text-emerald-800`}>{s.results.approved}</span>
+    ) : (
+      <span className={`${badge} bg-amber-100 text-amber-900`}>
+        {fill(s.results.pending, { count: row.approvalCount, required: row.requiredApprovals })}
+      </span>
+    );
+  const turnoutBlock = (row: Row) => (
+    <div className="grid gap-0.5">
+      <span>
+        {fill(s.results.turnoutRooms, {
+          submitted: row.totals?.submitted_ballots ?? 0,
+          eligible: row.totals?.eligible_voters ?? 0,
+        })}
+      </span>
+      <span className="text-xs text-[var(--muted)]">
+        {fill(s.results.turnoutOwnership, {
+          submitted: formatPercent(row.totals?.submitted_ownership),
+          total: formatPercent(row.totals?.total_eligible_ownership),
+        })}
+      </span>
+    </div>
+  );
+  const actions = (row: Row) => (
+    <ResultRowActions
+      approveHref={`${resultListHref}&mode=edit&type=result_approval&id=${row.snapshot.id}`}
+      approved={row.approved}
+      canApprove={row.canApprove}
+      hasOfficialPdf={row.pdfFiles.some((file) => file.kind === "official")}
+      locked={row.locked}
+      pdfCount={row.pdfFiles.length}
+      pendingManualCount={row.pendingManualCount}
+      snapshotId={row.snapshot.id}
+    />
+  );
+
   return (
     <section
       className="mb-5 scroll-mt-20 rounded-lg border border-[var(--border)] bg-[var(--surface)] p-5"
       hidden={hidden}
       id="results"
     >
-      <div className="mb-4 flex items-center gap-2">
-        <ListChecks className="text-[var(--primary)]" size={20} />
-        <h2 className="text-lg font-semibold">{s.results.title}</h2>
-      </div>
+      {/* The page title already says "Results" (2026-11-19 review). */}
+      <h2 className="sr-only">{s.results.title}</h2>
       <section className="mb-5 rounded-lg border border-[var(--border)] bg-[var(--background)] p-4">
         <div className="mb-3">
           <h3 className="text-sm font-semibold">{s.common.searchCriteria}</h3>
@@ -226,7 +314,7 @@ export async function ResultsSection({
       </section>
       <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h3 className="text-sm font-semibold">{s.results.title}</h3>
+          <h3 className="text-sm font-semibold">{s.results.listTitle}</h3>
           <p className="mt-1 text-xs text-[var(--muted)]">
             {fill(s.common.showing, { start: resultPageStart, end: resultPageEnd, total: resultTotal })}
           </p>
@@ -252,7 +340,25 @@ export async function ResultsSection({
           />
         </div>
       </div>
-      <div className="overflow-x-auto">
+      <ul className="grid gap-3 md:hidden" data-result-cards>
+        {rows.map((row) => (
+          <li
+            className={[
+              "grid gap-2 rounded-lg border border-[var(--border)] p-3 text-sm",
+              row.highlighted ? "border-l-4 border-l-[var(--primary)] bg-[var(--accent)]" : "",
+            ].join(" ")}
+            data-result-snapshot-id={row.snapshot.id}
+            key={row.snapshot.id}
+            tabIndex={-1}
+          >
+            {meetingBlock(row)}
+            <div className="flex flex-wrap items-center gap-2">{approvalBadge(row)}</div>
+            {turnoutBlock(row)}
+            {actions(row)}
+          </li>
+        ))}
+      </ul>
+      <div className="hidden md:block">
         <table className="w-full border-collapse text-left text-sm">
           <thead className="border-b border-[var(--border)] text-[var(--muted)]">
             <tr>
@@ -266,8 +372,7 @@ export async function ResultsSection({
                   {s.results.generated}{resultSortLabel("generated")}
                 </a>
               </th>
-              <th className="py-2 pr-3 font-medium">{s.results.submitted}</th>
-              <th className="py-2 pr-3 font-medium">{s.results.ownership}</th>
+              <th className="py-2 pr-3 font-medium">{s.results.turnout}</th>
               <th className="py-2 pr-3 font-medium">
                 <a href={resultSortHref("approval")}>
                   {s.results.approval}{resultSortLabel("approval")}
@@ -277,113 +382,23 @@ export async function ResultsSection({
             </tr>
           </thead>
           <tbody>
-            {pagedResultSnapshots.map((snapshot) => {
-              const totals = getResultTotals(snapshot.payload_json);
-              const approved = approvedResultSnapshotIds.has(snapshot.id);
-              // Master PDF files (D021) are made in the background after
-              // publication; the button makes any that are missing.
-              const pdfFiles = snapshot.result_documents ?? [];
-              const pdfCount = pdfFiles.length;
-              const hasOfficialPdf = pdfFiles.some((file) => file.kind === "official");
-              const meetingApproved = approvedMeetingIds.has(
-                snapshot.meeting_id,
-              );
-              const approvalCount = approvalCountBySnapshotId.get(snapshot.id) ?? 0;
-              const requiredApprovals = snapshot.meetings?.required_approvals ?? 1;
-              // Another snapshot of this meeting already collects approvals.
-              const lockedByOther =
-                lockedMeetingIds.has(snapshot.meeting_id) && approvalCount === 0;
-              const pendingManualCount =
-                pendingManualBallotsByMeetingId.get(snapshot.meeting_id)
-                  ?.length ?? 0;
-              const selected =
-                drawer?.mode === "edit" &&
-                drawer.type === "result_approval" &&
-                drawer.id === snapshot.id;
-              const focused = focusedResultSnapshotId === snapshot.id;
-
-              return (
-                <tr
-                  className={[
-                    "border-b border-[var(--border)]",
-                    selected || focused
-                      ? "border-l-4 border-l-[var(--primary)] bg-[var(--accent)]"
-                      : "",
-                  ].join(" ")}
-                  data-result-snapshot-id={snapshot.id}
-                  key={snapshot.id}
-                  tabIndex={-1}
-                >
-                  <td className="py-2 pr-3">
-                    {snapshot.meetings?.title ?? "-"}
-                  </td>
-                  <td className="py-2 pr-3">
-                    {formatDateTime(snapshot.generated_at)}
-                  </td>
-                  <td className="py-2 pr-3">
-                    {totals?.submitted_ballots ?? 0} /{" "}
-                    {totals?.eligible_voters ?? 0}
-                  </td>
-                  <td className="py-2 pr-3">
-                    {formatPercent(totals?.submitted_ownership)} /{" "}
-                    {formatPercent(totals?.total_eligible_ownership)}
-                  </td>
-                  <td className="py-2 pr-3">
-                    {approved
-                      ? s.results.approved
-                      : fill(s.results.pending, { count: approvalCount, required: requiredApprovals })}
-                  </td>
-                  <td className="py-2">
-                    {!meetingApproved && !lockedByOther && pendingManualCount === 0 ? (
-                      <a
-                        className="inline-flex min-h-9 items-center justify-center rounded-md border border-[var(--border)] px-3 py-1 text-sm font-medium"
-                        href={`${resultListHref}&mode=edit&type=result_approval&id=${snapshot.id}`}
-                      >
-                        {s.results.approve}
-                      </a>
-                    ) : null}
-                    {!meetingApproved && pendingManualCount > 0 ? (
-                      <a
-                        className="text-sm font-medium text-amber-700"
-                        href="/admin/voting"
-                      >
-                        {fill(s.results.resolvePending, { count: pendingManualCount })}
-                      </a>
-                    ) : null}
-                    {(meetingApproved && !approved) || lockedByOther ? (
-                      <span className="text-sm text-[var(--muted)]">
-                        {s.results.lockedByApproved}
-                      </span>
-                    ) : null}
-                    <a
-                      className="ml-2 inline-flex min-h-9 items-center text-sm font-medium text-[var(--primary)] underline"
-                      href={`/record/${snapshot.id}`}
-                    >
-                      {s.results.officialRecord}
-                    </a>
-                    {approved && hasOfficialPdf ? (
-                      <a
-                        className="ml-2 inline-flex min-h-9 items-center text-sm font-medium text-[var(--primary)] underline"
-                        href={`/result-files/${snapshot.id}/official-th.pdf`}
-                      >
-                        {s.results.officialPdf}
-                      </a>
-                    ) : null}
-                    {approved && pdfCount < RESULT_PDF_FILES.length ? (
-                      <form action={createResultPdfs} className="ml-2 inline">
-                        <input name="result_snapshot_id" type="hidden" value={snapshot.id} />
-                        <button
-                          className="inline-flex min-h-9 items-center rounded-md border border-[var(--border)] px-3 text-sm font-medium"
-                          type="submit"
-                        >
-                          {fill(s.results.createPdfs, { count: pdfCount, total: RESULT_PDF_FILES.length })}
-                        </button>
-                      </form>
-                    ) : null}
-                  </td>
-                </tr>
-              );
-            })}
+            {rows.map((row) => (
+              <tr
+                className={[
+                  "border-b border-[var(--border)] align-top",
+                  row.highlighted ? "border-l-4 border-l-[var(--primary)] bg-[var(--accent)]" : "",
+                ].join(" ")}
+                data-result-snapshot-id={row.snapshot.id}
+                key={row.snapshot.id}
+                tabIndex={-1}
+              >
+                <td className="py-3 pr-3">{meetingBlock(row, false)}</td>
+                <td className="whitespace-nowrap py-3 pr-3">{row.generatedLabel}</td>
+                <td className="py-3 pr-3">{turnoutBlock(row)}</td>
+                <td className="py-3 pr-3">{approvalBadge(row)}</td>
+                <td className="py-3">{actions(row)}</td>
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>
@@ -432,7 +447,7 @@ export async function ResultsSection({
             .map((snapshot) => (
               <ResultApprovalDrawer
                 closeHref={resultListHref}
-                generatedLabel={formatDateTime(snapshot.generated_at)}
+                generatedLabel={formatDateTimeIn(locale, snapshot.generated_at)}
                 key={snapshot.id}
                 pendingManualCount={
                   pendingManualBallotsByMeetingId.get(snapshot.meeting_id)
