@@ -2,13 +2,13 @@
 
 How it works (user decision 2026-11-19): every task has a number `req_####` from `claude/requirements.md`. The chat only collects requirements and hands them off; Claude Code does the work; the chat checks the result again.
 
-1. The chat writes the task here under `## req_####` (what, where, acceptance criteria) and starts a one-off scheduled task in environment `env_0139gTvk4LLh9uPB2L2WnypF` (Condo) whose prompt names the req number and this doc.
+1. The chat writes the task here under `## req_####` (what, where, acceptance criteria) and pushes this file to `dev`. **The user starts Claude Code themselves** (user decision 2026-11-20), naming the req number, e.g. "do req_0006 from docs/handoff.md".
 2. Claude Code: branch `<type>/req-####-<topic>` from `dev`; PR title starts with `[req_####]`; commits carry a `Req: req_####` line. Run npm ci, lint, typecheck, test:unit, build, test:db when the database changes, the related e2e specs, then the full CI run (`ci.yml` workflow_dispatch `full=true`). Squash merge when everything is green. Then fill the req's **Result** below (PR number, what changed, checks run, anything left) and set its status in `claude/requirements.md` to `done (PR #N)`.
 3. The chat checks the PR and CI, pulls `dev` onto the Windows machine with migrations, renders the pages at 1440/768/375, compares with the acceptance criteria, and sets the status to `verified` or opens a follow-up req.
 
 ---
 
-## req_0001: documents page review fixes (status: sent)
+## req_0001: documents page review fixes (status: done, PR #65 + #66; the chat still has to check it)
 Started before req numbers existed: it is being done by the Claude Code agent the chat started in the background, on branch `fix/documents-page` (not pushed yet). Brief: `claude/todo-admin-documents.md`.
 
 ### Result
@@ -44,8 +44,10 @@ Left over: none for this req. A new code value written in future needs its words
 
 ---
 
-## req_0003: hydration mismatch warnings on admin pages (status: sent)
+## req_0003: hydration mismatch warnings on admin pages (status: on hold)
 Branch `fix/req-0003-hydration`.
+
+**On hold (2026-11-20):** the first scheduled run stopped at the usage limit before doing anything, and the user did not resend it. The chat checked `dev` 84d8fd3 on Windows: `/admin`, `/admin/results`, `/admin/setup`, `/admin/setup?tab=audit`, `/admin/documents`, `/admin/people` logged no hydration warning. Do not start it unless the warning comes back; then add the full console message here.
 
 Problem (found when checking #63/#64, dev server on Windows): the browser console shows "A tree hydrated but some attributes of the server rendered HTML didn't match the client properties. This won't be patched up." on nearly every admin page: `/admin/setup` (all tabs), `/admin/results`, and others. The pages look right, but React keeps the server attributes, so something may be wrong after hydration.
 
@@ -84,6 +86,24 @@ What changed:
 - Checks: npm ci, lint, typecheck, test:unit, build; local e2e 06 and 01-lifecycle on a fresh database (3/3).
 
 Left over: the chat's check at 1440/768/375 (handoff step 3). Office staff do not see the card; if they should see the count without approving, that is a new req.
+
+---
+
+## req_0006: owner filter on the ownership page is not a SearchSelect (status: approved, waiting for the user to start Claude Code)
+Branch `fix/req-0006-ownership-owner-filter`. Found by the user 2026-11-20.
+
+Problem: on `/admin/ownership` (`features/admin/components/ownership-manager.tsx`, filter panel around line 279) the "เจ้าของ" / "Owner" filter is a typed text box. The rule in `docs/code-organization.md` rule 8 says choices that are database rows use `SearchSelect` and submit the row's id. The SearchSelect rollout (#61) left this one as typed text on purpose; the user now wants it changed. (The owner field in the add form is already a SearchSelect.)
+
+Do:
+- Replace the owner text box with a `SearchSelect` of owners, submitting the owner's id, kept in the URL as `?owner=<id>` like the room filter (`?room=<id>`). Options: only owners that appear in this list (`uniqueById` / a builder in `features/ui/search-options.ts`, like `roomFilterOptions`), label = owner name, hint = their rooms and email (reuse the hint shape of `ownerOptions` in the same file). Clearing the field removes the filter.
+- Filter the list by owner id instead of a name substring. Keep sort by owner name working.
+- i18n TH/EN: reuse `common` "all" wording (e.g. add `common.allOwners` / "เจ้าของทั้งหมด" if missing); remove keys that become unused.
+- Update `docs/code-organization.md` rule 8 (remove the "owner filter stays typed text" exception, if listed) and e2e that put a name in `?owner=` (`tests/e2e/admin/04-proxies-ownership.spec.ts` ownership test and any lifecycle step); add one UI check that picks an owner with `chooseSearchOption` and sees only that owner's rows. Unit test for any new option builder.
+
+Acceptance: on `/admin/ownership` the owner filter is a searchable picker of the owners in the list; choosing one shows only that owner's rooms and puts `?owner=<id>` in the URL; the filter survives paging and Clear resets it; works at 1440, 768 and 375 px.
+
+### Result
+(Claude Code writes here: PR number, what changed, checks run, anything left)
 
 ---
 
