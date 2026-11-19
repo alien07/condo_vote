@@ -206,7 +206,17 @@ export function CommitteeCrudDrawer({
         action={formAction}
         className="grid gap-3"
         noValidate
-        onReset={() => setPositionCode(member?.position_code ?? DEFAULT_COMMITTEE_POSITION)}
+        onReset={(event) => {
+          // React resets the form after each action; the select then shows
+          // its default (the value just sent), so follow it.
+          const select = event.currentTarget.elements.namedItem("position_code");
+
+          queueMicrotask(() => {
+            if (select instanceof HTMLSelectElement) {
+              setPositionCode(select.value);
+            }
+          });
+        }}
         ref={formRef}
       >
         <RequiredNote />
@@ -247,8 +257,12 @@ export function CommitteeCrudDrawer({
             {...fieldProps("position_code", state)}
             className="min-h-11 rounded-md border border-[var(--border)] px-3 py-2 text-sm"
             name="position_code"
+            defaultValue={stateValue(
+              state,
+              "position_code",
+              member?.position_code ?? DEFAULT_COMMITTEE_POSITION,
+            )}
             onChange={(event) => setPositionCode(event.currentTarget.value)}
-            value={positionCode}
           >
             {COMMITTEE_POSITION_CODES.map((code) => (
               <option key={code} value={code}>

@@ -157,9 +157,12 @@ test.describe("@test:e2e @test:admin @test:table-search table search", () => {
     await expect(auditResults.getByText("Showing 1-10 of 35")).toBeVisible();
     // The action filter is ticked boxes in words; a code without words
     // shows as stored, and the URL keeps the code (setup review 2026-11-19).
-    const actionBox = auditSection.getByRole("checkbox", { name: auditPaginationAction });
+    const actionBox = auditSection.locator(
+      `input[type="checkbox"][name="actions"][value="${auditPaginationAction}"]`,
+    );
 
     await expect(actionBox).toBeChecked();
+    await expect(auditSection.getByRole("checkbox", { name: auditPaginationAction })).toBeVisible();
     await expect(auditPageSelect).toHaveValue("1");
     await expect(auditPerPageSelect).toHaveValue("10");
 
