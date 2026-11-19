@@ -2,7 +2,7 @@
 
 import { useMessageText, useStaffText } from "@/lib/i18n/staff/client";
 import { fill } from "@/lib/i18n/template";
-import { useActionState, useEffect, useRef, useState } from "react";
+import { useActionState, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import {
   createCommitteeMemberWithState,
@@ -139,10 +139,6 @@ export function CommitteeCrudDrawer({
   };
   const formRef = useRef<HTMLFormElement>(null);
   const searchParams = useSearchParams();
-  // A fixed list in the page language (D026); "other" asks for the title.
-  const [positionCode, setPositionCode] = useState(
-    member?.position_code ?? DEFAULT_COMMITTEE_POSITION,
-  );
   const [state, formAction] = useActionState(
     mode === "edit"
       ? updateCommitteeMemberWithState
@@ -206,17 +202,6 @@ export function CommitteeCrudDrawer({
         action={formAction}
         className="grid gap-3"
         noValidate
-        onReset={(event) => {
-          // React resets the form after each action; the select then shows
-          // its default (the value just sent), so follow it.
-          const select = event.currentTarget.elements.namedItem("position_code");
-
-          queueMicrotask(() => {
-            if (select instanceof HTMLSelectElement) {
-              setPositionCode(select.value);
-            }
-          });
-        }}
         ref={formRef}
       >
         <RequiredNote />
@@ -262,7 +247,6 @@ export function CommitteeCrudDrawer({
               "position_code",
               member?.position_code ?? DEFAULT_COMMITTEE_POSITION,
             )}
-            onChange={(event) => setPositionCode(event.currentTarget.value)}
           >
             {COMMITTEE_POSITION_CODES.map((code) => (
               <option key={code} value={code}>
@@ -272,20 +256,20 @@ export function CommitteeCrudDrawer({
           </select>
           <FieldError fieldName="position_code" state={state} />
         </label>
-        {positionCode === "other" ? (
-          <label className="grid gap-1 text-sm font-medium">
-            <FieldLabel required>{s.setup.positionOther}</FieldLabel>
-            <input
-              {...fieldProps("position_title", state)}
-              className="min-h-11 rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-              defaultValue={stateValue(state, "position_title", member?.position_title)}
-              name="position_title"
-              placeholder={s.setup.positionOtherHelp}
-              required
-            />
-            <FieldError fieldName="position_title" state={state} />
-          </label>
-        ) : null}
+        {/* A fixed list in the page language (D026). The typed title shows
+            only while "Other" is chosen (CSS in app/globals.css), so it
+            follows the select through React's form reset after an action. */}
+        <label className="position-other gap-1 text-sm font-medium">
+          <FieldLabel required>{s.setup.positionOther}</FieldLabel>
+          <input
+            {...fieldProps("position_title", state)}
+            className="min-h-11 rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+            defaultValue={stateValue(state, "position_title", member?.position_title)}
+            name="position_title"
+            placeholder={s.setup.positionOtherHelp}
+          />
+          <FieldError fieldName="position_title" state={state} />
+        </label>
         <label className="grid gap-1 text-sm font-medium">
           {s.setup.displayOrder}
           <input
