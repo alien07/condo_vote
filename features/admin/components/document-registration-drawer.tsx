@@ -221,18 +221,24 @@ export function DocumentRegistrationDrawer({
             </select>
             <FieldError fieldName="storage_provider" state={state} />
           </label>
-          <label className={fieldClass}>
-            <FieldLabel required>{s.documents.path}</FieldLabel>
+          <div className={fieldClass}>
+            <label htmlFor="document-storage-path">
+              <FieldLabel required>{s.documents.path}</FieldLabel>
+            </label>
             <input
               {...fieldProps("storage_path", state)}
+              aria-describedby={[fieldProps("storage_path", state)["aria-describedby"], "document-path-help"].filter(Boolean).join(" ")}
               autoComplete="off"
               className={inputClass}
               defaultValue={stateValue(state, "storage_path")}
+              id="document-storage-path"
               name="storage_path"
             />
-            <span className="text-xs font-normal text-[var(--muted)]">{s.documents.pathHelp}</span>
+            <span className="text-xs font-normal text-[var(--muted)]" id="document-path-help">
+              {s.documents.pathHelp}
+            </span>
             <FieldError fieldName="storage_path" state={state} />
-          </label>
+          </div>
         </fieldset>
 
         <details
@@ -262,19 +268,23 @@ export function DocumentRegistrationDrawer({
               }}
               fieldProps={(name) => fieldProps(name, state)}
             />
-            <label className={`${fieldClass} md:max-w-xs`}>
-              {s.documents.version}
+            <div className={`${fieldClass} md:max-w-xs`}>
+              <label htmlFor="document-version">{s.documents.version}</label>
               <input
                 {...fieldProps("document_version", state)}
+                aria-describedby={[fieldProps("document_version", state)["aria-describedby"], "document-version-help"].filter(Boolean).join(" ")}
                 className={inputClass}
                 defaultValue={stateValue(state, "document_version")}
+                id="document-version"
                 min={1}
                 name="document_version"
                 type="number"
               />
-              <span className="text-xs font-normal text-[var(--muted)]">{s.documents.versionHelp}</span>
+              <span className="text-xs font-normal text-[var(--muted)]" id="document-version-help">
+                {s.documents.versionHelp}
+              </span>
               <FieldError fieldName="document_version" state={state} />
-            </label>
+            </div>
           </div>
         </details>
 

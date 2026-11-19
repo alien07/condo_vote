@@ -59,7 +59,7 @@ export async function setupPages(page: Page, ctx: AfterAccess) {
     registerDocumentDrawer.locator('input[type="hidden"][name="owner_id_profile"]'),
   ).toHaveValue(profile!.id);
   await registerDocumentDrawer
-    .getByLabel("Folder path or private Drive link", { exact: true })
+    .getByRole("textbox", { name: "Folder path or private Drive link", exact: true })
     .fill(documentPath);
   await registerDocumentDrawer.getByText("Check data (optional)").click();
   await registerDocumentDrawer.locator('input[name="original_filename"]').fill(`${documentSetKey}.pdf`);
