@@ -79,7 +79,12 @@ export type OwnerTableState = {
   status: "active" | "all" | "inactive";
 };
 
+/** profiles.approval_status values (check constraint), plus "all". */
+export const PROFILE_APPROVAL_FILTERS = ["all", "pending", "approved", "rejected"] as const;
+
 export type ProfileTableState = {
+  /** Approval status filter, `?approval=` (req_0004). */
+  approval: (typeof PROFILE_APPROVAL_FILTERS)[number];
   defaultStatus: "all" | "owner" | "proxy" | "resident";
   dir: "asc" | "desc";
   name: string;

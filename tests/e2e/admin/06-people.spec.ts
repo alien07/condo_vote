@@ -161,4 +161,130 @@ test.describe("@test:e2e @test:auth @test:admin admin demo: people", () => {
     const viewportWidth = page.viewportSize()?.width ?? 390;
     expect(drawerWidth).toBeLessThanOrEqual(viewportWidth);
   });
+
+  test("accounts waiting for approval: overview card opens the Users tab with only pending accounts (req_0004)", async ({
+    page,
+  }) => {
+    test.setTimeout(120_000);
+
+    const supabase = createClient<Database>(supabaseUrl!, serviceKey!, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    });
+    let user = await findUserByEmail(supabase, demoAdminEmail);
+
+    if (!user) {
+      const { data, error } = await supabase.auth.admin.createUser({
+        email: demoAdminEmail,
+        email_confirm: true,
+        user_metadata: { full_name: demoAdminName },
+      });
+
+      expect(error).toBeNull();
+      user = data.user;
+    }
+
+    const { data: profile, error: profileError } = await supabase
+      .from("profiles")
+      .upsert(
+        {
+          auth_user_id: user!.id,
+          email: demoAdminEmail,
+          full_name: demoAdminName,
+          approval_status: "approved",
+          default_status: "owner",
+          preferred_language: "en",
+        },
+        { onConflict: "auth_user_id" },
+      )
+      .select("id")
+      .single();
+
+    expect(profileError).toBeNull();
+    const { error: roleError } = await supabase
+      .from("app_roles")
+      .upsert([{ profile_id: profile!.id, role: "admin" }], { onConflict: "profile_id,role" });
+
+    expect(roleError).toBeNull();
+
+    // Synthetic accounts: 11 waiting (more than one page of 10) and 1 approved.
+    const stamp = Date.now();
+    const { data: added, error: addError } = await supabase
+      .from("profiles")
+      .insert([
+        ...Array.from({ length: 11 }, (_, index) => ({
+          approval_status: "pending",
+          default_status: "resident",
+          email: `pending-${stamp}-${index}@example.test`,
+          full_name: `Pending ${stamp} ${String(index).padStart(2, "0")}`,
+        })),
+        {
+          approval_status: "approved",
+          default_status: "resident",
+          email: `approved-${stamp}@example.test`,
+          full_name: `Approved ${stamp}`,
+        },
+      ])
+      .select("id");
+
+    expect(addError).toBeNull();
+
+    try {
+      const { count: pendingCount } = await supabase
+        .from("profiles")
+        .select("id", { count: "exact", head: true })
+        .eq("approval_status", "pending");
+      const { data: link, error: linkError } = await supabase.auth.admin.generateLink({
+        type: "magiclink",
+        email: demoAdminEmail,
+        options: { redirectTo: `${appUrl}/auth/callback` },
+      });
+
+      expect(linkError).toBeNull();
+      await page.goto(
+        `${appUrl}/auth/callback?token_hash=${encodeURIComponent(
+          link.properties!.hashed_token,
+        )}&type=${link.properties!.verification_type}`,
+      );
+
+      // Overview: the card shows how many wait, and one click opens the list.
+      await page.goto(`${appUrl}/admin`);
+      const card = page.getByRole("link", { name: /Accounts waiting for approval/ });
+
+      await expect(card).toContainText(String(pendingCount));
+      await expect(card).toContainText("Needs review");
+      await card.click();
+      await expect(page).toHaveURL(/\/admin\/people\?[\s\S]*tab=profiles/);
+      await expect(page).toHaveURL(/[?&]approval=pending/);
+
+      const badges = page.locator("[data-approval]:visible");
+
+      await expect(badges.first()).toBeVisible();
+      await expect(page.locator('[data-approval]:visible:not([data-approval="pending"])')).toHaveCount(0);
+      await expect(page.getByRole("button", { name: /Remove filter.*Approval status: Pending/ })).toBeVisible();
+
+      // The filter survives paging.
+      // The Rooms and Owners tabs are on the page too, hidden: use the visible pager.
+      await page.locator('select[aria-label="Per page"]:visible').first().selectOption("10");
+      await expect(page).toHaveURL(/[?&]approval=pending/);
+      await expect(badges).toHaveCount(10);
+      await page.locator('select[aria-label="Page"]:visible').first().selectOption("2");
+      await expect(page).toHaveURL(/[?&]page=2/);
+      await expect(page).toHaveURL(/[?&]approval=pending/);
+      await expect(page.locator('[data-approval]:visible:not([data-approval="pending"])')).toHaveCount(0);
+
+      // The filter on its own, from the Users tab.
+      await page.goto(`${appUrl}/admin/people?tab=profiles`);
+      await page.getByRole("combobox", { name: "Approval status" }).selectOption("approved");
+      await page.locator('button:visible', { hasText: /^Search$/ }).first().click();
+      await expect(page).toHaveURL(/[?&]approval=approved/);
+      await expect(badges.first()).toBeVisible();
+      await expect(page.locator('[data-approval]:visible:not([data-approval="approved"])')).toHaveCount(0);
+    } finally {
+      const ids = (added ?? []).map((row) => row.id);
+
+      if (ids.length) {
+        await supabase.from("profiles").delete().in("id", ids);
+      }
+    }
+  });
 });

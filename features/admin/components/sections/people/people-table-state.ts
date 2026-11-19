@@ -1,4 +1,9 @@
-import type { OwnerTableState, ProfileTableState, RoomTableState } from "@/features/admin/components/sections/people/people-types";
+import {
+  PROFILE_APPROVAL_FILTERS,
+  type OwnerTableState,
+  type ProfileTableState,
+  type RoomTableState,
+} from "@/features/admin/components/sections/people/people-types";
 
 export function positiveInteger(value: string | null, fallback: number) {
   if (!value) {
@@ -69,11 +74,17 @@ export function ownerTableParams(state: OwnerTableState) {
   };
 }
 
+/** Where "Accounts waiting for approval" on the overview leads (req_0004):
+ * the Users tab, pending accounts only. */
+export const PENDING_ACCOUNTS_HREF = "/admin/people?tab=profiles&approval=pending";
+
 export function profileTableStateFromParams(params: URLSearchParams): ProfileTableState {
   const defaultStatus = params.get("defaultStatus");
   const sort = params.get("sort");
+  const approval = PROFILE_APPROVAL_FILTERS.find((value) => value === params.get("approval")) ?? "all";
 
   return {
+    approval,
     defaultStatus:
       defaultStatus === "owner" ||
       defaultStatus === "resident" ||
@@ -91,6 +102,7 @@ export function profileTableStateFromParams(params: URLSearchParams): ProfileTab
 
 export function profileTableParams(state: ProfileTableState) {
   return {
+    approval: state.approval === "all" ? null : state.approval,
     defaultStatus:
       state.defaultStatus === "all" ? null : state.defaultStatus,
     dir: state.dir,
