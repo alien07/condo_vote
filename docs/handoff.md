@@ -14,9 +14,11 @@ Started before req numbers existed: it is being done by the Claude Code agent th
 ### Result
 (Claude Code writes here: PR number, what changed, checks run, anything left)
 
+Note from the req_0002/req_0004 session (2026-11-19): **PR #66** (https://github.com/alien07/condo_vote/pull/66) fixed the e2e that #65 left red on `dev` (CI run 44529829750: `01-lifecycle` timed out, `03-committee-documents` failed). Cause: the Register document `<label>` now wraps its field with the help line or the options, so `getByLabel(..., { exact: true })` matched nothing; the tests now look the fields up without `exact`. Test-only; full CI run 44583806726 green (46 passed, 9 skipped).
+
 ---
 
-## req_0002: audit log details still show raw values (status: sent)
+## req_0002: audit log details still show raw values (status: done, PR #67)
 Branch `fix/req-0002-audit-values`. Page `/admin/setup?tab=audit`; helper `features/admin/components/sections/setup/audit-log-labels.ts` (`valueText`, `auditDetailPairs`), words in `lib/i18n/staff/audit-log.ts` (`values`, `fields`).
 
 Problem (found when checking #63): some detail values are still stored codes, e.g. a correction level change shows "เป็น: high / จาก: low". Free text that people typed (e.g. an answer "ok") stays as typed.
@@ -29,7 +31,16 @@ Do:
 Acceptance: no audit detail on `/admin/setup?tab=audit` (demo data) shows a lowercase code value in Thai or English; typed text is unchanged; "Raw data" still shows the stored JSON.
 
 ### Result
-(Claude Code writes here)
+**PR #67** (https://github.com/alien07/condo_vote/pull/67), branch `fix/req-0002-audit-values`, merged into `dev` by alien07 on 2026-11-19 18:34 UTC (merge commit 0b3d604). Full CI run (`full=true`) 44585891574 green; the pull_request run 44585857323 failed only in "Demo seed check" (dev server timed out at "Compiling / ..." before any test) and was re-run.
+
+What changed:
+- `features/admin/components/sections/setup/audit-log-labels.ts`: only fields that hold codes are translated (`CODE_FIELDS`: status, level, from, to, category, source, chosen_source, approval_status, default_status, previous_*, granted_role, preferred_language, document_type, storage providers, meeting_round; `answer` only for approve / object). Typed text (reason, correction answer, names) stays as typed. Lookup: field-specific words → committee categories / levels → `auditLog.values` → `common.code`.
+- `lib/i18n/staff/audit-log.ts`: English words for the shared codes (`sharedCodeWords`; Thai takes the same keys from `common.code`), `th` / `en` / `other`, `fieldValues.source` (sign_in, owner_email, admin, migration_0037), field label `preferred_language`.
+- Codes found from: distinct values in the demo database's `audit_logs.details_json`, every `writeAuditLog` call, every SQL function inserting into `audit_logs`, and the check constraints of those columns.
+- Tests: `audit-log-labels.test.ts` (every code of every code field shows words in TH and EN; levels; `source` vs `granted_role`; typed text; unknown code); e2e `09-communications-setup` checks "From: Low", "To: High" and a typed reason.
+- Checks: npm ci, lint, typecheck, test:unit (111), build; demo database 31 audit rows → no code-like value in TH or EN; browser check of `/admin/setup?tab=audit` in TH and EN; e2e 09, table-search, language.
+
+Left over: none for this req. A new code value written in future needs its words in `audit-log.ts`; the unit test lists the codes per field, so add new ones there too.
 
 ---
 
@@ -50,7 +61,7 @@ Acceptance: no hydration warning in the console on the pages above, at 1440 and 
 
 ---
 
-## req_0004: accounts waiting for approval are hard to find (status: sent)
+## req_0004: accounts waiting for approval are hard to find (status: done, PR #68 + #69)
 Branch `feat/req-0004-pending-accounts`. User decision 2026-11-15, recorded in `claude/demo-feedback.md` ("To do when reviewing the admin pages").
 
 Problem: the admin overview (`app/admin/page.tsx`, `MetricCard` list) has no card for accounts waiting for approval, and the Users tab of Rooms & Owners (`/admin/people?tab=users`, `features/admin/components/sections/people/profiles-panel.tsx`) filters only by name and default status, not by approval status.
@@ -63,7 +74,16 @@ Do:
 Acceptance: from `/admin`, one click reaches the list of only the accounts waiting for approval; the filter works on its own from the Users tab and survives paging.
 
 ### Result
-(Claude Code writes here)
+**PR #68** (https://github.com/alien07/condo_vote/pull/68), branch `feat/req-0004-pending-accounts`, merged into `dev` by alien07 on 2026-11-19 18:28 UTC (merge commit db998d7) while its full CI run 44585897872 was red: `01-lifecycle` still read the code `approved` in the Users tab, which is now the word badge "Approved". The test fix came a few minutes after the merge, so it went in as **PR #69** (https://github.com/alien07/condo_vote/pull/69), test-only.
+
+What changed:
+- Overview (`app/admin/page.tsx`): card "บัญชีรออนุมัติ" / "Accounts waiting for approval" in Master data, count of `approval_status = 'pending'`, "ต้องตรวจ" / "Needs review" (warning) when > 0, "เรียบร้อย" / "All clear" when 0; link `/admin/people?tab=profiles&approval=pending` (`PENDING_ACCOUNTS_HREF`). Shown only to the admin role (only admins may approve accounts: `updateProfileAccess` → `requireAdmin`); office staff see the overview without it.
+- The Users tab key is `tab=profiles` (the brief said `tab=users`).
+- Users tab (`profiles-panel.tsx`): "สถานะการอนุมัติ" / "Approval status" filter (all / pending / approved / rejected), kept in the URL as `?approval=` (`people-table-state.ts`), filter chip, Clear; approval status as a colour badge (pending amber, approved green, rejected red). The list has no phone cards.
+- Tests: `people-table-state.test.ts`; e2e `06-people` (card count and status, one click to pending only, filter survives Per page 10 → page 2, filter on its own from the Users tab); `lifecycle/access.ts` reads the badge word.
+- Checks: npm ci, lint, typecheck, test:unit, build; local e2e 06 and 01-lifecycle on a fresh database (3/3).
+
+Left over: the chat's check at 1440/768/375 (handoff step 3). Office staff do not see the card; if they should see the count without approving, that is a new req.
 
 ---
 
