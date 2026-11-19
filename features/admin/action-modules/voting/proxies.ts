@@ -75,7 +75,8 @@ export async function createProxyAuthorizationWithState(
     await writeAuditLog(supabase, {
       action: "proxy_authorization.created",
       actorProfileId: admin.id,
-      details: { section47_confirmed: true },
+      // meeting_id: the audit page filters the log by meeting (req_0007).
+      details: { meeting_id: values.meeting_id, section47_confirmed: true },
       entityId: authorization.id,
       entityType: "proxy_authorization",
     });
@@ -120,7 +121,7 @@ export async function reviewProxyAuthorizationWithState(
         reviewed_at: new Date().toISOString(),
       })
       .eq("id", values.id)
-      .select("id")
+      .select("id, meeting_id")
       .single();
 
     if (error) {
@@ -130,7 +131,7 @@ export async function reviewProxyAuthorizationWithState(
     await writeAuditLog(supabase, {
       action: "proxy_authorization.reviewed",
       actorProfileId: reviewer.id,
-      details: { status: values.status },
+      details: { meeting_id: authorization.meeting_id, status: values.status },
       entityId: authorization.id,
       entityType: "proxy_authorization",
     });
@@ -176,6 +177,7 @@ export async function createProxyAuthorization(formData: FormData) {
   await writeAuditLog(supabase, {
     action: "proxy_authorization.created",
     actorProfileId: admin.id,
+    details: { meeting_id: requiredText(formData.get("meeting_id"), "Meeting") },
     entityId: authorization.id,
     entityType: "proxy_authorization",
   });
