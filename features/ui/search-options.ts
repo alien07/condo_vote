@@ -52,3 +52,53 @@ export function uniqueById<T extends { id: string }>(items: Array<T | null | und
 
   return [...byId.values()];
 }
+
+type OwnerLinkRef = {
+  owners: { id?: string; full_name: string } | null;
+  rooms: { room_number?: string } | null;
+};
+
+/** Owner filters (req_0006, 2026-11-20): the owners that appear in a list of
+ * room-owner links, once each, by name. The value is the owner id, never
+ * the name: names change and repeat. The hint is their rooms in that list
+ * and their email; both are searchable. */
+export function ownerFilterOptions(
+  links: OwnerLinkRef[],
+  emailById: ReadonlyMap<string, string | null | undefined> = new Map(),
+): SearchSelectOption[] {
+  const roomsByOwner = new Map<string, Set<string>>();
+
+  const linkedOwners: { id: string; full_name: string }[] = [];
+
+  for (const link of links) {
+    const ownerId = link.owners?.id;
+
+    if (ownerId) {
+      const owned = roomsByOwner.get(ownerId) ?? new Set<string>();
+
+      if (link.rooms?.room_number) {
+        owned.add(link.rooms.room_number);
+      }
+
+      roomsByOwner.set(ownerId, owned);
+      linkedOwners.push({ id: ownerId, full_name: link.owners?.full_name ?? "" });
+    }
+  }
+
+  return uniqueById(linkedOwners)
+    .sort((left, right) => left.full_name.localeCompare(right.full_name))
+    .map((owner) => {
+      const owned = [...(roomsByOwner.get(owner.id) ?? [])].sort((left, right) =>
+        left.localeCompare(right, undefined, { numeric: true }),
+      );
+      const email = emailById.get(owner.id) ?? undefined;
+      const hint = [owned.join(", "), email].filter(Boolean).join(" · ");
+
+      return {
+        value: owner.id,
+        label: owner.full_name,
+        hint: hint || undefined,
+        keywords: [email, ...owned].filter(Boolean).join(" ") || undefined,
+      };
+    });
+}

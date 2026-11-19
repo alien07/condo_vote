@@ -46,17 +46,15 @@ export async function people(page: Page, ctx: AfterMeetings) {
   await createOwnershipDrawer.locator('input[name="starts_at"]').fill("2026-06-01");
   await createOwnershipDrawer.getByRole("button", { name: "Create ownership link" }).click();
   await page.waitForTimeout(1_000);
-  // Room filter: type to search, pick, search; the URL carries the room id,
-  // not the number (2026-11-19). The owner filter is still typed text.
-  await gotoWithRetry(
-    page,
-    `${activeAppOrigin}/admin/ownership?owner=${encodeURIComponent(ownerName)}`,
-    { waitUntil: "load" },
-  );
+  // Room and owner filters: type to search, pick, search; the URL carries
+  // the ids, not the room number or the name (2026-11-19, req_0006).
+  await gotoWithRetry(page, `${activeAppOrigin}/admin/ownership`, { waitUntil: "load" });
   const ownershipFilter = page.locator("form:visible").filter({ has: page.locator('[data-focus-for="room"]') });
   await chooseSearchOption(ownershipFilter, "room", roomNumber);
+  await chooseSearchOption(ownershipFilter, "owner", ownerName);
   await ownershipFilter.getByRole("button", { name: "Search", exact: true }).click();
   await expect(page).toHaveURL(/[?&]room=[0-9a-f-]{36}/);
+  await expect(page).toHaveURL(/[?&]owner=[0-9a-f-]{36}/);
   const roomOwnerRow = roomOwnershipSection
     .getByRole("row")
     .filter({ hasText: roomNumber })
