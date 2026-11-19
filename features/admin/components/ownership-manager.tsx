@@ -10,6 +10,7 @@ import { AdminCrudDrawer } from "@/features/admin/components/admin-crud-drawer";
 import { FormResetButton } from "@/features/admin/components/form-controls";
 import { PendingSubmitButton } from "@/features/debug/tracked-submit-button";
 import { SearchSelect, type SearchSelectOption } from "@/features/ui/search-select";
+import { roomFilterOptions } from "@/features/ui/search-options";
 import {
   type OwnershipManagerProps,
   type OwnershipTableState,
@@ -149,16 +150,20 @@ export function OwnershipManager({
     drawer.type === "ownership_link" &&
     selectedLink &&
     ownershipDisplayStatus(selectedLink) === "active";
+  // Room filter by id (2026-11-19, after the Results pilot): pick from the
+  // rooms that have an ownership link, instead of typing part of a number.
+  const roomFilterChoices = useMemo(() => {
+    const linkedRoomIds = new Set(roomOwners.map((link) => link.rooms?.id));
+
+    return roomFilterOptions(rooms.filter((room) => linkedRoomIds.has(room.id)));
+  }, [roomOwners, rooms]);
   const filteredLinks = useMemo(() => {
-    const roomQuery = tableState.room.trim().toLowerCase();
+    const roomId = tableState.room;
     const ownerQuery = tableState.owner.trim().toLowerCase();
 
     return roomOwners.filter((link) => {
-      const roomNumber = link.rooms?.room_number ?? "";
       const ownerName = link.owners?.full_name ?? "";
-      const matchesRoom = roomQuery
-        ? roomNumber.toLowerCase().includes(roomQuery)
-        : true;
+      const matchesRoom = roomId ? link.rooms?.id === roomId : true;
       const matchesOwner = ownerQuery
         ? ownerName.toLowerCase().includes(ownerQuery)
         : true;
@@ -260,16 +265,15 @@ export function OwnershipManager({
         >
           <label className="grid gap-1 text-xs font-medium text-[var(--muted)] md:col-span-3">
             {s.ownership.room}
-            <input
-              className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)]"
-              onChange={(event) => {
-                const value = event.currentTarget.value;
-
-                setCriteria((current) => ({ ...current, room: value }));
-              }}
-              placeholder={s.ownership.searchRoom}
-              value={criteria.room}
-            />
+            <span className="text-[var(--foreground)]">
+              <SearchSelect
+                defaultValue={criteria.room}
+                name="room"
+                onChange={(value) => setCriteria((current) => ({ ...current, room: value }))}
+                options={roomFilterChoices}
+                text={{ ...searchText, placeholder: s.common.allRooms }}
+              />
+            </span>
           </label>
           <label className="grid gap-1 text-xs font-medium text-[var(--muted)] md:col-span-3">
             {s.ownership.owner}

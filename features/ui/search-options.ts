@@ -26,3 +26,29 @@ export function meetingSearchOptions<T extends MeetingLike>(
       [meeting.meeting_number, meeting.fiscal_year].filter(Boolean).join(" ") || undefined,
   }));
 }
+
+type RoomRef = { id: string; room_number: string; building?: string | null };
+
+/** Room filters (2026-11-19): the rooms that appear in a list, once each,
+ * in room-number order. The value is the room id, never the number: the
+ * same number can repeat across buildings. Inactive rooms stay, because old
+ * rows still point at them. */
+export function roomFilterOptions(rooms: Array<RoomRef | null | undefined>): SearchSelectOption[] {
+  return uniqueById(rooms)
+    .sort((left, right) => left.room_number.localeCompare(right.room_number, undefined, { numeric: true }))
+    .map((room) => ({ value: room.id, label: room.room_number, hint: room.building ?? undefined }));
+}
+
+/** The distinct rows of a list, first seen wins: the meetings or rooms a
+ * filter offers, taken from the rows the table shows. */
+export function uniqueById<T extends { id: string }>(items: Array<T | null | undefined>): T[] {
+  const byId = new Map<string, T>();
+
+  for (const item of items) {
+    if (item && !byId.has(item.id)) {
+      byId.set(item.id, item);
+    }
+  }
+
+  return [...byId.values()];
+}

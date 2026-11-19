@@ -142,7 +142,7 @@ test.describe("@test:e2e @test:auth @test:admin admin demo: results", () => {
     await gotoWithRetry(page, `${appUrl}/admin/results?sort=meeting&dir=asc&perPage=25`, {
       waitUntil: "load",
     });
-    const resultFilter = page.locator("form").filter({ has: page.locator('[data-focus-for="meeting"]') });
+    const resultFilter = page.locator("form:visible").filter({ has: page.locator('[data-focus-for="meeting"]') });
     await chooseSearchOption(resultFilter, "meeting", meetingTitle);
     await resultFilter.getByRole("button", { name: "Search", exact: true }).click();
     await page.waitForURL(new RegExp(`[?&]meeting=${meeting!.id}`), { waitUntil: "commit" });

@@ -13,8 +13,6 @@ const en = {
   identity: "Captured identity",
   linkProfile: "Link profile",
   filter: "Filter manual vote rows by meeting and room.",
-  searchMeeting: "Search meeting",
-  searchRoom: "Search room",
   // 2026-11-19 review: words instead of codes.
   answers: "Answers",
   voter: "Voter",
@@ -110,8 +108,6 @@ const th: typeof en = {
   identity: "ชื่อที่บันทึกไว้",
   linkProfile: "ผูกผู้ใช้",
   filter: "ค้นหาบัตรกระดาษตามการประชุมและห้อง",
-  searchMeeting: "ค้นหาการประชุม",
-  searchRoom: "ค้นหาห้อง",
   // 2026-11-19 review: words instead of codes.
   answers: "คำตอบ",
   voter: "ผู้ลงคะแนน",

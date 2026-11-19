@@ -11,6 +11,7 @@ import {
 } from "@/features/admin/data-modules/conflicts";
 import { requireAdmin } from "@/lib/auth/permissions";
 import { createClient } from "@/lib/supabase/server";
+import { meetingSearchOptions, roomFilterOptions, uniqueById } from "@/features/ui/search-options";
 
 type AdminVoteConflictsPageProps = {
   searchParams: Promise<{
@@ -101,6 +102,8 @@ export default async function AdminVoteConflictsPage({
           initialPerPage={conflictRows.conflictPerPage}
           initialRows={conflictRows.conflicts as VoteConflictRow[]}
           initialTotal={conflictRows.conflictTotal}
+          meetingOptions={meetingSearchOptions(uniqueById(conflictRows.filterChoices.meetings))}
+          roomOptions={roomFilterOptions(conflictRows.filterChoices.rooms)}
         />
       </section>
     </main>

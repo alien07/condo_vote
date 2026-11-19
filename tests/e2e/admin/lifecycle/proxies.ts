@@ -20,11 +20,15 @@ export async function proxies(page: Page, ctx: AfterPeople) {
   await addProxyDrawer.getByLabel(/not a committee member, the manager/).check();
   await addProxyDrawer.getByRole("button", { name: "Add proxy authorization" }).click();
   await page.waitForTimeout(1_000);
-  await gotoWithRetry(
-    page,
-    `${activeAppOrigin}/admin/proxies?meeting=${encodeURIComponent(meetingTitle)}`,
-    { waitUntil: "commit" },
-  );
+  // Meeting and room filters: type to search, pick, search. The URL then
+  // carries the ids, not the title or room number (2026-11-19).
+  await gotoWithRetry(page, `${activeAppOrigin}/admin/proxies`, { waitUntil: "load" });
+  const proxyFilter = page.locator("form:visible").filter({ has: page.locator('[data-focus-for="meeting"]') });
+  await chooseSearchOption(proxyFilter, "meeting", meetingTitle);
+  await chooseSearchOption(proxyFilter, "room", roomNumber);
+  await proxyFilter.getByRole("button", { name: "Search", exact: true }).click();
+  await page.waitForURL(/[?&]meeting=[0-9a-f-]{36}[\s\S]*[?&]room=[0-9a-f-]{36}/, { waitUntil: "commit" });
+  const proxiesUrl = page.url();
   const proxyRow = page.getByRole("row").filter({ hasText: meetingTitle });
   await expect(
     proxyRow.getByRole("cell", { name: "pending", exact: true }),
@@ -44,11 +48,7 @@ export async function proxies(page: Page, ctx: AfterPeople) {
   await reviewProxyDrawer.getByRole("button", { name: "Save review" }).click();
   await confirmInApp(page);
   await page.waitForTimeout(1_000);
-  await gotoWithRetry(
-    page,
-    `${activeAppOrigin}/admin/proxies?meeting=${encodeURIComponent(meetingTitle)}`,
-    { waitUntil: "commit" },
-  );
+  await gotoWithRetry(page, proxiesUrl, { waitUntil: "commit" });
   await expect(
     page
       .getByRole("row")

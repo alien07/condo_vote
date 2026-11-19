@@ -294,7 +294,7 @@ export async function ResultsSection({
                   clear: s.common.searchClear,
                   more: s.common.searchMore,
                   noResults: s.common.searchNoResults,
-                  placeholder: s.results.allMeetings,
+                  placeholder: s.common.allMeetings,
                 }}
               />
             </span>

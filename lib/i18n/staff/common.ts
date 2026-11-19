@@ -12,6 +12,9 @@ const en = {
   searchMore: "{count} more. Type to narrow the list.",
   searchNoResults: "Nothing matches.",
   searchUseTyped: "Use “{text}”",
+  /** Empty choice of a meeting or room filter (SearchSelect placeholder). */
+  allMeetings: "All meetings",
+  allRooms: "All rooms",
   cancel: "Cancel",
   confirm: "Confirm",
   confirmTitle: "Please confirm",
@@ -107,6 +110,8 @@ const th: typeof en = {
   searchMore: "อีก {count} รายการ พิมพ์เพิ่มเพื่อให้แคบลง",
   searchNoResults: "ไม่พบรายการที่ตรงกัน",
   searchUseTyped: "ใช้ “{text}”",
+  allMeetings: "ทุกการประชุม",
+  allRooms: "ทุกห้อง",
   cancel: "ยกเลิก",
   confirm: "ยืนยัน",
   confirmTitle: "โปรดยืนยัน",

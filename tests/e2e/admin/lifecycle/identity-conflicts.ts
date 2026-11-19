@@ -38,11 +38,15 @@ export async function identityConflicts(page: Page, ctx: AfterVoting) {
     waitUntil: "domcontentloaded",
   });
 
-  await page.goto(
-    `${activeAppOrigin}/admin/voting/conflicts?meeting=${encodeURIComponent(
-      meetingTitle,
-    )}&room=${encodeURIComponent(roomNumber)}`,
-  );
+  // Meeting and room filters: type to search, pick, search; the URL carries
+  // the ids, not the title or room number (2026-11-19).
+  await page.goto(`${activeAppOrigin}/admin/voting/conflicts`);
+  const conflictFilter = page.locator("form:visible").filter({ has: page.locator('[data-focus-for="meeting"]') });
+  await chooseSearchOption(conflictFilter, "meeting", meetingTitle);
+  await chooseSearchOption(conflictFilter, "room", roomNumber);
+  await conflictFilter.getByRole("button", { name: "Search", exact: true }).click();
+  await expect(page).toHaveURL(/[?&]meeting=[0-9a-f-]{36}/);
+  await expect(page).toHaveURL(/[?&]room=[0-9a-f-]{36}/);
   const conflictRow = page
     .getByRole("row")
     .filter({ hasText: meetingTitle })
