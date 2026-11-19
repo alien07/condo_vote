@@ -1,4 +1,5 @@
 import { bangkokLocalToIso } from "@/lib/datetime";
+import { auditMeetingFilter } from "@/features/admin/data-modules/audit-meeting";
 import type { createClient } from "@/lib/supabase/server";
 import {
   documentOwnersFor,
@@ -14,6 +15,8 @@ export type AuditLogFilters = {
   actorProfileId?: string;
   dateFrom?: string;
   dateTo?: string;
+  /** Meeting id (audit page, req_0007): rows about that meeting only. */
+  meetingId?: string;
   page?: number;
   perPage?: number;
   sortBy?: "action" | "actor" | "entity" | "time";
@@ -78,6 +81,16 @@ export async function fetchAuditLogRows(
 
   if (auditFilters.actions && auditFilters.actions.length > 0) {
     auditLogsQuery = auditLogsQuery.in("action", auditFilters.actions);
+  }
+
+  if (auditFilters.meetingId) {
+    const meetingFilter = await auditMeetingFilter(supabase, auditFilters.meetingId);
+
+    if (!meetingFilter) {
+      return { auditLogs: [], auditLogPage: 1, auditLogPerPage: auditPerPage, auditLogTotal: 0 };
+    }
+
+    auditLogsQuery = auditLogsQuery.or(meetingFilter);
   }
 
   const auditLogsResult = await auditLogsQuery

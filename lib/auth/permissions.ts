@@ -139,6 +139,18 @@ export async function requireOfficeStaff() {
   return current.profile;
 }
 
+/** The read-only audit page and its data (demo feedback 14b, req_0007):
+ * auditors and the manager. */
+export async function requireAuditReader() {
+  const current = await requireProfileWithRoles();
+
+  if (!current.roles.includes("auditor") && !current.roles.includes("admin")) {
+    redirect(DENIED_PATH);
+  }
+
+  return current;
+}
+
 export async function requireAdmin() {
   const profile = await requireProfile();
 
