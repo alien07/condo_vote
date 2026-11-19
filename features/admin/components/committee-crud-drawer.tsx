@@ -238,9 +238,12 @@ export function CommitteeCrudDrawer({
         </label>
         <label className="grid gap-1 text-sm font-medium">
           <FieldLabel required>{s.common.position}</FieldLabel>
+          {/* Remounted with each answer: React resets the form after an
+              action, and a fresh select keeps the value just sent. */}
           <select
             {...fieldProps("position_code", state)}
             className="min-h-11 rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+            key={JSON.stringify(state.values ?? null)}
             name="position_code"
             defaultValue={stateValue(
               state,
