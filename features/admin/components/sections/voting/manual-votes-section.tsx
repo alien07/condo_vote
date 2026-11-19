@@ -4,6 +4,7 @@ import { ListChecks } from "lucide-react";
 import { ballotAnswers, type BallotAnswer } from "@/features/admin/components/sections/voting/ballot-answers";
 import { formatDateTime } from "@/features/admin/components/sections/shared/format";
 import { takesPaperBallots, votingOpen } from "@/features/admin/meeting-pickers";
+import { meetingSearchOptions } from "@/features/ui/search-options";
 import { PerPageSelect } from "@/features/admin/components/table-controls";
 import { ManualVoteIdentityDrawer, ManualVoteImportDrawer, ManualVoteRowFocus } from "@/features/admin/components/manual-vote-crud-drawer";
 import { tablePage, tablePerPage } from "@/features/admin/components/sections/shared/table";
@@ -45,16 +46,15 @@ export async function ManualVotesSection({
   const { locale, s } = await getStaffI18n();
   // Only meetings that take paper ballots (2026-11-19), newest first, with
   // whether voting is still open as the hint.
-  const paperMeetingOptions = meetings
-    .filter((meeting) => takesPaperBallots(meeting))
-    .sort((left, right) => right.starts_at.localeCompare(left.starts_at))
-    .map((meeting) => ({
-      value: meeting.id,
-      label: meeting.title,
-      hint: votingOpen(meeting)
+  const paperMeetingOptions = meetingSearchOptions(
+    meetings
+      .filter((meeting) => takesPaperBallots(meeting))
+      .sort((left, right) => right.starts_at.localeCompare(left.starts_at)),
+    (meeting) =>
+      votingOpen(meeting)
         ? fill(s.voting.meetingOpenUntil, { date: formatDateTime(meeting.ends_at) })
         : s.voting.meetingVotingEnded,
-    }));
+  );
   const manualVoteTableFilters: Required<ManualVoteTableFilters> = {
     dir: manualVoteFilters?.dir ?? "asc",
     meeting: manualVoteFilters?.meeting ?? "",

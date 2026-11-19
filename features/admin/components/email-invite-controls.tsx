@@ -4,6 +4,7 @@ import { useMessageText, useStaffText } from "@/lib/i18n/staff/client";
 import { useActionState } from "react";
 import { Mail, Send } from "lucide-react";
 import { FieldLabel, RequiredNote } from "@/features/admin/components/field-label";
+import { SearchSelect, type SearchSelectOption } from "@/features/ui/search-select";
 import { PendingSubmitButton } from "@/features/debug/tracked-submit-button";
 import {
   queueVoteInvitationGroup,
@@ -13,8 +14,8 @@ import {
 
 type EmailInviteControlsProps = {
   /** Published meetings still open for voting (takesVoteInvitations),
-   * labelled with the closing time. */
-  meetingOptions: { value: string; label: string }[];
+   * with the closing time as the hint. */
+  meetingOptions: SearchSelectOption[];
 };
 
 const initialState: EmailInviteState = {};
@@ -46,20 +47,21 @@ function MeetingSelect({ meetingOptions }: EmailInviteControlsProps) {
   return (
     <label className="grid min-w-0 gap-1 text-sm font-medium">
       <FieldLabel required>{s.communications.meeting}</FieldLabel>
-      {/* w-full min-w-0: a long meeting name must not widen the form past
-          its card (2026-11-19 review). */}
-      <select
-        className="w-full min-w-0 rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-        name="meeting_id"
-        required
-      >
-        <option value="">{s.communications.selectMeeting}</option>
-        {meetingOptions.map((meeting) => (
-          <option key={meeting.value} value={meeting.value}>
-            {meeting.label}
-          </option>
-        ))}
-      </select>
+      {/* Type to search (UI standard rule 8); the server still refuses an
+          empty or closed meeting. min-w-0: a long meeting name must not
+          widen the form past its card (2026-11-19 review). */}
+      <div className="min-w-0">
+        <SearchSelect
+          name="meeting_id"
+          options={meetingOptions}
+          text={{
+            clear: s.common.searchClear,
+            more: s.common.searchMore,
+            noResults: s.common.searchNoResults,
+            placeholder: s.communications.selectMeeting,
+          }}
+        />
+      </div>
       {meetingOptions.length ? null : (
         <span className="text-sm font-normal text-[var(--warning)]" data-no-invite-meetings>
           {s.communications.noInviteMeetings}

@@ -3,6 +3,8 @@ import { fill } from "@/lib/i18n/template";
 import { formatDateTimeIn } from "@/lib/i18n/format";
 import { ResultRowActions } from "@/features/admin/components/sections/results/result-row-actions";
 import { PerPageSelect } from "@/features/admin/components/table-controls";
+import { SearchSelect } from "@/features/ui/search-select";
+import { meetingSearchOptions } from "@/features/ui/search-options";
 import { ResultApprovalDrawer, ResultSnapshotRowFocus } from "@/features/admin/components/result-approval-drawer";
 import { resultHref } from "@/features/admin/components/sections/results/result-hrefs";
 import { formatPercent, getResultTotals } from "@/features/admin/components/sections/shared/format";
@@ -68,15 +70,30 @@ export async function ResultsSection({
       latestByMeeting.set(snapshot.meeting_id, snapshot.generated_at);
     }
   }
+  // Meeting filter by id (2026-11-19 pilot): pick from the meetings that
+  // have a result, newest result first, instead of typing part of a title.
+  const resultMeetings = new Map<string, { id: string; title: string; latest: string }>();
+  for (const snapshot of resultSnapshots) {
+    const known = resultMeetings.get(snapshot.meeting_id);
+    if (!known || snapshot.generated_at > known.latest) {
+      resultMeetings.set(snapshot.meeting_id, {
+        id: snapshot.meeting_id,
+        title: snapshot.meetings?.title ?? snapshot.meeting_id,
+        latest: snapshot.generated_at,
+      });
+    }
+  }
+  const resultMeetingOptions = meetingSearchOptions(
+    [...resultMeetings.values()].sort((left, right) => right.latest.localeCompare(left.latest)),
+    (meeting) => fill(s.results.latestResultAt, { date: formatDateTimeIn(locale, meeting.latest) }),
+  );
   const filteredResultSnapshots = resultSnapshots.filter((snapshot) => {
-    const meetingQuery = resultTableFilters.meeting.trim().toLowerCase();
+    const meetingId = resultTableFilters.meeting;
     const generatedQuery = resultTableFilters.generated.trim();
     const approvalStatus = approvedResultSnapshotIds.has(snapshot.id)
       ? "approved"
       : "pending";
-    const matchesMeeting = meetingQuery
-      ? (snapshot.meetings?.title ?? "").toLowerCase().includes(meetingQuery)
-      : true;
+    const matchesMeeting = meetingId ? snapshot.meeting_id === meetingId : true;
     const matchesGenerated = generatedQuery
       ? snapshot.generated_at.slice(0, 10) === generatedQuery
       : true;
@@ -268,12 +285,19 @@ export async function ResultsSection({
           />
           <label className="grid gap-1 text-xs font-medium text-[var(--muted)] md:col-span-4">
             {s.results.meeting}
-            <input
-              className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)]"
-              defaultValue={resultTableFilters.meeting}
-              name="meeting"
-              placeholder={s.results.searchMeeting}
-            />
+            <span className="text-[var(--foreground)]">
+              <SearchSelect
+                defaultValue={resultTableFilters.meeting}
+                name="meeting"
+                options={resultMeetingOptions}
+                text={{
+                  clear: s.common.searchClear,
+                  more: s.common.searchMore,
+                  noResults: s.common.searchNoResults,
+                  placeholder: s.results.allMeetings,
+                }}
+              />
+            </span>
           </label>
           <label className="grid gap-1 text-xs font-medium text-[var(--muted)] md:col-span-3">
             {s.results.generated}

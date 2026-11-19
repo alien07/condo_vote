@@ -85,8 +85,18 @@ features/admin/
    Use the shared builders `roomSearchOptions`, `ownerSearchOptions`,
    `profileSearchOptions` and `invalidFieldElement` from the same file.
    Done: room-owner link, proxies (room, owner, proxy holder), paper
-   ballots (room, voter), committee (person). Meeting pickers stay plain
-   `<select>` (short lists).
+   ballots (room, voter), committee (person).
+   **Rule of thumb (2026-11-19):** if the choices are rows in the database
+   (meetings, rooms, owners, people), use `SearchSelect` and submit the
+   row's **id**, never its title or name (titles change and repeat). If
+   the choices are fixed values in code (status, type, language, page
+   size), keep a plain `<select>`. Meetings use `meetingSearchOptions`
+   (features/ui/search-options.ts, callable from server components) with
+   a hint that fits the form (closing time, status). Meetings done: agenda
+   picker, proxies, paper ballots, vote invitations; audit log actor
+   filter; Results page meeting filter (pilot, `?meeting=<id>`).
+   Next, after the pilot: the meeting filter on Proxies, Paper ballots
+   and Vote conflicts, and the room filters, the same way.
 
 ## Backlog
 Split on 2026-11-15 (no behaviour change; old import paths still work):

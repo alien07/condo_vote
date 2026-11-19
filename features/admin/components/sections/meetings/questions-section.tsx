@@ -9,6 +9,7 @@ import {
   deleteMeetingQuestion,
   updateMeetingChoice,
 } from "@/features/admin/actions";
+import { meetingSearchOptions } from "@/features/ui/search-options";
 import { AgendaMeetingPicker } from "@/features/admin/components/sections/meetings/agenda-meeting-picker";
 import { ConfirmSubmitButton } from "@/features/admin/components/form-controls";
 import { BallotPreview } from "@/features/admin/components/sections/meetings/ballot-preview";
@@ -92,11 +93,9 @@ export async function QuestionsSection({
   for (const row of comments ?? []) {
     commentsByQuestion.set(row.question_id, [...(commentsByQuestion.get(row.question_id) ?? []), row]);
   }
-  const meetingOptions = byNewest.map((item) => ({
-    value: item.id,
-    label: item.title,
-    hint: [codeLabel(s.common.code, item.status), item.meeting_number].filter(Boolean).join(" · "),
-  }));
+  const meetingOptions = meetingSearchOptions(byNewest, (item) =>
+    [codeLabel(s.common.code, item.status), item.meeting_number].filter(Boolean).join(" · "),
+  );
   const showQuestionDrawer =
     drawer?.type === "question" &&
     (drawer.mode === "create" ||

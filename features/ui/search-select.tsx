@@ -53,7 +53,8 @@ export function SearchSelect({
   /** Also accept typed text that is not in the list (the value is the text). */
   allowCustom?: boolean;
   maxResults?: number;
-  /** Called with the new value when a row is picked. */
+  /** Called with the new value when a row is picked, and with "" when the
+   * choice is cleared. */
   onChange?: (value: string) => void;
   "aria-describedby"?: string;
   "aria-invalid"?: "true";
@@ -201,6 +202,7 @@ export function SearchSelect({
             className="absolute right-0 top-0 inline-flex h-11 w-11 items-center justify-center text-lg text-[var(--muted)]"
             onClick={() => {
               setValue("");
+              onChange?.("");
               inputRef.current?.focus();
             }}
             onMouseDown={(event) => event.preventDefault()}
