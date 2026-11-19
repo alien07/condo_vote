@@ -62,8 +62,9 @@ export async function access(page: Page, ctx: AfterFixtures) {
   await expect(
     demoAdminRow.getByRole("cell", { name: "owner", exact: true }),
   ).toBeVisible();
+  // Approval status is a badge in words (req_0004).
   await expect(
-    demoAdminRow.getByRole("cell", { name: "approved", exact: true }),
+    demoAdminRow.getByRole("cell", { name: "Approved", exact: true }),
   ).toBeVisible();
   await demoAdminRow.getByRole("link", { name: "Edit roles/status" }).click();
   const profileAccessDrawer = page.getByRole("dialog", {
