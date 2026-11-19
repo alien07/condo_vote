@@ -64,7 +64,7 @@ export const committeeGuide: Record<Locale, HelpGuide> = {
       {
         id: "auditor",
         title: "สำหรับผู้ตรวจสอบ",
-        body: "ผู้ตรวจสอบเห็นเมนู \"ตรวจสอบ\" ซึ่งแสดงผลที่ประกาศแล้วพร้อมเอกสารทางการ คำขอแก้ไขผล และบันทึกการใช้งานล่าสุด หน้านี้อ่านอย่างเดียว ผู้ตรวจสอบแก้ไขหรืออนุมัติสิ่งใดไม่ได้",
+        body: "ผู้ตรวจสอบเห็นเมนู \"ตรวจสอบ\" ซึ่งแสดงผลที่ประกาศแล้ว (กด \"ดูบันทึกผล (หน้าเว็บ)\" เพื่อเปิดบันทึกผล แล้วกด \"กลับ\" เพื่อกลับมาหน้านี้) คำขอแก้ไขผล และบันทึกการใช้งานล่าสุด หน้านี้อ่านอย่างเดียว ผู้ตรวจสอบแก้ไขหรืออนุมัติสิ่งใดไม่ได้",
       },
     ],
     faq: [
@@ -155,7 +155,7 @@ export const committeeGuide: Record<Locale, HelpGuide> = {
       {
         id: "auditor",
         title: "For auditors",
-        body: "Auditors see the \"Audit\" menu: published results with their official records, correction requests, and the latest audit log entries. It is read only; an auditor cannot change or approve anything.",
+        body: "Auditors see the \"Audit\" menu: published results (tap \"View record (web page)\" to open a record, then \"Back\" to return), correction requests, and the latest audit log entries. It is read only; an auditor cannot change or approve anything.",
       },
     ],
     faq: [

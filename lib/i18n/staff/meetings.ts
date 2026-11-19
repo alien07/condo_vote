@@ -180,7 +180,7 @@ const en = {
   recordIntro: "{title}. These details go into the official result record when results are generated.",
   recordGenerated:
     "Results were generated {time}. Changes here appear in the record only after results are generated again (possible until the committee approves).",
-  openRecord: "Open the official record",
+  openRecord: "View record (web page)",
   details: "Meeting details",
   advanceVoting: "Advance voting",
   meetingDayVoting: "Meeting-day voting",
@@ -399,7 +399,7 @@ const th: typeof en = {
   recordIntro: "{title} ข้อมูลนี้จะอยู่ในบันทึกผลการลงมติฉบับทางการเมื่อสร้างผล",
   recordGenerated:
     "สร้างผลแล้วเมื่อ {time} การแก้ไขที่นี่จะอยู่ในบันทึกหลังสร้างผลใหม่เท่านั้น (ทำได้จนกว่ากรรมการจะอนุมัติ)",
-  openRecord: "เปิดบันทึกผลฉบับทางการ",
+  openRecord: "ดูบันทึกผล (หน้าเว็บ)",
   details: "ข้อมูลการประชุม",
   advanceVoting: "ลงคะแนนล่วงหน้า",
   meetingDayVoting: "ลงคะแนนวันประชุม",

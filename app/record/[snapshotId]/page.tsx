@@ -1,6 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import type { ReactNode } from "react";
 import { PrintButton } from "@/features/results/print-button";
+import { BackLink } from "@/features/shell/back-link";
 import { documentFont } from "@/lib/fonts";
 import {
   THAI_MEETING_ROUNDS,
@@ -18,11 +19,28 @@ import { formatThaiDateTime } from "@/lib/datetime";
 import { choiceLabel } from "@/lib/i18n/choice";
 import { GlossaryNotes } from "@/features/glossary/term";
 import { decidingColumn } from "@/lib/i18n/glossary";
+import { getStaffI18n } from "@/lib/i18n/server";
 import { createClient } from "@/lib/supabase/server";
 
 type RecordPageProps = {
   params: Promise<{ snapshotId: string }>;
+  searchParams: Promise<{ from?: string | string[] }>;
 };
+
+// Where "Back" goes (demo feedback item 16). The links that open this page
+// add ?from=results or ?from=audit; otherwise go to the admin Results
+// section, or to Audit for an auditor who is not an admin.
+function backHref(from: string | string[] | undefined, roles: string[]) {
+  if (from === "audit") {
+    return "/audit";
+  }
+
+  if (from === "results" || roles.includes("admin") || !roles.includes("auditor")) {
+    return "/admin/results";
+  }
+
+  return "/audit";
+}
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -45,7 +63,7 @@ function cssString(value: string) {
 
 // Official result record (document 1). Admins see every snapshot; committee
 // members see published ones (RLS). Printed from the browser as A4.
-export default async function OfficialRecordPage({ params }: RecordPageProps) {
+export default async function OfficialRecordPage({ params, searchParams }: RecordPageProps) {
   const { roles } = await requireProfileWithRoles();
 
   // Auditors read official records too (item 14b).
@@ -54,6 +72,8 @@ export default async function OfficialRecordPage({ params }: RecordPageProps) {
   }
 
   const { snapshotId } = await params;
+  const { from } = await searchParams;
+  const { s } = await getStaffI18n();
   const supabase = await createClient();
   const [snapshotResult, publicationResult, masterPdfResult, approvalsResult, settingsResult] =
     await Promise.all([
@@ -157,17 +177,19 @@ export default async function OfficialRecordPage({ params }: RecordPageProps) {
         }
       `}</style>
 
+      <div className="mb-2 print:hidden" data-record-back>
+        <BackLink href={backHref(from, roles)}>{s.results.back}</BackLink>
+      </div>
+
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3 print:hidden">
-        <p className="text-[var(--muted)]">
-          Official result record (Thai). Print it, or choose Save as PDF in the print dialog.
-        </p>
+        <p className="text-[var(--muted)]">{s.results.recordToolbar}</p>
         <div className="flex flex-wrap items-center gap-3">
           {hasMasterPdf ? (
             <a
               className="inline-flex min-h-11 items-center font-medium text-[var(--primary)] underline"
               href={`/result-files/${snapshot.id}/official-th.pdf`}
             >
-              Master PDF
+              {s.results.officialPdf}
             </a>
           ) : null}
           <PrintButton />

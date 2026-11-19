@@ -41,7 +41,7 @@ export async function ResultRowActions({
   const pdfFirst = approved && !pdfsMissing && hasOfficialPdf;
 
   const menu = [
-    <a className={menuItemClass} href={`/record/${snapshotId}`} key="record">
+    <a className={menuItemClass} href={`/record/${snapshotId}?from=results`} key="record">
       {s.results.officialRecord}
     </a>,
     approved && hasOfficialPdf && !pdfFirst ? (

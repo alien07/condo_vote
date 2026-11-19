@@ -202,6 +202,14 @@ test.describe("@test:e2e @test:auth @test:admin admin demo: results", () => {
         .getByRole("cell", { name: "approved" }),
     ).toBeVisible();
 
+    // The web record and the frozen PDF have distinct names (demo feedback
+    // item 17), and the record link says where it was opened from (item 16).
+    const approvedRow = page.getByRole("row").filter({ hasText: meetingTitle });
+    await approvedRow.locator("[data-more-actions] summary").click();
+    await expect(
+      approvedRow.getByRole("link", { name: "View record (web page)" }),
+    ).toHaveAttribute("href", `/record/${snapshot!.id}?from=results`);
+
     const { data: approvals, error: approvalsError } = await supabase
       .from("committee_approvals")
       .select("id, notes, result_snapshot_id")
@@ -231,6 +239,16 @@ test.describe("@test:e2e @test:auth @test:admin admin demo: results", () => {
     ).toBeVisible();
     await expect(page.getByText(meetingTitle).first()).toBeVisible();
     await expect(page.getByText(hashed!.payload_sha256!).first()).toBeVisible();
+
+    // "Back" goes to the admin Results section by default, and to Audit when
+    // the record was opened from there (demo feedback item 16).
+    const backLink = page.locator("[data-record-back]").getByRole("link");
+    await expect(backLink).toHaveText("Back");
+    await expect(backLink).toHaveAttribute("href", "/admin/results");
+    await gotoWithRetry(page, `${appUrl}/record/${snapshot!.id}?from=audit`, {
+      waitUntil: "commit",
+    });
+    await expect(backLink).toHaveAttribute("href", "/audit");
 
     // The verify page (English here, D020) opens for a snapshot.
     await gotoWithRetry(page, `${appUrl}/verify/${snapshot!.id}`, {

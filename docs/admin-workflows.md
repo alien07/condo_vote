@@ -123,8 +123,8 @@ These workflows define the admin-facing MVP behavior. Ask before implementing an
 - After committee approval, the approved result snapshot and approval record are immutable.
 - After committee approval, generating another result snapshot for the same meeting is blocked.
 - Approved results can be viewed, exported to PDF, and sent by email.
-- `Official record` on the results list opens `/record/[snapshotId]`; print it or save it as PDF from the browser, then sign and keep it (D019).
-- When a result is published the master PDF files are made in the background (D021). `Official PDF` downloads the official file; `Create PDF files (n/3)` makes any that are missing.
+- `View record (web page)` (Thai: `ดูบันทึกผล (หน้าเว็บ)`) on the results list opens `/record/[snapshotId]`; print it or save it as PDF from the browser, then sign and keep it (D019). `Back` above the record returns to the Results section, or to Audit when it was opened from there.
+- When a result is published the master PDF files are made in the background (D021). `Download official PDF` (Thai: `ดาวน์โหลด PDF ฉบับทางการ`) downloads the frozen official file; `Create PDF files (n/3)` makes any that are missing.
 
 ## Resolved Questions (2026-11-08)
 - Result approval: multiple committee members, minimum set by admin (D014).
