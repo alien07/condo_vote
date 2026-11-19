@@ -25,7 +25,18 @@ import {
 import { useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { mergeParams, profileTableParams, profileTableStateFromParams } from "@/features/admin/components/sections/people/people-table-state";
-import type { PeopleCrudPilotProps, ProfileTableState } from "@/features/admin/components/sections/people/people-types";
+import {
+  PROFILE_APPROVAL_FILTERS,
+  type PeopleCrudPilotProps,
+  type ProfileTableState,
+} from "@/features/admin/components/sections/people/people-types";
+
+// Approval status as a colour badge (req_0004): waiting stands out.
+const APPROVAL_BADGE: Record<string, string> = {
+  pending: "bg-amber-100 text-amber-900",
+  approved: "bg-emerald-100 text-emerald-800",
+  rejected: "bg-red-100 text-red-800",
+};
 import { ProfileAccessForm } from "@/features/admin/components/sections/people/profile-access-form";
 
 type ProfilesPanelProps = Pick<
@@ -125,10 +136,12 @@ export function ProfilesPanel({
         profileTableState.defaultStatus === "all"
           ? true
           : profile.default_status === profileTableState.defaultStatus;
+      const matchesApproval =
+        profileTableState.approval === "all" || profile.approval_status === profileTableState.approval;
 
-      return matchesName && matchesDefaultStatus;
+      return matchesName && matchesDefaultStatus && matchesApproval;
     });
-  }, [profileTableState.defaultStatus, profileTableState.name, profiles]);
+  }, [profileTableState.approval, profileTableState.defaultStatus, profileTableState.name, profiles]);
   const sortedProfiles = useMemo(() => {
     const direction = profileTableState.dir === "asc" ? 1 : -1;
 
@@ -171,6 +184,7 @@ export function ProfilesPanel({
     });
   const clearProfileTable = () =>
     updateProfileTable({
+      approval: "all",
       defaultStatus: "all",
       dir: "asc",
       name: "",
@@ -178,6 +192,12 @@ export function ProfilesPanel({
       perPage: 25,
       sort: "name",
     });
+  const approvalLabel: Record<ProfileTableState["approval"], string> = {
+    all: s.common.allStatuses,
+    pending: s.people.pendingOption,
+    approved: s.people.approvedOption,
+    rejected: s.people.rejectedOption,
+  };
   const defaultStatusLabel: Record<ProfileTableState["defaultStatus"], string> = {
     all: s.common.allStatuses,
     owner: s.people.ownerOption,
@@ -203,6 +223,15 @@ export function ProfilesPanel({
             label: `${s.people.defaultStatus}: ${defaultStatusLabel[profileTableState.defaultStatus]}`,
             onRemove: () =>
               updateProfileTable({ ...profileTableState, defaultStatus: "all", page: 1 }),
+          },
+        ]
+      : []),
+    ...(profileTableState.approval !== "all"
+      ? [
+          {
+            key: "approval",
+            label: `${s.people.approvalStatus}: ${approvalLabel[profileTableState.approval]}`,
+            onRemove: () => updateProfileTable({ ...profileTableState, approval: "all", page: 1 }),
           },
         ]
       : []),
@@ -287,6 +316,25 @@ export function ProfilesPanel({
                 <option value="proxy">{s.people.proxyOption}</option>
               </select>
             </label>
+            <label className={`${listFieldClass} w-full sm:w-44`}>
+              {s.people.approvalStatus}
+              <select
+                className={listInputClass}
+                name="approval"
+                onChange={(event) => {
+                  const value = event.currentTarget.value as ProfileTableState["approval"];
+
+                  setProfileCriteria((current) => ({ ...current, approval: value }));
+                }}
+                value={profileCriteria.approval}
+              >
+                {PROFILE_APPROVAL_FILTERS.map((value) => (
+                  <option key={value} value={value}>
+                    {approvalLabel[value]}
+                  </option>
+                ))}
+              </select>
+            </label>
           </AdminListToolbar>
         }
       >
@@ -330,7 +378,17 @@ export function ProfilesPanel({
                   <td className={`${listTdClass} font-medium`}>{profile.full_name}</td>
                   <td className={listTdClass}>{profile.email}</td>
                   <td className={listTdClass}>{codeLabel(s.common.code, profile.default_status)}</td>
-                  <td className={listTdClass}>{codeLabel(s.common.code, profile.approval_status)}</td>
+                  <td className={listTdClass}>
+                    <span
+                      className={`inline-flex whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-medium ${
+                        APPROVAL_BADGE[profile.approval_status] ?? "bg-slate-100 text-slate-700"
+                      }`}
+                      data-approval={profile.approval_status}
+                    >
+                      {approvalLabel[profile.approval_status as ProfileTableState["approval"]] ??
+                        codeLabel(s.common.code, profile.approval_status)}
+                    </span>
+                  </td>
                   <td className={listTdClass}>
                     {profileRoles.map((role) => codeLabel(s.common.code, role.role)).join(", ") || "-"}
                   </td>

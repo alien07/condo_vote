@@ -9,6 +9,7 @@ import {
   Mail,
   Send,
   UserCheck,
+  UserPlus,
   Users,
   Vote,
 } from "lucide-react";
@@ -16,6 +17,8 @@ import { getAdminDashboardData } from "@/features/admin/data";
 import { MissingEnglishPanel } from "@/features/english/missing-english-panel";
 import { getStaffI18n } from "@/lib/i18n/server";
 import { fill } from "@/lib/i18n/template";
+import { getCurrentProfileWithRoles } from "@/lib/auth/permissions";
+import { PENDING_ACCOUNTS_HREF } from "@/features/admin/components/sections/people/people-table-state";
 
 type MetricCardProps = {
   actionLabel?: string;
@@ -130,7 +133,9 @@ export default async function AdminDashboardPage() {
     emailLogs,
     profiles,
   } = await getAdminDashboardData();
-  const { s: staff } = await getStaffI18n();
+  const [{ s: staff }, current] = await Promise.all([getStaffI18n(), getCurrentProfileWithRoles()]);
+  // Only the manager (admin role) approves accounts (updateProfileAccess).
+  const canApproveAccounts = current?.roles.includes("admin") ?? false;
   const t = staff.adminHome;
   const m = t.metrics;
   const dashboardLinks = [
@@ -186,6 +191,7 @@ export default async function AdminDashboardPage() {
   const residentProfiles = profiles.filter(
     (profile) => profile.default_status === "resident",
   ).length;
+  const pendingAccounts = profiles.filter((profile) => profile.approval_status === "pending").length;
   const dashboardGroups = [
     {
       title: t.groups.masterTitle,
@@ -232,6 +238,20 @@ export default async function AdminDashboardPage() {
           detail: fill(m.profilesDetail, { owners: ownerProfiles, residents: residentProfiles }),
           status: m.viewProfiles,
         },
+        // Accounts waiting for approval (req_0004): one click to the list.
+        ...(canApproveAccounts
+          ? [
+              {
+                href: PENDING_ACCOUNTS_HREF,
+                icon: UserPlus,
+                label: m.pendingAccounts,
+                value: String(pendingAccounts),
+                detail: fill(m.pendingAccountsDetail, { count: profiles.length }),
+                status: pendingAccounts > 0 ? m.needsReview : m.allClear,
+                tone: pendingAccounts > 0 ? ("warning" as const) : ("success" as const),
+              },
+            ]
+          : []),
       ],
     },
     {
