@@ -15,6 +15,7 @@ import { FieldLabel, RequiredNote } from "@/features/admin/components/field-labe
 import { FormResetButton } from "@/features/admin/components/form-controls";
 import { PendingSubmitButton } from "@/features/debug/tracked-submit-button";
 import { SearchSelect } from "@/features/ui/search-select";
+import { committeePositionLabel } from "@/lib/i18n/committee-position";
 
 type MeetingRecord = {
   chairperson_name: string | null;
@@ -39,7 +40,8 @@ type MeetingRecord = {
 type CommitteeMemberOption = {
   active: boolean;
   full_name: string;
-  position_title: string;
+  position_code: string;
+  position_title: string | null;
 };
 
 type MeetingCrudDrawerProps = {
@@ -50,14 +52,9 @@ type MeetingCrudDrawerProps = {
 };
 
 // The committee chair, for a new meeting's chairperson (2026-11-18): an
-// active member whose title is chair, not vice chair.
+// active member in the built-in chair position (D026).
 function committeeChair(members: CommitteeMemberOption[]) {
-  return members.find(
-    (member) =>
-      member.active &&
-      /ประธาน|chair/i.test(member.position_title) &&
-      !/รอง|vice/i.test(member.position_title),
-  )?.full_name;
+  return members.find((member) => member.active && member.position_code === "chair")?.full_name;
 }
 
 const emptyState: MeetingActionState = {};
@@ -155,7 +152,7 @@ export function MeetingCrudDrawer({
     .map((member) => ({
       value: member.full_name,
       label: member.full_name,
-      hint: member.position_title,
+      hint: committeePositionLabel(s.setup.positions, member.position_code, member.position_title),
     }));
   const formRef = useRef<HTMLFormElement>(null);
   const searchParams = useSearchParams();

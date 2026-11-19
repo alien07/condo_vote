@@ -38,6 +38,16 @@ type AppSettings = {
 } | null;
 
 const emptyCondoState: CondoProfileActionState = {};
+
+// Same groups and controls as the meeting form; checkboxes are 44px tap
+// targets with the label around the box (setup review 2026-11-19).
+const groupClass = "grid min-w-0 gap-3 rounded-lg border border-[var(--border)] p-4 md:grid-cols-2";
+const legendClass = "px-1 text-sm font-semibold";
+const fieldClass = "grid min-w-0 gap-1 text-sm font-medium";
+const inputClass =
+  "min-h-11 w-full min-w-0 rounded-md border border-[var(--border)] px-3 py-2 text-sm font-normal";
+const choice =
+  "inline-flex min-h-11 cursor-pointer items-start gap-2 rounded-md border border-[var(--border)] px-3 py-2.5 text-sm font-medium has-[:checked]:border-[var(--primary)] has-[:checked]:bg-[var(--accent)]";
 const emptyAppSettingsState: AppSettingsActionState = {};
 
 function fieldErrorId(prefix: string, fieldName: string) {
@@ -150,191 +160,210 @@ export function JuristicProfileForm({
     focusFirstInvalidField(formRef.current, state);
   }, [state]);
 
+  const text = (fieldName: string, fallback: string | number | null | undefined) =>
+    stateValue(state, fieldName, fallback);
+
   return (
-    <form action={formAction} className="grid gap-3 md:grid-cols-2" noValidate ref={formRef}>
+    <form action={formAction} className="grid gap-4" noValidate ref={formRef}>
       <FormMessage state={state} />
-      <div className="md:col-span-2">
-        <RequiredNote />
-      </div>
+      <RequiredNote />
       <input name="id" type="hidden" value={stateValue(state, "id", condoProfile?.id)} />
-      <label className="grid gap-1 text-sm font-medium">
-        <FieldLabel required>{s.setup.juristicName}</FieldLabel>
-        <input
-          {...fieldProps("condo-profile", "juristic_name", state)}
-          className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-          defaultValue={stateValue(
-            state,
-            "juristic_name",
-            condoProfile?.juristic_name,
-          )}
-          name="juristic_name"
-          required
-        />
-        <FieldError fieldName="juristic_name" prefix="condo-profile" state={state} />
-      </label>
-      <label className="grid gap-1 text-sm font-medium">
-        <FieldLabel required>{s.setup.projectName}</FieldLabel>
-        <input
-          {...fieldProps("condo-profile", "project_name", state)}
-          className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-          defaultValue={stateValue(state, "project_name", condoProfile?.project_name)}
-          name="project_name"
-          required
-        />
-        <FieldError fieldName="project_name" prefix="condo-profile" state={state} />
-      </label>
-      {/* Two-language documents (demo feedback item 6b). */}
-      <label className="grid gap-1 text-sm font-medium">
-        {s.english.juristicNameEn}
-        <input
-          className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-          defaultValue={stateValue(state, "juristic_name_en", condoProfile?.juristic_name_en ?? "")}
-          lang="en"
-          name="juristic_name_en"
-        />
-      </label>
-      <label className="grid gap-1 text-sm font-medium">
-        {s.english.projectNameEn}
-        <input
-          className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-          defaultValue={stateValue(state, "project_name_en", condoProfile?.project_name_en ?? "")}
-          lang="en"
-          name="project_name_en"
-        />
-      </label>
-      <label className="flex items-start gap-2 text-sm font-medium md:col-span-2">
-        <input
-          className="mt-1"
-          defaultChecked={
-            state?.values ? state.values.bilingual_documents === "on" : Boolean(condoProfile?.bilingual_documents)
-          }
-          name="bilingual_documents"
-          type="checkbox"
-        />
-        <span>
-          {s.english.bilingualSwitch}
-          <span className="block font-normal text-[var(--muted)]">{s.english.bilingualHelp}</span>
-        </span>
-      </label>
-      <input
-        className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-        defaultValue={stateValue(state, "registration_no", condoProfile?.registration_no)}
-        name="registration_no"
-        placeholder={s.setup.registrationNo}
-      />
-      <input
-        className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-        defaultValue={stateValue(state, "tax_id", condoProfile?.tax_id)}
-        name="tax_id"
-        placeholder={s.setup.taxId}
-      />
-      <input
-        className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-        defaultValue={stateValue(state, "manager_name", condoProfile?.manager_name)}
-        name="manager_name"
-        placeholder={s.setup.manager}
-      />
-      <input
-        className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-        defaultValue={stateValue(state, "phone", condoProfile?.phone)}
-        name="phone"
-        placeholder={s.setup.phone}
-      />
-      <input
-        className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-        defaultValue={stateValue(state, "email", condoProfile?.email)}
-        name="email"
-        placeholder={s.setup.email}
-        type="email"
-      />
-      <label className="grid gap-1 text-sm font-medium">
-        {s.setup.historyLimit}
-        <input
-          {...fieldProps("condo-profile", "summary_history_limit", state)}
-          className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-          defaultValue={stateValue(
-            state,
-            "summary_history_limit",
-            condoProfile?.summary_history_limit ?? 5,
-          )}
-          max={20}
-          min={1}
-          name="summary_history_limit"
-          type="number"
-        />
-        <FieldError
-          fieldName="summary_history_limit"
-          prefix="condo-profile"
-          state={state}
-        />
-      </label>
-      <input
-        className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
-        defaultValue={stateValue(state, "address", condoProfile?.address)}
-        name="address"
-        placeholder={s.setup.address}
-      />
-      <fieldset className="grid gap-2 rounded-md border border-[var(--border)] p-3 text-sm md:col-span-2">
-        <legend className="px-1 font-medium">{s.setup.recordTitle}</legend>
-        <span className="text-xs text-[var(--muted)]">
-          {s.setup.recordHelp}
-        </span>
-        <span className="font-medium">{s.setup.signedBy}</span>
-        <div className="flex flex-wrap gap-x-4 gap-y-2">
-          {[
-            ["chairperson", s.setup.chairperson],
-            ["manager", s.setup.managerRole],
-            ["minutes_taker", s.setup.minutesTaker],
-            ["committee_member", s.setup.committeeMember],
-          ].map(([value, label]) => (
-            <label className="inline-flex min-h-11 items-center gap-2" key={value}>
-              <input
-                className="h-4 w-4 accent-[var(--primary)]"
-                defaultChecked={(
-                  state.values?.record_signatories?.split(",") ??
-                  condoProfile?.record_signatories ?? ["chairperson", "manager"]
-                ).includes(value)}
-                name="record_signatories"
-                type="checkbox"
-                value={value}
-              />
-              {label}
-            </label>
-          ))}
-        </div>
-        <FieldError fieldName="record_signatories" prefix="condo-profile" state={state} />
-        <label className="grid gap-1 font-medium md:max-w-xs">
-          {s.setup.noticeDays}
+      {/* Every field has a visible label, grouped like the meeting form (setup review 2026-11-19). */}
+      <fieldset className={groupClass}>
+        <legend className={legendClass}>{s.setup.groupRegistration}</legend>
+        <label className={fieldClass}>
+          <FieldLabel required>{s.setup.juristicName}</FieldLabel>
           <input
-            {...fieldProps("condo-profile", "result_notice_days", state)}
-            className="rounded-md border border-[var(--border)] px-3 py-2 text-sm font-normal"
-            defaultValue={stateValue(
-              state,
-              "result_notice_days",
-              condoProfile?.result_notice_days ?? "",
-            )}
-            max={90}
-            min={1}
-            name="result_notice_days"
-            type="number"
+            {...fieldProps("condo-profile", "juristic_name", state)}
+            autoComplete="organization"
+            className={inputClass}
+            defaultValue={text("juristic_name", condoProfile?.juristic_name)}
+            name="juristic_name"
+            required
           />
-          <FieldError fieldName="result_notice_days" prefix="condo-profile" state={state} />
+          <FieldError fieldName="juristic_name" prefix="condo-profile" state={state} />
+        </label>
+        <label className={fieldClass}>
+          <FieldLabel required>{s.setup.projectName}</FieldLabel>
+          <input
+            {...fieldProps("condo-profile", "project_name", state)}
+            autoComplete="off"
+            className={inputClass}
+            defaultValue={text("project_name", condoProfile?.project_name)}
+            name="project_name"
+            required
+          />
+          <FieldError fieldName="project_name" prefix="condo-profile" state={state} />
+        </label>
+        {/* Two-language documents (demo feedback item 6b). */}
+        <label className={fieldClass}>
+          {s.english.juristicNameEn}
+          <input
+            autoComplete="off"
+            className={inputClass}
+            defaultValue={text("juristic_name_en", condoProfile?.juristic_name_en ?? "")}
+            lang="en"
+            name="juristic_name_en"
+          />
+        </label>
+        <label className={fieldClass}>
+          {s.english.projectNameEn}
+          <input
+            autoComplete="off"
+            className={inputClass}
+            defaultValue={text("project_name_en", condoProfile?.project_name_en ?? "")}
+            lang="en"
+            name="project_name_en"
+          />
+        </label>
+        <label className={fieldClass}>
+          {s.setup.registrationNo}
+          <input
+            autoComplete="off"
+            className={inputClass}
+            defaultValue={text("registration_no", condoProfile?.registration_no)}
+            name="registration_no"
+          />
+        </label>
+        <label className={fieldClass}>
+          {s.setup.taxId}
+          <input
+            autoComplete="off"
+            className={inputClass}
+            defaultValue={text("tax_id", condoProfile?.tax_id)}
+            inputMode="numeric"
+            name="tax_id"
+          />
         </label>
       </fieldset>
-      <textarea
-        className="rounded-md border border-[var(--border)] px-3 py-2 text-sm md:col-span-2"
-        defaultValue={stateValue(
-          state,
-          "document_footer",
-          condoProfile?.document_footer,
-        )}
-        name="document_footer"
-        placeholder={s.setup.footer}
-        rows={2}
-      />
-      <div className="flex flex-wrap gap-2 md:col-span-2">
+      <fieldset className={groupClass}>
+        <legend className={legendClass}>{s.setup.groupContact}</legend>
+        <label className={fieldClass}>
+          {s.setup.manager}
+          <input
+            autoComplete="name"
+            className={inputClass}
+            defaultValue={text("manager_name", condoProfile?.manager_name)}
+            name="manager_name"
+          />
+        </label>
+        <label className={fieldClass}>
+          {s.setup.phone}
+          <input
+            autoComplete="tel"
+            className={inputClass}
+            defaultValue={text("phone", condoProfile?.phone)}
+            name="phone"
+            type="tel"
+          />
+        </label>
+        <label className={fieldClass}>
+          {s.setup.email}
+          <input
+            autoComplete="email"
+            className={inputClass}
+            defaultValue={text("email", condoProfile?.email)}
+            name="email"
+            type="email"
+          />
+        </label>
+        <label className={`${fieldClass} md:col-span-2`}>
+          {s.setup.address}
+          <textarea
+            autoComplete="street-address"
+            className={inputClass}
+            defaultValue={text("address", condoProfile?.address)}
+            name="address"
+            rows={2}
+          />
+        </label>
+      </fieldset>
+      <fieldset className={groupClass}>
+        <legend className={legendClass}>{s.setup.groupDocuments}</legend>
+        <label className={`${choice} md:col-span-2`}>
+          <input
+            className="mt-0.5 h-5 w-5 shrink-0 accent-[var(--primary)]"
+            defaultChecked={
+              state?.values ? state.values.bilingual_documents === "on" : Boolean(condoProfile?.bilingual_documents)
+            }
+            name="bilingual_documents"
+            type="checkbox"
+          />
+          <span>
+            {s.english.bilingualSwitch}
+            <span className="block font-normal text-[var(--muted)]">{s.english.bilingualHelp}</span>
+          </span>
+        </label>
+        <label className={fieldClass}>
+          {s.setup.historyLimit}
+          <input
+            {...fieldProps("condo-profile", "summary_history_limit", state)}
+            className={inputClass}
+            defaultValue={text("summary_history_limit", condoProfile?.summary_history_limit ?? 5)}
+            max={20}
+            min={1}
+            name="summary_history_limit"
+            type="number"
+          />
+          <FieldError fieldName="summary_history_limit" prefix="condo-profile" state={state} />
+        </label>
+        <fieldset className="grid min-w-0 gap-2 rounded-md border border-[var(--border)] p-3 text-sm md:col-span-2">
+          <legend className="px-1 font-medium">{s.setup.recordTitle}</legend>
+          <span className="text-xs text-[var(--muted)]">{s.setup.recordHelp}</span>
+          <fieldset className="grid gap-2">
+            <legend className="font-medium">{s.setup.signedBy}</legend>
+            <div className="flex flex-wrap gap-2">
+              {[
+                ["chairperson", s.setup.chairperson],
+                ["manager", s.setup.managerRole],
+                ["minutes_taker", s.setup.minutesTaker],
+                ["committee_member", s.setup.committeeMember],
+              ].map(([value, label]) => (
+                <label className={choice} key={value}>
+                  <input
+                    className="h-5 w-5 shrink-0 accent-[var(--primary)]"
+                    defaultChecked={(
+                      state.values?.record_signatories?.split(",") ??
+                      condoProfile?.record_signatories ?? ["chairperson", "manager"]
+                    ).includes(value)}
+                    name="record_signatories"
+                    type="checkbox"
+                    value={value}
+                  />
+                  {label}
+                </label>
+              ))}
+            </div>
+          </fieldset>
+          <FieldError fieldName="record_signatories" prefix="condo-profile" state={state} />
+          <label className={`${fieldClass} md:max-w-xs`}>
+            {s.setup.noticeDays}
+            <input
+              {...fieldProps("condo-profile", "result_notice_days", state)}
+              className={inputClass}
+              defaultValue={text("result_notice_days", condoProfile?.result_notice_days ?? "")}
+              max={90}
+              min={1}
+              name="result_notice_days"
+              type="number"
+            />
+            <FieldError fieldName="result_notice_days" prefix="condo-profile" state={state} />
+          </label>
+        </fieldset>
+        <label className={`${fieldClass} md:col-span-2`}>
+          {s.setup.footer}
+          <textarea
+            autoComplete="off"
+            className={inputClass}
+            defaultValue={text("document_footer", condoProfile?.document_footer)}
+            name="document_footer"
+            rows={2}
+          />
+        </label>
+      </fieldset>
+      <div className="flex flex-wrap gap-2">
         <PendingSubmitButton
-          className="rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)]"
+          className="min-h-11 rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)]"
           pendingLabel={s.common.saving}
           type="submit"
         >
@@ -367,11 +396,11 @@ export function DocumentStorageSettingsForm({
     <form action={formAction} className="grid gap-3 md:grid-cols-2" noValidate ref={formRef}>
       <FormMessage state={state} />
       <input name="id" type="hidden" value={stateValue(state, "id", appSettings?.id)} />
-      <label className="grid gap-1 text-sm font-medium">
+      <label className={fieldClass}>
         {t.storageProvider}
         <select
           {...fieldProps("app-settings", "document_storage_provider", state)}
-          className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+          className={inputClass}
           defaultValue={stateValue(
             state,
             "document_storage_provider",
@@ -388,10 +417,10 @@ export function DocumentStorageSettingsForm({
           state={state}
         />
       </label>
-      <label className="grid gap-1 text-sm font-medium">
+      <label className={fieldClass}>
         {t.storageRoot}
         <input
-          className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+          className={inputClass}
           defaultValue={stateValue(
             state,
             "document_storage_root",
@@ -403,7 +432,7 @@ export function DocumentStorageSettingsForm({
       </label>
       <div className="flex flex-wrap gap-2 md:col-span-2">
         <PendingSubmitButton
-          className="rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)]"
+          className="min-h-11 rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)]"
           pendingLabel={staff.common.saving}
           type="submit"
         >

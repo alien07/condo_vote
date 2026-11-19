@@ -96,3 +96,13 @@
   height: max(100%, 44px);
   transform: translate(-50%, -50%);
 }
+
+/* Committee form: the typed position title shows only while "Other" is
+   chosen (D026). CSS, so it follows the select through form resets. */
+.position-other {
+  display: none;
+}
+
+form:has(select[name="position_code"] option[value="other"]:checked) .position-other {
+  display: grid;
+}

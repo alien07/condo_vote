@@ -83,7 +83,7 @@ test.describe("@test:e2e @test:auth @test:admin admin demo: committee and docume
 
     const stamp = Date.now();
     const memberName = `Committee rollout ${stamp}`;
-    const updatedPosition = `Vice chair ${stamp}`;
+    const typedPosition = `Building liaison ${stamp}`;
 
     try {
       await page.goto(
@@ -98,22 +98,36 @@ test.describe("@test:e2e @test:auth @test:admin admin demo: committee and docume
         .getByRole("button", { name: "Add committee member" })
         .click();
       await expect(addDrawer.getByText("Committee name is required.")).toBeVisible();
-      await expect(addDrawer.getByText("Position is required.")).toBeVisible();
       await expect(addDrawer.locator('input[name="full_name"]')).toBeFocused();
 
+      // Positions are a fixed list in the page language (D026); "Other"
+      // asks for the typed title.
+      const positionSelect = addDrawer.getByRole("combobox", { exact: true, name: "Position" });
+
+      await expect(positionSelect).toHaveValue("member");
+      await expect(positionSelect.locator("option")).toHaveText([
+        "Chairperson",
+        "Vice chairperson",
+        "Secretary",
+        "Assistant secretary",
+        "Treasurer",
+        "Committee member",
+        "Other (typed)",
+      ]);
       await addDrawer.locator('input[name="full_name"]').fill(memberName);
+      await positionSelect.selectOption("other");
       await addDrawer
         .getByRole("button", { name: "Add committee member" })
         .click();
-      await expect(addDrawer.getByText("Position is required.")).toBeVisible();
+      await expect(addDrawer.getByText("Type the position title.")).toBeVisible();
       await expect(addDrawer.locator('input[name="full_name"]')).toHaveValue(
         memberName,
       );
       await expect(
-        addDrawer.locator('input[name="position_title"]'),
+        addDrawer.getByRole("textbox", { name: "Position title" }),
       ).toBeFocused();
 
-      await addDrawer.locator('input[name="position_title"]').fill("Chairperson");
+      await addDrawer.getByRole("textbox", { name: "Position title" }).fill(typedPosition);
       await addDrawer
         .getByRole("button", { name: "Add committee member" })
         .click();
@@ -132,6 +146,8 @@ test.describe("@test:e2e @test:auth @test:admin admin demo: committee and docume
 
       await expect(memberRow).toBeVisible();
       await expect(memberRow).toHaveClass(/border-l-\[var\(--primary\)\]/);
+      await expect(memberRow.getByRole("cell", { name: typedPosition })).toBeVisible();
+      await expect(memberRow.locator("[data-committee-status]")).toHaveText("Active");
       await expect(
         memberRow.getByRole("button", { name: "Deactivate" }),
       ).toBeVisible();
@@ -149,9 +165,11 @@ test.describe("@test:e2e @test:auth @test:admin admin demo: committee and docume
       await expect(editDrawer.locator('input[name="full_name"]')).toHaveValue(
         memberName,
       );
+      await expect(editDrawer.getByRole("textbox", { name: "Position title" })).toHaveValue(typedPosition);
       await editDrawer
-        .locator('input[name="position_title"]')
-        .fill(updatedPosition);
+        .getByRole("combobox", { exact: true, name: "Position" })
+        .selectOption("vice_chair");
+      await expect(editDrawer.getByRole("textbox", { name: "Position title" })).toHaveCount(0);
       await editDrawer
         .getByRole("button", { name: "Save committee member" })
         .click();
@@ -160,8 +178,29 @@ test.describe("@test:e2e @test:auth @test:admin admin demo: committee and docume
           url.searchParams.get("focusCommitteeId") === memberId &&
           !url.searchParams.has("mode"),
       );
-      await expect(memberRow.getByRole("cell", { name: updatedPosition })).toBeVisible();
+      await expect(memberRow.getByRole("cell", { name: "Vice chairperson" })).toBeVisible();
       await expect(memberRow).toHaveClass(/border-l-\[var\(--primary\)\]/);
+
+      // Phones get cards with the status and both buttons on screen
+      // (setup review 2026-11-19); the table is for md and up.
+      await page.setViewportSize({ width: 375, height: 800 });
+      const memberCard = page.locator(`li[data-committee-id="${memberId}"]`);
+
+      await expect(memberCard).toBeVisible();
+      await expect(page.locator(`tr[data-committee-id="${memberId}"]`)).toBeHidden();
+      await expect(memberCard).toContainText("Vice chairperson");
+      await expect(memberCard.locator("[data-committee-status]")).toHaveText("Active");
+      await memberCard.scrollIntoViewIfNeeded();
+      for (const name of ["Edit", "Deactivate"]) {
+        const control = memberCard.getByRole(name === "Edit" ? "link" : "button", { name });
+
+        await expect(control).toBeInViewport({ ratio: 1 });
+        expect((await control.boundingBox())!.height).toBeGreaterThanOrEqual(40);
+      }
+      expect(
+        await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
+      ).toBe(true);
+      await page.setViewportSize({ width: 1280, height: 720 });
 
       await memberRow.getByRole("button", { name: "Deactivate" }).click();
       await confirmInApp(page);
@@ -262,7 +301,7 @@ test.describe("@test:e2e @test:auth @test:admin admin demo: committee and docume
           name: "Save document storage config",
         }),
       ).toBeVisible();
-      await storageSection.getByRole("link", { name: "Open Documents" }).click();
+      await storageSection.getByRole("link", { name: "Go to documents" }).click();
       await expect(page).toHaveURL(/\/admin\/documents/);
 
       await page.goto(

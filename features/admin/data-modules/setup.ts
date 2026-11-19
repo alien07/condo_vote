@@ -14,7 +14,7 @@ export async function fetchSetupData(supabase: SupabaseServerClient) {
     supabase
       .from("committee_members")
       .select(
-        "id, profile_id, full_name, position_title, term_starts_at, term_ends_at, display_order, active",
+        "id, profile_id, full_name, position_code, position_title, term_starts_at, term_ends_at, display_order, active",
       )
       .order("display_order", { ascending: true })
       .order("created_at", { ascending: false }),

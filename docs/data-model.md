@@ -101,8 +101,8 @@ Record settings (D019): `record_signatories` (chairperson, manager, minutes_take
 
 ### committee_members
 Purpose: Stores actual committee member names and positions.
-Key fields: profile link, full name, position title, term dates, display order, active flag.
-Notes: This is document and governance data. `app_roles` remains system authorization only.
+Key fields: profile link, full name, position code, typed position title (only for `other`), term dates, display order, active flag.
+Notes: This is document and governance data. `app_roles` remains system authorization only. Positions are built-in codes (D026, migration 0045): `chair`, `vice_chair`, `secretary`, `assistant_secretary`, `treasurer`, `member` (default), `other` with a typed title. `committee_position_label(code, title, lang)` gives the Thai (default) or English label.
 
 ### owners
 Purpose: Stores verified legal owner master data.

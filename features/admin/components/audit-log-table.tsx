@@ -2,30 +2,20 @@
 
 import { useMessageText, useStaffText } from "@/lib/i18n/staff/client";
 import { fill } from "@/lib/i18n/template";
-import { bangkokDateTimeParts } from "@/lib/datetime";
 import { useMemo, useState } from "react";
 import { PendingSubmitButton } from "@/features/debug/tracked-submit-button";
 import { SearchSelect } from "@/features/ui/search-select";
+import { AuditActionFilter } from "@/features/admin/components/sections/setup/audit-log-action-filter";
+import {
+  AuditLogRows,
+  type AuditLogRow,
+} from "@/features/admin/components/sections/setup/audit-log-rows";
 
 type AuditActorOption = {
   id: string;
   label: string;
   /** Shown under the name, and searchable (null when the label is the email). */
   email?: string | null;
-};
-
-type AuditLogRow = {
-  action: string;
-  created_at: string;
-  details_json: unknown;
-  entity_id: string | null;
-  entity_type: string;
-  id: string;
-  profiles: {
-    email: string | null;
-    full_name: string | null;
-    id: string;
-  } | null;
 };
 
 type AuditLogFilters = {
@@ -55,8 +45,6 @@ type AuditApiResponse = {
   auditLogTotal: number;
   auditLogs: AuditLogRow[];
 };
-
-const formatAuditDateTime = bangkokDateTimeParts;
 
 function buildParams(filters: AuditLogFilters) {
   const params = new URLSearchParams();
@@ -195,7 +183,7 @@ export function AuditLogTable({
           <label className="grid gap-1 text-xs font-medium text-[var(--muted)] lg:col-span-3">
             {s.common.from}
             <input
-              className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)]"
+              className="min-h-11 w-full min-w-0 rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)]"
               onChange={(event) => {
                 const value = event.currentTarget.value;
 
@@ -212,7 +200,7 @@ export function AuditLogTable({
           <label className="grid gap-1 text-xs font-medium text-[var(--muted)] lg:col-span-3">
             {s.common.to}
             <input
-              className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)]"
+              className="min-h-11 w-full min-w-0 rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)]"
               onChange={(event) => {
                 const value = event.currentTarget.value;
 
@@ -248,27 +236,13 @@ export function AuditLogTable({
               />
             </span>
           </label>
-          <label className="grid gap-1 text-xs font-medium text-[var(--muted)] lg:col-span-8">
-            {s.common.actions}
-            <select
-              className="min-h-24 rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)]"
-              multiple
-              onChange={(event) => {
-                const selected = Array.from(
-                  event.currentTarget.selectedOptions,
-                ).map((option) => option.value);
-
-                setCriteria((current) => ({ ...current, actions: selected }));
-              }}
-              value={criteria.actions}
-            >
-              {actions.map((action) => (
-                <option key={action} value={action}>
-                  {action}
-                </option>
-              ))}
-            </select>
-          </label>
+          <div className="grid gap-1 text-xs font-medium text-[var(--muted)] lg:col-span-8">
+            <AuditActionFilter
+              actions={actions}
+              onChange={(selected) => setCriteria((current) => ({ ...current, actions: selected }))}
+              selected={criteria.actions}
+            />
+          </div>
           <div className="flex flex-wrap items-end justify-center gap-2 lg:col-span-4">
             <PendingSubmitButton
               className="min-h-10 rounded-md bg-[var(--primary)] px-5 py-2 text-sm font-medium text-[var(--primary-foreground)]"
@@ -342,7 +316,7 @@ export function AuditLogTable({
                   ),
                 )}
               </select>
-              <span>of {totalPages}</span>
+              <span>{fill(s.common.ofPages, { total: totalPages })}</span>
             </label>
             <div className="hidden h-6 w-px bg-[var(--border)] sm:block" />
             <label className="flex items-center gap-2 text-xs font-medium text-[var(--muted)]">
@@ -375,87 +349,17 @@ export function AuditLogTable({
             {tm(error)}
           </p>
         ) : null}
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[820px] border-collapse text-left text-sm">
-            <thead className="bg-[var(--background)] text-[var(--muted)]">
-              <tr className="border-b border-[var(--border)]">
-                {[
-                  ["time", s.common.time],
-                  ["actor", s.common.actor],
-                  ["action", s.common.action],
-                  ["entity", s.common.entity],
-                ].map(([sort, label]) => (
-                  <th
-                    className={
-                      sort === "time"
-                        ? "w-32 min-w-32 px-4 py-3 font-medium"
-                        : "px-4 py-3 font-medium"
-                    }
-                    key={sort}
-                  >
-                    <button
-                      className="font-medium"
-                      onClick={() => {
-                        const nextSort = sort as AuditLogFilters["sort"];
-                        const nextDir =
-                          appliedFilters.sort === nextSort &&
-                          appliedFilters.dir === "asc"
-                            ? "desc"
-                            : "asc";
+        <AuditLogRows
+          dir={appliedFilters.dir}
+          onSort={(nextSort) => {
+            const nextDir =
+              appliedFilters.sort === nextSort && appliedFilters.dir === "asc" ? "desc" : "asc";
 
-                        void load({
-                          ...appliedFilters,
-                          dir: nextDir,
-                          page: 1,
-                          sort: nextSort,
-                        });
-                      }}
-                      type="button"
-                    >
-                      {label}
-                      {appliedFilters.sort === sort
-                        ? appliedFilters.dir === "asc"
-                          ? " ↑"
-                          : " ↓"
-                        : ""}
-                    </button>
-                  </th>
-                ))}
-                <th className="px-4 py-3 font-medium">{s.common.details}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((log, index) => {
-                const timestamp = formatAuditDateTime(log.created_at);
-
-                return (
-                  <tr
-                    className={[
-                      "border-b border-[var(--border)] last:border-0",
-                      index % 2 === 0
-                        ? "bg-[var(--surface)]"
-                        : "bg-[var(--background)]",
-                    ].join(" ")}
-                    key={log.id}
-                  >
-                    <td className="w-32 min-w-32 px-4 py-3 text-xs tabular-nums">
-                      <div>{timestamp.date}</div>
-                      <div className="text-[var(--muted)]">{timestamp.time}</div>
-                    </td>
-                    <td className="px-4 py-3">
-                      {log.profiles?.full_name ?? log.profiles?.email ?? "-"}
-                    </td>
-                    <td className="px-4 py-3">{log.action}</td>
-                    <td className="px-4 py-3">{log.entity_type}</td>
-                    <td className="max-w-sm truncate px-4 py-3">
-                      {JSON.stringify(log.details_json)}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+            void load({ ...appliedFilters, dir: nextDir, page: 1, sort: nextSort });
+          }}
+          rows={rows}
+          sort={appliedFilters.sort}
+        />
         {rows.length === 0 ? (
           <p className="px-4 py-4 text-sm text-[var(--muted)]">
             {s.setup.noAudit}

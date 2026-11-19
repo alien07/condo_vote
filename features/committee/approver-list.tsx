@@ -1,4 +1,5 @@
 import type { CommitteePerson } from "@/features/results/committee-service";
+import { committeePositionLabel } from "@/lib/i18n/committee-position";
 
 export type ApproverEntry = {
   profileId: string;
@@ -12,7 +13,17 @@ type Text = {
   approversTitle: string;
   notAnswered: string;
   objected: string;
+  positions: Record<string, string>;
 };
+
+/** " (Chairperson)" in the page language, or nothing for a non-member. */
+function positionSuffix(member: CommitteePerson | undefined, positions: Record<string, string>) {
+  if (!member?.position_code && !member?.position) {
+    return null;
+  }
+
+  return ` (${member.position_code ? committeePositionLabel(positions, member.position_code, member.position_title) : member.position})`;
+}
 
 /** Who approved, who objected and who has not answered, for the one "i" tip
  * next to an approval count (demo feedback item 11). Spans only: it sits
@@ -41,7 +52,7 @@ export function ApproverList({
           <span className="mt-1 block" data-approver key={entry.profileId}>
             {entry.kind === "object" ? `✗ ${text.objected}: ` : "✓ "}
             {entry.name ?? "-"}
-            {member?.position ? ` (${member.position})` : null}
+            {positionSuffix(member, text.positions)}
             {` · ${formatTime(entry.at)}`}
             {entry.note ? (
               <span className="line-clamp-3 block opacity-90 [overflow-wrap:anywhere]">“{entry.note}”</span>
@@ -52,7 +63,7 @@ export function ApproverList({
       {waiting.map((member) => (
         <span className="mt-1 block opacity-80" key={member.profile_id}>
           {`○ ${member.name}`}
-          {member.position ? ` (${member.position})` : null}
+          {positionSuffix(member, text.positions)}
           {` · ${text.notAnswered}`}
         </span>
       ))}

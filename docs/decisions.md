@@ -433,3 +433,42 @@ Some condos want the office to verify each owner before they can vote.
 - The waiting list reuses the owners page banner, tab count and account
   history drawer (2026-11-17), so waiting accounts are seen without
   scrolling.
+
+### D026 - Built-In Committee Positions
+Status: accepted 2026-11-19 (user decision), implemented in migration 0045
+
+The committee page took the position as free text, so the same roster mixed
+languages ("Chairperson" next to "ประธานกรรมการ") and documents could not
+show the position in the reader's language.
+
+- `committee_members.position_code` holds one of seven built-in positions
+  (code / Thai / English):
+  - `chair` / ประธานกรรมการ / Chairperson
+  - `vice_chair` / รองประธานกรรมการ / Vice chairperson
+  - `secretary` / เลขานุการ / Secretary
+  - `assistant_secretary` / ผู้ช่วยเลขานุการ / Assistant secretary
+  - `treasurer` / เหรัญญิก / Treasurer
+  - `member` / กรรมการ / Committee member (default)
+  - `other` / อื่น ๆ (พิมพ์เอง) / Other (typed)
+- `position_title` keeps the typed title only when the code is `other`
+  (required then); a built-in position has no title. Check constraints
+  enforce both.
+- Existing rows were mapped once (`committee_position_code_for`): a title
+  that names a built-in position in Thai or English gets its code, anything
+  else becomes `other` and keeps its text.
+- The committee form picks from a plain select in the page language (fixed
+  values in code, so not `SearchSelect`); the title field appears only for
+  `other`. The list, phone cards, filter (by code) and the committee pages
+  show the label in the page language. Documents use
+  `committee_position_label(code, title, lang)`: Thai by default, English
+  with `en`, following the bilingual document rules; `committee_people`
+  returns the Thai label as `position` plus the code and typed title.
+- A new meeting's default chairperson is the active member whose code is
+  `chair` (was a match on the words "chair" / "ประธาน").
+- Not committee positions, so not in the list: the juristic manager (own
+  field on the juristic profile), the meeting chairperson and minute taker
+  (chosen per meeting, already signatory options), and the auditor (an
+  outside appointee).
+- Legal check pending: only the chairperson is set by the Condominium Act;
+  the other positions come from each building's regulations. See
+  [legal-questions.md](legal-questions.md) "Committee".

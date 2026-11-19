@@ -41,7 +41,7 @@ export async function results(page: Page, ctx: AfterIdentityConflicts) {
     .upsert({ profile_id: adminProfile!.id, role: "committee" }, { onConflict: "profile_id,role" });
   const { data: closeMember } = await supabase
     .from("committee_members")
-    .insert({ profile_id: adminProfile!.id, full_name: "Demo close member", position_title: "Member" })
+    .insert({ profile_id: adminProfile!.id, full_name: "Demo close member", position_code: "member" })
     .select("id")
     .single();
 

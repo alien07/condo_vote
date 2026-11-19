@@ -48,5 +48,14 @@ Background: [compliance.md](compliance.md),
 9. Notice period when a published meeting is postponed (setting, default 7
    days).
 
+### Committee (D026)
+10. **Committee positions and size.** The app offers chair, vice chair,
+    secretary, assistant secretary, treasurer, member and a typed "other"
+    position (user decision 2026-11-19). Only the chairperson is set by the
+    Condominium Act; the other positions come from each building's
+    regulations. Is any other position required by law? The Act caps the
+    committee at 9 members: confirm the limit. The app does not warn above
+    9 members today. (Added 2026-11-19.)
+
 ## Answered
 (none yet)

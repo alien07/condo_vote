@@ -31,7 +31,7 @@ Search/filter forms and single-record configuration forms do not need drawers.
 
 4. `/admin/setup?tab=storage` and `/admin/documents`
    - Storage provider settings remain inline because they are single-record app configuration.
-   - `Open Documents` links to the dedicated private document registry.
+   - `Go to documents →` links to the dedicated private document registry.
    - Register private document reference opens in a drawer on `/admin/documents`.
 
 5. `/admin/proxies`

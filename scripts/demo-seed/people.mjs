@@ -208,8 +208,8 @@ if (condo.length === 0) {
 
 await must(
   db.from("committee_members").insert([
-    { full_name: DEMO_PERSONAS.find((p) => p.key === "committee").fullName, position_title: "ประธานกรรมการ", profile_id: personaProfile.committee, display_order: 1, active: true },
-    { full_name: DEMO_SYSTEM_ADMIN.fullName, position_title: "กรรมการ", profile_id: sysProfile, display_order: 2, active: true },
+    { full_name: DEMO_PERSONAS.find((p) => p.key === "committee").fullName, position_code: "chair", profile_id: personaProfile.committee, display_order: 1, active: true },
+    { full_name: DEMO_SYSTEM_ADMIN.fullName, position_code: "member", profile_id: sysProfile, display_order: 2, active: true },
   ]),
   "committee members",
 );

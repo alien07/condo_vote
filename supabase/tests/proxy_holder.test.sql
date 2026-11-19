@@ -21,9 +21,9 @@ insert into public.profiles (id, auth_user_id, full_name, email, default_status,
   (:member, :member, 'Member', 'member.proxy@example.test', 'owner', 'approved'),
   (:office, :office, 'Office', 'office.proxy@example.test', 'resident', 'approved'),
   (:former, :former, 'Former member', 'former.proxy@example.test', 'owner', 'approved');
-insert into public.committee_members (full_name, position_title, profile_id, active, term_ends_at) values
-  ('Member', 'กรรมการ', :member, true, null),
-  ('Former member', 'กรรมการ', :former, true, current_date - 1);
+insert into public.committee_members (full_name, position_code, profile_id, active, term_ends_at) values
+  ('Member', 'member', :member, true, null),
+  ('Former member', 'member', :former, true, current_date - 1);
 insert into public.app_roles (profile_id, role) values (:office, 'staff');
 insert into public.rooms (id, room_number, ownership_percent) values
   (:room1, 'P-47-1', 1), (:room2, 'P-47-2', 1);

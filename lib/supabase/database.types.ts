@@ -434,7 +434,8 @@ export type Database = {
           display_order: number
           full_name: string
           id: string
-          position_title: string
+          position_code: string
+          position_title: string | null
           profile_id: string | null
           signature_storage_path: string | null
           term_ends_at: string | null
@@ -447,7 +448,8 @@ export type Database = {
           display_order?: number
           full_name: string
           id?: string
-          position_title: string
+          position_code?: string
+          position_title?: string | null
           profile_id?: string | null
           signature_storage_path?: string | null
           term_ends_at?: string | null
@@ -460,7 +462,8 @@ export type Database = {
           display_order?: number
           full_name?: string
           id?: string
-          position_title?: string
+          position_code?: string
+          position_title?: string | null
           profile_id?: string | null
           signature_storage_path?: string | null
           term_ends_at?: string | null
@@ -1908,6 +1911,14 @@ export type Database = {
       committee_overview: { Args: never; Returns: Json }
       committee_people: { Args: { p_profile_ids: string[] }; Returns: Json }
       committee_person_name: { Args: { p_profile_id: string }; Returns: string }
+      committee_position_code_for: {
+        Args: { p_title: string }
+        Returns: string
+      }
+      committee_position_label: {
+        Args: { p_code: string; p_lang?: string; p_title: string }
+        Returns: string
+      }
       correction_default_level: {
         Args: { p_category: string }
         Returns: string

@@ -1,9 +1,14 @@
 import { getStaffI18n } from "@/lib/i18n/server";
 import { fill } from "@/lib/i18n/template";
 import { UserCheck } from "lucide-react";
+import { formatDateIn } from "@/lib/i18n/format";
+import {
+  COMMITTEE_POSITION_CODES,
+  committeePositionLabel,
+  committeePositionRank,
+} from "@/lib/i18n/committee-position";
 import { PerPageSelect } from "@/features/admin/components/table-controls";
-import { deactivateCommitteeMember, reactivateCommitteeMember } from "@/features/admin/actions";
-import { ConfirmSubmitButton } from "@/features/admin/components/form-controls";
+import { CommitteeRows, type CommitteeRow } from "@/features/admin/components/sections/setup/committee-rows";
 import { CommitteeCrudDrawer, CommitteeRowFocus } from "@/features/admin/components/committee-crud-drawer";
 import { committeeDrawerHref, committeeHref } from "@/features/admin/components/sections/setup/committee-hrefs";
 import { tablePage, tablePerPage } from "@/features/admin/components/sections/shared/table";
@@ -31,7 +36,9 @@ export async function CommitteeSection({
   profiles,
   hidden,
 }: CommitteeSectionProps) {
-  const { s } = await getStaffI18n();
+  const { locale, s } = await getStaffI18n();
+  const positionLabel = (member: (typeof committeeMembers)[number]) =>
+    committeePositionLabel(s.setup.positions, member.position_code, member.position_title);
   const committeeTableFilters: Required<CommitteeTableFilters> = {
     dir: committeeFilters?.dir ?? "asc",
     memberName: committeeFilters?.memberName ?? "",
@@ -43,13 +50,14 @@ export async function CommitteeSection({
   };
   const filteredCommitteeMembers = committeeMembers.filter((member) => {
     const nameQuery = committeeTableFilters.memberName.trim().toLowerCase();
-    const positionQuery = committeeTableFilters.position.trim().toLowerCase();
+    // Position filter is a built-in code (D026).
+    const positionQuery = committeeTableFilters.position.trim();
     const status = member.active ? "active" : "inactive";
     const matchesName = nameQuery
       ? member.full_name.toLowerCase().includes(nameQuery)
       : true;
     const matchesPosition = positionQuery
-      ? member.position_title.toLowerCase().includes(positionQuery)
+      ? member.position_code === positionQuery
       : true;
     const matchesStatus =
       committeeTableFilters.status === "all"
@@ -58,27 +66,20 @@ export async function CommitteeSection({
 
     return matchesName && matchesPosition && matchesStatus;
   });
+  const statusRank = (member: (typeof committeeMembers)[number]) => (member.active ? 0 : 1);
   const sortedCommitteeMembers = [...filteredCommitteeMembers].sort(
     (left, right) => {
       const direction = committeeTableFilters.dir === "asc" ? 1 : -1;
-      const leftValue =
+      const byName = left.full_name.localeCompare(right.full_name);
+      const compared =
         committeeTableFilters.sort === "position"
-          ? left.position_title
+          ? committeePositionRank(left.position_code) - committeePositionRank(right.position_code) ||
+            positionLabel(left).localeCompare(positionLabel(right))
           : committeeTableFilters.sort === "status"
-            ? left.active
-              ? "active"
-              : "inactive"
-            : left.full_name;
-      const rightValue =
-        committeeTableFilters.sort === "position"
-          ? right.position_title
-          : committeeTableFilters.sort === "status"
-            ? right.active
-              ? "active"
-              : "inactive"
-            : right.full_name;
+            ? statusRank(left) - statusRank(right)
+            : byName;
 
-      return leftValue.localeCompare(rightValue) * direction;
+      return (compared || byName) * direction;
     },
   );
   const committeeTotal = sortedCommitteeMembers.length;
@@ -137,6 +138,26 @@ export async function CommitteeSection({
         ? " ↑"
         : " ↓"
       : "";
+  const termDate = (value: string | null) =>
+    value ? formatDateIn(locale, `${value}T00:00:00+07:00`) : null;
+  const rows: CommitteeRow[] = pagedCommitteeMembers.map((member) => ({
+    id: member.id,
+    name: member.full_name,
+    position: positionLabel(member),
+    term: fill(s.setup.termRange, {
+      start: termDate(member.term_starts_at) ?? s.common.notSet,
+      end: termDate(member.term_ends_at) ?? s.common.current,
+    }),
+    active: member.active,
+    focused: committeeFocusId === member.id,
+    editHref: committeeDrawerHref(committeeListHref, { id: member.id, mode: "edit" }),
+  }));
+  const sortLink = (sort: Required<CommitteeTableFilters>["sort"], label: string) => (
+    <a className="inline-flex min-h-11 items-center" href={committeeSortHref(sort)}>
+      {label}
+      {committeeSortLabel(sort)}
+    </a>
+  );
   const selectedCommitteeMember = committeeMembers.find(
     (member) => member.id === drawer?.id,
   );
@@ -191,7 +212,7 @@ export async function CommitteeSection({
           <label className="grid gap-1 text-xs font-medium text-[var(--muted)] md:col-span-3">
             {s.common.name}
             <input
-              className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)]"
+              className="min-h-11 rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)]"
               defaultValue={committeeTableFilters.memberName}
               name="memberName"
               placeholder={s.setup.searchName}
@@ -199,17 +220,23 @@ export async function CommitteeSection({
           </label>
           <label className="grid gap-1 text-xs font-medium text-[var(--muted)] md:col-span-3">
             {s.common.position}
-            <input
-              className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)]"
+            <select
+              className="min-h-11 rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)]"
               defaultValue={committeeTableFilters.position}
               name="position"
-              placeholder={s.setup.searchPosition}
-            />
+            >
+              <option value="">{s.setup.allPositions}</option>
+              {COMMITTEE_POSITION_CODES.map((code) => (
+                <option key={code} value={code}>
+                  {s.setup.positions[code]}
+                </option>
+              ))}
+            </select>
           </label>
           <label className="grid gap-1 text-xs font-medium text-[var(--muted)] md:col-span-3">
             {s.common.status}
             <select
-              className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)]"
+              className="min-h-11 rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)]"
               defaultValue={committeeTableFilters.status}
               name="status"
             >
@@ -262,100 +289,7 @@ export async function CommitteeSection({
           />
         </div>
       </div>
-      <div className="overflow-x-auto">
-        <table className="w-full border-collapse text-left text-sm">
-          <thead className="border-b border-[var(--border)] text-[var(--muted)]">
-            <tr>
-              <th className="py-2 pr-3 font-medium">
-                <a href={committeeSortHref("name")}>
-                  {s.common.name}{committeeSortLabel("name")}
-                </a>
-              </th>
-              <th className="py-2 pr-3 font-medium">
-                <a href={committeeSortHref("position")}>
-                  {s.common.position}{committeeSortLabel("position")}
-                </a>
-              </th>
-              <th className="py-2 pr-3 font-medium">{s.setup.term}</th>
-              <th className="py-2 pr-3 font-medium">
-                <a href={committeeSortHref("status")}>
-                  {s.common.status}{committeeSortLabel("status")}
-                </a>
-              </th>
-              <th className="py-2 font-medium">{s.common.action}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {pagedCommitteeMembers.map((member) => {
-              const focused = committeeFocusId === member.id;
-
-              return (
-              <tr
-                className={[
-                  "border-b border-[var(--border)]",
-                  focused
-                    ? "border-l-4 border-l-[var(--primary)] bg-[var(--accent)]"
-                    : "",
-                ].join(" ")}
-                data-committee-id={member.id}
-                key={member.id}
-                tabIndex={-1}
-              >
-                <td className="py-2 pr-3">{member.full_name}</td>
-                <td className="py-2 pr-3">{member.position_title}</td>
-                <td className="py-2 pr-3">
-                  {member.term_starts_at ?? s.common.notSet} -{" "}
-                  {member.term_ends_at ?? s.common.current}
-                </td>
-                <td className="py-2 pr-3">
-                  {member.active ? s.common.active : s.common.inactive}
-                </td>
-                <td className="py-2">
-                  <div className="flex flex-wrap gap-2">
-                    <a
-                      className="rounded-md border border-[var(--border)] px-3 py-1 text-sm font-medium text-[var(--primary)]"
-                      href={committeeDrawerHref(committeeListHref, {
-                        id: member.id,
-                        mode: "edit",
-                      })}
-                    >
-                      {s.common.edit}
-                    </a>
-                    <form
-                      action={
-                        member.active
-                          ? deactivateCommitteeMember
-                          : reactivateCommitteeMember
-                      }
-                    >
-                      <input name="id" type="hidden" value={member.id} />
-                      <ConfirmSubmitButton
-                        className={
-                          member.active
-                            ? "rounded-md border border-red-200 px-3 py-1 text-sm font-medium text-red-700"
-                            : "rounded-md border border-[var(--border)] px-3 py-1 text-sm font-medium text-[var(--primary)]"
-                        }
-                        confirmMessage={
-                          member.active
-                            ? fill(s.setup.confirmDeactivate, { name: member.full_name })
-                            : fill(s.setup.confirmReactivate, { name: member.full_name })
-                        }
-                        pendingLabel={
-                          member.active ? s.common.deactivating : s.common.reactivating
-                        }
-                        type="submit"
-                      >
-                        {member.active ? s.common.deactivate : s.common.reactivate}
-                      </ConfirmSubmitButton>
-                    </form>
-                  </div>
-                </td>
-              </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+      <CommitteeRows rows={rows} s={s} sortLink={sortLink} />
       <CommitteeRowFocus memberId={committeeFocusId} />
       {pagedCommitteeMembers.length === 0 ? (
         <p className="mt-3 text-sm text-[var(--muted)]">

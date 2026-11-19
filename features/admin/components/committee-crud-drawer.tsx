@@ -18,13 +18,19 @@ import {
   invalidFieldElement,
   profileSearchOptions,
 } from "@/features/ui/search-select";
+import {
+  COMMITTEE_POSITION_CODES,
+  DEFAULT_COMMITTEE_POSITION,
+  committeePositionLabel,
+} from "@/lib/i18n/committee-position";
 
 type CommitteeMember = {
   active: boolean;
   display_order: number;
   full_name: string;
   id: string;
-  position_title: string;
+  position_code: string;
+  position_title: string | null;
   profile_id: string | null;
   term_ends_at: string | null;
   term_starts_at: string | null;
@@ -182,7 +188,9 @@ export function CommitteeCrudDrawer({
         mode === "edit" && member
           ? [
               fill(s.setup.memberSummary, { name: member.full_name }),
-              fill(s.setup.positionSummary, { position: member.position_title }),
+              fill(s.setup.positionSummary, {
+                position: committeePositionLabel(s.setup.positions, member.position_code, member.position_title),
+              }),
             ]
           : [s.setup.newMember]
       }
@@ -190,7 +198,12 @@ export function CommitteeCrudDrawer({
         mode === "edit" ? s.setup.editMember : s.setup.addMember
       }
     >
-      <form action={formAction} className="grid gap-3" noValidate ref={formRef}>
+      <form
+        action={formAction}
+        className="grid gap-3"
+        noValidate
+        ref={formRef}
+      >
         <RequiredNote />
         {state.error ? (
           <div
@@ -225,15 +238,38 @@ export function CommitteeCrudDrawer({
         </label>
         <label className="grid gap-1 text-sm font-medium">
           <FieldLabel required>{s.common.position}</FieldLabel>
-          <input
-            {...fieldProps("position_title", state)}
-            className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+          {/* Remounted with each answer: React resets the form after an
+              action, and a fresh select keeps the value just sent. */}
+          <select
+            {...fieldProps("position_code", state)}
+            className="min-h-11 rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+            key={JSON.stringify(state.values ?? null)}
+            name="position_code"
             defaultValue={stateValue(
               state,
-              "position_title",
-              member?.position_title,
+              "position_code",
+              member?.position_code ?? DEFAULT_COMMITTEE_POSITION,
             )}
+          >
+            {COMMITTEE_POSITION_CODES.map((code) => (
+              <option key={code} value={code}>
+                {s.setup.positions[code]}
+              </option>
+            ))}
+          </select>
+          <FieldError fieldName="position_code" state={state} />
+        </label>
+        {/* A fixed list in the page language (D026). The typed title shows
+            only while "Other" is chosen (CSS in app/globals.css), so it
+            follows the select through React's form reset after an action. */}
+        <label className="position-other gap-1 text-sm font-medium">
+          <FieldLabel required>{s.setup.positionOther}</FieldLabel>
+          <input
+            {...fieldProps("position_title", state)}
+            className="min-h-11 rounded-md border border-[var(--border)] px-3 py-2 text-sm"
+            defaultValue={stateValue(state, "position_title", member?.position_title)}
             name="position_title"
+            placeholder={s.setup.positionOtherHelp}
           />
           <FieldError fieldName="position_title" state={state} />
         </label>
@@ -282,8 +318,9 @@ export function CommitteeCrudDrawer({
           <FieldError fieldName="term_ends_at" state={state} />
         </label>
         {mode === "edit" ? (
-          <label className="flex items-center gap-2 text-sm font-medium">
+          <label className="inline-flex min-h-11 w-fit cursor-pointer items-center gap-2 rounded-md border border-[var(--border)] px-3 text-sm font-medium has-[:checked]:border-[var(--primary)] has-[:checked]:bg-[var(--accent)]">
             <input
+              className="h-5 w-5 accent-[var(--primary)]"
               defaultChecked={state.values ? state.values.active === "on" : member?.active ?? true}
               name="active"
               type="checkbox"

@@ -1,16 +1,15 @@
 "use server";
 
 import { withFeedback } from "@/features/admin/action-modules/feedback";
-import { redirect } from "next/navigation";
 import {
   createClient,
-  optionalDate,
   optionalText,
   requiredIntegerInRange,
   requiredText,
   requireAdmin,
   revalidateAdminPaths,
 } from "@/features/admin/action-modules/shared";
+import { isCommitteePositionCode } from "@/lib/i18n/committee-position";
 
 export type CommitteeActionState = {
   error?: string;
@@ -239,6 +238,7 @@ const committeeFormFields = [
   "id",
   "profile_id",
   "full_name",
+  "position_code",
   "position_title",
   "display_order",
   "term_starts_at",
@@ -269,8 +269,11 @@ function validateCommitteeForm(
     fieldErrors.full_name = "Committee name is required.";
   }
 
-  if (!values.position_title.trim()) {
-    fieldErrors.position_title = "Position is required.";
+  // Built-in positions (D026); "other" needs its typed title.
+  if (!isCommitteePositionCode(values.position_code)) {
+    fieldErrors.position_code = "Position is required.";
+  } else if (values.position_code === "other" && !values.position_title.trim()) {
+    fieldErrors.position_title = "Type the position title.";
   }
 
   const displayOrder = Number(values.display_order || 0);
@@ -311,7 +314,8 @@ function committeePayload(values: Record<string, string>, active: boolean) {
   return {
     profile_id: optionalText(values.profile_id),
     full_name: values.full_name.trim(),
-    position_title: values.position_title.trim(),
+    position_code: values.position_code,
+    position_title: values.position_code === "other" ? values.position_title.trim() : null,
     term_starts_at: values.term_starts_at || null,
     term_ends_at: values.term_ends_at || null,
     display_order: Number(values.display_order || 0),
@@ -408,59 +412,6 @@ export async function updateCommitteeMemberWithState(
       values,
     };
   }
-}
-
-export async function createCommitteeMember(formData: FormData) {
-  await requireAdmin();
-
-  const profileId = optionalText(formData.get("profile_id"));
-  const fullName = requiredText(formData.get("full_name"), "Full name");
-  const supabase = await createClient();
-  const { error } = await supabase.from("committee_members").insert({
-    profile_id: profileId,
-    full_name: fullName,
-    position_title: requiredText(formData.get("position_title"), "Position"),
-    term_starts_at: optionalDate(formData.get("term_starts_at")),
-    term_ends_at: optionalDate(formData.get("term_ends_at")),
-    display_order: Number(formData.get("display_order") ?? 0),
-  });
-
-  if (error) {
-    throw error;
-  }
-
-  revalidateAdminPaths();
-  redirect(
-    `/admin/setup?tab=committee&memberName=${encodeURIComponent(
-      fullName,
-    )}&feedback=success&message=Committee%20member%20added`,
-  );
-}
-
-export async function updateCommitteeMember(formData: FormData) {
-  await requireAdmin();
-
-  const id = requiredText(formData.get("id"), "Committee member ID");
-  const profileId = optionalText(formData.get("profile_id"));
-  const supabase = await createClient();
-  const { error } = await supabase
-    .from("committee_members")
-    .update({
-      profile_id: profileId,
-      full_name: requiredText(formData.get("full_name"), "Full name"),
-      position_title: requiredText(formData.get("position_title"), "Position"),
-      term_starts_at: optionalDate(formData.get("term_starts_at")),
-      term_ends_at: optionalDate(formData.get("term_ends_at")),
-      display_order: Number(formData.get("display_order") ?? 0),
-      active: formData.get("active") === "on",
-    })
-    .eq("id", id);
-
-  if (error) {
-    throw error;
-  }
-
-  revalidateAdminPaths();
 }
 
 /** Reports the outcome on the same page (admin action standard, 2026-11-19). */
