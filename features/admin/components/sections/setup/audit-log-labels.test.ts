@@ -69,7 +69,7 @@ describe("audit details", () => {
       "Approvals: 2",
       "Approvals needed: 3",
       "Section 47 checked: Yes",
-      "Status: approved",
+      "Status: Approved",
     ]);
   });
 
@@ -110,5 +110,90 @@ describe("audit details", () => {
     expect(auditDetailPairs(en, "en", [1, 2])).toEqual([]);
     expect(hasAuditDetails({})).toBe(false);
     expect(hasAuditDetails({ a: 1 })).toBe(true);
+  });
+});
+
+describe("audit detail codes in words (req_0002)", () => {
+  // Every code these fields can hold (database check constraints and the
+  // code that writes audit details, 2026-11-19).
+  const codesByField: Record<string, string[]> = {
+    level: ["low", "medium", "high"],
+    from: ["low", "medium", "high"],
+    to: ["low", "medium", "high"],
+    category: ["wording", "room_data", "voting_rights", "paper_ballot", "pass_rule", "other"],
+    status: [
+      "fixed",
+      "no_change",
+      "pending",
+      "approved",
+      "rejected",
+      "revoked",
+      "draft",
+      "published",
+      "closed",
+      "archived",
+    ],
+    source: ["sign_in", "owner_email", "admin", "migration_0037"],
+    chosen_source: ["online", "manual"],
+    approval_status: ["pending", "approved", "rejected"],
+    previous_approval_status: ["pending", "approved", "rejected"],
+    default_status: ["owner", "resident", "proxy"],
+    previous_default_status: ["owner", "resident", "proxy"],
+    granted_role: ["admin", "committee", "system_admin", "staff", "auditor"],
+    preferred_language: ["th", "en"],
+    document_type: ["owner_verification", "proxy_authorization", "meeting_attachment", "result_pdf", "other"],
+    storage_provider: ["local_drive", "google_drive"],
+    document_storage_provider: ["local_drive", "google_drive"],
+    meeting_round: ["first", "reconvened"],
+    answer: ["approve", "object"],
+  };
+
+  for (const [name, dictionary] of [
+    ["English", en],
+    ["Thai", th],
+  ] as const) {
+    it(`shows no stored code in ${name}`, () => {
+      const locale = name === "English" ? "en" : "th";
+
+      for (const [field, codes] of Object.entries(codesByField)) {
+        for (const code of codes) {
+          const [pair] = auditDetailPairs(dictionary, locale, { [field]: code });
+
+          expect(pair.value, `${field}: ${code}`).not.toBe(code);
+          expect(pair.value, `${field}: ${code}`).not.toMatch(/^[a-z][a-z0-9_]*$/);
+        }
+      }
+    });
+  }
+
+  it("uses the committee words for correction levels", () => {
+    const pairs = auditDetailPairs(th, "th", { from: "low", to: "high", level: "medium" });
+
+    expect(pairs.map((pair) => pair.value)).toEqual(["ต่ำ", "สูง", "กลาง"]);
+    expect(auditDetailPairs(en, "en", { level: "high" })[0].value).toBe("High");
+    expect(auditDetailPairs(en, "en", { category: "room_data" })[0].value).toBe(
+      en.committee.categories.room_data,
+    );
+  });
+
+  it("words a code by its field: admin as a role and as a link source", () => {
+    expect(auditDetailPairs(en, "en", { granted_role: "admin" })[0].value).toBe("Admin");
+    expect(auditDetailPairs(en, "en", { source: "admin" })[0].value).toBe("Linked by an admin");
+    expect(auditDetailPairs(th, "th", { source: "sign_in" })[0].value).toBe("จับคู่ตอนเข้าสู่ระบบ");
+  });
+
+  it("keeps typed text as typed", () => {
+    const pairs = auditDetailPairs(en, "en", {
+      answer: "ok",
+      reason: "approved",
+      previous_identity_text: "owner",
+    });
+
+    expect(pairs.map((pair) => pair.value)).toEqual(["ok", "approved", "owner"]);
+    expect(auditDetailPairs(th, "th", { answer: "approve" })[0].value).toBe("อนุมัติ");
+  });
+
+  it("keeps an unknown code in a code field as stored", () => {
+    expect(auditDetailPairs(en, "en", { status: "something_new" })[0].value).toBe("something_new");
   });
 });
