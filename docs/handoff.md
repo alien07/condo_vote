@@ -107,6 +107,31 @@ Acceptance: on `/admin/ownership` the owner filter is a searchable picker of the
 
 ---
 
+## req_0007: audit page `/audit`: easy to read and quick to search (status: approved, waiting for the user to start Claude Code)
+Branch `feat/req-0007-audit-page`. UI review by the chat 2026-11-20 at 1440/768/375 (signed in as demo admin; there is no auditor demo persona). The user approved every item.
+
+The page (`app/audit/page.tsx`, read-only, for auditors / committee / admin) is for finding evidence about one meeting fast: who approved, who asked for a correction, what changed, when. Today it is one page about 6,000 px long with three stacked sections and no search.
+
+Must fix
+1. **No search, filters or paging.** Published results (~30 rows), correction requests (`.limit(50)`) and the audit log (`.limit(100)`, latest only) are stacked with nothing to search by; anything older than the limits cannot be found at all. → Split into tabs "ผลที่ประกาศแล้ว / คำขอแก้ไขผล / บันทึกการใช้งาน" ("Published results / Correction requests / Activity log") with a count on each, in the URL (`?tab=`), like the setup page tabs. Each tab gets the standard filter panel and pagination (server-side, no fixed limit). Add one meeting picker (SearchSelect by id, `?meeting=<id>`, rule 8) above the tabs that filters all three tabs at once; plus date range on each tab, and actor + action filters on the activity log.
+2. **The activity log shows raw codes** (`result.correction_answered`, `manual_ballot.identity_resolved`, entity `result_correction_request`, …) although `/admin/setup?tab=audit` already shows them in words (#63, #67). → Reuse the same audit log table and helpers (`features/admin/components/audit-log-table.tsx`, `features/admin/components/sections/setup/audit-log-labels.ts`, `audit-log-rows.tsx`, `audit-log-action-filter.tsx`): words, readable details with "Raw data" folded (keep it, user decision 2026-11-20), grouped action filter, phone cards. Check that an auditor (role `auditor`, not admin) can read the same data under RLS and that the shared component does not need admin-only data.
+
+Should fix
+3. The published results list shows "date · 1": the number is `approvals_count` with no word. → "อนุมัติ 1 คน" / "Approved by 1".
+4. The page description promises official documents, but rows only link "ดูบันทึกผล (หน้าเว็บ)". → Add "ดาวน์โหลด PDF ฉบับทางการ" / "Download official PDF" when the result has its official PDF (`result_documents` kind `official`, same rule as `features/admin/components/sections/results/result-row-actions.tsx`). Keep `?from=audit` on the record link (#64).
+5. Small targets: "ดูบันทึกผล (หน้าเว็บ)" is a 20px-high text link → buttons at least 40px high (or the whole row clickable), as on the results page.
+6. Correction request cards: one long dot-separated line (date · category · level · status) and a tiny "เหตุผล" label → level and status as colour badges (same colours as the committee page), category as text, reason with a readable label; meeting name first.
+
+Nice to have
+7. Test data from e2e runs ("Result rollout 17950…", `e2e.audit.pagination…`) makes the page look messy; with item 1 it is filterable. No data clean-up in this PR.
+
+Acceptance: on `/audit`, picking a meeting shows only that meeting's results, correction requests and log entries; each tab pages through everything (no 50/100 cap); the activity log reads in words in Thai and English; published rows say "อนุมัติ n คน" and offer the official PDF when it exists; every button is at least 40px high; no horizontal scroll or raw codes at 1440, 768 and 375 px. e2e: tab switch, meeting filter by id, paging past the old limits, log in words; check as an auditor if a fixture exists (add one if needed).
+
+### Result
+(Claude Code writes here: PR number, what changed, checks run, anything left)
+
+---
+
 ## Before req numbers: demo-feedback #16 and #17 (status: done, PR #64 merged, checked by the chat 2026-11-19)
 Back link on the record page `/record/[snapshotId]` and rename of the two result actions to "ดูบันทึกผล (หน้าเว็บ)" / "View record (web page)" and "ดาวน์โหลด PDF ฉบับทางการ" / "Download official PDF".
 
