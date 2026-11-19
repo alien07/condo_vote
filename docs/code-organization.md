@@ -95,8 +95,20 @@ features/admin/
    a hint that fits the form (closing time, status). Meetings done: agenda
    picker, proxies, paper ballots, vote invitations; audit log actor
    filter; Results page meeting filter (pilot, `?meeting=<id>`).
-   Next, after the pilot: the meeting filter on Proxies, Paper ballots
-   and Vote conflicts, and the room filters, the same way.
+   **Filters (rolled out 2026-11-19):** a list filter on a meeting or a
+   room is a `SearchSelect` whose value is the id (`?meeting=<id>`,
+   `?room=<id>`), and the list compares ids, never part of a title or
+   room number. It offers only the meetings or rooms that appear in that
+   list, so every choice finds something; the placeholder is
+   `s.common.allMeetings` / `s.common.allRooms`. Rooms use
+   `roomFilterOptions` (features/ui/search-options.ts: once each, in
+   room-number order, inactive rooms kept, building as the hint);
+   `uniqueById` takes the distinct rows. Done: Results, Proxies, Paper
+   ballots and Vote conflicts (meeting and room), Ownership (room).
+   Free-text filters stay text inputs: a person's name or email (proxy
+   holder, owner), the Rooms master list itself. e2e tests put ids, not
+   titles or room numbers, in these URLs, and check the filter once
+   through the UI with `chooseSearchOption`.
 
 ## Backlog
 Split on 2026-11-15 (no behaviour change; old import paths still work):

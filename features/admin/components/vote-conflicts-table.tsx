@@ -4,6 +4,7 @@ import { useMessageText, useStaffText } from "@/lib/i18n/staff/client";
 import { codeLabel, fill } from "@/lib/i18n/template";
 import { useEffect, useState } from "react";
 import { PendingSubmitButton } from "@/features/debug/tracked-submit-button";
+import { SearchSelect } from "@/features/ui/search-select";
 import {
   type VoteConflictRow,
   type ConflictFilters,
@@ -27,6 +28,8 @@ export function VoteConflictsTable({
   initialPerPage,
   initialRows,
   initialTotal,
+  meetingOptions,
+  roomOptions,
 }: VoteConflictsTableProps) {
   const tm = useMessageText();
   const { s } = useStaffText();
@@ -45,6 +48,11 @@ export function VoteConflictsTable({
   const pageStart = total === 0 ? 0 : (page - 1) * perPage + 1;
   const pageEnd = Math.min(page * perPage, total);
   const selectedRowKey = selected?.key ?? null;
+  const searchText = {
+    clear: s.common.searchClear,
+    more: s.common.searchMore,
+    noResults: s.common.searchNoResults,
+  };
 
   async function load(nextFilters: ConflictFilters) {
     setLoading(true);
@@ -137,35 +145,27 @@ export function VoteConflictsTable({
         >
           <label className="grid gap-1 text-xs font-medium text-[var(--muted)] md:col-span-3">
             {s.voting.meeting}
-            <input
-              className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)]"
-              onChange={(event) => {
-                const value = event.currentTarget.value;
-
-                setCriteria((current) => ({
-                  ...current,
-                  meeting: value,
-                }));
-              }}
-              placeholder={s.voting.searchMeeting}
-              value={criteria.meeting}
-            />
+            <span className="text-[var(--foreground)]">
+              <SearchSelect
+                defaultValue={criteria.meeting}
+                name="meeting"
+                onChange={(value) => setCriteria((current) => ({ ...current, meeting: value }))}
+                options={meetingOptions}
+                text={{ ...searchText, placeholder: s.common.allMeetings }}
+              />
+            </span>
           </label>
           <label className="grid gap-1 text-xs font-medium text-[var(--muted)] md:col-span-3">
             {s.voting.room}
-            <input
-              className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)]"
-              onChange={(event) => {
-                const value = event.currentTarget.value;
-
-                setCriteria((current) => ({
-                  ...current,
-                  room: value,
-                }));
-              }}
-              placeholder={s.voting.searchRoom}
-              value={criteria.room}
-            />
+            <span className="text-[var(--foreground)]">
+              <SearchSelect
+                defaultValue={criteria.room}
+                name="room"
+                onChange={(value) => setCriteria((current) => ({ ...current, room: value }))}
+                options={roomOptions}
+                text={{ ...searchText, placeholder: s.common.allRooms }}
+              />
+            </span>
           </label>
           <label className="grid gap-1 text-xs font-medium text-[var(--muted)] md:col-span-3">
             {s.common.status}

@@ -1,3 +1,4 @@
+import type { SearchSelectOption } from "@/features/ui/search-select";
 import { bangkokDateTimeParts } from "@/lib/datetime";
 import type { VoteSourceConflictActionState } from "@/features/admin/actions";
 
@@ -56,6 +57,9 @@ export type VoteConflictsTableProps = {
   initialPerPage: number;
   initialRows: VoteConflictRow[];
   initialTotal: number;
+  /** Meeting and room filters by id (2026-11-19). */
+  meetingOptions: SearchSelectOption[];
+  roomOptions: SearchSelectOption[];
 };
 
 export function buildParams(filters: ConflictFilters) {

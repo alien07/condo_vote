@@ -162,10 +162,9 @@ test.describe("@test:e2e @test:auth @test:admin admin demo: paper ballots and co
     );
 
     try {
+      // The meeting filter takes the meeting id (2026-11-19).
       await page.goto(
-        `${appUrl}/admin/voting?meeting=${encodeURIComponent(
-          meetingTitle,
-        )}&sort=meeting&dir=asc&perPage=25`,
+        `${appUrl}/admin/voting?meeting=${meeting!.id}&sort=meeting&dir=asc&perPage=25`,
       );
       await page.getByRole("link", { name: "Import manual vote" }).click();
       const importDrawer = page.getByRole("dialog", {
@@ -183,10 +182,16 @@ test.describe("@test:e2e @test:auth @test:admin admin demo: paper ballots and co
       await importDrawer.getByRole("button", { name: "Continue to vote form" }).click();
       await expect(page).toHaveURL(/\/admin\/voting\/manual\//);
 
-      await page.goto(
-        `${appUrl}/admin/voting?meeting=${encodeURIComponent(
-          meetingTitle,
-        )}&sort=meeting&dir=asc&perPage=25`,
+      // Meeting and room filters: type to search, pick, search. The URL
+      // carries the ids, not the title or room number (2026-11-19).
+      await page.goto(`${appUrl}/admin/voting?sort=meeting&dir=asc&perPage=25`);
+      const manualFilter = page.locator("form").filter({ has: page.locator('[data-focus-for="meeting"]') });
+      await chooseSearchOption(manualFilter, "meeting", meetingTitle);
+      await chooseSearchOption(manualFilter, "room", roomNumber);
+      await manualFilter.getByRole("button", { name: "Search", exact: true }).click();
+      await page.waitForURL(
+        (url) =>
+          url.searchParams.get("meeting") === meeting!.id && url.searchParams.get("room") === room!.id,
       );
       const pendingRow = page
         .locator("[data-pending-ballot-id]")
@@ -441,10 +446,9 @@ test.describe("@test:e2e @test:auth @test:admin admin demo: paper ballots and co
     );
 
     try {
+      // The meeting and room filters take ids (2026-11-19).
       await page.goto(
-        `${appUrl}/admin/voting/conflicts?meeting=${encodeURIComponent(
-          meetingTitle,
-        )}&room=${encodeURIComponent(roomNumber)}`,
+        `${appUrl}/admin/voting/conflicts?meeting=${meeting!.id}&room=${room!.id}`,
       );
       const conflictRow = page
         .getByRole("row")
@@ -484,6 +488,17 @@ test.describe("@test:e2e @test:auth @test:admin admin demo: paper ballots and co
         chosen_source: "online",
         conflict_remark: "Use online rollout vote",
       });
+
+      // Meeting and room filters: type to search, pick, search; the URL
+      // carries the ids (2026-11-19).
+      await page.goto(`${appUrl}/admin/voting/conflicts`);
+      const conflictFilter = page.locator("form").filter({ has: page.locator('[data-focus-for="meeting"]') });
+      await chooseSearchOption(conflictFilter, "meeting", meetingTitle);
+      await chooseSearchOption(conflictFilter, "room", roomNumber);
+      await conflictFilter.getByRole("button", { name: "Search", exact: true }).click();
+      await expect(page).toHaveURL(new RegExp(`[?&]meeting=${meeting!.id}`));
+      await expect(page).toHaveURL(new RegExp(`[?&]room=${room!.id}`));
+      await expect(conflictRow).toBeVisible();
     } finally {
       if (meeting?.id && room?.id) {
         await supabase

@@ -46,11 +46,17 @@ export async function people(page: Page, ctx: AfterMeetings) {
   await createOwnershipDrawer.locator('input[name="starts_at"]').fill("2026-06-01");
   await createOwnershipDrawer.getByRole("button", { name: "Create ownership link" }).click();
   await page.waitForTimeout(1_000);
+  // Room filter: type to search, pick, search; the URL carries the room id,
+  // not the number (2026-11-19). The owner filter is still typed text.
   await gotoWithRetry(
     page,
-    `${activeAppOrigin}/admin/ownership?room=${encodeURIComponent(roomNumber)}&owner=${encodeURIComponent(ownerName)}`,
-    { waitUntil: "commit" },
+    `${activeAppOrigin}/admin/ownership?owner=${encodeURIComponent(ownerName)}`,
+    { waitUntil: "load" },
   );
+  const ownershipFilter = page.locator("form").filter({ has: page.locator('[data-focus-for="room"]') });
+  await chooseSearchOption(ownershipFilter, "room", roomNumber);
+  await ownershipFilter.getByRole("button", { name: "Search", exact: true }).click();
+  await expect(page).toHaveURL(/[?&]room=[0-9a-f-]{36}/);
   const roomOwnerRow = roomOwnershipSection
     .getByRole("row")
     .filter({ hasText: roomNumber })

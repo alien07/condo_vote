@@ -7,9 +7,11 @@ type SupabaseServerClient = Awaited<ReturnType<typeof createClient>>;
 
 export type VoteConflictFilters = {
   dir?: "asc" | "desc";
+  /** Meeting id (2026-11-19), not part of the title. */
   meeting?: string;
   page?: number;
   perPage?: number;
+  /** Room id (2026-11-19), not part of the room number. */
   room?: string;
   sortBy?: "meeting" | "resolved_at" | "room" | "status";
   status?: string;
@@ -54,7 +56,7 @@ export async function fetchVoteConflictRows(
     supabase
       .from("manual_ballots")
       .select(
-        "id, meeting_id, room_id, source_label, audit_note, identity_status, voter_profile_id, voter_identity_text, status, imported_at, meetings(id, title), rooms(id, room_number), manual_ballot_answers(question_id, choice_id, meeting_questions(agenda_no, question_text), meeting_choices(choice_text, is_abstain))",
+        "id, meeting_id, room_id, source_label, audit_note, identity_status, voter_profile_id, voter_identity_text, status, imported_at, meetings(id, title), rooms(id, room_number, building), manual_ballot_answers(question_id, choice_id, meeting_questions(agenda_no, question_text), meeting_choices(choice_text, is_abstain))",
       )
       .eq("status", "submitted")
       .neq("identity_status", "pending"),
@@ -129,20 +131,15 @@ export async function fetchVoteConflictRows(
         onlineSubmittedAt: onlineBallot.submitted_at,
         resolution,
         roomId: manualBallot.room_id,
+        roomBuilding: manualBallot.rooms?.building ?? null,
         roomNumber: manualBallot.rooms?.room_number ?? "-",
         status: resolution ? "resolved" : "unresolved",
       };
     })
     .filter((row): row is NonNullable<typeof row> => Boolean(row));
-  const meetingQuery = filters.meeting?.trim().toLowerCase() ?? "";
-  const roomQuery = filters.room?.trim().toLowerCase() ?? "";
   const filteredRows = allRows.filter((row) => {
-    const matchesMeeting = meetingQuery
-      ? row.meetingTitle.toLowerCase().includes(meetingQuery)
-      : true;
-    const matchesRoom = roomQuery
-      ? row.roomNumber.toLowerCase().includes(roomQuery)
-      : true;
+    const matchesMeeting = filters.meeting ? row.meetingId === filters.meeting : true;
+    const matchesRoom = filters.room ? row.roomId === filters.room : true;
     const matchesStatus =
       filters.status && filters.status !== "all"
         ? row.status === filters.status
@@ -179,5 +176,15 @@ export async function fetchVoteConflictRows(
     conflictPerPage: perPage,
     conflictTotal: total,
     conflicts: rows,
+    // What the meeting and room filters offer: every meeting and room with
+    // a conflict, whatever the current filter (2026-11-19).
+    filterChoices: {
+      meetings: allRows.map((row) => ({ id: row.meetingId, title: row.meetingTitle })),
+      rooms: allRows.map((row) => ({
+        building: row.roomBuilding,
+        id: row.roomId,
+        room_number: row.roomNumber,
+      })),
+    },
   };
 }

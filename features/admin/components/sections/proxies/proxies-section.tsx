@@ -6,7 +6,8 @@ import { PerPageSelect } from "@/features/admin/components/table-controls";
 import { ProxyCrudDrawer, ProxyRowFocus } from "@/features/admin/components/proxy-crud-drawer";
 import { formatDateTime } from "@/features/admin/components/sections/shared/format";
 import { takesNewProxy } from "@/features/admin/proxy-meetings";
-import { meetingSearchOptions } from "@/features/ui/search-options";
+import { meetingSearchOptions, roomFilterOptions } from "@/features/ui/search-options";
+import { SearchSelect } from "@/features/ui/search-select";
 import { proxyHref } from "@/features/admin/components/sections/proxies/proxy-hrefs";
 import { tablePage, tablePerPage } from "@/features/admin/components/sections/shared/table";
 import type {
@@ -91,21 +92,25 @@ export async function ProxiesSection({
     room: proxyFilters?.room ?? "",
     sort: proxyFilters?.sort ?? "meeting",
   };
+  // Meeting and room filters by id (2026-11-19, after the Results pilot):
+  // pick from the meetings and rooms that have a proxy, instead of typing
+  // part of a title or room number.
+  const proxyMeetingIds = new Set(proxyAuthorizations.map((authorization) => authorization.meetings?.id));
+  const proxyRoomIds = new Set(proxyAuthorizations.map((authorization) => authorization.rooms?.id));
+  const proxyMeetingFilterOptions = meetingSearchOptions(
+    meetings
+      .filter((meeting) => proxyMeetingIds.has(meeting.id))
+      .sort((left, right) => right.starts_at.localeCompare(left.starts_at)),
+    (meeting) => codeLabel(s.common.code, meeting.status),
+  );
+  const proxyRoomFilterOptions = roomFilterOptions(rooms.filter((room) => proxyRoomIds.has(room.id)));
   const filteredProxyAuthorizations = proxyAuthorizations.filter(
     (authorization) => {
-      const meetingQuery = proxyTableFilters.meeting.trim().toLowerCase();
-      const roomQuery = proxyTableFilters.room.trim().toLowerCase();
+      const meetingId = proxyTableFilters.meeting;
+      const roomId = proxyTableFilters.room;
       const proxyQuery = proxyTableFilters.proxy.trim().toLowerCase();
-      const matchesMeeting = meetingQuery
-        ? (authorization.meetings?.title ?? "")
-            .toLowerCase()
-            .includes(meetingQuery)
-        : true;
-      const matchesRoom = roomQuery
-        ? (authorization.rooms?.room_number ?? "")
-            .toLowerCase()
-            .includes(roomQuery)
-        : true;
+      const matchesMeeting = meetingId ? authorization.meetings?.id === meetingId : true;
+      const matchesRoom = roomId ? authorization.rooms?.id === roomId : true;
       const matchesProxy = proxyQuery
         ? [
             authorization.profiles?.full_name ?? "",
@@ -192,6 +197,11 @@ export async function ProxiesSection({
         ? " ↑"
         : " ↓"
       : "";
+  const searchText = {
+    clear: s.common.searchClear,
+    more: s.common.searchMore,
+    noResults: s.common.searchNoResults,
+  };
   const proxyListHref = proxyHref({
     ...proxyTableFilters,
     page: proxyPage,
@@ -237,21 +247,25 @@ export async function ProxiesSection({
           />
           <label className="grid gap-1 text-xs font-medium text-[var(--muted)] md:col-span-3">
             {s.proxies.meeting}
-            <input
-              className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)]"
-              defaultValue={proxyTableFilters.meeting}
-              name="meeting"
-              placeholder={s.proxies.searchMeeting}
-            />
+            <span className="text-[var(--foreground)]">
+              <SearchSelect
+                defaultValue={proxyTableFilters.meeting}
+                name="meeting"
+                options={proxyMeetingFilterOptions}
+                text={{ ...searchText, placeholder: s.common.allMeetings }}
+              />
+            </span>
           </label>
           <label className="grid gap-1 text-xs font-medium text-[var(--muted)] md:col-span-3">
             {s.proxies.room}
-            <input
-              className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)]"
-              defaultValue={proxyTableFilters.room}
-              name="room"
-              placeholder={s.proxies.searchRoom}
-            />
+            <span className="text-[var(--foreground)]">
+              <SearchSelect
+                defaultValue={proxyTableFilters.room}
+                name="room"
+                options={proxyRoomFilterOptions}
+                text={{ ...searchText, placeholder: s.common.allRooms }}
+              />
+            </span>
           </label>
           <label className="grid gap-1 text-xs font-medium text-[var(--muted)] md:col-span-3">
             {s.proxies.proxy}

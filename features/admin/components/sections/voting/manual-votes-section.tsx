@@ -1,10 +1,11 @@
 import { getStaffI18n } from "@/lib/i18n/server";
-import { fill } from "@/lib/i18n/template";
+import { codeLabel, fill } from "@/lib/i18n/template";
 import { ListChecks } from "lucide-react";
 import { ballotAnswers, type BallotAnswer } from "@/features/admin/components/sections/voting/ballot-answers";
 import { formatDateTime } from "@/features/admin/components/sections/shared/format";
 import { takesPaperBallots, votingOpen } from "@/features/admin/meeting-pickers";
-import { meetingSearchOptions } from "@/features/ui/search-options";
+import { meetingSearchOptions, roomFilterOptions } from "@/features/ui/search-options";
+import { SearchSelect } from "@/features/ui/search-select";
 import { PerPageSelect } from "@/features/admin/components/table-controls";
 import { ManualVoteIdentityDrawer, ManualVoteImportDrawer, ManualVoteRowFocus } from "@/features/admin/components/manual-vote-crud-drawer";
 import { tablePage, tablePerPage } from "@/features/admin/components/sections/shared/table";
@@ -55,6 +56,11 @@ export async function ManualVotesSection({
         ? fill(s.voting.meetingOpenUntil, { date: formatDateTime(meeting.ends_at) })
         : s.voting.meetingVotingEnded,
   );
+  const searchText = {
+    clear: s.common.searchClear,
+    more: s.common.searchMore,
+    noResults: s.common.searchNoResults,
+  };
   const manualVoteTableFilters: Required<ManualVoteTableFilters> = {
     dir: manualVoteFilters?.dir ?? "asc",
     meeting: manualVoteFilters?.meeting ?? "",
@@ -63,27 +69,25 @@ export async function ManualVotesSection({
     room: manualVoteFilters?.room ?? "",
     sort: manualVoteFilters?.sort ?? "meeting",
   };
-  const pendingManualVoteIdentities = manualBallots.filter((manualBallot) => {
-    if (
-      manualBallot.identity_status !== "pending" &&
-      manualBallot.status !== "draft"
-    ) {
-      return false;
-    }
-
-    const meetingQuery = manualVoteTableFilters.meeting.trim().toLowerCase();
-    const roomQuery = manualVoteTableFilters.room.trim().toLowerCase();
-    const meetingTitle = manualBallot.meetings?.title ?? "";
-    const roomNumber = manualBallot.rooms?.room_number ?? "";
-    const matchesMeeting = meetingQuery
-      ? meetingTitle.toLowerCase().includes(meetingQuery)
-      : true;
-    const matchesRoom = roomQuery
-      ? roomNumber.toLowerCase().includes(roomQuery)
-      : true;
-
-    return matchesMeeting && matchesRoom;
-  });
+  // Meeting and room filters by id (2026-11-19, after the Results pilot):
+  // pick from the meetings and rooms that have a paper ballot.
+  const ballotMeetingIds = new Set(manualBallots.map((manualBallot) => manualBallot.meeting_id));
+  const ballotRoomIds = new Set(manualBallots.map((manualBallot) => manualBallot.room_id));
+  const manualMeetingFilterOptions = meetingSearchOptions(
+    meetings
+      .filter((meeting) => ballotMeetingIds.has(meeting.id))
+      .sort((left, right) => right.starts_at.localeCompare(left.starts_at)),
+    (meeting) => codeLabel(s.common.code, meeting.status),
+  );
+  const manualRoomFilterOptions = roomFilterOptions(rooms.filter((room) => ballotRoomIds.has(room.id)));
+  const matchesManualVoteFilters = (manualBallot: { meeting_id: string; room_id: string }) =>
+    (!manualVoteTableFilters.meeting || manualBallot.meeting_id === manualVoteTableFilters.meeting) &&
+    (!manualVoteTableFilters.room || manualBallot.room_id === manualVoteTableFilters.room);
+  const pendingManualVoteIdentities = manualBallots.filter(
+    (manualBallot) =>
+      (manualBallot.identity_status === "pending" || manualBallot.status === "draft") &&
+      matchesManualVoteFilters(manualBallot),
+  );
   // Words instead of codes (2026-11-19 review): where the paper ballot came
   // from, whether it is linked to a user, and the voter's name, not an id.
   const profileName = new Map(
@@ -107,7 +111,7 @@ export async function ManualVotesSection({
     "-";
   // One row per paper ballot, its answers listed inside (was one row per
   // answer, so a room repeated once per agenda item).
-  const manualVoteRows = manualBallots.map((manualBallot) => ({
+  const manualVoteRows = manualBallots.filter(matchesManualVoteFilters).map((manualBallot) => ({
     answers: ballotAnswers(manualBallot.manual_ballot_answers, locale),
     counted: manualBallot.status !== "draft",
     identityStatus: manualBallot.identity_status ?? "legacy",
@@ -118,19 +122,7 @@ export async function ManualVotesSection({
     source: sourceText(manualBallot.source_label),
     voter: voterName(manualBallot),
   }));
-  const filteredManualVoteRows = manualVoteRows.filter((row) => {
-    const meetingQuery = manualVoteTableFilters.meeting.trim().toLowerCase();
-    const roomQuery = manualVoteTableFilters.room.trim().toLowerCase();
-    const matchesMeeting = meetingQuery
-      ? row.meetingTitle.toLowerCase().includes(meetingQuery)
-      : true;
-    const matchesRoom = roomQuery
-      ? row.roomNumber.toLowerCase().includes(roomQuery)
-      : true;
-
-    return matchesMeeting && matchesRoom;
-  });
-  const sortedManualVoteRows = [...filteredManualVoteRows].sort((left, right) => {
+  const sortedManualVoteRows = [...manualVoteRows].sort((left, right) => {
     const direction = manualVoteTableFilters.dir === "asc" ? 1 : -1;
     const byRoom = manualVoteTableFilters.sort === "room";
     const leftValue = byRoom ? left.roomNumber : left.meetingTitle;
@@ -366,21 +358,25 @@ export async function ManualVotesSection({
           />
           <label className="grid gap-1 text-xs font-medium text-[var(--muted)] md:col-span-4">
             {s.voting.meeting}
-            <input
-              className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)]"
-              defaultValue={manualVoteTableFilters.meeting}
-              name="meeting"
-              placeholder={s.voting.searchMeeting}
-            />
+            <span className="text-[var(--foreground)]">
+              <SearchSelect
+                defaultValue={manualVoteTableFilters.meeting}
+                name="meeting"
+                options={manualMeetingFilterOptions}
+                text={{ ...searchText, placeholder: s.common.allMeetings }}
+              />
+            </span>
           </label>
           <label className="grid gap-1 text-xs font-medium text-[var(--muted)] md:col-span-4">
             {s.voting.room}
-            <input
-              className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)]"
-              defaultValue={manualVoteTableFilters.room}
-              name="room"
-              placeholder={s.voting.searchRoom}
-            />
+            <span className="text-[var(--foreground)]">
+              <SearchSelect
+                defaultValue={manualVoteTableFilters.room}
+                name="room"
+                options={manualRoomFilterOptions}
+                text={{ ...searchText, placeholder: s.common.allRooms }}
+              />
+            </span>
           </label>
           <div className="flex flex-wrap items-end justify-center gap-2 md:col-span-4">
             <button

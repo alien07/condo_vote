@@ -144,10 +144,9 @@ test.describe("@test:e2e @test:auth @test:admin admin demo: proxies and ownershi
     );
 
     try {
+      // The meeting filter takes the meeting id (2026-11-19).
       await page.goto(
-        `${appUrl}/admin/proxies?meeting=${encodeURIComponent(
-          meetingTitle,
-        )}&sort=meeting&dir=asc&perPage=25`,
+        `${appUrl}/admin/proxies?meeting=${meeting!.id}&sort=meeting&dir=asc&perPage=25`,
       );
       await page.getByRole("link", { name: "Add proxy authorization" }).click();
       const addDrawer = page.getByRole("dialog", {
@@ -205,6 +204,20 @@ test.describe("@test:e2e @test:auth @test:admin admin demo: proxies and ownershi
         (id) => document.activeElement?.getAttribute("data-proxy-id") === id,
         proxyId,
       );
+
+      // Meeting and room filters: type to search, pick, search. The URL
+      // carries the ids, not the title or room number (2026-11-19).
+      await page.goto(`${appUrl}/admin/proxies`);
+      const proxyFilter = page.locator("form").filter({ has: page.locator('[data-focus-for="meeting"]') });
+      await chooseSearchOption(proxyFilter, "meeting", meetingTitle);
+      await chooseSearchOption(proxyFilter, "room", roomNumber);
+      await proxyFilter.getByRole("button", { name: "Search", exact: true }).click();
+      await page.waitForURL(
+        (url) =>
+          url.searchParams.get("meeting") === meeting!.id && url.searchParams.get("room") === room!.id,
+      );
+      await expect(page.locator("tr[data-proxy-id]:visible")).toHaveCount(1);
+      await expect(page.locator(`tr[data-proxy-id="${proxyId}"]:visible`)).toBeVisible();
     } finally {
       if (proxyId) {
         await supabase.from("audit_logs").delete().eq("entity_id", proxyId);
@@ -326,10 +339,9 @@ test.describe("@test:e2e @test:auth @test:admin admin demo: proxies and ownershi
     );
 
     try {
+      // The room filter takes the room id (2026-11-19).
       await page.goto(
-        `${appUrl}/admin/ownership?room=${encodeURIComponent(
-          roomNumber,
-        )}&status=all&sort=room&dir=asc&perPage=25`,
+        `${appUrl}/admin/ownership?room=${room!.id}&status=all&sort=room&dir=asc&perPage=25`,
       );
       await page.getByRole("link", { name: "Create ownership link" }).click();
       const createDrawer = page.getByRole("dialog", {
@@ -381,6 +393,16 @@ test.describe("@test:e2e @test:auth @test:admin admin demo: proxies and ownershi
       await endDrawer.getByRole("button", { name: "End Link" }).click();
       await confirmInApp(page);
       await expect(ownershipRow).toContainText("Ended", { timeout: 15_000 });
+
+      // Room filter: type to search, pick, search; the URL carries the room
+      // id, not the number (2026-11-19).
+      await page.goto(`${appUrl}/admin/ownership?status=all`);
+      const ownershipFilter = page.locator("form").filter({ has: page.locator('[data-focus-for="room"]') });
+      await chooseSearchOption(ownershipFilter, "room", roomNumber);
+      await ownershipFilter.getByRole("button", { name: "Search", exact: true }).click();
+      await expect(page).toHaveURL(new RegExp(`[?&]room=${room!.id}`));
+      await expect(page.locator("tr[data-ownership-id]:visible")).toHaveCount(1);
+      await expect(ownershipRow).toBeVisible();
     } finally {
       if (ownershipId) {
         await supabase.from("audit_logs").delete().eq("entity_id", ownershipId);

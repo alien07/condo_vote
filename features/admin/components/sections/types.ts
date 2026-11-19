@@ -63,6 +63,7 @@ export type ResultTableFilters = {
   approval?: string;
   dir?: "asc" | "desc";
   generated?: string;
+  /** Meeting id (2026-11-19 pilot), not part of the title. */
   meeting?: string;
   page?: number;
   perPage?: number;
@@ -81,19 +82,23 @@ export type EmailTableFilters = {
 
 export type ProxyTableFilters = {
   dir?: "asc" | "desc";
+  /** Meeting id (2026-11-19), not part of the title. */
   meeting?: string;
   page?: number;
   perPage?: number;
   proxy?: string;
+  /** Room id (2026-11-19), not part of the room number. */
   room?: string;
   sort?: "meeting" | "owner" | "proxy" | "room" | "status";
 };
 
 export type ManualVoteTableFilters = {
   dir?: "asc" | "desc";
+  /** Meeting id (2026-11-19), not part of the title. */
   meeting?: string;
   page?: number;
   perPage?: number;
+  /** Room id (2026-11-19), not part of the room number. */
   room?: string;
   sort?: "meeting" | "question" | "room";
 };
