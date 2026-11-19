@@ -21,9 +21,12 @@ export function AgendaMeetingPicker({
       <SearchSelect
         defaultValue={value}
         name="meeting"
-        onChange={(meetingId) =>
-          router.push(`/admin/meetings?tab=questions&meeting=${encodeURIComponent(meetingId)}`)
-        }
+        onChange={(meetingId) => {
+          // Clearing the box keeps the agenda on screen until another pick.
+          if (meetingId) {
+            router.push(`/admin/meetings?tab=questions&meeting=${encodeURIComponent(meetingId)}`);
+          }
+        }}
         options={options}
         text={{
           clear: s.common.searchClear,

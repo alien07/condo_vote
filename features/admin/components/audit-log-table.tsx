@@ -3,12 +3,15 @@
 import { useMessageText, useStaffText } from "@/lib/i18n/staff/client";
 import { fill } from "@/lib/i18n/template";
 import { bangkokDateTimeParts } from "@/lib/datetime";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { PendingSubmitButton } from "@/features/debug/tracked-submit-button";
+import { SearchSelect } from "@/features/ui/search-select";
 
 type AuditActorOption = {
   id: string;
   label: string;
+  /** Shown under the name, and searchable (null when the label is the email). */
+  email?: string | null;
 };
 
 type AuditLogRow = {
@@ -109,6 +112,18 @@ export function AuditLogTable({
   const [total, setTotal] = useState(initialTotal);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Everyone who appears in the log can be many people: type to search
+  // (UI standard rule 8). An empty choice means all actors.
+  const actorOptions = useMemo(
+    () =>
+      actors.map((actor) => ({
+        value: actor.id,
+        label: actor.label,
+        hint: actor.email ?? undefined,
+        keywords: actor.email ?? undefined,
+      })),
+    [actors],
+  );
   const totalPages = Math.max(1, Math.ceil(total / perPage));
   const pageStart = total === 0 ? 0 : (page - 1) * perPage + 1;
   const pageEnd = Math.min(page * perPage, total);
@@ -213,25 +228,25 @@ export function AuditLogTable({
           </label>
           <label className="grid gap-1 text-xs font-medium text-[var(--muted)] lg:col-span-3">
             {s.common.actor}
-            <select
-              className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)]"
-              onChange={(event) => {
-                const value = event.currentTarget.value;
-
-                setCriteria((current) => ({
-                  ...current,
-                  actor: value,
-                }));
-              }}
-              value={criteria.actor}
-            >
-              <option value="">{s.setup.allActors}</option>
-              {actors.map((actor) => (
-                <option key={actor.id} value={actor.id}>
-                  {actor.label}
-                </option>
-              ))}
-            </select>
+            <span className="text-[var(--foreground)]">
+              <SearchSelect
+                defaultValue={criteria.actor}
+                name="actor"
+                onChange={(value) =>
+                  setCriteria((current) => ({
+                    ...current,
+                    actor: value,
+                  }))
+                }
+                options={actorOptions}
+                text={{
+                  clear: s.common.searchClear,
+                  more: s.common.searchMore,
+                  noResults: s.common.searchNoResults,
+                  placeholder: s.setup.allActors,
+                }}
+              />
+            </span>
           </label>
           <label className="grid gap-1 text-xs font-medium text-[var(--muted)] lg:col-span-8">
             {s.common.actions}

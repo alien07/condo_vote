@@ -42,6 +42,7 @@ export async function AuditLogSection({
           {
             id: profile.id,
             label: profile.full_name ?? profile.email ?? profile.id,
+            email: profile.full_name ? profile.email : null,
           },
         ]),
     ).values(),

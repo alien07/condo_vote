@@ -9,6 +9,7 @@ import {
   supabaseUrl,
   serviceKey,
   gotoWithRetry,
+  chooseSearchOption,
   findUserByEmail,
 } from "./admin-helpers";
 
@@ -136,13 +137,15 @@ test.describe("@test:e2e @test:auth @test:admin admin demo: results", () => {
       )}&type=${link.properties!.verification_type}`,
     );
 
-    await gotoWithRetry(
-      page,
-      `${appUrl}/admin/results?meeting=${encodeURIComponent(
-        meetingTitle,
-      )}&sort=meeting&dir=asc&perPage=25`,
-      { waitUntil: "commit" },
-    );
+    // Meeting filter: type part of the title, pick the meeting, search.
+    // The URL then carries the meeting id, not the title (2026-11-19).
+    await gotoWithRetry(page, `${appUrl}/admin/results?sort=meeting&dir=asc&perPage=25`, {
+      waitUntil: "load",
+    });
+    const resultFilter = page.locator("form").filter({ has: page.locator('[data-focus-for="meeting"]') });
+    await chooseSearchOption(resultFilter, "meeting", meetingTitle);
+    await resultFilter.getByRole("button", { name: "Search", exact: true }).click();
+    await page.waitForURL(new RegExp(`[?&]meeting=${meeting!.id}`), { waitUntil: "commit" });
     const resultRow = page.getByRole("row").filter({ hasText: meetingTitle });
 
     await expect(resultRow.getByRole("cell", { name: "pending" })).toBeVisible();
@@ -184,9 +187,7 @@ test.describe("@test:e2e @test:auth @test:admin admin demo: results", () => {
       .toBe(1);
     await gotoWithRetry(
       page,
-      `${appUrl}/admin/results?meeting=${encodeURIComponent(
-        meetingTitle,
-      )}&sort=meeting&dir=asc&perPage=25&focusResultSnapshotId=${snapshot!.id}`,
+      `${appUrl}/admin/results?meeting=${meeting!.id}&sort=meeting&dir=asc&perPage=25&focusResultSnapshotId=${snapshot!.id}`,
       { waitUntil: "commit" },
     );
 

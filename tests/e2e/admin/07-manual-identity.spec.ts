@@ -347,9 +347,7 @@ test.describe("@test:e2e @test:auth @test:admin admin demo: manual vote identity
     expect(approvalBlockManualError).toBeNull();
 
     await page.goto(
-      `${appUrl}/admin/results?meeting=${encodeURIComponent(
-        approvalBlockTitle,
-      )}&mode=edit&type=result_approval&id=${approvalBlockSnapshot!.id}`,
+      `${appUrl}/admin/results?meeting=${approvalBlockMeeting!.id}&mode=edit&type=result_approval&id=${approvalBlockSnapshot!.id}`,
     );
     const approvalDrawer = page.getByLabel("Approve result");
 

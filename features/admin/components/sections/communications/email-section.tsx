@@ -8,6 +8,7 @@ import { emailHref } from "@/features/admin/components/sections/communications/e
 import { formatDateTimeIn } from "@/lib/i18n/format";
 import { emailTemplateLabel } from "@/features/email/template-label";
 import { takesVoteInvitations } from "@/features/admin/meeting-pickers";
+import { meetingSearchOptions } from "@/features/ui/search-options";
 import { tablePage, tablePerPage } from "@/features/admin/components/sections/shared/table";
 import type {
   AdminDashboardData,
@@ -36,15 +37,16 @@ export async function EmailSection({
   const { locale, s } = await getStaffI18n();
   const meetingTitleById = new Map(meetings.map((meeting) => [meeting.id, meeting.title]));
   // Vote links only for meetings still open for voting (2026-11-19).
-  const inviteMeetingOptions = meetings
-    .filter((meeting) => takesVoteInvitations(meeting))
-    .sort((left, right) => left.ends_at.localeCompare(right.ends_at))
-    .map((meeting) => ({
-      value: meeting.id,
-      label: `${meeting.title} · ${fill(s.communications.meetingOpenUntil, {
+  // The closing time is the hint, so the box shows the title alone.
+  const inviteMeetingOptions = meetingSearchOptions(
+    meetings
+      .filter((meeting) => takesVoteInvitations(meeting))
+      .sort((left, right) => left.ends_at.localeCompare(right.ends_at)),
+    (meeting) =>
+      fill(s.communications.meetingOpenUntil, {
         date: formatDateTimeIn(locale, meeting.ends_at),
-      })}`,
-    }));
+      }),
+  );
   const emailTableFilters: Required<EmailTableFilters> = {
     created: emailFilters?.created ?? "",
     // Newest first by default (2026-11-19 review).

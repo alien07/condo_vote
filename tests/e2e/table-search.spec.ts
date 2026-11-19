@@ -3,6 +3,7 @@ import path from "node:path";
 import { expect, test } from "@playwright/test";
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/database.types";
+import { chooseSearchOption } from "./admin/admin-helpers";
 
 const demoAdminEmail = "demo.admin@example.test";
 const demoAdminName = "Demo Admin";
@@ -174,6 +175,12 @@ test.describe("@test:e2e @test:admin @test:table-search table search", () => {
     await auditSection.getByRole("button", { name: "Clear" }).click();
     await expect(auditPerPageSelect).toHaveValue("25");
     await expect(auditPageSelect).toHaveValue("1");
+
+    // Actor filter: type to search (UI standard rule 8), and the URL
+    // carries the profile id (2026-11-19).
+    await chooseSearchOption(auditSection, "actor", demoAdminEmail);
+    await auditSection.getByRole("button", { name: "Search" }).click();
+    await expect(page).toHaveURL(new RegExp(`actor=${profile!.id}`));
   });
 });
 
