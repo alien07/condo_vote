@@ -233,7 +233,7 @@ export function DocumentRegistryTable({
                 name="owner"
                 onChange={(value) => setCriteria((current) => ({ ...current, owner: value }))}
                 options={ownerOptions}
-                text={{ ...searchText, placeholder: s.documents.allOwners }}
+                text={{ ...searchText, placeholder: s.common.allOwners }}
               />
             </span>
           </label>

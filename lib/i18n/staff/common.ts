@@ -15,6 +15,7 @@ const en = {
   /** Empty choice of a meeting or room filter (SearchSelect placeholder). */
   allMeetings: "All meetings",
   allRooms: "All rooms",
+  allOwners: "All owners",
   cancel: "Cancel",
   confirm: "Confirm",
   confirmTitle: "Please confirm",
@@ -112,6 +113,7 @@ const th: typeof en = {
   searchUseTyped: "ใช้ “{text}”",
   allMeetings: "ทุกการประชุม",
   allRooms: "ทุกห้อง",
+  allOwners: "ทุกเจ้าของ",
   cancel: "ยกเลิก",
   confirm: "ยืนยัน",
   confirmTitle: "โปรดยืนยัน",

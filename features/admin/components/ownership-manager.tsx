@@ -10,7 +10,7 @@ import { AdminCrudDrawer } from "@/features/admin/components/admin-crud-drawer";
 import { FormResetButton } from "@/features/admin/components/form-controls";
 import { PendingSubmitButton } from "@/features/debug/tracked-submit-button";
 import { SearchSelect, type SearchSelectOption } from "@/features/ui/search-select";
-import { roomFilterOptions } from "@/features/ui/search-options";
+import { ownerFilterOptions, roomFilterOptions } from "@/features/ui/search-options";
 import {
   type OwnershipManagerProps,
   type OwnershipTableState,
@@ -157,16 +157,19 @@ export function OwnershipManager({
 
     return roomFilterOptions(rooms.filter((room) => linkedRoomIds.has(room.id)));
   }, [roomOwners, rooms]);
+  // Owner filter by id (req_0006): pick from the owners that have a link,
+  // with their rooms and email as the hint, instead of typing part of a name.
+  const ownerFilterChoices = useMemo(
+    () => ownerFilterOptions(roomOwners, new Map(owners.map((owner) => [owner.id, owner.email]))),
+    [roomOwners, owners],
+  );
   const filteredLinks = useMemo(() => {
     const roomId = tableState.room;
-    const ownerQuery = tableState.owner.trim().toLowerCase();
+    const ownerId = tableState.owner;
 
     return roomOwners.filter((link) => {
-      const ownerName = link.owners?.full_name ?? "";
       const matchesRoom = roomId ? link.rooms?.id === roomId : true;
-      const matchesOwner = ownerQuery
-        ? ownerName.toLowerCase().includes(ownerQuery)
-        : true;
+      const matchesOwner = ownerId ? link.owners?.id === ownerId : true;
       const matchesStatus =
         tableState.status === "all"
           ? true
@@ -277,16 +280,15 @@ export function OwnershipManager({
           </label>
           <label className="grid gap-1 text-xs font-medium text-[var(--muted)] md:col-span-3">
             {s.ownership.owner}
-            <input
-              className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)]"
-              onChange={(event) => {
-                const value = event.currentTarget.value;
-
-                setCriteria((current) => ({ ...current, owner: value }));
-              }}
-              placeholder={s.ownership.searchOwner}
-              value={criteria.owner}
-            />
+            <span className="text-[var(--foreground)]">
+              <SearchSelect
+                defaultValue={criteria.owner}
+                name="owner"
+                onChange={(value) => setCriteria((current) => ({ ...current, owner: value }))}
+                options={ownerFilterChoices}
+                text={{ ...searchText, placeholder: s.common.allOwners }}
+              />
+            </span>
           </label>
           <label className="grid gap-1 text-xs font-medium text-[var(--muted)] md:col-span-3">
             {s.common.status}

@@ -403,6 +403,23 @@ test.describe("@test:e2e @test:auth @test:admin admin demo: proxies and ownershi
       await expect(page).toHaveURL(new RegExp(`[?&]room=${room!.id}`));
       await expect(page.locator("tr[data-ownership-id]:visible")).toHaveCount(1);
       await expect(ownershipRow).toBeVisible();
+
+      // Owner filter (req_0006): pick the owner by name; the URL carries the
+      // owner id and only that owner's rows show. It survives paging, and
+      // Clear removes it.
+      await page.goto(`${appUrl}/admin/ownership?status=all`);
+      await chooseSearchOption(ownershipFilter, "owner", ownerName);
+      await ownershipFilter.getByRole("button", { name: "Search", exact: true }).click();
+      await expect(page).toHaveURL(new RegExp(`[?&]owner=${owner!.id}`));
+      await expect(page).not.toHaveURL(/[?&]owner=[^&]*Ownership/);
+      await expect(page.locator("tr[data-ownership-id]:visible")).toHaveCount(1);
+      await expect(ownershipRow).toContainText(ownerName);
+      await page.locator('select[aria-label="Per page"]:visible').first().selectOption("10");
+      await expect(page).toHaveURL(/[?&]perPage=10/);
+      await expect(page).toHaveURL(new RegExp(`[?&]owner=${owner!.id}`));
+      await ownershipFilter.getByRole("button", { name: "Clear", exact: true }).click();
+      await expect(page).not.toHaveURL(/[?&]owner=/);
+      await expect(ownershipFilter.locator('input[type="hidden"][name="owner"]')).toHaveValue("");
     } finally {
       if (ownershipId) {
         await supabase.from("audit_logs").delete().eq("entity_id", ownershipId);

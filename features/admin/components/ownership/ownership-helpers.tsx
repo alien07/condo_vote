@@ -49,6 +49,7 @@ export type OwnershipManagerProps = {
 
 export type OwnershipTableState = {
   dir: "asc" | "desc";
+  /** Owner id (req_0006), not part of the name. */
   owner: string;
   page: number;
   perPage: number;

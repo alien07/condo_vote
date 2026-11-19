@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { meetingSearchOptions, roomFilterOptions, uniqueById } from "@/features/ui/search-options";
+import { meetingSearchOptions, ownerFilterOptions, roomFilterOptions, uniqueById } from "@/features/ui/search-options";
 
 describe("roomFilterOptions", () => {
   it("lists each room once, by number, with the id as the value", () => {
@@ -38,6 +38,40 @@ describe("meetingSearchOptions", () => {
     expect(meetingSearchOptions([{ id: "m1", title: "AGM 2026" }])[0]).toMatchObject({
       value: "m1",
       label: "AGM 2026",
+    });
+  });
+});
+
+describe("ownerFilterOptions (req_0006)", () => {
+  const link = (ownerId: string, name: string, room: string | null) => ({
+    owners: { id: ownerId, full_name: name },
+    rooms: room ? { room_number: room } : null,
+  });
+
+  it("lists each owner once, by name, with the id as the value", () => {
+    const options = ownerFilterOptions(
+      [link("o2", "Somchai", "A-10"), link("o1", "Anan", "A-2"), link("o2", "Somchai", "A-9"), { owners: null, rooms: null }],
+      new Map([["o2", "somchai@example.test"]]),
+    );
+
+    expect(options).toEqual([
+      { value: "o1", label: "Anan", hint: "A-2", keywords: "A-2" },
+      {
+        value: "o2",
+        label: "Somchai",
+        hint: "A-9, A-10 · somchai@example.test",
+        keywords: "somchai@example.test A-9 A-10",
+      },
+    ]);
+  });
+
+  it("counts a room once and leaves the hint out when there is nothing to show", () => {
+    expect(ownerFilterOptions([link("o1", "Anan", "A-1"), link("o1", "Anan", "A-1")])[0].hint).toBe("A-1");
+    expect(ownerFilterOptions([link("o1", "Anan", null)])[0]).toEqual({
+      value: "o1",
+      label: "Anan",
+      hint: undefined,
+      keywords: undefined,
     });
   });
 });
