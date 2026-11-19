@@ -2,6 +2,7 @@
 import type { Page } from "@playwright/test";
 import { expect } from "@playwright/test";
 import type { AfterAccess } from "./access";
+import { chooseSearchOption, demoAdminEmail } from "../admin-helpers";
 
 export async function setupPages(page: Page, ctx: AfterAccess) {
   const { committeeName, documentSetKey, documentPath, profile, activeAppOrigin } = ctx;
@@ -52,30 +53,29 @@ export async function setupPages(page: Page, ctx: AfterAccess) {
   const registerDocumentDrawer = page.getByRole("dialog", {
     name: "Register document",
   });
-  await registerDocumentDrawer.locator('input[name="owner_id"]').fill(profile!.id);
+  // Whose document: picked by email, submitted as the profile id (rule 8).
+  await chooseSearchOption(registerDocumentDrawer, "owner_id_profile", demoAdminEmail);
+  await expect(
+    registerDocumentDrawer.locator('input[type="hidden"][name="owner_id_profile"]'),
+  ).toHaveValue(profile!.id);
   await registerDocumentDrawer
-    .locator('input[name="storage_path"]')
+    .getByLabel("Folder path or private Drive link", { exact: true })
     .fill(documentPath);
-  await registerDocumentDrawer
-    .locator('input[name="document_set_key"]')
-    .fill(documentSetKey);
-  await registerDocumentDrawer
-    .locator('input[name="original_filename"]')
-    .fill(`${documentSetKey}.pdf`);
-  await registerDocumentDrawer
-    .locator('input[name="mime_type"]')
-    .fill("application/pdf");
+  await registerDocumentDrawer.getByText("Check data (optional)").click();
+  await registerDocumentDrawer.locator('input[name="original_filename"]').fill(`${documentSetKey}.pdf`);
+  await registerDocumentDrawer.locator('input[name="mime_type"]').fill("application/pdf");
   await registerDocumentDrawer.locator('input[name="file_size_bytes"]').fill("123");
   await registerDocumentDrawer
     .locator('input[name="checksum_sha256"]')
     .fill("a".repeat(64));
   await registerDocumentDrawer.getByRole("button", { name: "Register document" }).click();
-  await expect(
-    page.getByRole("cell", { name: `${documentSetKey} / v1` }),
-  ).toBeVisible();
-  await expect(
-    page.getByRole("cell", { name: documentPath }),
-  ).toBeVisible();
+  await page.waitForURL((url) => Boolean(url.searchParams.get("focusDocumentId")));
+  const registeredRow = page.locator(
+    `tr[data-document-id="${new URL(page.url()).searchParams.get("focusDocumentId")}"]:visible`,
+  );
+  await expect(registeredRow).toContainText("Owner verification");
+  await expect(registeredRow).toContainText("aaaa…aaaa");
+  await expect(registeredRow.getByText(documentPath)).toBeVisible();
 
   await page.goto(`${activeAppOrigin}/admin/setup?tab=audit`);
   const auditSection = page

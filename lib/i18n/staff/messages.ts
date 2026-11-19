@@ -155,6 +155,7 @@ const EXACT: Record<string, string> = {
   "Only scheduled ownership links can be cancelled.": "ยกเลิกได้เฉพาะการผูกที่รอเริ่ม",
   "Order must be a whole number of 1 or greater.": "ลำดับต้องเป็นจำนวนเต็มตั้งแต่ 1",
   "Owner UUID must be a valid UUID.": "รหัส (UUID) ไม่ถูกต้อง",
+  "Choose whose document it is.": "เลือกว่าเป็นเอกสารของใคร",
   "Owners import completed.": "นำเข้าเจ้าของเสร็จแล้ว",
   "Ownership dates updated.": "แก้ไขวันที่กรรมสิทธิ์แล้ว",
   "Ownership link created.": "ผูกห้องกับเจ้าของแล้ว",

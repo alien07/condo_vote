@@ -53,6 +53,7 @@ export function groupAuditActions(words: AuditLogWords, codes: string[]) {
 }
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const UUID_INSIDE = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
 const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/;
 const DATE_TIME = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/;
 
@@ -135,6 +136,9 @@ export function auditDetailPairs(
 
   return Object.entries(details as Record<string, unknown>)
     .filter(([key, value]) => !((key === "id" || key.endsWith("_id")) && (isUuid(value) || value === null)))
+    // A made-up key with an id inside ("profile:<uuid>:owner_verification",
+    // an automatic document set) says nothing to a reader; Raw data keeps it.
+    .filter(([, value]) => !(typeof value === "string" && !isUuid(value) && UUID_INSIDE.test(value)))
     .map(([key, value]) => ({
       key,
       label: fieldLabel(s.auditLog, key),

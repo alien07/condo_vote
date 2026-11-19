@@ -2,30 +2,24 @@
 
 import { useMessageText, useStaffText } from "@/lib/i18n/staff/client";
 import { fill } from "@/lib/i18n/template";
-import { bangkokDateTimeParts } from "@/lib/datetime";
 import { useEffect, useState } from "react";
 import { PendingSubmitButton } from "@/features/debug/tracked-submit-button";
+import { SearchSelect, type SearchSelectOption } from "@/features/ui/search-select";
+import {
+  DocumentRows,
+  type DocumentRegistryRow,
+} from "@/features/admin/components/sections/documents/document-rows";
+import { documentTypeLabel } from "@/features/admin/components/sections/documents/document-labels";
 
-export type DocumentRegistryRow = {
-  checksum_sha256: string | null;
-  created_at: string;
-  document_set_key: string;
-  document_type: string;
-  document_version: number;
-  file_size_bytes: number | null;
-  id: string;
-  mime_type: string | null;
-  original_filename: string | null;
-  owner_id: string;
-  owner_type: string;
-  storage_path: string;
-  storage_provider: string;
-};
+export type { DocumentRegistryRow };
 
 type DocumentFilters = {
   dir: "asc" | "desc";
+  owner: string;
   page: number;
   perPage: number;
+  room: string;
+  /** Kept in the URL for links to one document set; no field in the form. */
   set: string;
   sort: "created" | "set" | "type";
   type: string;
@@ -39,7 +33,10 @@ type DocumentApiResponse = {
 };
 
 type DocumentRegistryTableProps = {
-  documentTypes: string[];
+  documentTypes: readonly string[];
+  /** Rooms and owners that some document concerns (filters by id, rule 8). */
+  roomOptions: SearchSelectOption[];
+  ownerOptions: SearchSelectOption[];
   focusedDocumentId?: string;
   initialFilters: DocumentFilters;
   initialPage: number;
@@ -53,6 +50,14 @@ function buildParams(filters: DocumentFilters) {
 
   if (filters.set) {
     params.set("set", filters.set);
+  }
+
+  if (filters.room) {
+    params.set("room", filters.room);
+  }
+
+  if (filters.owner) {
+    params.set("owner", filters.owner);
   }
 
   if (filters.type && filters.type !== "all") {
@@ -77,10 +82,10 @@ function syncUrl(filters: DocumentFilters) {
   window.history.replaceState(null, "", query ? `?${query}` : "/admin/documents");
 }
 
-const formatDateTime = bangkokDateTimeParts;
-
 export function DocumentRegistryTable({
   documentTypes,
+  ownerOptions,
+  roomOptions,
   focusedDocumentId,
   initialFilters,
   initialPage,
@@ -90,6 +95,25 @@ export function DocumentRegistryTable({
 }: DocumentRegistryTableProps) {
   const tm = useMessageText();
   const { s } = useStaffText();
+  const searchText = {
+    clear: s.common.searchClear,
+    more: s.common.searchMore,
+    noResults: s.common.searchNoResults,
+  };
+  // Drawer links keep the list as it is (filters, page).
+  const hrefFor = (mode: "view" | "version", id: string) => {
+    const params = buildParams(appliedFilters);
+
+    if (mode === "view") {
+      params.set("mode", "view");
+      params.set("id", id);
+    } else {
+      params.set("mode", "create");
+      params.set("from", id);
+    }
+
+    return `/admin/documents?${params.toString()}`;
+  };
   const [criteria, setCriteria] = useState(initialFilters);
   const [appliedFilters, setAppliedFilters] = useState(initialFilters);
   const [rows, setRows] = useState(initialRows);
@@ -189,26 +213,34 @@ export function DocumentRegistryTable({
             void load({ ...criteria, page: 1, perPage });
           }}
         >
-          <label className="grid gap-1 text-xs font-medium text-[var(--muted)] md:col-span-5">
-            {s.documents.set}
-            <input
-              className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)]"
-              onChange={(event) => {
-                const value = event.currentTarget.value;
-
-                setCriteria((current) => ({
-                  ...current,
-                  set: value,
-                }));
-              }}
-              placeholder={s.documents.searchSet}
-              value={criteria.set}
-            />
+          <label className="grid gap-1 text-xs font-medium text-[var(--muted)] md:col-span-3">
+            {s.documents.room}
+            <span className="text-[var(--foreground)]">
+              <SearchSelect
+                defaultValue={criteria.room}
+                name="room"
+                onChange={(value) => setCriteria((current) => ({ ...current, room: value }))}
+                options={roomOptions}
+                text={{ ...searchText, placeholder: s.common.allRooms }}
+              />
+            </span>
           </label>
-          <label className="grid gap-1 text-xs font-medium text-[var(--muted)] md:col-span-4">
+          <label className="grid gap-1 text-xs font-medium text-[var(--muted)] md:col-span-3">
+            {s.documents.owner}
+            <span className="text-[var(--foreground)]">
+              <SearchSelect
+                defaultValue={criteria.owner}
+                name="owner"
+                onChange={(value) => setCriteria((current) => ({ ...current, owner: value }))}
+                options={ownerOptions}
+                text={{ ...searchText, placeholder: s.documents.allOwners }}
+              />
+            </span>
+          </label>
+          <label className="grid gap-1 text-xs font-medium text-[var(--muted)] md:col-span-3">
             {s.documents.type}
             <select
-              className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)]"
+              className="min-h-11 rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)]"
               onChange={(event) => {
                 const value = event.currentTarget.value;
 
@@ -222,7 +254,7 @@ export function DocumentRegistryTable({
               <option value="all">{s.documents.allTypes}</option>
               {documentTypes.map((type) => (
                 <option key={type} value={type}>
-                  {type}
+                  {documentTypeLabel(s, type)}
                 </option>
               ))}
             </select>
@@ -240,8 +272,10 @@ export function DocumentRegistryTable({
               onClick={() => {
                 const nextFilters: DocumentFilters = {
                   dir: "desc",
+                  owner: "",
                   page: 1,
                   perPage: 25,
+                  room: "",
                   set: "",
                   sort: "created",
                   type: "all",
@@ -295,7 +329,7 @@ export function DocumentRegistryTable({
                   ),
                 )}
               </select>
-              <span>of {totalPages}</span>
+              <span>{fill(s.common.ofPages, { total: totalPages })}</span>
             </label>
             <div className="hidden h-6 w-px bg-[var(--border)] sm:block" />
             <label className="flex items-center gap-2 text-xs font-medium text-[var(--muted)]">
@@ -324,74 +358,14 @@ export function DocumentRegistryTable({
             {tm(error)}
           </p>
         ) : null}
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[980px] border-collapse text-left text-sm">
-            <thead className="bg-[var(--background)] text-[var(--muted)]">
-              <tr className="border-b border-[var(--border)]">
-                {[
-                  ["set", s.documents.setVersion],
-                  ["type", s.documents.type],
-                  ["created", s.documents.created],
-                ].map(([sort, label]) => (
-                  <th className="px-4 py-3 font-medium" key={sort}>
-                    <button
-                      className="font-medium"
-                      onClick={() => sortBy(sort as DocumentFilters["sort"])}
-                      type="button"
-                    >
-                      {label}
-                      {appliedFilters.sort === sort
-                        ? appliedFilters.dir === "asc"
-                          ? " ↑"
-                          : " ↓"
-                        : ""}
-                    </button>
-                  </th>
-                ))}
-                <th className="px-4 py-3 font-medium">{s.documents.providerColumn}</th>
-                <th className="px-4 py-3 font-medium">{s.documents.pathColumn}</th>
-                <th className="px-4 py-3 font-medium">SHA-256</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((document, index) => {
-                const created = formatDateTime(document.created_at);
-
-                return (
-                  <tr
-                    className={[
-                      "border-b border-[var(--border)] last:border-0",
-                      document.id === focusedDocumentId
-                        ? "border-l-4 border-l-[var(--primary)] bg-[var(--accent)]"
-                        : index % 2 === 0
-                          ? "bg-[var(--surface)]"
-                          : "bg-[var(--background)]",
-                    ].join(" ")}
-                    data-document-id={document.id}
-                    key={document.id}
-                    tabIndex={-1}
-                  >
-                    <td className="px-4 py-3">
-                      {document.document_set_key} / v{document.document_version}
-                    </td>
-                    <td className="px-4 py-3">{document.document_type}</td>
-                    <td className="px-4 py-3 text-xs tabular-nums">
-                      <div>{created.date}</div>
-                      <div className="text-[var(--muted)]">{created.time}</div>
-                    </td>
-                    <td className="px-4 py-3">{document.storage_provider}</td>
-                    <td className="max-w-xs truncate px-4 py-3">
-                      {document.storage_path}
-                    </td>
-                    <td className="max-w-xs truncate px-4 py-3">
-                      {document.checksum_sha256 ?? "-"}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+        <DocumentRows
+          dir={appliedFilters.dir}
+          focusedId={focusedDocumentId}
+          hrefFor={hrefFor}
+          onSort={sortBy}
+          rows={rows}
+          sort={appliedFilters.sort}
+        />
         {rows.length === 0 ? (
           <p className="px-4 py-4 text-sm text-[var(--muted)]">
             {s.documents.noDocuments}

@@ -218,7 +218,7 @@ Notes: `approve_close_voting` sets the meeting to `closed` and `closed_at` when 
 ### documents
 Purpose: Stores provider-agnostic private document references.
 Key fields: owner type, owner ID, document type, provider, storage path or private link, document set key, version, original filename, MIME type, file size, SHA-256 checksum, visibility, uploader.
-Notes: Used for owner/proxy approval documents and generated PDFs. Default visibility is private. The `document_set_key` groups revisions of one logical document; SHA-256 and file size verify the exact file. Provider credentials must not be stored in this table.
+Notes: Used for owner/proxy approval documents and generated PDFs. Default visibility is private. The `document_set_key` groups revisions of one logical document; SHA-256 and file size verify the exact file. When the register form leaves it empty, the key is `<owner_type>:<owner_id>:<document_type>` and the version is the next one of that set (2026-11-19). The admin page reads the file's SHA-256 in the browser and never uploads the file. Provider credentials must not be stored in this table.
 
 ### app_settings
 Purpose: Stores technical settings controlled by the system admin (D016). Admins can read them.
