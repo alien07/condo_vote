@@ -17,7 +17,7 @@ Types are the TypeScript types the app sees: `string` also covers `uuid`, `text`
 | Table | Columns | Purpose |
 | --- | ---: | --- |
 | [app_roles](#app_roles) | 5 | Assigns system roles such as admin and committee to profiles. |
-| [app_settings](#app_settings) | 5 | App-level operational settings such as the selected private document storage provider. |
+| [app_settings](#app_settings) | 6 | App-level operational settings such as the selected private document storage provider. |
 | [approval_requests](#approval_requests) | 9 | Tracks user requests to become an approved owner, resident, or proxy voter. |
 | [audit_logs](#audit_logs) | 7 | Append-only business action records for traceability and troubleshooting. |
 | [ballot_answers](#ballot_answers) | 5 | Current effective answers for a ballot. |
@@ -77,6 +77,7 @@ App-level operational settings such as the selected private document storage pro
 | `document_storage_provider` | `string` |  | default |  |
 | `document_storage_root` | `string` | null |  |  |
 | `id` | `string` |  | default |  |
+| `strict_notice_period` | `boolean` |  | default |  |
 | `updated_at` | `string` |  | default |  |
 
 ## approval_requests
@@ -713,9 +714,11 @@ Called with `supabase.rpc(name, args)`. Rules and permissions: [rls-policies.md]
 | `mask_email` | `p_email: string` | `string` |
 | `meeting_comments` | `p_meeting_id: string` | `{ choice_texts: string[] comment: string question_id: string }[]` |
 | `meeting_early_close` | `p_meeting_id: string` | `string` |
+| `meeting_notice_check` | `p_meeting_id: string` | `Json` |
 | `meeting_online_tally` | `p_meeting_id: string` | `{ choice_id: string ownership: number vote_count: number }[]` |
 | `my_member_access` |  | `Json` |
 | `needs_privacy_consent` |  | `boolean` |
+| `notice_period_days` |  | `number` |
 | `notify_result_not_passed` | `p_actor: string, p_result_snapshot_id: string` | `undefined` |
 | `object_result_snapshot` | `p_reason: string, p_result_snapshot_id: string` | `Json` |
 | `profile_access_active` | `p_profile_id: string` | `boolean` |
@@ -736,7 +739,9 @@ Called with `supabase.rpc(name, args)`. Rules and permissions: [rls-policies.md]
 | `room_owner_profile_id` | `p_room_id: string` | `string` |
 | `save_meeting_english` | `p_checked: boolean, p_meeting_id: string, p_text: Json` | `Json` |
 | `set_preferred_language` | `language: string` | `undefined` |
+| `set_strict_notice_period` | `p_strict: boolean` | `undefined` |
 | `start_system_read_access` | `p_hours: number, p_reason: string` | `Json` |
+| `strict_notice_period` |  | `boolean` |
 | `submit_ballot` | `p_answers: Json, p_meeting_id: string, p_room_id: string` | `Json` |
 | `submit_manual_ballot` | `p_answers: Json, p_audit_note: string, p_meeting_id: string, p_room_id: string, p_voter_identity_text: string, p_voter_profile_id: string` | `Json` |
 | `system_access_status` |  | `Json` |

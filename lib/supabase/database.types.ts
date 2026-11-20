@@ -79,6 +79,7 @@ export type Database = {
           document_storage_provider: string
           document_storage_root: string | null
           id: string
+          strict_notice_period: boolean
           updated_at: string
         }
         Insert: {
@@ -86,6 +87,7 @@ export type Database = {
           document_storage_provider?: string
           document_storage_root?: string | null
           id?: string
+          strict_notice_period?: boolean
           updated_at?: string
         }
         Update: {
@@ -93,6 +95,7 @@ export type Database = {
           document_storage_provider?: string
           document_storage_root?: string | null
           id?: string
+          strict_notice_period?: boolean
           updated_at?: string
         }
         Relationships: []
@@ -2133,6 +2136,7 @@ export type Database = {
         }[]
       }
       meeting_early_close: { Args: { p_meeting_id: string }; Returns: string }
+      meeting_notice_check: { Args: { p_meeting_id: string }; Returns: Json }
       meeting_online_tally: {
         Args: { p_meeting_id: string }
         Returns: {
@@ -2143,6 +2147,7 @@ export type Database = {
       }
       my_member_access: { Args: never; Returns: Json }
       needs_privacy_consent: { Args: never; Returns: boolean }
+      notice_period_days: { Args: never; Returns: number }
       notify_result_not_passed: {
         Args: { p_actor: string; p_result_snapshot_id: string }
         Returns: undefined
@@ -2225,10 +2230,15 @@ export type Database = {
         Returns: Json
       }
       set_preferred_language: { Args: { language: string }; Returns: undefined }
+      set_strict_notice_period: {
+        Args: { p_strict: boolean }
+        Returns: undefined
+      }
       start_system_read_access: {
         Args: { p_hours: number; p_reason: string }
         Returns: Json
       }
+      strict_notice_period: { Args: never; Returns: boolean }
       submit_ballot: {
         Args: { p_answers: Json; p_meeting_id: string; p_room_id: string }
         Returns: Json

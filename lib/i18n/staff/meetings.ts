@@ -94,6 +94,12 @@ const en = {
   publishConfirm:
     '"{title}" has {count} agenda item(s). Voting: {window}. After publishing, owners can vote and the agenda and choices cannot change.',
   publishNotReady: "Not ready to publish: {reason}",
+  // Notice period (req_0011 C, D027; Condominium Act s.42/3).
+  noticeBlocked:
+    "Cannot publish: the meeting day is less than {days} days away, and the System Admin requires {days} days' notice.",
+  noticeWarning:
+    "Warning: the meeting day is less than {days} days away. The law asks for written notice at least {days} days before the meeting. Publish anyway? This is recorded in the audit log.",
+  noticeConfirmMissing: "Confirm the short notice to publish this meeting.",
   hasAbstain: "Has an Abstain choice",
   hasAbstainHelp: "Adds \"Abstain\" as the last choice. Its text cannot be changed, and it cannot be combined with other choices.",
   abstainFixed: "Cannot be combined with other choices · turn on or off in Edit",
@@ -314,6 +320,11 @@ const th: typeof en = {
   publishConfirm:
     '"{title}" มี {count} วาระ ช่วงลงคะแนน {window} หลังเผยแพร่ เจ้าของร่วมจะลงคะแนนได้ และจะแก้วาระหรือตัวเลือกไม่ได้อีก',
   publishNotReady: "ยังเผยแพร่ไม่ได้: {reason}",
+  noticeBlocked:
+    "เผยแพร่ไม่ได้: วันประชุมเหลือไม่ถึง {days} วัน และผู้ดูแลระบบกำหนดให้ต้องแจ้งล่วงหน้า {days} วัน",
+  noticeWarning:
+    "คำเตือน: วันประชุมเหลือไม่ถึง {days} วัน กฎหมายกำหนดให้ส่งหนังสือนัดประชุมล่วงหน้าอย่างน้อย {days} วัน ยืนยันเผยแพร่หรือไม่? ระบบจะบันทึกการยืนยันในบันทึกการใช้งาน",
+  noticeConfirmMissing: "โปรดยืนยันการแจ้งล่วงหน้าไม่ครบกำหนดก่อนเผยแพร่",
   hasAbstain: "มีตัวเลือกงดออกเสียง",
   hasAbstainHelp: "เพิ่ม \"งดออกเสียง\" เป็นตัวเลือกสุดท้าย แก้ข้อความไม่ได้ และเลือกร่วมกับข้ออื่นไม่ได้",
   abstainFixed: "เลือกร่วมกับข้ออื่นไม่ได้ · เปิดหรือปิดได้ที่ แก้ไข",

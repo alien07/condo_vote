@@ -58,6 +58,22 @@ export async function endSystemAccessAction() {
   });
 }
 
+/** Strict notice period (req_0011 C, D027): refuse or warn. */
+export async function setStrictNoticeAction(formData: FormData) {
+  await run(async (t) => {
+    const strict = formData.get("strict") === "on";
+    const { error } = await (await createClient()).rpc("set_strict_notice_period", { p_strict: strict });
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    const { data: days } = await (await createClient()).rpc("notice_period_days");
+
+    return fill(strict ? t.notice.savedStrict : t.notice.savedWarn, { days: days ?? 7 });
+  });
+}
+
 export async function grantSystemAdminAction(formData: FormData) {
   await run(async (t) => {
     const result = await grantSystemAdmin(await createClient(), String(formData.get("email") ?? "").trim());

@@ -23,6 +23,15 @@ const en = {
   storageRootPlaceholder: "/secure/condovotes or private Drive folder URL",
   saveStorage: "Save document storage config",
   // Temporary read-only access and system admins (req_0011 B, D027).
+  notice: {
+    title: "Meeting notice period",
+    intro:
+      "The law asks for written notice at least {days} days before the meeting (Condominium Act section 42/3). Off: publishing a meeting less than {days} days away shows a warning the Manager must confirm, recorded in the audit log. On: publishing it is refused.",
+    strict: "Require {days} days' notice (refuse publishing)",
+    save: "Save",
+    savedStrict: "Saved: a meeting less than {days} days away cannot be published.",
+    savedWarn: "Saved: a meeting less than {days} days away shows a warning.",
+  },
   access: {
     title: "Temporary access to the building's data",
     intro:
@@ -97,6 +106,15 @@ const th: typeof en = {
   storageRoot: "โฟลเดอร์หลักหรือลิงก์โฟลเดอร์ส่วนตัว",
   storageRootPlaceholder: "/secure/condovotes หรือลิงก์โฟลเดอร์ Drive ส่วนตัว",
   saveStorage: "บันทึกที่เก็บเอกสาร",
+  notice: {
+    title: "ระยะเวลาแจ้งนัดประชุมล่วงหน้า",
+    intro:
+      "กฎหมายกำหนดให้ส่งหนังสือนัดประชุมล่วงหน้าอย่างน้อย {days} วัน (พ.ร.บ.อาคารชุด มาตรา 42/3) ปิด: เผยแพร่การประชุมที่เหลือไม่ถึง {days} วันได้ แต่มีคำเตือนให้ผู้จัดการยืนยันและบันทึกในบันทึกการใช้งาน เปิด: ระบบไม่ให้เผยแพร่",
+    strict: "บังคับระยะเวลาแจ้งล่วงหน้า {days} วัน (ไม่ให้เผยแพร่)",
+    save: "บันทึก",
+    savedStrict: "บันทึกแล้ว: การประชุมที่เหลือไม่ถึง {days} วันเผยแพร่ไม่ได้",
+    savedWarn: "บันทึกแล้ว: การประชุมที่เหลือไม่ถึง {days} วันจะมีคำเตือน",
+  },
   access: {
     title: "การเข้าถึงข้อมูลอาคารชั่วคราว",
     intro:

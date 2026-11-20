@@ -8,6 +8,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getI18n, getStaffI18n } from "@/lib/i18n/server";
 import { getSystemAccessStatus, listSystemAdmins } from "@/features/system/access-service";
 import { SystemAccessPanel, SystemAdminsPanel } from "@/features/system/system-access-panel";
+import { NoticePeriodPanel } from "@/features/system/notice-period-panel";
 
 // Technical, service, and maintenance settings for system admins (D016).
 export default async function SystemPage() {
@@ -24,7 +25,7 @@ export default async function SystemPage() {
     getPrivacySettings(supabase),
     supabase
       .from("app_settings")
-      .select("id, document_storage_provider, document_storage_root")
+      .select("id, document_storage_provider, document_storage_root, strict_notice_period")
       .order("created_at", { ascending: false })
       .limit(1),
     // req_0011 B (D027): temporary read-only access and the system admins.
@@ -70,6 +71,8 @@ export default async function SystemPage() {
         </div>
         <DocumentStorageSettingsForm appSettings={appSettingsResult.data[0] ?? null} />
       </section>
+
+      <NoticePeriodPanel days={(await supabase.rpc("notice_period_days")).data ?? 7} strict={appSettingsResult.data[0]?.strict_notice_period ?? false} t={t.notice} />
 
       <section className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-5 text-sm">
         <h2 className="text-lg font-semibold">{t.emailTitle}</h2>
