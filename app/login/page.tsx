@@ -10,7 +10,7 @@ import { APP_VERSION } from "@/lib/app-config";
 import { LanguageSwitcher } from "@/features/i18n/language-switcher";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
 import { getI18n } from "@/lib/i18n/server";
-import { DEMO_PERSONAS } from "@/lib/demo/personas";
+import { DEMO_GROUPS, DEMO_PERSONAS, type DemoGroup } from "@/lib/demo/personas";
 
 type LoginPageProps = {
   searchParams: Promise<{
@@ -88,18 +88,25 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
             <p className="text-xs font-semibold text-amber-900">
               Local demo sign in (no Google)
             </p>
-            <ul className="mt-2 grid gap-1.5">
-              {DEMO_PERSONAS.map((persona) => (
-                <li key={persona.key}>
-                  <a
-                    className="block rounded border border-amber-200 bg-white px-3 py-1.5 text-sm text-amber-950 hover:border-amber-400"
-                    href={`/auth/local-demo?as=${persona.key}&next=${encodeURIComponent(next)}`}
-                  >
-                    <span className="block font-medium">{persona.fullName}</span>
-                    <span className="block text-xs text-amber-800">
-                      {persona.caseLabel}
-                    </span>
-                  </a>
+            {/* Grouped by role (req_0010), labels in the page language. */}
+            <ul className="mt-2 grid gap-3">
+              {(Object.keys(DEMO_GROUPS) as DemoGroup[]).map((group) => (
+                <li data-demo-group={group} key={group}>
+                  <p className="text-xs font-semibold text-amber-900">{DEMO_GROUPS[group][locale]}</p>
+                  <ul className="mt-1 grid gap-1.5">
+                    {DEMO_PERSONAS.filter((persona) => persona.group === group).map((persona) => (
+                      <li key={persona.key}>
+                        <a
+                          className="block rounded border border-amber-200 bg-white px-3 py-1.5 text-sm text-amber-950 hover:border-amber-400"
+                          data-demo-persona={persona.key}
+                          href={`/auth/local-demo?as=${persona.key}&next=${encodeURIComponent(next)}`}
+                        >
+                          <span className="block font-medium">{persona.fullName}</span>
+                          <span className="block text-xs text-amber-800">{persona.caseLabel[locale]}</span>
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
                 </li>
               ))}
               <li>

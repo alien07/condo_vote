@@ -36,7 +36,7 @@ FILES = {
             ["upsert", "Import · B-302 new owner", "import.b302.new@example.test", "0810000302", "", "true"],
             ["upsert", "Import · B-303 new owner", "import.b303.new@example.test", "", "import_b303", "true"],
             # Existing seeded owner: upsert by email updates the phone only.
-            ["upsert", "Owner A · TH · 2 ห้อง + รับมอบฉันทะ", "owner.th.2rooms-proxy@example.test", "0899999999", "", "true"],
+            ["upsert", "คุณอนันต์ เจ้าของ 2 ห้อง", "owner.th@example.test", "0899999999", "", "true"],
         ],
     ),
     "demo-3-room-owners.xlsx": (

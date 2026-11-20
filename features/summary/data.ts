@@ -153,6 +153,8 @@ export type SummaryListItem = {
   id: string;
   meetingId: string;
   title: string | null;
+  /** English title (D020); null when not written. */
+  titleEn: string | null;
   meetingStartsAt: string | null;
   fiscalYear: string | null;
   publishedAt: string;
@@ -163,8 +165,8 @@ type ListRow = {
   meeting_id: string;
   published_at: string;
   result_snapshots:
-    | { title: string | null; starts_at: string | null; fiscal_year: string | null }
-    | { title: string | null; starts_at: string | null; fiscal_year: string | null }[]
+    | { title: string | null; title_en: string | null; starts_at: string | null; fiscal_year: string | null }
+    | { title: string | null; title_en: string | null; starts_at: string | null; fiscal_year: string | null }[]
     | null;
 };
 
@@ -182,7 +184,7 @@ export async function getSummaryList(): Promise<SummaryListItem[]> {
   const { data, error } = await supabase
     .from("result_publications")
     .select(
-      "id, meeting_id, published_at, result_snapshots(title:payload_json->meeting->>title, starts_at:payload_json->meeting->>starts_at, fiscal_year:payload_json->meeting->>fiscal_year)",
+      "id, meeting_id, published_at, result_snapshots(title:payload_json->meeting->>title, title_en:payload_json->meeting->>title_en, starts_at:payload_json->meeting->>starts_at, fiscal_year:payload_json->meeting->>fiscal_year)",
     );
 
   if (error) {
@@ -199,6 +201,7 @@ export async function getSummaryList(): Promise<SummaryListItem[]> {
         id: row.id,
         meetingId: row.meeting_id,
         title: snapshot?.title ?? null,
+        titleEn: snapshot?.title_en ?? null,
         meetingStartsAt: snapshot?.starts_at ?? null,
         fiscalYear: snapshot?.fiscal_year ?? null,
         publishedAt: row.published_at,

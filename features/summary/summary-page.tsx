@@ -284,7 +284,7 @@ export function SummaryPage({
                           {t.showing}
                         </div>
                       ) : null}
-                      <div className="font-medium">{summary.title ?? t.approvedResult}</div>
+                      <div className="font-medium">{localized(locale, summary.title, summary.titleEn) ?? t.approvedResult}</div>
                       {summary.meetingStartsAt ? (
                         <div className="text-[var(--muted)]">
                           {t.meetingOn(formatDateIn(locale, summary.meetingStartsAt))}

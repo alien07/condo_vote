@@ -14,7 +14,7 @@ export const ownerProfiles = await must(
   "owner profiles",
 );
 export const invites = ownerProfiles.map((profile) => {
-  const failed = profile.email === "voter.a110@example.test";
+  const failed = profile.email === "voter.a209@example.test";
   return {
     recipient_email: profile.email,
     template_key: `vote_invitation:${meetingIds.M1}`,
@@ -42,7 +42,7 @@ await must(db.from("email_logs").insert([...invites, ...queued]), "email logs");
 await must(
   db.from("documents").insert({
     owner_type: "profile",
-    owner_id: personaProfile.ownerB,
+    owner_id: personaProfile.ownerEn,
     document_type: "owner_verification",
     storage_provider: "local_drive",
     storage_path: "DEMO/owners/A-201-title-deed.pdf",
@@ -58,4 +58,4 @@ await must(
 console.log(`[demo:seed] done: ${Object.keys(meetingIds).join(", ")}
   Sign in : http://localhost:3000/login (demo buttons) or Google as ${DEMO_SYSTEM_ADMIN.email}
   PDPA    : ${args.has("--consent") ? "consent screen ON (the new user must accept)" : "consent screen OFF (add --consent for flow F4)"}
-  Next    : Admin > Results > M8 > "Create PDF files" (docs/demo-script.md, checkpoint 0)`);
+  Next    : Building office > Results > M13 > "Create PDF files" (docs/demo-script.md, checkpoint 0)`);

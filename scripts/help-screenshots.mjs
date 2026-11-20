@@ -20,8 +20,8 @@ const onlyLocale = process.argv.find((arg) => arg.startsWith("--locale="))?.spli
 const LOCALES = onlyLocale ? [onlyLocale] : ["th", "en"];
 // Guide slug -> demo persona that may read it (null: signed out). Guides
 // are shown by role, so the committee guide needs a committee sign-in.
-const GUIDES = { owner: null, committee: "committee" };
-const PERSONA_EMAILS = { committee: "committee.approve@example.test" };
+const GUIDES = { owner: null, committee: "chair" };
+const PERSONA_EMAILS = { chair: "chair@example.test" };
 const PHONE = { viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true };
 
 function readEnv() {

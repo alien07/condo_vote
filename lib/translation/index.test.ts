@@ -19,7 +19,7 @@ describe("translation", () => {
   });
 
   it("answers demo text and marks unknown text for the admin", async () => {
-    expect(mockTranslate("เห็นด้วย")).toBe("Approve");
+    expect(mockTranslate("เห็นด้วย")).toBe("Agree");
     expect(mockTranslate("ข้อความใหม่")).toBe(`${NO_DEMO_TRANSLATION} ข้อความใหม่`);
     expect(await translateToEnglish(["งบการเงิน", ""])).toEqual(["Financial statements", ""]);
   });

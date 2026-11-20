@@ -165,7 +165,10 @@ export function AppShellNav({
         >
           {navItems
             .filter((item) => !item.adminOnly || isAdmin)
-            .filter((item) => !("committeeOnly" in item) || isAdmin || isCommittee)
+            // Who may open /committee: decided by the shell (committee, the
+            // Manager, a System Admin's temporary access), not "opens /admin",
+            // which includes office staff (req_0010 role matrix).
+            .filter((item) => !("committeeOnly" in item) || isCommittee)
             .filter((item) => !("systemAdminOnly" in item) || isSystemAdmin)
             .filter((item) => !("auditOnly" in item) || isAuditor)
             .filter((item) => !("voterOnly" in item) || canVote)

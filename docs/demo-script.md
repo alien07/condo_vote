@@ -1,11 +1,13 @@
 # Demo script: live test on a local machine
 
-A step-by-step test case and demo guide for condoVotes, using data from `scripts/seed-demo.mjs`.
-Each step has **✓ Expected** underneath, and every flow ends with a checkpoint.
+A step-by-step demo and test guide for condoVotes, using the data from
+`scripts/seed-demo.mjs` (redesigned in req_0010). It follows the people who
+use the system, role by role: Manager → Office staff → Committee and chair →
+Owners (Thai and English) → Auditor → System Admin. Each step has
+**✓ Expected** underneath.
 
-- **P1** · show the client (~35 minutes): F1–F4
-- **P2** · check yourself before the client meeting: F5–F7
-- **P3** · already covered by CI, no need to show again (list at the end)
+`tests/e2e/demo-seed.spec.ts` checks the data below and a role matrix (every
+menu link opens, and the pages a role must not open are denied) in CI.
 
 ---
 
@@ -14,186 +16,176 @@ Each step has **✓ Expected** underneath, and every flow ends with a checkpoint
 ```powershell
 npx supabase start
 npm run build
-npm run demo:seed -- --reset --consent      # clears the local DB and seeds again (meeting times count from now)
+npm run demo:seed -- --reset --consent      # clears the local DB and seeds again (times count from now)
 $env:ENABLE_LOCAL_AUTH_BYPASS="1"; npm run start
 ```
 
-- Open **http://localhost:3000** only (Google OAuth is not set up for the LAN IP).
-- `--reset` clears the whole local database, including the Google sign-in, so sign in again after every run.
-- `--consent` turns the PDPA screen on (the local seed turns it off). Only F4 needs it, but use it every time.
-- With `npm run dev`, the bypass buttons work without setting the variable.
+- Open **http://localhost:3000** (Google sign-in is not set up for a LAN IP).
+- `--reset` clears the whole local database, including the Google sign-in, so sign in again after each run.
+- `--consent` turns the PDPA screen on; seeded people have accepted already, only the new user sees it.
+- With `npm run dev` the demo buttons work without the variable.
 
-### Users (demo login buttons on the sign-in page)
+### People (demo buttons on the sign-in page, grouped by role)
 
-| Button | Email | Role / case |
-|---|---|---|
-| (Google) | manorin.prajak@gmail.com | system admin + admin + committee · F4, 2nd approval in F2 |
-| Demo Admin · แก้ M6/ออกผล | admin.fix-results@example.test | admin only · F2, F5, F6 |
-| Demo Committee · อนุมัติผล | committee.approve@example.test | committee only · F2, F7 |
-| Owner A · TH · 2 ห้อง + รับมอบฉันทะ | owner.th.2rooms-proxy@example.test | Thai · owns A-101, A-102 · proxy for A-103 · F1 |
-| Owner B · EN · online + paper | owner.en.paper-conflict@example.test | English · A-201 · voted online and on paper · F3 |
-| Resident · ไม่ใช่เจ้าของ | resident.no-vote@example.test | resident with no room · F7 |
-| New user · รอ PDPA/อนุมัติ | new.pending-consent@example.test | no profile yet · F4 |
+| Group | Button | Email | Roles · what to show |
+|---|---|---|---|
+| Building office | คุณมานพ ผู้จัดการ (Manager) | manager@example.test | `admin` (Manager) · meetings, results, corrections, approvals of accounts and proxies |
+| Building office | คุณสมศรี เจ้าหน้าที่ (Staff) | staff@example.test | `staff` · rooms, owners, paper ballots; no Manager pages |
+| Building office | Audrey Auditor | auditor@example.test | `auditor` · read only, English |
+| Committee | คุณประพันธ์ ประธานกรรมการ | chair@example.test | `committee`, chair · approves, breaks a tie · owns A-104 |
+| Committee | คุณวิไล รองประธาน | vice.chair@example.test | `committee`, vice chair · owns A-108 |
+| Committee | Mark Member | member@example.test | `committee`, English · still to answer M9 · owns A-202 |
+| Owners | คุณอนันต์ เจ้าของ 2 ห้อง | owner.th@example.test | Thai · owns A-101, A-102 · proxy for A-103 (approved), A-105/A-106 (pending) |
+| Owners | Emma English | owner.en@example.test | English · owns A-201 · voted online **and** on paper in M8 |
+| Owners | คุณชัยวัฒน์ เจ้าของร่วมหลัก | owner.co@example.test | owner of A-110 · lets the co-owner vote in M1 |
+| Owners | คุณชลธิชา ผู้ถือกรรมสิทธิ์ร่วม | co.owner@example.test | resident · votes A-110 in M1 for the owner |
+| Owners | คุณรัตนา ผู้อยู่อาศัย | resident@example.test | resident, not an owner · results only |
+| Owners | Peter Proxy | proxy.holder@example.test | external proxy holder, English · votes A-107 in M1 |
+| Owners | คุณนภา ผู้ใช้ใหม่ | new.user@example.test | no profile yet · PDPA, then waits for approval |
+| System | System Admin (Demo) | system.admin@example.test | `system_admin` only · no building rights (D027) |
+| (Google) | — | manorin.prajak@gmail.com | `system_admin` only, like the demo System Admin |
 
-### Meetings
+Two more committee members exist without a button (คุณสุนทร A-203, คุณกมล
+A-205), so the committee has **5 active members: a decision needs 3**
+(D027). The local "Dev admin" link (admin + system admin) is for developers,
+not for the demo.
 
-| Meeting | State | Used in |
-|---|---|---|
-| M1 | Meeting-day voting open (closes in 3 days) · open ballot · 1 single-choice question + 1 multiple-choice question (max 2) · proxy A-103 approved, A-105/A-106 pending · closing early needs 2 approvals | F1 |
-| M2 | Advance voting window open | F1, F5 |
-| M3 | Between the advance window and meeting day (cannot vote) | F5 |
-| M4 | Secret ballot, open | F1 |
-| M5 | Draft · 4 pass-rule types + land office question | F5 |
-| M6 | Voting closed · A-201 has an online + paper conflict · A-205 paper ballot identity unconfirmed · quorum not met | F2 |
-| M7 | Result generated · approvals 1/2 | F2, F7 |
-| M8 | Published · full meeting record (notice, identity method, 1 incident) · Q1 decided, Q2 not decided | F3 |
-| M9 | Second meeting (reconvened) · no quorum required · published | — |
-| M10 | Last year · archived | — |
-| M11 | Result generated · nobody approved (0/2) | Committee: approve or request a correction |
-| M12 | Result generated · correction open (System Admin, medium) · System Admin approved 1/2 (majority of 2 members, D027) | Committee approves → 2/2 but held; Admin answers "No change needed" in Admin > Results → published |
-| M13 | Generated again after a wording correction (fixed) · 0/2 | Card says "generated again", numbers unchanged; Demo Committee was asked to review again |
+### Meetings (every title, agenda item and choice in Thai and English)
+
+| Meeting | State |
+|---|---|
+| M1 | Meeting-day voting open (closes in 3 days) · proxies A-103 and A-107 approved, A-105/A-106 pending · co-owner votes A-110 · personas have not voted |
+| M2 | Advance voting open; meeting day in 9 days |
+| M3 | Secret ballot, open (the Manager sees totals only) |
+| M4 | Published, meeting in 12 days |
+| M5 | Published with short notice (4 days); the Manager's confirmation is in the audit log |
+| M6 | Draft ready to publish, meeting in 3 days (shows the 7-day notice rule) |
+| M7 | Draft · 4 pass-rule types + a land office question |
+| M8 | Voting closed · A-201 online + paper conflict · A-205 paper ballot identity unconfirmed |
+| M9 | Result waiting · approved 2 of 3 (chair, vice chair) · Mark has not answered |
+| M10 | Result **did not pass** · 1 approved, 3 not approved with reasons · the Manager was emailed |
+| M11 | **Tie** 2–2 · คุณกมล generated the result, so may not answer (D022) · waits for the chair |
+| M12 | Correction request (medium, by Mark) waits for the Manager · vice chair approved |
+| M13 | Published · full meeting record (notice, identity method, 1 incident) · approved 3 of 5 |
+| M14 | Second call (reconvened) · no quorum needed · published |
+| M15 | Last year · published and archived |
 
 ### Checkpoint 0
-1. Log in as **Demo Admin** → Admin › Results → in row **DEMO M8**, click **Create PDF files (0/3)**
-   - ✓ Expected: the button changes to 3/3 within about 10 seconds
-2. Log out
+1. Sign in as **Manager** → Building office › Results → row **DEMO M13** → **Create PDF files**
+   - ✓ Expected: the button counts up to all files within about 10 seconds
+2. Sign out
 
 ---
 
-## P1 · Show the client
+## 1. Manager (คุณมานพ)
 
-### F1 · Owner A votes (~8 minutes)
-1. Log in as **Owner A**
-   - ✓ Expected: Thai UI. The Vote page lists meetings by room: A-101, A-102 (owner) and A-103 (proxy)
-2. Open **DEMO M1 · room A-101** → choose "เห็นด้วย" for Q1 → try to choose 3 candidates for Q2
-   - ✓ Expected: Q2 says "choose up to 2", and a 3rd choice is not accepted (cannot be selected, or an error on submit). There is an Abstain choice on each question
-3. Choose 2 candidates → submit
-   - ✓ Expected: "ส่งแล้ว ฉบับที่ 1"
-4. Open M1 · A-101 again → change your answer → submit
-   - ✓ Expected: "ฉบับที่ 2" (the ballot can be changed until voting closes)
-5. Open **M1 · room A-103 (proxy)** → vote
-   - ✓ Expected: works like an own room; the label says proxy
-6. Open **DEMO M4 (secret ballot)** · A-101 → vote
-   - ✓ Expected: the page says it is a secret ballot
-7. Open **DEMO M3**
-   - ✓ Expected: status "ยังไม่เปิด", with the meeting-day opening time; cannot vote
+1. Sign in → **Building office** (overview)
+   - ✓ Expected: "Waiting for you" shows the proxy requests (A-105, A-106), the paper ballots and the conflict of M8, results waiting, and **"ผลที่ไม่ผ่านการอนุมัติ" 1** (M10). The header reads ผู้จัดการ, never "admin"
+2. Results → filter **ไม่ผ่านการอนุมัติ**
+   - ✓ Expected: M10 with the three reasons; no Approve button (the Manager is not a committee member)
+3. Meetings → **M6 (draft, in 3 days)** → Publish
+   - ✓ Expected: the confirm adds a warning that the meeting day is less than 7 days away; publishing works and the audit log records the confirmation. (With the System Admin's strict rule on, the button is replaced by the reason: see 6.)
+4. Voting › Online + paper → **M8 · A-201** → choose a source with a reason; paper ballots → **A-205** → link the voter (คุณกมล)
+   - ✓ Expected: both resolved; Meetings → **Generate result** for M8 now works
+5. Results → **M12** → answer the correction request "No change needed"
+   - ✓ Expected: the request closes; M12 still needs approvals (1 of 3)
+6. Proxies → M1 → approve **A-105**; try a fourth proxy for คุณอนันต์
+   - ✓ Expected: approved; the fourth is refused (at most three rooms per proxy)
+7. Communications → M1 invites
+   - ✓ Expected: Thai/English per recipient; one **failed** row (A-209) to resend; M2 has queued rows
 
-**Checkpoint F1:** log in as Demo Admin → Admin › Voting → M1: the online ballot count goes up by 2 (A-101, A-103). For M4, admin sees only totals, not per-room choices.
+## 2. Office staff (คุณสมศรี)
 
-### F2 · Admin fixes M6 → generates the result → committee approves 2 times → published (~12 minutes)
-1. Log in as **Demo Admin** → Admin › Meetings → in row M6, click **Generate result**
-   - ✓ Expected: refused, because of a pending paper-ballot identity
-2. Admin › Voting › Paper ballots → M6 · room **A-205** → link the voter to **Voter A-205** → save
-   - ✓ Expected: status changes from pending to linked
-3. Admin › Voting › Online + paper rooms → **DEMO M6 · A-201** → **Review / choose source**
-   - ✓ Expected: both ballots shown side by side (online: agree; paper: disagree)
-4. Choose **paper** and give a reason, for example "เจ้าของยืนยันใช้บัตรกระดาษ" → save
-   - ✓ Expected: status "chosen"
-5. Admin › Meetings → **Generate result** for M6 again
-   - ✓ Expected: rooms that voted 4/20, ownership 19% → **quorum not met** (rule: 25%). A-201 counts as paper
-6. Log out → log in as **Demo Committee** → Committee → approve M6
-   - ✓ Expected: "1/2", not yet published
-7. Log out → log in with **Google** (manorin.prajak@gmail.com) → Committee → approve M6
-   - ✓ Expected: published; result emails are queued (Admin › Communications)
-8. Results → M6 → **Create PDF files**, then open **View record (web page)**
-   - ✓ Expected: 3 PDF files. The record shows the quorum, the conflict and the reason chosen, and the SHA-256
-
-**Checkpoint F2:** in Admin › Communications there are `result_approved` emails in Thai/English, matching each owner's language.
-
-### F3 · Owner B reads the English summary (~5 minutes)
-1. Log in as **Owner B**
-   - ✓ Expected: English UI (the profile language is en)
-2. Summary → the result of the newest meeting (M6 if F2 is done, otherwise M9)
-   - ✓ Expected: English table, with the note "If it differs from the Thai version, the Thai version prevails" at the top
-   - ✓ Expected: History lists the newest meeting first; each card shows the meeting date and the publication date; "See all results" opens the archive by fiscal year
-3. Open M8 → download the PDF summary (EN)
-   - ✓ Expected: an English PDF with the same numbers as the page
-4. Click **Verify this reference**
-   - ✓ Expected: the verify page shows the hash matches
-5. Click **ไทย** at the top right
-   - ✓ Expected: the whole page switches to Thai, and the setting persists after signing in again
-
-### F4 · System admin + PDPA + approving a new user (~10 minutes)
-1. Log in with **Google** (manorin.prajak@gmail.com) → System › PDPA → edit the notice text (Thai + English) → save
-   - ✓ Expected: the notice version goes up by 1
-2. Open another window (incognito) → log in as **New user**
-   - ✓ Expected: goes to the PDPA screen first. Data pages cannot be opened until it is accepted
-3. Accept
-   - ✓ Expected: goes into the app with pending status (the header shows the email + role)
-4. Back in the admin window → Admin › People → open the New user → set the approval status to approved → save
-   - ✓ Expected: status changes to approved. The Vote page has no rooms yet, because this email is not in the owner register and the snapshot was taken at publish time
-5. Log in as **Owner A** again
-   - ✓ Expected: must accept the new PDPA version (the version changed in step 1)
-
----
-
-## P2 · Check before the client meeting
-
-### F5 · Meeting setup and voting windows
-1. Admin › Meetings → open **M5 (draft)**
-   - ✓ Expected: 4 pass-rule types shown correctly. Question 3 shows the land office flag
-2. Create a new meeting: set the advance window to end **after** the meeting-day start → save
-   - ✓ Expected: validation error about the time order
-3. Fix it → add a multiple-choice question with max_choices = 0
-   - ✓ Expected: validation error
-4. Publish
-   - ✓ Expected: the eligible-voter snapshot includes every room that has an approved owner (see known limits about A-210)
-5. As Owner A, compare M2 (advance window open, can vote) with M3 (cannot vote yet)
-
-### F6 · Excel import, ownership, emails
-Files are in `demo/excel/` (built from the real templates by `npm run demo:excel`). Import in this order under Admin › People › Import:
+1. Sign in
+   - ✓ Expected: menu shows only Overview, People, Ownership, Voting (no Meetings, Results, Committee or Audit); overview cards a staff member cannot open show a count without a link (req_0009)
+2. People › Users
+   - ✓ Expected: read only; no grant or revoke
+3. People › Import → the files in `demo/excel/` (built by `npm run demo:excel`), in this order:
 
 | # | File | Sheet | ✓ Expected |
 |---|---|---|---|
-| 1 | `demo-1-rooms.xlsx` | Rooms | "นำเข้าห้องเสร็จแล้ว" · rooms B-301..B-303 added |
-| 2 | `demo-2-owners.xlsx` | Owners | "นำเข้าเจ้าของเสร็จแล้ว" · 3 new owners · Owner A's phone changes to 0899999999 (upsert by email) |
-| 3 | `demo-3-room-owners.xlsx` | RoomOwners | "นำเข้าห้อง-เจ้าของเสร็จแล้ว" · B-301..B-303 have owners |
-| 4 | `demo-err-rooms-zero-percent.xlsx` | Rooms | Error: row 5 ownership_percent must be greater than 0 · nothing saved |
-| 5 | `demo-err-room-owners-unknown-room.xlsx` | RoomOwners | Error: room "Z-999" not found |
-| 6 | `demo-err-room-owners-unknown-email.xlsx` | RoomOwners | Error: owner email "nobody.missing@example.test" not found |
-| 7 | `demo-err-room-owners-active-owner.xlsx` | RoomOwners | Error: row 5 · room A-101 already has an active owner (Owner A) |
+| 1 | `demo-1-rooms.xlsx` | Rooms | rooms B-301..B-303 added |
+| 2 | `demo-2-owners.xlsx` | Owners | 3 new owners · คุณอนันต์'s phone changes to 0899999999 (upsert by email) |
+| 3 | `demo-3-room-owners.xlsx` | RoomOwners | B-301..B-303 have owners |
+| 4 | `demo-err-rooms-zero-percent.xlsx` | Rooms | error: ownership_percent must be greater than 0 · nothing saved |
+| 5 | `demo-err-room-owners-unknown-room.xlsx` | RoomOwners | error: room "Z-999" not found |
+| 6 | `demo-err-room-owners-unknown-email.xlsx` | RoomOwners | error: owner email not found |
+| 7 | `demo-err-room-owners-active-owner.xlsx` | RoomOwners | error: room A-101 already has an active owner |
 
-Then:
-- Admin › Ownership → check the 4 states:
-  - A-101 active
-  - A-209 ended (old owner) + active (new owner)
-  - A-210 scheduled
-  - A-208 cancelled
-  - ✓ Expected: correct status badges, and a cancelled link cannot be edited
-- Admin › Proxies → M1 → add a proxy from **A-107 → Owner A**
-  - ✓ Expected: error "One proxy can hold at most three rooms per meeting" (Owner A already holds 3: 1 approved + 2 pending)
-- Admin › Communications → M1 invites
-  - ✓ Expected: Thai/English versions per recipient. voter.a110 shows **failed** with an error; resend it
-  - ✓ Expected: a new queued row for M2
+4. Ownership → check A-101 active, A-209 ended + new owner, A-210 scheduled, A-208 cancelled
+   - ✓ Expected: the right badges; a cancelled link cannot be edited
 
-> The importer imports in rooms → owners → room-owners order. Use the error files only after files 1–3. Every file holds a single row, because the importer stops at the first bad row and **keeps the rows before it** (see known limits).
+## 3. Committee and chair
 
-### F7 · Access by role
-| Who | Try | ✓ Expected |
-|---|---|---|
-| Resident | `/admin`, `/committee`, `/vote` | Cannot open admin/committee pages. The Vote page shows no rooms |
-| Demo Admin (not system admin) | `/system` | Cannot open it |
-| Demo Committee | `/admin` | Cannot open it; can open `/committee` and see M7 waiting (1/2) |
-| Demo Committee | Approve M7 | Published (2/2) |
+1. Sign in as **Mark Member** (English) → Committee
+   - ✓ Expected: "5 active committee members. A decision needs a majority of 3". **M9** reads "Approved 2 · Not approved 0 · Needs 3 of 5" with Approve / Do not approve / Request a correction; **M11** says it waits for the chair; **M10** shows "did not pass" with the reasons
+2. Approve **M9**
+   - ✓ Expected: "Result approved and published"; owners are emailed and the PDFs are made
+3. Sign in as **คุณวิไล (vice chair)** → **M12**: already approved (the badge); nothing to do. Try M11
+   - ✓ Expected: already answered; answers cannot change
+4. Sign in as **คุณประพันธ์ (chair)** → **M11**
+   - ✓ Expected: a panel "คะแนนเท่ากัน ท่านในฐานะประธานกรรมการเป็นผู้ชี้ขาด" with "ชี้ขาด: อนุมัติ" / "ชี้ขาด: ไม่อนุมัติ"
+5. Choose **ชี้ขาด: อนุมัติ** → confirm
+   - ✓ Expected: published; the official record says the chair decided (ประธานลงคะแนนชี้ขาด) and keeps n of N
+6. Close early: on **M1**, propose closing with a reason
+   - ✓ Expected: needs 3 of 5; each member answers once
+
+## 4. Owners
+
+**คุณอนันต์ (Thai)**
+1. Vote page
+   - ✓ Expected: Thai. M1 lists A-101, A-102 (owner) and A-103 (proxy); M2 open (advance); M3 secret ballot
+2. M1 · A-101: choose; try a third candidate in agenda 2 → submit → change and submit again
+   - ✓ Expected: at most 2 candidates; "ฉบับที่ 1", then "ฉบับที่ 2"
+
+**Emma English**
+1. Summary
+   - ✓ Expected: English titles and tables; the newest meeting (M14) is shown; M13 in the history; "All results" lists M15
+2. M13 → "What this means" tips on the deciding column; download the English PDF; **Verify this reference**
+   - ✓ Expected: the tip explains the base; the hash matches
+
+**คุณชัยวัฒน์ and คุณชลธิชา (co-owner)**
+1. คุณชัยวัฒน์ → Vote → M1 · A-110
+   - ✓ Expected: the co-owner votes for this room; the owner can take it back until the co-owner votes
+2. คุณชลธิชา → Vote
+   - ✓ Expected: M1 · A-110 is open for her
+
+**Peter Proxy (external, English)** → Vote → M1 · A-107. **คุณรัตนา (resident)** → Results only, no Vote rooms. **คุณนภา (new user)** → PDPA screen first, then "waiting for approval"; the Manager approves her in People.
+
+## 5. Auditor (Audrey, English)
+
+1. Audit
+   - ✓ Expected: read only. Published results with "Approved by 3 of 5 members (needed 3)" (M11: "Decided by the chair's deciding vote" after step 3.5); correction requests (M12); the activity log in words, including the System Admin's past temporary access
+
+## 6. System Admin
+
+1. Sign in as **System Admin (Demo)** → try **Building office**
+   - ✓ Expected: denied: the role gives no building rights
+2. System → **Temporary access**: reason "Check the M8 conflict", 1 hour → Open
+   - ✓ Expected: a notice on every page; Building office, Committee and Audit open **read only** (saving anything fails); the Manager's overview and Audit show the banner with the reason
+3. **End access now**
+   - ✓ Expected: closed again; start and end are in the audit log
+4. System → **Meeting notice period** → turn strict on → save; then as the Manager open M6 (if not published yet)
+   - ✓ Expected: no Publish button, the reason instead
+5. System › Privacy → change the notice text → save; then sign in as any owner
+   - ✓ Expected: the new version must be accepted again
 
 ---
 
-## P3 · Already covered by CI (no need to show again)
-- `vote-flow.spec`: owner/proxy voting, editing a ballot, voting closed
-- `admin/*.spec` (one per flow): meeting CRUD/publish, paper ballots, conflicts, results/approvals, communications, documents, ownership
-- `role-access.spec`, `privacy.spec`, `language.spec`, `table-search.spec`, `app-shell.spec`
-- `demo-seed.spec` (new): checks that the seed matches this script (20 rooms = 100%, M6/M7/M8/M10 states, emails th/en + failed, login buttons, consent)
-- pgTAP: ballot secrecy, committee approvals, proxy limit, result documents/PDF, owner language
-- Vitest: pass rules / quorum, message translation
+## Already covered by CI (no need to show)
+- `demo-seed.spec`: this data and the role matrix for every persona
+- `committee-majority`, `system-access`, `notice-period`, `vote-flow`, `role-access`, `privacy`, `language`, `table-search`, `audit-page`, `app-shell`, `admin/*` specs
+- pgTAP: committee majority and casting vote, System Admin apart, notice period, function grants, ballot secrecy, proxy limit, result documents
+- Vitest: pass rules and quorum, overview counts, translations
 
 ## Known limits
-- Meeting times count from when the seed runs. Run `--reset` again before every demo; it wipes the whole local database.
-- The RoomOwners/Owners Excel import stops at the first bad row, and the rows before it are already saved (no whole-file rollback).
-- A room with a scheduled ownership transfer (A-210: current owner has an end date, buyer starts next month) **drops out of the snapshot** when a meeting is published through the app, because publishing uses only links with no end date. The seeded meetings include A-210. This should go to the backlog.
-- Before running the e2e tests on this machine, run `npx supabase db reset` (without the seed). The demo data with `--consent` turns the PDPA screen on, so the tests cannot get past the consent page.
-- Some expected results in F1 step 2, F2 steps 2–4, F4 and F5 come from reading the code; the parts tested on screen are the states of all 10 meetings, the login buttons, the PDPA screen, conflict page M6, the results page, the owner summary, and creating PDFs for M8. If a step differs from what you see, write it down and send it to me.
-- Documents in the registry (proxy A-103, A-201 title deed) are metadata only; there is no real file at the path.
-- Emails are not actually sent (`example.test` domain); invite rows have a sent status for display only.
-- Admin pages still show dates in English format.
-- On a phone on the same Wi-Fi, open `http://<PC IP>:3000` and use the demo persona buttons; sign-in now returns to the PC's IP. **Sign in with Google does not work from a phone over a LAN IP**, because Google accepts only localhost or https addresses as redirect targets. To test Google on a real phone, use a temporary https tunnel or a preview deployment.
-- The bypass buttons appear only on localhost/LAN. `next start` additionally needs `ENABLE_LOCAL_AUTH_BYPASS=1` and a local Supabase URL.
+- Times count from when the seed runs. Run `--reset` before each demo; it wipes the local database.
+- M11's tie relies on the fifth member having generated the result (seeded so; in the app only the Manager generates results).
+- The Excel importer stops at the first bad row and keeps the rows before it.
+- A room with a scheduled ownership transfer (A-210) drops out of the voter list when a meeting is published through the app (publishing uses links with no end date).
+- Documents in the registry (proxy A-103, A-201 title deed) are metadata only; there is no file at the path.
+- Emails are not sent (`example.test`); invite rows show a sent status for display only.
+- Temporary access does not open files in Storage (private documents).
+- Before running the e2e tests on this machine, run `npx supabase db reset` without the seed (`--consent` turns the PDPA screen on).
+- On a phone on the same Wi-Fi, open `http://<PC IP>:3000` and use the demo buttons; **Sign in with Google does not work over a LAN IP**.
+- The demo buttons appear only on localhost/LAN; `next start` also needs `ENABLE_LOCAL_AUTH_BYPASS=1` and a local Supabase URL.

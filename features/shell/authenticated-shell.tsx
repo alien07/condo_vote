@@ -99,7 +99,7 @@ export async function AuthenticatedShell({ children }: AuthenticatedShellProps) 
           }}
           isAdmin={opensAdmin}
           isAuditor={isAdmin || roles.includes("auditor") || systemRead}
-          isCommittee={roles.includes("committee") || systemRead}
+          isCommittee={roles.includes("committee") || isAdmin || systemRead}
           isSystemAdmin={roles.includes("system_admin")}
           canVote={access.canVote}
           canViewResults={access.canViewResults}
