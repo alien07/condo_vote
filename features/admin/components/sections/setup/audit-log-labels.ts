@@ -21,6 +21,7 @@ const GROUP_BY_PREFIX: Record<string, AuditActionGroup> = {
   result_snapshot: "results",
   result_documents: "results",
   result: "results",
+  committee: "results",
   app_settings: "settings",
   privacy_settings: "settings",
   document: "settings",

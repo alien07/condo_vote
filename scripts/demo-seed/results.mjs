@@ -62,11 +62,14 @@ export async function approve(session, snapshotId, notes) {
 
 // Oldest first, so publication times follow the meetings. The owner summary
 // opens on the newest meeting (M9) and lists the history by meeting date.
+// The demo committee has 2 active members, so a majority is 2 (D027).
 export const m10 = await generateResult(meetingIds.M10);
 await approve(committeeSession, m10, null);
+await approve(sysSession, m10, null);
 
 export const m9 = await generateResult(meetingIds.M9);
 await approve(committeeSession, m9, null);
+await approve(sysSession, m9, null);
 
 export const m7 = await generateResult(meetingIds.M7);
 await approve(committeeSession, m7, "ตรวจแล้วถูกต้อง (คนที่ 1)");
@@ -96,11 +99,13 @@ export async function requestCorrection(snapshotId, category, reason) {
 // M11: nobody has approved yet.
 await generateResult(meetingIds.M11);
 
-// M12: a medium correction is open. Demo Committee's approval completes the
-// count (1 of 1) but the result waits; Demo Admin answers "No change needed"
-// in Admin > Results to publish it.
+// M12: a medium correction is open. The System Admin (a member) approved;
+// Demo Committee's approval completes the count (2 of 2) but the result
+// waits; Demo Admin answers "No change needed" in Admin > Results to
+// publish it.
 export const m12 = await generateResult(meetingIds.M12);
 await requestCorrection(m12, "room_data", "อัตราส่วนกรรมสิทธิ์ห้อง A-104 ไม่ตรงกับหนังสือรับรอง (ข้อมูลทดสอบ)");
+await approve(sysSession, m12, null);
 
 // M13: agenda 1 had a typo; after the correction the admin fixed the
 // wording and generated the result again, so approvals start from 0.

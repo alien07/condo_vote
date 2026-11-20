@@ -1,3 +1,4 @@
+import type { ResultDecision } from "@/features/results/committee-service";
 import type { createClient } from "@/lib/supabase/server";
 
 type SupabaseServerClient = Awaited<ReturnType<typeof createClient>>;
@@ -8,6 +9,7 @@ export async function fetchResultsData(supabase: SupabaseServerClient) {
     committeeApprovalsResult,
     pendingManualBallotsResult,
     resultPublicationsResult,
+    resultDecisionsResult,
   ] = await Promise.all([
     supabase
       .from("result_snapshots")
@@ -28,7 +30,9 @@ export async function fetchResultsData(supabase: SupabaseServerClient) {
       .order("imported_at", { ascending: false }),
     supabase
       .from("result_publications")
-      .select("meeting_id, result_snapshot_id, approvals_count, published_at"),
+      .select("meeting_id, result_snapshot_id, approvals_count, published_at, decided_by_casting_vote"),
+    // n of N, objections and "did not pass" per unpublished result (D027).
+    supabase.rpc("result_decisions"),
   ]);
 
   if (resultSnapshotsResult.error) {
@@ -47,7 +51,12 @@ export async function fetchResultsData(supabase: SupabaseServerClient) {
     throw resultPublicationsResult.error;
   }
 
+  if (resultDecisionsResult.error) {
+    throw resultDecisionsResult.error;
+  }
+
   return {
+    resultDecisions: (resultDecisionsResult.data ?? []) as unknown as ResultDecision[],
     resultSnapshots: resultSnapshotsResult.data,
     committeeApprovals: committeeApprovalsResult.data,
     pendingManualBallots: pendingManualBallotsResult.data,

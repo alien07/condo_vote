@@ -290,6 +290,11 @@ export type CommitteeOverview = {
   }>;
 };
 
+/** result_decisions (0046): the committee's decision on each unpublished result. */
+export type ResultDecision = CommitteeTally & {
+  objection_list: Array<{ name: string | null; reason: string; objected_at: string }>;
+};
+
 export async function getCommitteeOverview(supabase: Client) {
   const { data, error } = await supabase.rpc("committee_overview");
 

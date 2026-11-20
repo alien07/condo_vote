@@ -48,7 +48,7 @@ Types are the TypeScript types the app sees: `string` also covers `uuid`, `text`
 | [result_correction_requests](#result_correction_requests) | 16 |  |
 | [result_documents](#result_documents) | 9 | Master PDF files of published results (D021). |
 | [result_objections](#result_objections) | 6 |  |
-| [result_publications](#result_publications) | 5 | Published result per meeting, written when approvals reach the minimum. |
+| [result_publications](#result_publications) | 9 | Published result per meeting, written when approvals reach the minimum. |
 | [result_snapshots](#result_snapshots) | 6 | Calculated result payloads for a meeting before/after approval. |
 | [room_owners](#room_owners) | 10 | Links owners to rooms with effective dates, current/scheduled/ended/cancelled state, and ownership history. |
 | [rooms](#rooms) | 9 | Master data for condominium units. Used as the base voting right because one room equals one vote. |
@@ -584,9 +584,13 @@ Published result per meeting, written when approvals reach the minimum. More in 
 | Column | Type | Null | Default | FK |
 | --- | --- | :---: | :---: | --- |
 | `approvals_count` | `number` |  |  |  |
+| `committee_members` | `number` | null |  |  |
+| `decided_by_casting_vote` | `boolean` |  | default |  |
 | `id` | `string` |  | default |  |
 | `meeting_id` | `string` |  |  | [meetings.id](#meetings) |
+| `objections_count` | `number` | null |  |  |
 | `published_at` | `string` |  | default |  |
+| `required_approvals` | `number` | null |  |  |
 | `result_snapshot_id` | `string` |  |  | [result_snapshots.id](#result_snapshots) |
 
 ## result_snapshots
@@ -705,6 +709,7 @@ Called with `supabase.rpc(name, args)`. Rules and permissions: [rls-policies.md]
 | `raise_correction_level` | `p_legal_reference?: string, p_level: string, p_reason: string, p_request_id: string` | `undefined` |
 | `request_result_correction` | `p_category: string, p_legal_reference?: string, p_reason: string, p_result_snapshot_id: string` | `Json` |
 | `resolve_vote_source_conflict` | `p_chosen_source: string, p_conflict_remark: string, p_manual_ballot_id: string, p_meeting_id: string, p_online_ballot_id: string, p_room_id: string` | `Json` |
+| `result_decisions` |  | `Json` |
 | `result_has_high_correction` | `p_meeting_id: string` | `boolean` |
 | `result_required_approvals` | `p_meeting_id: string` | `number` |
 | `room_owner_profile_id` | `p_room_id: string` | `string` |

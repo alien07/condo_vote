@@ -3,7 +3,7 @@ import type { Page } from "@playwright/test";
 import { createHash } from "node:crypto";
 import { expect } from "@playwright/test";
 import { confirmInApp } from "../../confirm-dialog";
-import { demoAdminEmail, gotoWithRetry } from "../admin-helpers";
+import { demoAdminEmail, gotoWithRetry, joinCommittee } from "../admin-helpers";
 import type { AfterIdentityConflicts } from "./identity-conflicts";
 
 export async function results(page: Page, ctx: AfterIdentityConflicts) {
@@ -95,11 +95,16 @@ export async function results(page: Page, ctx: AfterIdentityConflicts) {
     .eq("title", meetingTitle)
     .single();
   const resultsUrl = `${activeAppOrigin}/admin/results?meeting=${generatedMeeting!.id}`;
+  // Only active committee members approve (D027): the demo admin joins the
+  // committee of one for this step, so a majority is 1.
+  const leaveCommittee = await joinCommittee(supabase, adminProfile!.id, { name: "Demo approving member" });
+
+  try {
   await gotoWithRetry(page, resultsUrl, { waitUntil: "commit" });
   const resultRow = page.getByRole("row").filter({ hasText: meetingTitle });
   await expect(
     resultRow.getByRole("cell", {
-      name: "pending (0/1 approvals)",
+      name: "pending (0/1 approvals, committee of 1)",
       exact: true,
     }),
   ).toBeVisible();
@@ -124,6 +129,9 @@ export async function results(page: Page, ctx: AfterIdentityConflicts) {
       .filter({ hasText: meetingTitle })
       .getByRole("cell", { name: "approved", exact: true }),
   ).toBeVisible({ timeout: 15_000 });
+  } finally {
+    await leaveCommittee();
+  }
   // D019: both result documents show the numbers of the published snapshot.
   const persistedMeetingId = persistedMeetingResult.data!.id;
   const [publicationResult, eligibleResult] = await Promise.all([

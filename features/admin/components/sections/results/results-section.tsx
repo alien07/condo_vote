@@ -25,6 +25,8 @@ type ResultsSectionProps = Pick<
   Pick<
     SharedAdminState,
     "approvalCountBySnapshotId"
+    | "decisionBySnapshotId"
+    | "castingDecidedSnapshotIds"
     | "approvedMeetingIds"
     | "approvedResultSnapshotIds"
     | "lockedMeetingIds"
@@ -36,6 +38,8 @@ type ResultsSectionProps = Pick<
     | "focusedResultSnapshotId"
     | "resultFilters"
   > & {
+  /** An active committee member: approve here as well as on /committee (D027). */
+  canApproveResults: boolean;
   hidden: boolean;
 };
 
@@ -43,6 +47,9 @@ export async function ResultsSection({
   approvalCountBySnapshotId,
   approvedMeetingIds,
   approvedResultSnapshotIds,
+  canApproveResults,
+  castingDecidedSnapshotIds,
+  decisionBySnapshotId,
   lockedMeetingIds,
   drawer,
   focusedResultSnapshotId,
@@ -92,7 +99,9 @@ export async function ResultsSection({
     const generatedQuery = resultTableFilters.generated.trim();
     const approvalStatus = approvedResultSnapshotIds.has(snapshot.id)
       ? "approved"
-      : "pending";
+      : decisionBySnapshotId.get(snapshot.id)?.status === "not_passed"
+        ? "not_passed"
+        : "pending";
     const matchesMeeting = meetingId ? snapshot.meeting_id === meetingId : true;
     const matchesGenerated = generatedQuery
       ? snapshot.generated_at.slice(0, 10) === generatedQuery
@@ -189,17 +198,25 @@ export async function ResultsSection({
     const selected =
       drawer?.mode === "edit" && drawer.type === "result_approval" && drawer.id === snapshot.id;
 
+    const decision = decisionBySnapshotId.get(snapshot.id) ?? null;
+
     return {
       snapshot,
       approved,
       approvalCount,
+      decision,
       // Master PDF files (D021) are made in the background after
       // publication; the button makes any that are missing.
       pdfFiles: snapshot.result_documents ?? [],
       generatedLabel: formatDateTimeIn(locale, snapshot.generated_at),
       highlighted: selected || focusedResultSnapshotId === snapshot.id,
       locked: (meetingApproved && !approved) || lockedByOther,
-      canApprove: !meetingApproved && !lockedByOther && pendingManualCount === 0,
+      canApprove:
+        canApproveResults &&
+        !meetingApproved &&
+        !lockedByOther &&
+        pendingManualCount === 0 &&
+        (decision?.status ?? "open") === "open",
       older: latestByMeeting.get(snapshot.meeting_id) !== snapshot.generated_at,
       pendingManualCount,
       requiredApprovals: snapshot.meetings?.required_approvals ?? 1,
@@ -223,12 +240,40 @@ export async function ResultsSection({
       ) : null}
     </div>
   );
+  // n of N among active members, and the decision (D027).
   const approvalBadge = (row: Row) =>
     row.approved ? (
-      <span className={`${badge} bg-emerald-100 text-emerald-800`}>{s.results.approved}</span>
+      <span className={`${badge} bg-emerald-100 text-emerald-800`}>
+        {s.results.approved}
+        {castingDecidedSnapshotIds.has(row.snapshot.id) ? ` · ${s.results.castingVote}` : null}
+      </span>
+    ) : row.decision?.status === "not_passed" ? (
+      <span className="grid gap-1" data-result-not-passed>
+        <span className={`${badge} w-fit bg-[var(--danger-surface)] text-[var(--danger)]`}>
+          {fill(s.results.notPassed, {
+            approvals: row.decision.approvals,
+            objections: row.decision.objections,
+          })}
+        </span>
+        {row.decision.objection_list.map((objection, index) => (
+          <span className="text-xs text-[var(--muted)] [overflow-wrap:anywhere]" key={index}>
+            {fill(s.results.objectionReason, { name: objection.name ?? "-", reason: objection.reason })}
+          </span>
+        ))}
+      </span>
+    ) : row.decision?.status === "tie" ? (
+      <span className={`${badge} bg-amber-100 text-amber-900`} data-result-tie>
+        {s.results.tied}
+      </span>
     ) : (
       <span className={`${badge} bg-amber-100 text-amber-900`}>
-        {fill(s.results.pending, { count: row.approvalCount, required: row.requiredApprovals })}
+        {row.decision
+          ? fill(s.results.pendingOfMembers, {
+              count: row.decision.approvals,
+              required: row.decision.required,
+              members: row.decision.members,
+            })
+          : fill(s.results.pending, { count: row.approvalCount, required: row.requiredApprovals })}
       </span>
     );
   const turnoutBlock = (row: Row) => (
@@ -318,6 +363,7 @@ export async function ResultsSection({
               <option value="all">{s.results.allApprovals}</option>
               <option value="approved">{s.results.approvedOption}</option>
               <option value="pending">{s.results.pendingOption}</option>
+              <option value="not_passed">{s.results.notPassedOption}</option>
             </select>
           </label>
           <div className="flex flex-wrap items-end justify-center gap-2 md:col-span-2">

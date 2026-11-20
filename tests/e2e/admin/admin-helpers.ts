@@ -105,3 +105,44 @@ export async function chooseSearchOption(scope: Locator, name: string, text: str
   await ((await exact.count()) > 0 ? exact.first() : scope.locator('[role="option"]').first()).click();
   await expect(scope.locator(`input[type="hidden"][name="${name}"]`)).not.toHaveValue("");
 }
+
+/**
+ * Make a profile an active committee member for one step (D027: only active
+ * members approve or object; the majority counts them). Returns the undo.
+ */
+export async function joinCommittee(
+  supabase: ReturnType<typeof createClient<Database>>,
+  profileId: string,
+  options: { name?: string; position?: string } = {},
+) {
+  const { data: hadRole } = await supabase
+    .from("app_roles")
+    .select("id")
+    .eq("profile_id", profileId)
+    .eq("role", "committee")
+    .maybeSingle();
+
+  if (!hadRole) {
+    expect((await supabase.from("app_roles").insert({ profile_id: profileId, role: "committee" })).error).toBeNull();
+  }
+
+  const { data: member, error } = await supabase
+    .from("committee_members")
+    .insert({
+      profile_id: profileId,
+      full_name: options.name ?? "E2E committee member",
+      position_code: options.position ?? "member",
+    })
+    .select("id")
+    .single();
+
+  expect(error).toBeNull();
+
+  return async () => {
+    await supabase.from("committee_members").delete().eq("id", member!.id);
+
+    if (!hadRole) {
+      await supabase.from("app_roles").delete().eq("profile_id", profileId).eq("role", "committee");
+    }
+  };
+}

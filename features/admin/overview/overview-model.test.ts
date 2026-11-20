@@ -97,8 +97,14 @@ describe("attentionCounts", () => {
         { id: "s1", meeting_id: "m1", generated_at: at(-3) },
         { id: "s2", meeting_id: "m1", generated_at: at(-2) },
         { id: "s3", meeting_id: "m2", generated_at: at(-1) },
+        { id: "s4", meeting_id: "m3", generated_at: at(-1) },
       ],
       resultPublications: [{ meeting_id: "m2" }],
+      // m3 did not pass (D027): its own card, not "waiting for approval".
+      resultDecisions: [
+        { meeting_id: "m1", status: "open" },
+        { meeting_id: "m3", status: "not_passed" },
+      ],
       pendingManualBallots: [{ id: "p1" }],
       onlineBallots: [
         { meeting_id: "m1", room_id: "r1" },
@@ -117,6 +123,7 @@ describe("attentionCounts", () => {
       pendingAccounts: 1,
       proxyRequests: 2,
       pendingResults: 1,
+      notPassedResults: 1,
       paperIdentity: 1,
       conflicts: 1,
       englishDrafts: null,

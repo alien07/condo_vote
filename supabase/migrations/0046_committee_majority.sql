@@ -987,3 +987,54 @@ $$;
 
 revoke all on function public.result_decisions() from public, anon;
 grant execute on function public.result_decisions() to authenticated;
+
+-- n of N at the moment of publishing (D027): the committee changes later,
+-- so the record keeps how many members there were and how many were needed.
+-- Null on results published before 0046.
+alter table public.result_publications
+  add column committee_members integer check (committee_members is null or committee_members >= 0),
+  add column required_approvals integer check (required_approvals is null or required_approvals >= 0),
+  add column objections_count integer check (objections_count is null or objections_count >= 0),
+  add column decided_by_casting_vote boolean not null default false;
+
+create or replace function public.publish_result_if_ready(p_result_snapshot_id uuid, p_actor uuid)
+returns boolean
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_meeting_id uuid;
+  v_count integer;
+  v_tally jsonb;
+begin
+  select meeting_id into v_meeting_id from public.result_snapshots where id = p_result_snapshot_id;
+
+  if v_meeting_id is null
+     or exists (select 1 from public.result_publications where meeting_id = v_meeting_id)
+     or exists (select 1 from public.result_correction_requests where meeting_id = v_meeting_id and status = 'open') then
+    return false;
+  end if;
+
+  select count(*) into v_count from public.committee_approvals where result_snapshot_id = p_result_snapshot_id;
+  v_tally := public.committee_tally('result', p_result_snapshot_id);
+
+  insert into public.result_publications (
+    meeting_id, result_snapshot_id, approvals_count,
+    committee_members, required_approvals, objections_count, decided_by_casting_vote)
+  values (
+    v_meeting_id, p_result_snapshot_id, v_count,
+    (v_tally->>'members')::int, (v_tally->>'required')::int, (v_tally->>'objections')::int,
+    v_tally->'casting_vote' is not null and jsonb_typeof(v_tally->'casting_vote') = 'object');
+  perform public.queue_result_approved_emails(v_meeting_id);
+
+  insert into public.audit_logs (action, actor_profile_id, entity_type, entity_id, details_json)
+  values ('result_snapshot.published', p_actor, 'result_snapshot', p_result_snapshot_id,
+    jsonb_build_object('meeting_id', v_meeting_id, 'approvals', v_count,
+      'objections', v_tally->'objections', 'required_approvals', v_tally->'required',
+      'members', v_tally->'members', 'casting_vote', v_tally->'casting_vote'));
+
+  return true;
+end;
+$$;
+revoke all on function public.publish_result_if_ready(uuid, uuid) from public, anon, authenticated;

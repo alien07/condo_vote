@@ -1719,23 +1719,35 @@ export type Database = {
       result_publications: {
         Row: {
           approvals_count: number
+          committee_members: number | null
+          decided_by_casting_vote: boolean
           id: string
           meeting_id: string
+          objections_count: number | null
           published_at: string
+          required_approvals: number | null
           result_snapshot_id: string
         }
         Insert: {
           approvals_count: number
+          committee_members?: number | null
+          decided_by_casting_vote?: boolean
           id?: string
           meeting_id: string
+          objections_count?: number | null
           published_at?: string
+          required_approvals?: number | null
           result_snapshot_id: string
         }
         Update: {
           approvals_count?: number
+          committee_members?: number | null
+          decided_by_casting_vote?: boolean
           id?: string
           meeting_id?: string
+          objections_count?: number | null
           published_at?: string
+          required_approvals?: number | null
           result_snapshot_id?: string
         }
         Relationships: [
@@ -2142,6 +2154,7 @@ export type Database = {
         }
         Returns: Json
       }
+      result_decisions: { Args: never; Returns: Json }
       result_has_high_correction: {
         Args: { p_meeting_id: string }
         Returns: boolean

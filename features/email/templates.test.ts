@@ -19,6 +19,7 @@ describe("committee workflow emails", () => {
     for (const name of [
       "close_request",
       "close_request_failed",
+      "result_not_passed",
       "result_correction",
       "result_correction_answered",
       "result_review_again",

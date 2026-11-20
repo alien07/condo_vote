@@ -29,6 +29,13 @@ The system may store:
 - Committee/admin approval is required before results become public.
 - RLS policies must be enabled before production use.
 - Baseline auth RLS policies are documented in [rls-policies.md](rls-policies.md).
+- Database functions: Supabase grants EXECUTE on every new function in
+  `public` to `anon` and `authenticated`, so `revoke ... from public` alone
+  does not hide a function from the API. An internal helper (no permission
+  check of its own, called only from other security definer functions)
+  revokes from `public, anon, authenticated` and is added to
+  `supabase/tests/function_grants.test.sql`. An API function checks the
+  caller itself and grants EXECUTE to `authenticated` only (D027, 0047).
 
 ## Audit Needs
 Track:

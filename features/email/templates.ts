@@ -14,6 +14,8 @@ export type EmailTemplateName =
   // Committee workflow (migration 0030, demo feedback items 10 and 12).
   | "close_request"
   | "close_request_failed"
+  // The committee did not pass a result (D027); sent to the Manager.
+  | "result_not_passed"
   | "result_correction"
   | "result_correction_answered"
   | "result_review_again"
@@ -63,12 +65,24 @@ const templates: Record<EmailTemplateName, Record<Locale, EmailContent>> = {
     th: {
       subject: "คำขอปิดก่อนเวลาไม่ผ่าน: {meetingTitle}",
       body:
-        "คำขอปิดลงคะแนนก่อนเวลาของ {meetingTitle} ไม่ผ่าน เพราะกรรมการที่ยังไม่ตอบมีไม่พอให้ครบจำนวน ลงคะแนนจะปิดตามเวลาเดิม\nดูเหตุผลที่หน้าคณะกรรมการ: {link}",
+        "คำขอปิดลงคะแนนก่อนเวลาของ {meetingTitle} ไม่ผ่าน: กรรมการไม่อนุมัติตามเสียงข้างมาก หรือประธานชี้ขาดไม่อนุมัติ ลงคะแนนจะปิดตามเวลาเดิม\nดูเหตุผลที่หน้าคณะกรรมการ: {link}",
     },
     en: {
       subject: "Request to close early did not pass: {meetingTitle}",
       body:
-        "The request to close voting for {meetingTitle} early did not pass: too few committee members are left to reach the number needed. Voting closes at the set time.\nSee the reasons on the Committee page: {link}",
+        "The request to close voting for {meetingTitle} early did not pass: the committee majority did not approve it, or the chair's deciding vote was against it. Voting closes at the set time.\nSee the reasons on the Committee page: {link}",
+    },
+  },
+  result_not_passed: {
+    th: {
+      subject: "ผลการลงมติไม่ผ่านการอนุมัติ: {meetingTitle}",
+      body:
+        "คณะกรรมการไม่อนุมัติผลการลงมติของ {meetingTitle}\nโปรดตรวจเหตุผลของกรรมการ แก้ข้อมูลที่ผิด แล้วสร้างผลใหม่ที่หน้าผู้ดูแล > ผลการลงมติ: {link}",
+    },
+    en: {
+      subject: "Result did not pass: {meetingTitle}",
+      body:
+        "The committee did not approve the result of {meetingTitle}.\nPlease read the members' reasons, correct what is wrong, and generate the result again in Admin > Results: {link}",
     },
   },
   result_correction: {

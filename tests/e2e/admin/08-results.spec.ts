@@ -11,6 +11,7 @@ import {
   gotoWithRetry,
   chooseSearchOption,
   findUserByEmail,
+  joinCommittee,
 } from "./admin-helpers";
 
 test.describe("@test:e2e @test:auth @test:admin admin demo: results", () => {
@@ -75,7 +76,10 @@ test.describe("@test:e2e @test:auth @test:admin admin demo: results", () => {
     );
 
     expect(roleError).toBeNull();
+    // Only active committee members approve (D027): a committee of one here.
+    const leaveCommittee = await joinCommittee(supabase, profile!.id);
 
+    try {
     const runId = Date.now();
     const meetingTitle = `Result rollout ${runId}`;
     const startsAt = new Date(Date.now() - 60 * 60 * 1000).toISOString();
@@ -257,5 +261,8 @@ test.describe("@test:e2e @test:auth @test:admin admin demo: results", () => {
     await expect(
       page.getByRole("heading", { name: "Verify a result document" }),
     ).toBeVisible();
+    } finally {
+      await leaveCommittee();
+    }
   });
 });

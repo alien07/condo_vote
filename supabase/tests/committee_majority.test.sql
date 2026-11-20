@@ -4,7 +4,7 @@
 -- when there is no chair); a high-level correction still needs everyone.
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(41);
+select plan(43);
 
 \set admin_x '''00000000-0000-4000-8000-0000000001e0'''
 \set c1 '''00000000-0000-4000-8000-0000000001e1'''
@@ -86,6 +86,8 @@ select is(public.approve_result_snapshot(:s_pass, null)->>'published', 'true', '
 reset role;
 select is((select approvals_count from public.result_publications where meeting_id = :m_pass), 3,
   'the publication records three approvals');
+select is((select committee_members || '/' || required_approvals from public.result_publications where meeting_id = :m_pass),
+  '4/3', 'the publication keeps n of N at that moment');
 
 -- Not passed by objections ------------------------------------------------------
 set local role authenticated;
@@ -141,6 +143,8 @@ select is(public.cast_committee_deciding_vote('result', :s_tie, 'approve', 'Chai
 reset role;
 select is((select position_code from public.committee_casting_votes where subject_id = :s_tie), 'chair',
   'the casting vote records the chair''s position');
+select is((select decided_by_casting_vote from public.result_publications where meeting_id = :m_tie), true,
+  'the publication says the chair decided');
 
 -- Separation: whoever generated the result does not answer ------------------------
 set local role authenticated;

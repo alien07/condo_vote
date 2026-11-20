@@ -67,7 +67,7 @@ export async function fetchAuditPublications(supabase: SupabaseServerClient, fil
   const { start, end } = bangkokDayRange(filters.from, filters.to);
   let query = supabase
     .from("result_publications")
-    .select("id, published_at, approvals_count, result_snapshot_id, meeting_id, meetings(title)", { count: "exact" });
+    .select("id, published_at, approvals_count, committee_members, required_approvals, objections_count, decided_by_casting_vote, result_snapshot_id, meeting_id, meetings(title)", { count: "exact" });
 
   if (filters.meeting) query = query.eq("meeting_id", filters.meeting);
   if (start) query = query.gte("published_at", start);
