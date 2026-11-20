@@ -191,6 +191,32 @@ Left over:
 
 ---
 
+## req_0009: office staff hit "no access" from links they can see (status: approved, ready for Code)
+Branch `fix/req-0009-staff-dead-ends`. Found in the chat's role review 2026-11-20 (code on `dev` c6e3715). Server guards are right (D022); the UI shows staff links and forms that only the Manager (`admin`) may use, so staff land on `/?denied=1` or a save fails.
+
+Staff (`staff` without `admin`) may open `/admin`, `/admin/people`, `/admin/people/import`, `/admin/ownership`, `/admin/voting` (`requireOfficeStaff`). Everything else under `/admin` is `requireAdmin`.
+
+Dead ends to fix:
+1. `/admin` overview, "Waiting for you": the "rooms that voted twice" card links to `/admin/voting/conflicts?status=unresolved` (admin only). `app/admin/page.tsx` ~line 121.
+2. `/admin` overview, "Readiness": the meetings card links to `/admin/meetings?tab=meetings` (admin only). ~line 164.
+3. `/admin` overview, "Meetings now": the spotlight links to `/admin/meetings?...&focusMeetingId=` (`features/admin/overview/meeting-spotlight.tsx:91`).
+4. `/admin/voting` paper ballots: link to `/admin/voting/conflicts` (`features/admin/components/sections/voting/manual-votes-section.tsx` ~295).
+5. `/admin/people?tab=users`: staff can open the profile access drawer (`ProfileAccessForm`: default status, approval status, roles, revoke role) but `updateProfileAccessWithState` and `revokeAppRole` need `requireAdmin`, so saving fails. Staff should see the users list read-only (no edit / revoke controls, no drawer in edit mode); keep everything for the Manager.
+
+Do:
+- Decide per link with one helper (e.g. `canOpen(path, roles)` next to `lib/auth/permissions.ts`, or a small route-to-guard map) instead of scattered `isManager` checks, and use it for overview cards, the spotlight, and in-page links. For staff: a card whose target they cannot open is either hidden, or shown without a link (count only, no "→"). Pick one rule and apply it everywhere; for the conflicts count, showing the number without a link is preferred (staff should know paper ballots clash, the Manager resolves them). The spotlight for staff: no link, numbers only.
+- Users tab for staff: read-only as above; if a staff user opens `?drawer=profile&mode=edit` by URL, show the view mode or the denied feedback, not a form that fails.
+- Check the other staff pages (`/admin/people` rooms/owners tabs and import, `/admin/ownership`, `/admin/voting`) for any other link, button, or form posting to a `requireAdmin` action or page, and fix the same way. List what you found in the Result.
+- Do not change server guards or RLS.
+- Tests: extend the existing role-access e2e (or add one) with a staff user: on each staff page, every visible `a[href^="/admin"]` resolves to a page staff may open (no `denied=1`), and the users tab has no edit control. If there is no staff demo user yet, create one in the test setup only (req_0010 redesigns the demo data later).
+
+Acceptance: signed in as staff only, no link or button on `/admin`, `/admin/people` (all tabs), `/admin/people/import`, `/admin/ownership`, `/admin/voting` leads to "no access" or a failing save; the Manager sees exactly what they see today.
+
+### Result
+(Claude Code writes here)
+
+---
+
 ## Before req numbers: demo-feedback #16 and #17 (status: done, PR #64 merged, checked by the chat 2026-11-19)
 Back link on the record page `/record/[snapshotId]` and rename of the two result actions to "ดูบันทึกผล (หน้าเว็บ)" / "View record (web page)" and "ดาวน์โหลด PDF ฉบับทางการ" / "Download official PDF".
 
