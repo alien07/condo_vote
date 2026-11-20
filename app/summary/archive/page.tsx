@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { localized } from "@/lib/i18n/content";
 import { Archive } from "lucide-react";
 import { getSummaryList } from "@/features/summary/data";
 import { requireResultsAccess } from "@/lib/auth/access";
@@ -76,7 +77,7 @@ export default async function ResultArchivePage({ searchParams }: ArchivePagePro
                         className="flex flex-col gap-1 rounded-md border border-[var(--border)] bg-[var(--surface)] px-4 py-3 text-sm hover:border-[var(--primary)] sm:flex-row sm:items-center sm:justify-between"
                         href={`/summary/${item.meetingId}`}
                       >
-                        <span className="font-medium">{item.title ?? t.approvedResult}</span>
+                        <span className="font-medium">{localized(locale, item.title, item.titleEn) ?? t.approvedResult}</span>
                         <span className="text-[var(--muted)]">
                           {item.meetingStartsAt ? t.meetingOn(formatDateIn(locale, item.meetingStartsAt)) : null}
                           {item.meetingStartsAt ? " · " : null}

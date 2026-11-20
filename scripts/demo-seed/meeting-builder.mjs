@@ -1,7 +1,8 @@
 // Meeting builder: questions, presets, default answers, createMeeting().
 
-import { en, db, DAY, at, must, DEMO_PERSONAS } from "./context.mjs";
+import { db, DAY, at, must } from "./context.mjs";
 import {
+  persona,
   personaProfile,
   ROOMS,
   roomRow,
@@ -12,7 +13,19 @@ import {
 
 // ---------------------------------------------------------------- meetings
 
-export const admin = personaProfile.admin;
+export const admin = personaProfile.manager;
+
+/** Thai and English for every demo text (req_0010: no missing English). A
+ * pair [th, en]; a missing English stops the seed. */
+export function bi(value, label) {
+  const [th, english] = Array.isArray(value) ? value : [value, null];
+
+  if (!english) {
+    throw new Error(`English missing for ${label}: ${th}`);
+  }
+
+  return [th, english];
+}
 export const ALL_ROOMS = ROOMS.map(([number]) => number);
 
 /** Deterministic pick per room, so results are the same on every run. */
@@ -26,12 +39,15 @@ export function pick(number, salt, options) {
   return options[hash % options.length];
 }
 
-export const AGREE_DISAGREE = ["เห็นด้วย", "ไม่เห็นด้วย"];
+export const AGREE_DISAGREE = [
+  ["เห็นด้วย", "Agree"],
+  ["ไม่เห็นด้วย", "Disagree"],
+];
 export const STANDARD_QUESTIONS = [
   {
     agenda_no: "1",
-    agenda_title: "งบการเงิน",
-    question_text: "อนุมัติงบการเงินประจำปี 2568",
+    agenda_title: ["งบการเงิน", "Financial statements"],
+    question_text: ["อนุมัติงบการเงินประจำปี 2568", "Approve the 2025 financial statements"],
     question_type: "single_choice",
     required_threshold: "majority_submitted",
     choices: AGREE_DISAGREE,
@@ -40,12 +56,17 @@ export const STANDARD_QUESTIONS = [
   },
   {
     agenda_no: "2",
-    agenda_title: "เลือกตั้งกรรมการ",
-    question_text: "เลือกกรรมการ (เลือกได้ไม่เกิน 2 คน)",
+    agenda_title: ["เลือกตั้งกรรมการ", "Committee election"],
+    question_text: ["เลือกกรรมการ (เลือกได้ไม่เกิน 2 คน)", "Elect committee members (choose up to 2)"],
     question_type: "multiple_choice",
     max_choices: 2,
     required_threshold: "majority_submitted",
-    choices: ["คุณสมชาย", "คุณสมหญิง", "คุณวิชัย", "คุณมาลี"],
+    choices: [
+      ["คุณสมชาย", "Khun Somchai"],
+      ["คุณสมหญิง", "Khun Somying"],
+      ["คุณวิชัย", "Khun Wichai"],
+      ["คุณมาลี", "Khun Malee"],
+    ],
   },
 ];
 
@@ -79,11 +100,12 @@ export const choiceFor = (question, choice) =>
 export const meetingIds = {};
 
 export async function createMeeting(spec) {
+  const [title, titleEn] = bi(spec.title, "meeting title");
   const meeting = await must(
     db
       .from("meetings")
       .insert({
-        title: spec.title,
+        title,
         starts_at: spec.starts_at,
         ends_at: spec.ends_at,
         advance_starts_at: spec.advance_starts_at ?? null,
@@ -93,10 +115,10 @@ export async function createMeeting(spec) {
         meeting_number: spec.meeting_number ?? null,
         fiscal_year: "2569",
         location: "ห้องประชุมชั้น 1 และออนไลน์",
-        title_en: en(spec.title),
-        location_en: en("ห้องประชุมชั้น 1 และออนไลน์"),
+        title_en: titleEn,
+        location_en: "Meeting room, 1st floor, and online",
         english_checked_at: new Date().toISOString(),
-        chairperson_name: DEMO_PERSONAS.find((p) => p.key === "committee").fullName,
+        chairperson_name: persona("chair").fullName,
         quorum_rule: spec.quorum_rule ?? "one_fourth_total_ownership",
         ballot_secrecy: spec.ballot_secrecy ?? "open",
         required_approvals: spec.required_approvals ?? 2,
@@ -108,7 +130,7 @@ export async function createMeeting(spec) {
       })
       .select("id")
       .single(),
-    spec.title,
+    title,
   );
   meetingIds[spec.key] = meeting.id;
 
@@ -116,24 +138,27 @@ export async function createMeeting(spec) {
   const questions = [];
 
   for (const [index, question] of (spec.questions ?? STANDARD_QUESTIONS).entries()) {
+    const [agendaTitle, agendaTitleEn] = bi(question.agenda_title, "agenda title");
+    const [questionText, questionTextEn] = bi(question.question_text, "question");
+    const [legalNote, legalNoteEn] = question.legal_note ? bi(question.legal_note, "legal note") : [null, null];
     const row = await must(
       db
         .from("meeting_questions")
         .insert({
           meeting_id: meeting.id,
           agenda_no: question.agenda_no,
-          agenda_title: question.agenda_title,
-          question_text: question.question_text,
+          agenda_title: agendaTitle,
+          question_text: questionText,
           question_type: question.question_type,
           max_choices: question.max_choices ?? null,
           resolution_type: "ordinary",
           required_threshold: question.required_threshold,
           ...PRESETS[question.required_threshold],
           requires_land_office_registration: question.land_office ?? false,
-          legal_note: question.legal_note ?? null,
-          agenda_title_en: en(question.agenda_title),
-          question_text_en: en(question.question_text),
-          legal_note_en: en(question.legal_note),
+          legal_note: legalNote,
+          agenda_title_en: agendaTitleEn,
+          question_text_en: questionTextEn,
+          legal_note_en: legalNoteEn,
           display_order: index + 1,
           required: true,
           allow_comment: question.allow_comment ?? false,
@@ -145,10 +170,10 @@ export async function createMeeting(spec) {
     await must(
       db.from("meeting_choices").insert(
         [
-          ...question.choices.map((text, order) => ({
+          ...question.choices.map((choice, order) => ({
             question_id: row.id,
-            choice_text: text,
-            choice_text_en: en(text),
+            choice_text: bi(choice, "choice")[0],
+            choice_text_en: bi(choice, "choice")[1],
             display_order: order + 1,
             // A batch insert sends the same columns for every row.
             is_abstain: false,
@@ -171,7 +196,7 @@ export async function createMeeting(spec) {
 
   // Proxies go in while the meeting is a draft; the snapshot is then built
   // like "Publish": the owner's profile per room, an approved proxy wins.
-  const proxyRooms = new Set();
+  const proxyRooms = new Map();
 
   for (const proxy of spec.proxies ?? []) {
     const row = await must(
@@ -181,7 +206,7 @@ export async function createMeeting(spec) {
           meeting_id: meeting.id,
           room_id: roomId[proxy.room],
           owner_id: ownerId[roomRow(proxy.room)[2]],
-          proxy_profile_id: personaProfile.ownerA,
+          proxy_profile_id: proxy.holder ?? personaProfile.ownerTh,
           status: proxy.status,
           reviewed_at: proxy.status === "approved" ? at(-DAY) : null,
           reviewed_by: proxy.status === "approved" ? admin : null,
@@ -192,7 +217,7 @@ export async function createMeeting(spec) {
     );
 
     if (proxy.status === "approved") {
-      proxyRooms.add(proxy.room);
+      proxyRooms.set(proxy.room, proxy.holder ?? personaProfile.ownerTh);
     }
 
     if (proxy.document) {
@@ -222,7 +247,7 @@ export async function createMeeting(spec) {
         ALL_ROOMS.map((number) => {
           const [, percent, email] = roomRow(number);
           const isProxy = proxyRooms.has(number);
-          voterByRoom[number] = isProxy ? personaProfile.ownerA : profileByEmail[email];
+          voterByRoom[number] = isProxy ? proxyRooms.get(number) : profileByEmail[email];
           return {
             meeting_id: meeting.id,
             room_id: roomId[number],

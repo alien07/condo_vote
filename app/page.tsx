@@ -60,7 +60,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
       label: t.committeeTitle,
       description: t.committeeText,
       icon: Stamp,
-      show: roles.includes("committee") || roles.includes("admin"),
+      show: roles.includes("committee") || roles.includes("admin") || roles.includes("system_read"),
     },
     {
       href: "/admin",
@@ -68,7 +68,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
       label: t.adminTitle,
       description: t.adminText,
       icon: Settings,
-      show: roles.includes("admin") || roles.includes("staff"),
+      show: roles.includes("admin") || roles.includes("staff") || roles.includes("system_read"),
     },
     {
       href: "/audit",
@@ -76,7 +76,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
       label: t.auditTitle,
       description: t.auditText,
       icon: ScrollText,
-      show: roles.includes("auditor") || roles.includes("admin"),
+      show: roles.includes("auditor") || roles.includes("admin") || roles.includes("system_read"),
     },
     {
       href: "/system",

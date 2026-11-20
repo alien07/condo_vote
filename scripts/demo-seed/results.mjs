@@ -1,20 +1,27 @@
-// Results, approvals and correction test cases.
+// Results, committee answers (D027) and the other states that need a
+// signed-in person: the co-owner grant and the short-notice confirmation.
 import "./meetings.mjs"; // runs after the previous step
 
-import { db, must, sessionFor, DEMO_SYSTEM_ADMIN, buildResultPayload } from "./context.mjs";
-import { personaEmail, condo } from "./people.mjs";
+import { db, must, sessionFor, DAY, HOUR, at, buildResultPayload } from "./context.mjs";
+import { personaEmail, personaProfile, EXTRA_MEMBERS, roomId } from "./people.mjs";
 import { admin, meetingIds } from "./meeting-builder.mjs";
 
 // ---------------------------------------------------------------- results
 
 console.log("[demo:seed] results ...");
 
-export const adminSession = await sessionFor(personaEmail.admin);
-export const committeeSession = await sessionFor(personaEmail.committee);
-export const sysSession = await sessionFor(DEMO_SYSTEM_ADMIN.email);
+export const managerSession = await sessionFor(personaEmail.manager);
+const memberEmail = Object.fromEntries(EXTRA_MEMBERS.map((member) => [member.key, member.email]));
+export const sessions = {
+  chair: await sessionFor(personaEmail.chair),
+  viceChair: await sessionFor(personaEmail.viceChair),
+  member: await sessionFor(personaEmail.member),
+  member4: await sessionFor(memberEmail.member4),
+  member5: await sessionFor(memberEmail.member5),
+};
 
 /** Same reads and payload as "Generate result" in the admin app. */
-export async function generateResult(meetingId) {
+export async function generateResult(meetingId, generatedBy = admin) {
   const [meeting, questions, eligible, ballots, manualBallots, resolutions, condoRows, incidents] =
     await Promise.all([
       must(db.from("meetings").select("id, title, starts_at, ends_at, status, meeting_number, meeting_type, fiscal_year, location, chairperson_name, quorum_rule, ballot_secrecy, advance_starts_at, advance_ends_at, notice_sent_at, meeting_round, identity_method, recording_reference, traffic_log_reference, title_en, location_en").eq("id", meetingId).single(), "meeting"),
@@ -27,7 +34,7 @@ export async function generateResult(meetingId) {
       must(db.from("meeting_incidents").select("started_at, ended_at, description, action_taken").eq("meeting_id", meetingId).order("started_at"), "incidents"),
     ]);
   const onlineTally = await must(
-    adminSession.rpc("meeting_online_tally", { p_meeting_id: meetingId }),
+    managerSession.rpc("meeting_online_tally", { p_meeting_id: meetingId }),
     "online tally",
   );
   const { payload } = buildResultPayload({
@@ -45,7 +52,7 @@ export async function generateResult(meetingId) {
   const snapshot = await must(
     db
       .from("result_snapshots")
-      .insert({ meeting_id: meetingId, generated_by: admin, payload_json: payload })
+      .insert({ meeting_id: meetingId, generated_by: generatedBy, payload_json: payload })
       .select("id")
       .single(),
     "result snapshot",
@@ -53,77 +60,113 @@ export async function generateResult(meetingId) {
   return snapshot.id;
 }
 
-export async function approve(session, snapshotId, notes) {
+export async function approve(who, snapshotId, notes = null) {
   await must(
-    session.rpc("approve_result_snapshot", { p_result_snapshot_id: snapshotId, p_notes: notes }),
-    "approve result",
+    sessions[who].rpc("approve_result_snapshot", { p_result_snapshot_id: snapshotId, p_notes: notes ?? "" }),
+    `approve result (${who})`,
   );
 }
 
-// Oldest first, so publication times follow the meetings. The owner summary
-// opens on the newest meeting (M9) and lists the history by meeting date.
-// The demo committee has 2 active members, so a majority is 2 (D027).
-export const m10 = await generateResult(meetingIds.M10);
-await approve(committeeSession, m10, null);
-await approve(sysSession, m10, null);
+export async function object(who, snapshotId, reason) {
+  await must(
+    sessions[who].rpc("object_result_snapshot", { p_result_snapshot_id: snapshotId, p_reason: reason }),
+    `object to result (${who})`,
+  );
+}
 
+// Oldest first, so publication times follow the meetings. Published results
+// need 3 of the 5 members (D027).
+export const m15 = await generateResult(meetingIds.M15);
+for (const who of ["chair", "viceChair", "member4"]) await approve(who, m15);
+await must(db.from("meetings").update({ status: "archived" }).eq("id", meetingIds.M15), "archive M15");
+
+export const m13 = await generateResult(meetingIds.M13);
+await approve("chair", m13, "ตรวจแล้วถูกต้อง");
+await approve("viceChair", m13);
+await approve("member4", m13, "ตรวจสอบกับบัตรแล้ว");
+
+export const m14 = await generateResult(meetingIds.M14);
+for (const who of ["chair", "viceChair", "member4"]) await approve(who, m14);
+
+// M9: 2 of 3; Mark Member's approval publishes it.
 export const m9 = await generateResult(meetingIds.M9);
-await approve(committeeSession, m9, null);
-await approve(sysSession, m9, null);
+await approve("chair", m9, "ตรวจแล้ว");
+await approve("viceChair", m9);
 
-export const m7 = await generateResult(meetingIds.M7);
-await approve(committeeSession, m7, "ตรวจแล้วถูกต้อง (คนที่ 1)");
+// M10: not passed. The Manager gets the email and sees the reasons.
+export const m10 = await generateResult(meetingIds.M10);
+await approve("chair", m10);
+await object("viceChair", m10, "จำนวนห้องที่ลงคะแนนไม่ตรงกับทะเบียนผู้เข้าประชุม (ข้อมูลทดสอบ)");
+await object("member4", m10, "บัตรกระดาษห้อง A-205 ยังไม่ได้นับ (ข้อมูลทดสอบ)");
+await object("member5", m10, "ขอให้ตรวจอัตราส่วนกรรมสิทธิ์อีกครั้ง (ข้อมูลทดสอบ)");
 
-export const m8 = await generateResult(meetingIds.M8);
-await approve(committeeSession, m8, "ตรวจแล้วถูกต้อง");
-await approve(sysSession, m8, "อนุมัติเผยแพร่");
+// M11: a tie. The fifth member generated it (D022), so may not answer.
+export const m11 = await generateResult(meetingIds.M11, personaProfile.member5);
+await approve("viceChair", m11);
+await approve("member4", m11);
+await object("chair", m11, "ตัวเลือกวาระที่ 2 พิมพ์ไม่ตรงกับหนังสือเชิญ (ข้อมูลทดสอบ)");
+await object("member", m11, "Quorum figure looks wrong to me (test data).");
 
-await must(db.from("meetings").update({ status: "archived" }).eq("id", meetingIds.M10), "archive M10");
-
-// Correction test cases (review 2026-11-15). The requester is the System
-// Admin (Google), so the Demo Committee can still act and the Demo Admin
-// can answer (nobody answers their own request).
-export async function requestCorrection(snapshotId, category, reason) {
-  const result = await must(
-    sysSession.rpc("request_result_correction", {
-      p_result_snapshot_id: snapshotId,
-      p_category: category,
-      p_reason: reason,
-      p_legal_reference: null,
-    }),
-    "correction request",
-  );
-  return result.request_id;
-}
-
-// M11: nobody has approved yet.
-await generateResult(meetingIds.M11);
-
-// M12: a medium correction is open. The System Admin (a member) approved;
-// Demo Committee's approval completes the count (2 of 2) but the result
-// waits; Demo Admin answers "No change needed" in Admin > Results to
-// publish it.
+// M12: a medium correction request by Mark Member waits for the Manager;
+// the vice chair approved already.
 export const m12 = await generateResult(meetingIds.M12);
-await requestCorrection(m12, "room_data", "อัตราส่วนกรรมสิทธิ์ห้อง A-104 ไม่ตรงกับหนังสือรับรอง (ข้อมูลทดสอบ)");
-await approve(sysSession, m12, null);
-
-// M13: agenda 1 had a typo; after the correction the admin fixed the
-// wording and generated the result again, so approvals start from 0.
-export const m13Agenda = await must(
-  db.from("meeting_questions").select("id, agenda_title").eq("meeting_id", meetingIds.M13).order("display_order").limit(1).single(),
-  "M13 agenda",
-);
-await must(db.from("meeting_questions").update({ agenda_title: "งบการเงน" }).eq("id", m13Agenda.id), "M13 typo");
-export const m13Old = await generateResult(meetingIds.M13);
-await approve(committeeSession, m13Old, "ตรวจแล้ว");
-export const m13Request = await requestCorrection(m13Old, "wording", "วาระที่ 1 ชื่อวาระพิมพ์ผิด: งบการเงน");
-await must(db.from("meeting_questions").update({ agenda_title: m13Agenda.agenda_title }).eq("id", m13Agenda.id), "M13 fix");
-await generateResult(meetingIds.M13);
+await approve("viceChair", m12);
 await must(
-  adminSession.rpc("answer_correction_request", {
-    p_request_id: m13Request,
-    p_status: "fixed",
-    p_answer: "แก้ชื่อวาระแล้ว และสร้างผลใหม่",
+  sessions.member.rpc("request_result_correction", {
+    p_result_snapshot_id: m12,
+    p_category: "room_data",
+    p_reason: "Ownership share of room A-104 differs from the title deed (test data).",
+    p_legal_reference: null,
   }),
-  "M13 answer",
+  "correction request",
+);
+
+// ---------------------------------------------------------------- other states
+
+// M1: the owner of A-110 lets the co-owner vote (Vote page, D022).
+const ownerCoSession = await sessionFor(personaEmail.ownerCo);
+await must(
+  ownerCoSession.rpc("grant_co_owner_vote", {
+    p_meeting_id: meetingIds.M1,
+    p_room_id: roomId["A-110"],
+    p_co_owner_email: personaEmail.coOwner,
+  }),
+  "co-owner vote",
+);
+
+// M5: published with short notice; the Manager confirmed the warning (D027 C).
+await must(
+  db.from("audit_logs").insert({
+    action: "meeting.published",
+    actor_profile_id: admin,
+    entity_type: "meeting",
+    entity_id: meetingIds.M5,
+    details_json: { eligible_voter_count: 20, short_notice_confirmed: true, days_left: 4, notice_days: 7 },
+    created_at: at(-HOUR),
+  }),
+  "short notice audit",
+);
+
+// A past temporary access by the demo System Admin, ended early (D027 B).
+const sysAccess = await must(
+  db
+    .from("system_read_access")
+    .insert({
+      profile_id: personaProfile.systemAdmin,
+      reason: "ตรวจปัญหาอีเมลเชิญไม่ถึงห้อง A-110 (ข้อมูลทดสอบ)",
+      starts_at: at(-3 * DAY),
+      ends_at: at(-3 * DAY + 4 * 60 * 60 * 1000),
+      ended_at: at(-3 * DAY + 60 * 60 * 1000),
+      end_kind: "ended_early",
+    })
+    .select("id")
+    .single(),
+  "system access",
+);
+await must(
+  db.from("audit_logs").insert([
+    { action: "system_access.started", actor_profile_id: personaProfile.systemAdmin, entity_type: "system_read_access", entity_id: sysAccess.id, details_json: { reason: "ตรวจปัญหาอีเมลเชิญไม่ถึงห้อง A-110 (ข้อมูลทดสอบ)", hours: 4, planned_end: null }, created_at: at(-3 * DAY) },
+    { action: "system_access.ended", actor_profile_id: personaProfile.systemAdmin, entity_type: "system_read_access", entity_id: sysAccess.id, details_json: { planned_end: at(-3 * DAY + 4 * 60 * 60 * 1000) }, created_at: at(-3 * DAY + 60 * 60 * 1000) },
+  ]),
+  "system access audit",
 );
