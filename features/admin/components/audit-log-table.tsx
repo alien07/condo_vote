@@ -37,7 +37,14 @@ type AuditLogTableProps = {
   initialPerPage: number;
   initialRows: AuditLogRow[];
   initialTotal: number;
+  /** Where the rows come from (the audit page uses /api/audit/logs). */
+  endpoint?: string;
+  /** Fixed params kept in the URL and sent with every load, e.g. the tab
+   * and the audit page's meeting (req_0007). */
+  baseParams?: Record<string, string>;
 };
+
+const SETUP_PARAMS: Record<string, string> = { tab: "audit" };
 
 type AuditApiResponse = {
   auditLogPage: number;
@@ -46,10 +53,14 @@ type AuditApiResponse = {
   auditLogs: AuditLogRow[];
 };
 
-function buildParams(filters: AuditLogFilters) {
+function buildParams(filters: AuditLogFilters, baseParams: Record<string, string>) {
   const params = new URLSearchParams();
 
-  params.set("tab", "audit");
+  for (const [key, value] of Object.entries(baseParams)) {
+    if (value) {
+      params.set(key, value);
+    }
+  }
 
   if (filters.from) {
     params.set("from", filters.from);
@@ -76,8 +87,8 @@ function buildParams(filters: AuditLogFilters) {
   return params;
 }
 
-function syncUrl(filters: AuditLogFilters) {
-  const params = buildParams(filters);
+function syncUrl(filters: AuditLogFilters, baseParams: Record<string, string>) {
+  const params = buildParams(filters, baseParams);
   window.history.replaceState(null, "", `?${params.toString()}`);
 }
 
@@ -89,6 +100,8 @@ export function AuditLogTable({
   initialPerPage,
   initialRows,
   initialTotal,
+  endpoint = "/api/admin/audit-logs",
+  baseParams = SETUP_PARAMS,
 }: AuditLogTableProps) {
   const tm = useMessageText();
   const { s } = useStaffText();
@@ -121,8 +134,8 @@ export function AuditLogTable({
     setError(null);
 
     try {
-      const params = buildParams(nextFilters);
-      const response = await fetch(`/api/admin/audit-logs?${params.toString()}`, {
+      const params = buildParams(nextFilters, baseParams);
+      const response = await fetch(`${endpoint}?${params.toString()}`, {
         headers: {
           Accept: "application/json",
         },
@@ -148,11 +161,14 @@ export function AuditLogTable({
         page: payload.auditLogPage,
         perPage: payload.auditLogPerPage,
       });
-      syncUrl({
-        ...nextFilters,
-        page: payload.auditLogPage,
-        perPage: payload.auditLogPerPage,
-      });
+      syncUrl(
+        {
+          ...nextFilters,
+          page: payload.auditLogPage,
+          perPage: payload.auditLogPerPage,
+        },
+        baseParams,
+      );
     } catch (caughtError) {
       setError(
         caughtError instanceof Error

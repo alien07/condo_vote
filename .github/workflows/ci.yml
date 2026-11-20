@@ -88,8 +88,13 @@ jobs:
 
       - name: Demo seed check
         # Resets the database, so it runs after the e2e suite (docs/demo-script.md).
+        # A second `next dev` would restore the large Turbopack cache the e2e
+        # suite left in .next/dev; on a slow runner that restore can exceed
+        # the 180 s webServer timeout (stuck at "Compiling / ..."). Start it
+        # from scratch like the first one.
         run: |
           node scripts/seed-demo.mjs --reset --consent
+          rm -rf .next/dev
           DEMO_SEED=1 npx playwright test tests/e2e/demo-seed.spec.ts
 
       - name: Upload Playwright report
