@@ -29,12 +29,15 @@ type ManualVotesSectionProps = Pick<
     | "focusedManualBallotId"
     | "manualVoteFilters"
   > & {
+  /** The Manager may open /admin/voting/conflicts; office staff may not. */
+  canReviewConflicts: boolean;
   hidden: boolean;
 };
 
 const ANSWERS_SHOWN = 3;
 
 export async function ManualVotesSection({
+  canReviewConflicts,
   drawer,
   focusedManualBallotId,
   manualBallots,
@@ -290,12 +293,15 @@ export async function ManualVotesSection({
           <h2 className="text-lg font-semibold">{s.voting.title}</h2>
         </div>
         <div className="flex flex-wrap gap-2">
-          <a
-            className="inline-flex min-h-11 items-center justify-center rounded-md border border-[var(--border)] px-4 py-2 text-sm font-medium"
-            href="/admin/voting/conflicts"
-          >
-            {s.voting.reviewConflicts}
-          </a>
+          {/* Conflicts are the Manager's (requireAdmin); staff see no link (req_0009). */}
+          {canReviewConflicts ? (
+            <a
+              className="inline-flex min-h-11 items-center justify-center rounded-md border border-[var(--border)] px-4 py-2 text-sm font-medium"
+              href="/admin/voting/conflicts"
+            >
+              {s.voting.reviewConflicts}
+            </a>
+          ) : null}
           <a
             className="inline-flex min-h-11 items-center justify-center rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)]"
             href={`${manualVoteListHref}&mode=create&type=manual_vote`}

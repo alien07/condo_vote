@@ -19,6 +19,7 @@ import { fetchEnglishDraftCount, fetchMeetingTurnout } from "@/features/admin/ov
 import { attentionCounts, nextDraftMeeting, spotlightMeetings } from "@/features/admin/overview/overview-model";
 import { PENDING_ACCOUNTS_HREF } from "@/features/admin/components/sections/people/people-table-state";
 import { getCurrentProfileWithRoles } from "@/lib/auth/permissions";
+import { linkIfAllowed } from "@/lib/auth/route-access";
 import { getStaffI18n } from "@/lib/i18n/server";
 import { fill } from "@/lib/i18n/template";
 import { createClient } from "@/lib/supabase/server";
@@ -56,6 +57,11 @@ export default async function AdminDashboardPage() {
   const t = s.adminHome.overview;
   // Only the manager (admin role) approves accounts (updateProfileAccess).
   const isManager = current?.roles.includes("admin") ?? false;
+  const roles = current?.roles ?? [];
+  // A card links only where these roles may go (req_0009): office staff
+  // see the count of a Manager-only list without a link to it.
+  const linked = (cards: MetricCardProps[]) =>
+    cards.map((card) => ({ ...card, href: card.href ? linkIfAllowed(card.href, roles) : undefined }));
   const counts = attentionCounts({
     profiles,
     proxyAuthorizations,
@@ -140,8 +146,8 @@ export default async function AdminDashboardPage() {
         ]
       : []),
   ];
-  const attentionOpen = attention.filter((card) => card.tone === "waiting");
-  const attentionClear = attention.filter((card) => card.tone !== "waiting");
+  const attentionOpen = linked(attention.filter((card) => card.tone === "waiting"));
+  const attentionClear = linked(attention.filter((card) => card.tone !== "waiting"));
 
   // 2. Meetings now: turnout and quorum only (D015).
   const spotlight = spotlightMeetings(meetings, now);
@@ -263,6 +269,10 @@ export default async function AdminDashboardPage() {
             <div className="grid gap-4">
               {spotlight.map((entry, index) => (
                 <MeetingSpotlight
+                  href={linkIfAllowed(
+                    `/admin/meetings?tab=meetings&status=published&focusMeetingId=${entry.meeting.id}`,
+                    roles,
+                  )}
                   key={entry.meeting.id}
                   locale={locale}
                   meeting={entry.meeting}
@@ -284,7 +294,7 @@ export default async function AdminDashboardPage() {
         <section className="mb-8" data-overview-group="readiness">
           <h2 className={groupTitle}>{t.groups.readiness}</h2>
           <div className={cardGrid}>
-            {readiness.map((card) => (
+            {linked(readiness).map((card) => (
               <MetricCard key={card.label} {...card} />
             ))}
           </div>
@@ -293,7 +303,7 @@ export default async function AdminDashboardPage() {
         <section data-overview-group="master">
           <h2 className={groupTitle}>{t.groups.master}</h2>
           <div className={cardGrid}>
-            {master.map((card) => (
+            {linked(master).map((card) => (
               <MetricCard key={card.label} {...card} />
             ))}
           </div>

@@ -19,6 +19,7 @@ export function PeopleCrudPilot({
     return (
       <ProfilesPanel
         activeSection={activeSection}
+        canManage={canManageOwnerAccounts}
         appRolesByProfile={appRolesByProfile}
         drawer={drawer}
         profiles={profiles}

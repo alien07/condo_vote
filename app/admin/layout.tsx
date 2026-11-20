@@ -3,6 +3,7 @@ import { AuthenticatedShell } from "@/features/shell/authenticated-shell";
 import { AdminSectionNav, type AdminNavGroup } from "@/features/admin/components/admin-section-nav";
 import { getStaffI18n } from "@/lib/i18n/server";
 import { getCurrentProfileWithRoles } from "@/lib/auth/permissions";
+import { canOpen } from "@/lib/auth/route-access";
 
 type NavKey =
   | "overview"
@@ -45,19 +46,18 @@ const adminNavGroups: { group?: "master" | "meeting" | "settings"; items: [strin
   },
 ];
 
-// Office staff do data entry only (demo feedback item 14c).
-const staffNav = new Set<NavKey>(["overview", "people", "ownership", "voting"]);
-
 export default async function AdminLayout({ children }: { children: ReactNode }) {
   const [{ s }, current] = await Promise.all([getStaffI18n(), getCurrentProfileWithRoles()]);
-  const isManager = current?.roles.includes("admin") ?? false;
+  // Office staff do data entry only (demo feedback item 14c): the menu shows
+  // the pages these roles may open (lib/auth/route-access.ts, req_0009).
+  const roles = current?.roles ?? [];
   const text = s.adminHome;
 
   const groups: AdminNavGroup[] = adminNavGroups
     .map(({ group, items }) => ({
       label: group ? text.navGroups[group] : undefined,
       items: items
-        .filter(([, key]) => isManager || staffNav.has(key))
+        .filter(([href]) => canOpen(href, roles))
         .map(([href, key]) => ({ href, label: text.nav[key] })),
     }))
     .filter((group) => group.items.length > 0);
