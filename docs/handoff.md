@@ -89,7 +89,7 @@ Left over: the chat's check at 1440/768/375 (handoff step 3). Office staff do no
 
 ---
 
-## req_0006: owner filter on the ownership page is not a SearchSelect (status: approved, waiting for the user to start Claude Code)
+## req_0006: owner filter on the ownership page is not a SearchSelect (status: done, PR #71)
 Branch `fix/req-0006-ownership-owner-filter`. Found by the user 2026-11-20.
 
 Problem: on `/admin/ownership` (`features/admin/components/ownership-manager.tsx`, filter panel around line 279) the "เจ้าของ" / "Owner" filter is a typed text box. The rule in `docs/code-organization.md` rule 8 says choices that are database rows use `SearchSelect` and submit the row's id. The SearchSelect rollout (#61) left this one as typed text on purpose; the user now wants it changed. (The owner field in the add form is already a SearchSelect.)
@@ -103,11 +103,20 @@ Do:
 Acceptance: on `/admin/ownership` the owner filter is a searchable picker of the owners in the list; choosing one shows only that owner's rooms and puts `?owner=<id>` in the URL; the filter survives paging and Clear resets it; works at 1440, 768 and 375 px.
 
 ### Result
-(Claude Code writes here: PR number, what changed, checks run, anything left)
+**PR #71** (https://github.com/alien07/condo_vote/pull/71), branch `fix/req-0006-ownership-owner-filter`, merged by alien07 on 2026-11-19 19:29 UTC; full CI run 44596975866 green.
+
+What changed:
+- `/admin/ownership`: the Owner filter is a `SearchSelect` of the owners in the list (`ownerFilterOptions` in `features/ui/search-options.ts`: once each, by name; hint = their rooms in the list and their email, both searchable), submitting the owner id as `?owner=<id>`. The list compares the owner id; sort by owner name unchanged; Clear removes it; it survives paging.
+- i18n: `common.allOwners` (moved from `documents.allOwners`; the documents owner filter uses it too); removed `ownership.searchOwner`.
+- `docs/code-organization.md` rule 8: Ownership owner filter done; typed-text exceptions are now the proxy holder filter and the Rooms list.
+- Tests: `ownerFilterOptions` unit tests; e2e 04 picks the owner with `chooseSearchOption`, sees only that owner's row and `?owner=<id>`, keeps it through Per page, loses it with Clear; the lifecycle no longer puts a name in `?owner=`.
+- Checks: npm ci, lint, typecheck, test:unit (116), build; e2e 01, 03, 04 on a fresh database; 1440 / 768 / 375 px no horizontal scroll.
+
+Left over: an old URL with a name in `?owner=` now matches nothing.
 
 ---
 
-## req_0007: audit page `/audit`: easy to read and quick to search (status: approved, waiting for the user to start Claude Code)
+## req_0007: audit page `/audit`: easy to read and quick to search (status: done, PR #72)
 Branch `feat/req-0007-audit-page`. UI review by the chat 2026-11-20 at 1440/768/375 (signed in as demo admin; there is no auditor demo persona). The user approved every item.
 
 The page (`app/audit/page.tsx`, read-only, for auditors / committee / admin) is for finding evidence about one meeting fast: who approved, who asked for a correction, what changed, when. Today it is one page about 6,000 px long with three stacked sections and no search.
@@ -128,11 +137,20 @@ Nice to have
 Acceptance: on `/audit`, picking a meeting shows only that meeting's results, correction requests and log entries; each tab pages through everything (no 50/100 cap); the activity log reads in words in Thai and English; published rows say "อนุมัติ n คน" and offer the official PDF when it exists; every button is at least 40px high; no horizontal scroll or raw codes at 1440, 768 and 375 px. e2e: tab switch, meeting filter by id, paging past the old limits, log in words; check as an auditor if a fixture exists (add one if needed).
 
 ### Result
-(Claude Code writes here: PR number, what changed, checks run, anything left)
+**PR #72** (https://github.com/alien07/condo_vote/pull/72), branch `feat/req-0007-audit-page`, squash merged 2026-11-19 19:44 UTC after both CI runs were green (PR run 44599086713, full run 44599081267).
+
+What changed:
+- One meeting picker (`SearchSelect` by id, `?meeting=<id>`) above tabs "ผลที่ประกาศแล้ว / คำขอแก้ไขผล / บันทึกการใช้งาน" (`?tab=`) with counts; each tab has a filter panel (dates; the log also actor and grouped actions) and server-side paging through every row (no 50/100 cap).
+- Log tab = the Setup audit log table (words, readable details, "Raw data" folded, phone cards) through a new `/api/audit/logs` (`requireAuditReader`: auditor or admin). `AuditLogTable` takes `endpoint` and `baseParams`. `fetchAuditLogRows` filters by meeting (`auditMeetingFilter`: the meeting, details `meeting_id` / `meeting`, and its results, correction and close requests and proxies).
+- RLS: an auditor reads audit_logs, meetings, profiles, correction / close requests, result_documents and published results, but not proxy_authorizations or documents. New proxy audit rows now carry `meeting_id` so they are found by meeting for auditors too (older proxy rows only for an admin).
+- Published rows "อนุมัติ n คน", "ดาวน์โหลด PDF ฉบับทางการ" when the official PDF exists, record link keeps `?from=audit`; buttons ≥ 40 px; correction cards with level / status colour badges (level low grey / medium amber / high red; status open amber / fixed green / no change grey), category in words, who asked and when, reason and answer with readable labels.
+- Tests: `features/audit/data.test.ts`; e2e `tests/e2e/audit-page.spec.ts` as a synthetic **auditor** (meeting filter by id, tab switch, paging 101-120 of 120, log in words, buttons ≥ 40 px, no horizontal scroll at 1440 / 768 / 375); 08, 09, table-search, role-access passed. The spec selector runs it for audit and admin changes.
+
+Left over: access stays auditor or admin (the brief mentions committee; the page never allowed committee-only users). Test data from e2e still shows on the page (now filterable).
 
 ---
 
-## req_0008: admin overview `/admin`: what to do now, and fit to show in a meeting (status: approved, waiting for the user to start Claude Code)
+## req_0008: admin overview `/admin`: what to do now, and fit to show in a meeting (status: done, PR #73)
 Branch `feat/req-0008-admin-overview`. UI review by the chat 2026-11-20 at 1440/768/375 (dev 84d8fd3), lens "daily use + presenting". The user approved every item. Main file `app/admin/page.tsx` (MetricCard list, groups master / readiness / attention / results, links grid), `features/english/missing-english-panel.tsx`, words in `lib/i18n/staff/admin-home.ts`.
 
 The page is the admin's first stop: it should say what is waiting for them now, and when shown on a screen in a meeting, the state of the live meeting at a glance. Today it lists all-time totals and puts the work waiting far down the page.
@@ -156,7 +174,20 @@ Nice to have
 Acceptance: at 1440 / 768 / 375 px the first screen shows what is waiting (or that nothing is) and the meeting happening now with turnout and quorum (no per-choice votes); every card is either a clear link or plainly informational; amber only means waiting work; no links grid; title "ภาพรวม"; the missing-English card counts only meetings that can still be fixed; no horizontal scroll. TH/EN. Unit tests for new helpers (spotlight selection, actionable counts); e2e in the admin overview spec for the attention order, the spotlight (a published open meeting in demo data) and that no per-choice result appears before approval.
 
 ### Result
-(Claude Code writes here: PR number, what changed, checks run, anything left)
+**PR #73** (https://github.com/alien07/condo_vote/pull/73), branch `feat/req-0008-admin-overview`, squash merged 2026-11-20 06:18 UTC after both CI runs were green on the updated branch (PR run 44685455156, full run 44685447686). An earlier PR run failed in "Demo seed check" only (dev server compile timeout, no test failed); fixed for every PR by **PR #74** (`rm -rf .next/dev` before that step: the second `next dev` restored the large Turbopack cache the e2e suite left).
+
+What changed:
+- Order: Waiting for you → Meetings now → Readiness → Master data. Waiting cards amber only when something waits; with nothing waiting they are one line ("All clear"); "ไม่มีงานรอดำเนินการ" when all clear.
+- Meetings now: a large card per meeting open for voting or opening within 7 days: window, time left / opens in, rooms voted / eligible, ownership voted / total with bars, quorum met or not (`evaluateQuorum`, same rule as the result). No answers are read; never votes per choice (D015). None open: one line plus the next draft.
+- Waiting work as counts linking to filtered lists: accounts waiting, proxy requests, results waiting for approval (per meeting), paper ballots to link, rooms that voted twice (unresolved), draft meetings missing English.
+- Whole card is the link (≥ 44 px, hover, focus, "→"); readiness with a progress bar on white; green only when complete; "อีเมลในคิว" neutral with the "not sent yet" wording and a real count.
+- Title "ภาพรวม" / "Overview", no extra heading, no links grid; small cards two per row on phones.
+- Code: `features/admin/overview/` (model with unit tests, data paged past 1000 rows, card and spotlight components); removed `missing-english-panel.tsx`.
+- Tests: `overview-model.test.ts`; e2e `tests/e2e/admin/11-overview.spec.ts` (group order, spotlight turnout and quorum, the voted choice never shown, no links grid, amber only for waiting, 44 px cards, no horizontal scroll at 1440 / 768 / 375); lifecycle, role-access, language updated.
+
+Left over:
+- **English card counts drafts only**, as the brief asks, although the code still allows editing English after publishing (D020 / 0039: Thai locked, English editable and audited). If published meetings should count, change `fetchEnglishDraftCount`.
+- A published meeting without an eligible-voter list (test data only) shows "0 of 0" and "quorum not reached".
 
 ---
 
