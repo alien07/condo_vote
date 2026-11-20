@@ -217,6 +217,63 @@ Acceptance: signed in as staff only, no link or button on `/admin`, `/admin/peop
 
 ---
 
+## req_0011: committee majority with chair casting vote, System Admin apart from the building, strict notice flag (status: approved, ready for Code)
+Branch `feat/req-0011-authority`. User decisions 2026-11-20 (chat consultation; background and law summary in the Project doc `claude/authority-model.md`). Record them as a new decision **D027** in `docs/decisions.md` and update D014, D016, D022, D023 where they change. Legal basis: Condominium Act B.E. 2522 as amended, sections 37/4–37/6, 42/3, 43.
+
+Out of scope (user decision): calling a general meeting (annual or extraordinary, who calls it) is done outside the system. The system takes a meeting that has been called and runs the vote. Multi-condo (D009) stays later; keep new tables and checks ready for a `project_id`.
+
+### A. Committee approval: majority of all members, chair breaks a tie (section 37/6)
+Applies to result approval and to close-early requests (D014). One rule, one SQL helper, used by both.
+- N = active committee members on the day (term not ended, `committee_members`), **the chair included**: the chair is a member and votes like everyone else.
+- n = floor(N/2) + 1 (5 → 3, 4 → 3, 6 → 4, 3 → 2). The Manager's `required_approvals` setting can only raise it: the effective minimum is `max(setting, floor(N/2)+1)`. Show the effective number wherever "n of N" is shown today (`/committee`, results, overview, audit, the official record).
+- Each member answers once: approve, or object with a reason (≤ 500 characters, as today). Result approvals do not have "object" yet: add it. A member who objected cannot approve later and the other way round (answers are immutable, as today).
+- Passed when approvals ≥ n. **Not passed** when objections ≥ n.
+- **Tie**: every active member has answered and approvals = objections (possible with an even N; with an odd N only if someone cannot answer, see below). The item becomes "waiting for the chair's casting vote" ("รอประธานชี้ขาด"). The chair (position `chair`, D026) casts one extra vote that decides it, even though they already voted; if there is no active chair, the vice chair (`vice_chair`); if neither, show the Manager a warning that the committee has no chair (the law lets the members present pick one; that happens outside the system and the Manager records the position).
+- A member who never answers: nothing changes; the item waits as today. Close-early requests keep their lapse at `ends_at`.
+- Keep the separation rules (D022): whoever generated a snapshot or answered a correction as fixed cannot approve that result. High-level corrections still need every active member (D014). The casting vote is a separate immutable record (who, when, which side), in the audit log, shown on `/committee`, the results page, `/audit` and the official record.
+- **A result that is not passed**: notify the Manager (email to admins + the overview "Waiting for you" card and the results list show "ไม่ผ่านการอนุมัติ" with the objection reasons). No automatic correction request. The Manager follows the normal flow again: fix, generate the result again, new approval round (approvals start from 0, as today).
+- `/committee` UI: approve / object buttons (object asks for the reason), counts "อนุมัติ a · ไม่อนุมัติ b · ต้องการ n จาก N", and for the chair (or vice chair) a clear casting-vote panel when there is a tie. TH/EN.
+
+### B. System Admin is the platform admin, not part of the building
+- `system_admin` looks after condoVote as a whole (`/system`: technical settings, PDPA, storage). It must not hold building roles by default: a person with `system_admin` gets no Manager, Staff, Committee or Auditor rights from it, and the role grant UI should warn when the same person gets both (D023 guardrail). Check every SQL function and RLS policy and `lib/auth/permissions.ts` for places where `system_admin` counts as admin, and remove them.
+- **Temporary access with a record**: on `/system`, the System Admin can open temporary access to the building's data with a reason (required) and an end time (choose 1 h / 4 h / 24 h; maximum 24 h), and can end it early. While active they can open the admin, committee-read and audit pages **read-only** (no server action may succeed; enforce in SQL/RLS, not only by hiding buttons). Every start, end and expiry is in the audit log; the Manager's overview and `/audit` show "ผู้ดูแลระบบเข้าถึงข้อมูลชั่วคราวถึง …" while it is active.
+
+### C. Notice period flag (section 42/3: written notice at least 7 days before the meeting)
+- New setting on `/system` (scoped so it can get a `project_id` later): "บังคับระยะเวลาแจ้งล่วงหน้า 7 วัน" / strict notice, boolean, default **false**.
+- When publishing a meeting whose meeting day (find the right field: the meeting date, not advance voting) is less than 7 days away: strict = true → publishing is refused with a clear message; strict = false → a warning that the Manager must confirm, recorded in the audit log. Keep 7 as one constant.
+
+### Tests
+pgTAP for the majority helper (N = 3, 4, 5, 6; objections; tie; chair casting; vice chair fallback; no chair; generator cannot approve), for System Admin having no building rights without temporary access and read-only with it, and for the notice flag. Unit tests for the TS helpers. e2e: committee approve/object/tie/casting vote on `/committee`; System Admin temporary access (read-only, banner, audit rows); strict notice on and off. Update the demo seed only as much as tests need (req_0010 redesigns it).
+
+Acceptance: a result with 5 members passes at 3 approvals and fails at 3 objections; with 4 members a 2–2 waits for the chair, whose casting vote decides it; the Manager is told when a result does not pass; a System Admin without temporary access cannot read building data, and with it can only read; publishing a meeting less than 7 days away is blocked when the flag is on and warns when it is off.
+
+### Result
+(Claude Code writes here)
+
+---
+
+## req_0010: clear all demo data and design it again (status: approved; do after req_0011 is merged)
+Branch `feat/req-0010-demo-data`. User decision 2026-11-20: much of the code has changed and bilingual content (D020) is new, so wipe the demo data and design it again. Keep what still works in `scripts/demo-seed/` and `lib/demo/personas.ts`; rewrite what does not. Local only, as today (`npm run demo:seed -- --reset`).
+
+Personas (login picker, `/auth/local-demo?as=`), each with a clear case label in TH/EN, `example.test` emails:
+- Manager (`admin`), Office staff (`staff`), Auditor (`auditor`), System Admin (`system_admin` only, no building roles, per req_0011; the real Google System Admin in `DEMO_SYSTEM_ADMIN` keeps only `system_admin`).
+- Committee of 5 with positions (D026): chair, vice chair, 3 members, so majority (3 of 5), objections and a tie (one member who has not answered) can be shown; at least the chair and one member as personas.
+- Owners: Thai owner with 2 rooms who is also a proxy holder, English-preferring owner (D020), owner of record with a co-owner, a resident (not an owner), an external proxy holder, a new user waiting for approval.
+
+Meetings (titles start with "DEMO", Thai and English for every meeting, agenda item and choice, times relative to the run): draft; published and upcoming (≥ 7 days and one < 7 days to show the notice flag); open for voting (advance and meeting day); closed with a result waiting for approval (partly approved); result not passed (objections ≥ n); tie waiting for the chair; approved and published with PDFs; one with a correction request; paper ballots incl. one conflict; proxies (approved, pending).
+
+Do:
+- Rewrite `docs/demo-script.md` to follow the new data role by role (Manager → Staff → Committee/Chair → Owner TH/EN → Auditor → System Admin).
+- Login picker grouped by role. Update e2e fixtures that rely on the old data; add a role-matrix e2e if req_0009 did not already cover every role: for each persona, every visible link opens (no `denied=1`) and the pages it must not open are denied.
+- The CI "Demo seed check" must stay green.
+
+Acceptance: after `npm run demo:seed -- --reset` every persona signs in, sees content in its own language, and each state above is reachable from the UI; no demo row shows a raw code or a missing English text.
+
+### Result
+(Claude Code writes here)
+
+---
+
 ## Before req numbers: demo-feedback #16 and #17 (status: done, PR #64 merged, checked by the chat 2026-11-19)
 Back link on the record page `/record/[snapshotId]` and rename of the two result actions to "ดูบันทึกผล (หน้าเว็บ)" / "View record (web page)" and "ดาวน์โหลด PDF ฉบับทางการ" / "Download official PDF".
 
