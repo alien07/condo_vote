@@ -209,6 +209,7 @@ export async function AdminWorkspace({
         />
 
         <ManualVotesSection
+          canReviewConflicts={canManageOwnerAccounts}
           drawer={drawer}
           focusedManualBallotId={focusedManualBallotId}
           hidden={!visibleSections.has("voting")}

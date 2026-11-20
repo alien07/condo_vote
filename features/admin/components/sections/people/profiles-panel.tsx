@@ -42,10 +42,15 @@ import { ProfileAccessForm } from "@/features/admin/components/sections/people/p
 type ProfilesPanelProps = Pick<
   PeopleCrudPilotProps,
   "activeSection" | "appRolesByProfile" | "drawer" | "profiles"
->;
+> & {
+  /** Only the Manager changes roles and approval (requireAdmin); office
+   * staff see the list read-only (req_0009). */
+  canManage: boolean;
+};
 
 export function ProfilesPanel({
   activeSection,
+  canManage,
   appRolesByProfile,
   drawer,
   profiles,
@@ -93,12 +98,18 @@ export function ProfilesPanel({
 
     if (drawer?.mode === "edit" && drawer.type === "profile" && selectedProfile) {
       return {
-        content: (
+        // Office staff opening the drawer by URL get the view, not a form
+        // whose save would be refused (req_0009).
+        content: canManage ? (
           <ProfileAccessForm
             appRoles={appRolesByProfile.get(selectedProfile.id) ?? []}
             closeHref={closeHref}
             profile={selectedProfile}
           />
+        ) : (
+          <p className="rounded-md bg-[var(--background)] px-3 py-2 text-sm" data-read-only-access>
+            {s.people.accessManagerOnly}
+          </p>
         ),
         summary: [
           fill(s.people.nameSummary, { name: selectedProfile.full_name }),
@@ -108,7 +119,7 @@ export function ProfilesPanel({
             approvalStatus: codeLabel(s.common.code, selectedProfile.approval_status),
           }),
         ],
-        title: s.people.editAccess,
+        title: canManage ? s.people.editAccess : s.people.viewAccess,
       };
     }
 
@@ -117,6 +128,7 @@ export function ProfilesPanel({
     s,
     activeSection,
     appRolesByProfile,
+    canManage,
     closeHref,
     drawer?.mode,
     drawer?.type,
@@ -356,7 +368,7 @@ export function ProfilesPanel({
               />
               <th className={listThClass} scope="col">{s.people.approval}</th>
               <th className={listThClass} scope="col">{s.people.roles}</th>
-              <th className={listThClass} scope="col">{s.common.action}</th>
+              {canManage ? <th className={listThClass} scope="col">{s.common.action}</th> : null}
             </tr>
           </thead>
           <tbody>
@@ -392,21 +404,23 @@ export function ProfilesPanel({
                   <td className={listTdClass}>
                     {profileRoles.map((role) => codeLabel(s.common.code, role.role)).join(", ") || "-"}
                   </td>
-                  <td className={listTdClass}>
-                    <div className={listActionsClass}>
-                      <Link
-                        className={listRowButtonClass}
-                        href={buildHref({
-                          id: profile.id,
-                          mode: "edit",
-                          tab: "profiles",
-                          type: "profile",
-                        })}
-                      >
-                        {s.people.editAccess}
-                      </Link>
-                    </div>
-                  </td>
+                  {canManage ? (
+                    <td className={listTdClass}>
+                      <div className={listActionsClass}>
+                        <Link
+                          className={listRowButtonClass}
+                          href={buildHref({
+                            id: profile.id,
+                            mode: "edit",
+                            tab: "profiles",
+                            type: "profile",
+                          })}
+                        >
+                          {s.people.editAccess}
+                        </Link>
+                      </div>
+                    </td>
+                  ) : null}
                 </tr>
               );
             })}

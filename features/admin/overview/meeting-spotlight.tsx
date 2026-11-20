@@ -30,6 +30,7 @@ function Bar({ marker, value }: { marker?: number | null; value: number }) {
  * committee approves them (D015).
  */
 export function MeetingSpotlight({
+  href,
   locale,
   meeting,
   now,
@@ -37,6 +38,9 @@ export function MeetingSpotlight({
   state,
   turnout,
 }: {
+  /** The meeting in the meetings list; none for roles that cannot open it
+   * (office staff see the numbers only, req_0009). */
+  href?: string;
   locale: Locale;
   meeting: SpotlightMeetingLike;
   now: Date;
@@ -86,12 +90,14 @@ export function MeetingSpotlight({
             })}
           </p>
         </div>
-        <Link
-          className="inline-flex min-h-11 items-center rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)]"
-          href={`/admin/meetings?tab=meetings&status=published&focusMeetingId=${meeting.id}`}
-        >
-          {t.openMeeting} →
-        </Link>
+        {href ? (
+          <Link
+            className="inline-flex min-h-11 items-center rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)]"
+            href={href}
+          >
+            {t.openMeeting} →
+          </Link>
+        ) : null}
       </div>
       {state === "open" && turnout ? (
         <>

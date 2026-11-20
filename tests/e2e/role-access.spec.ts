@@ -39,7 +39,7 @@ const serviceKey =
   localEnv.SUPABASE_SECRET_KEY ||
   localEnv.SUPABASE_SERVICE_ROLE_KEY;
 
-type TestRole = "admin" | "resident";
+type TestRole = "admin" | "resident" | "staff";
 
 async function ensureTestProfile(
   supabase: ReturnType<typeof createClient<Database>>,
@@ -75,10 +75,10 @@ async function ensureTestProfile(
 
   expect(profileError).toBeNull();
 
-  if (role === "admin") {
+  if (role === "admin" || role === "staff") {
     const { error: roleError } = await supabase.from("app_roles").insert({
       profile_id: profile!.id,
-      role: "admin",
+      role,
     });
 
     expect(roleError).toBeNull();
@@ -277,5 +277,70 @@ test.describe("@test:e2e @test:auth @test:role role access", () => {
       await page.goto("/vote");
       await expect(page).toHaveURL(/\/\?denied=1$/);
     }
+  });
+
+  test("office staff see no link or form that leads to no access (req_0009)", async ({ page }) => {
+    test.setTimeout(180_000);
+
+    const supabase = createClient<Database>(supabaseUrl!, serviceKey!, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    });
+    const staff = await ensureTestProfile(supabase, "staff");
+
+    await page.context().clearCookies({ name: /^(?!lang$)/ });
+    await signInByGeneratedLink(page, supabase, staff.email);
+
+    // Every staff page opens, and every link on it leads somewhere staff may go.
+    const staffPages = [
+      "/admin",
+      "/admin/people?tab=rooms",
+      "/admin/people?tab=owners",
+      "/admin/people?tab=profiles",
+      "/admin/people/import",
+      "/admin/ownership",
+      "/admin/voting",
+    ];
+    const targets = new Map<string, string>();
+
+    for (const path of staffPages) {
+      await page.goto(path);
+      await expect(page, path).not.toHaveURL(/denied=1/);
+      await expect(page.locator("main")).toBeVisible();
+
+      const hrefs = await page.locator('a[href^="/admin"]').evaluateAll((links) =>
+        links
+          .filter((link) => link.getClientRects().length > 0)
+          .map((link) => link.getAttribute("href") ?? ""),
+      );
+
+      for (const href of hrefs) {
+        const url = new URL(href, appUrl);
+        // One visit per page and tab; row and drawer links differ only by id.
+        const key = `${url.pathname}?tab=${url.searchParams.get("tab") ?? ""}&mode=${url.searchParams.get("mode") ?? ""}`;
+
+        if (!targets.has(key)) {
+          targets.set(key, `${url.pathname}${url.search}`);
+        }
+      }
+    }
+
+    expect(targets.size).toBeGreaterThan(0);
+
+    for (const [key, href] of targets) {
+      await page.goto(href);
+      await expect(page, `${key} (${href})`).not.toHaveURL(/denied=1/);
+    }
+
+    // The users tab is read-only: no edit link, and the drawer opened by URL
+    // shows the view, not a form whose save would be refused.
+    await page.goto("/admin/people?tab=profiles");
+    await expect(page.getByRole("link", { name: "Edit roles/status" })).toHaveCount(0);
+    await page.goto(`/admin/people?tab=profiles&mode=edit&type=profile&id=${staff.profileId}`);
+    await expect(page.locator("[data-read-only-access]")).toBeVisible();
+    await expect(page.locator('[name="approval_status"], [name="default_status"], [name="role"]')).toHaveCount(0);
+
+    // The conflicts list is the Manager's: no "Review conflicts" link here.
+    await page.goto("/admin/voting");
+    await expect(page.getByRole("link", { name: "Review conflicts" })).toHaveCount(0);
   });
 });
