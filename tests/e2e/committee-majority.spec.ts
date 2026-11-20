@@ -3,6 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/database.types";
 import { appUrl, localEnv, serviceKey, supabaseUrl } from "./admin/admin-helpers";
 import { confirmInApp } from "./confirm-dialog";
+import { RESULT_PDF_FILES } from "@/features/results/pdf/files";
 
 const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || localEnv.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
@@ -161,6 +162,17 @@ test.describe("@test:e2e @test:committee committee majority", () => {
         objections_count: 2,
         decided_by_casting_vote: true,
       });
+
+      // The master PDF files are made after the response (D021), still as the
+      // chair: wait for them before the cleanup takes the committee role
+      // away, which would refuse their upload.
+      await expect
+        .poll(
+          async () =>
+            (await admin.from("result_documents").select("id").eq("result_snapshot_id", snapshot!.id)).data?.length ?? 0,
+          { timeout: 90_000 },
+        )
+        .toBe(RESULT_PDF_FILES.length);
 
       // No horizontal scroll on a phone.
       await page.setViewportSize({ width: 375, height: 800 });
