@@ -238,6 +238,11 @@ Applies to result approval and to close-early requests (D014). One rule, one SQL
 - `system_admin` looks after condoVote as a whole (`/system`: technical settings, PDPA, storage). It must not hold building roles by default: a person with `system_admin` gets no Manager, Staff, Committee or Auditor rights from it, and the role grant UI should warn when the same person gets both (D023 guardrail). Check every SQL function and RLS policy and `lib/auth/permissions.ts` for places where `system_admin` counts as admin, and remove them.
 - **Temporary access with a record**: on `/system`, the System Admin can open temporary access to the building's data with a reason (required) and an end time (choose 1 h / 4 h / 24 h; maximum 24 h), and can end it early. While active they can open the admin, committee-read and audit pages **read-only** (no server action may succeed; enforce in SQL/RLS, not only by hiding buttons). Every start, end and expiry is in the audit log; the Manager's overview and `/audit` show "ผู้ดูแลระบบเข้าถึงข้อมูลชั่วคราวถึง …" while it is active.
 
+### B2. Show the `admin` role as "Manager" (user decision 2026-11-20; the code stays `admin`, req_0012 cancelled)
+- Wherever the `admin` role is shown to people (roles UI and role badges, users tab, audit log labels, help, emails, PDFs, login picker, docs), use TH "ผู้จัดการ" (or "ผู้จัดการนิติบุคคล" where space allows) / EN "Manager". Grep the i18n files and templates for user-visible "admin" / "แอดมิน" / "ผู้ดูแล" that mean this role and fix them.
+- "ผู้ดูแลระบบ / System Admin" is only for `system_admin`. The top tab and menu for `/admin` should read as the building's office, e.g. "งานนิติบุคคล / Building office" (pick wording that also fits staff, who share this area), not "ผู้ดูแล".
+- Do not rename the role code, functions, URLs or routes. Write the mapping (`admin` = Manager) in D027.
+
 ### C. Notice period flag (section 42/3: written notice at least 7 days before the meeting)
 - New setting on `/system` (scoped so it can get a `project_id` later): "บังคับระยะเวลาแจ้งล่วงหน้า 7 วัน" / strict notice, boolean, default **false**.
 - When publishing a meeting whose meeting day (find the right field: the meeting date, not advance voting) is less than 7 days away: strict = true → publishing is refused with a clear message; strict = false → a warning that the Manager must confirm, recorded in the audit log. Keep 7 as one constant.
@@ -245,7 +250,7 @@ Applies to result approval and to close-early requests (D014). One rule, one SQL
 ### Tests
 pgTAP for the majority helper (N = 3, 4, 5, 6; objections; tie; chair casting; vice chair fallback; no chair; generator cannot approve), for System Admin having no building rights without temporary access and read-only with it, and for the notice flag. Unit tests for the TS helpers. e2e: committee approve/object/tie/casting vote on `/committee`; System Admin temporary access (read-only, banner, audit rows); strict notice on and off. Update the demo seed only as much as tests need (req_0010 redesigns it).
 
-Acceptance: a result with 5 members passes at 3 approvals and fails at 3 objections; with 4 members a 2–2 waits for the chair, whose casting vote decides it; the Manager is told when a result does not pass; a System Admin without temporary access cannot read building data, and with it can only read; publishing a meeting less than 7 days away is blocked when the flag is on and warns when it is off.
+Acceptance: a result with 5 members passes at 3 approvals and fails at 3 objections; with 4 members a 2–2 waits for the chair, whose casting vote decides it; the Manager is told when a result does not pass; no screen calls the `admin` role "admin" or "ผู้ดูแล" (it reads ผู้จัดการ / Manager); a System Admin without temporary access cannot read building data, and with it can only read; publishing a meeting less than 7 days away is blocked when the flag is on and warns when it is off.
 
 ### Result
 (Claude Code writes here)
