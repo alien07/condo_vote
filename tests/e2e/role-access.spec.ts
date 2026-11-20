@@ -140,7 +140,7 @@ test.describe("@test:e2e @test:auth @test:role role access", () => {
       page.getByRole("heading", { level: 1, name: "Overview", exact: true }),
     ).toBeVisible();
     await expect(page.getByText(admin.email)).toBeVisible();
-    await expect(page.getByText(/Admin · Owner/)).toBeVisible();
+    await expect(page.getByText(/Manager · Owner/)).toBeVisible();
     const primaryNav = page.getByRole("navigation", {
       name: "Primary navigation",
     });
@@ -152,7 +152,7 @@ test.describe("@test:e2e @test:auth @test:role role access", () => {
 
     await page.goto("/");
     await expect(page.getByText(admin.email)).toBeVisible();
-    await expect(page.getByText(/Admin · Owner/)).toBeVisible();
+    await expect(page.getByText(/Manager · Owner/)).toBeVisible();
     await expect(page.getByRole("button", { name: "Sign out" })).toBeVisible();
     await expect(page.getByRole("link", { name: "Sign in" })).toHaveCount(0);
 
