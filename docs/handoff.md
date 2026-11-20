@@ -191,7 +191,7 @@ Left over:
 
 ---
 
-## req_0009: office staff hit "no access" from links they can see (status: approved, ready for Code)
+## req_0009: office staff hit "no access" from links they can see (status: done, PR #76)
 Branch `fix/req-0009-staff-dead-ends`. Found in the chat's role review 2026-11-20 (code on `dev` c6e3715). Server guards are right (D022); the UI shows staff links and forms that only the Manager (`admin`) may use, so staff land on `/?denied=1` or a save fails.
 
 Staff (`staff` without `admin`) may open `/admin`, `/admin/people`, `/admin/people/import`, `/admin/ownership`, `/admin/voting` (`requireOfficeStaff`). Everything else under `/admin` is `requireAdmin`.
@@ -213,11 +213,20 @@ Do:
 Acceptance: signed in as staff only, no link or button on `/admin`, `/admin/people` (all tabs), `/admin/people/import`, `/admin/ownership`, `/admin/voting` leads to "no access" or a failing save; the Manager sees exactly what they see today.
 
 ### Result
-(Claude Code writes here)
+**PR #76** (https://github.com/alien07/condo_vote/pull/76), branch `fix/req-0009-staff-dead-ends`, squash merged 2026-11-20 11:32 UTC after the PR run and the full run were green.
+
+What changed:
+- One helper decides links: `lib/auth/route-access.ts` (`canOpen(href, roles)`, `linkIfAllowed`), mirroring the page guards (staff pages `/admin`, `/admin/people`, `/admin/ownership`, `/admin/voting`; Manager only `/admin/voting/conflicts` and the rest). Rule: a card or link staff cannot open is shown **without a link** (count only, no "→"); used by the admin menu, overview cards, the meeting spotlight and in-page links.
+- `/admin/voting` paper ballots: the conflicts link shows only for the Manager.
+- `/admin/people?tab=users` for staff: read only (no edit drawer, no grant or revoke); opening the edit drawer by URL shows the view instead of a failing form.
+- Server guards and RLS unchanged.
+- Tests: `route-access.test.ts`; role-access e2e with a staff user (every visible `/admin` link opens without `denied=1`, no edit control on the users tab).
+
+Found and left (reported in the PR): `/admin/people/import` has no page guard of its own (its action is guarded). Not changed here.
 
 ---
 
-## req_0011: committee majority with chair casting vote, System Admin apart from the building, strict notice flag (status: approved, ready for Code)
+## req_0011: committee majority with chair casting vote, System Admin apart from the building, strict notice flag (status: done, PR #77 + #78)
 Branch `feat/req-0011-authority`. User decisions 2026-11-20 (chat consultation; background and law summary in the Project doc `claude/authority-model.md`). Record them as a new decision **D027** in `docs/decisions.md` and update D014, D016, D022, D023 where they change. Legal basis: Condominium Act B.E. 2522 as amended, sections 37/4–37/6, 42/3, 43.
 
 Out of scope (user decision): calling a general meeting (annual or extraordinary, who calls it) is done outside the system. The system takes a meeting that has been called and runs the vote. Multi-condo (D009) stays later; keep new tables and checks ready for a `project_id`.
@@ -253,7 +262,33 @@ pgTAP for the majority helper (N = 3, 4, 5, 6; objections; tie; chair casting; v
 Acceptance: a result with 5 members passes at 3 approvals and fails at 3 objections; with 4 members a 2–2 waits for the chair, whose casting vote decides it; the Manager is told when a result does not pass; no screen calls the `admin` role "admin" or "ผู้ดูแล" (it reads ผู้จัดการ / Manager); a System Admin without temporary access cannot read building data, and with it can only read; publishing a meeting less than 7 days away is blocked when the flag is on and warns when it is off.
 
 ### Result
-(Claude Code writes here)
+Two PRs, both squash merged 2026-11-20 after the PR run and the full run (`full=true`) were green:
+- **PR #77** (https://github.com/alien07/condo_vote/pull/77), part A + a security fix, merged 16:03 UTC (runs 44732679720, 44732681994).
+- **PR #78** (https://github.com/alien07/condo_vote/pull/78), parts B, B2, C, merged after a test fix (runs 44771826822, 44771828061). Its first PR run failed only in `role-access.spec.ts` (still expected "Admin · Owner"; fixed to "Manager · Owner").
+
+Decision **D027** records everything below; D014, D016, D022, D023 updated.
+
+A. Committee majority (migrations 0046, 0047):
+- One helper `committee_tally(kind, subject)` for results and close-early requests: n = max(meeting setting, floor(N/2)+1) of active members (chair included); a high-level correction still needs everyone.
+- Members approve, or "ไม่อนุมัติ / Do not approve" with a reason; answers are final (close-request answers could change before).
+- Tie → "รอประธานชี้ขาด": the chair (vice chair when none) casts a deciding vote, a separate immutable, audited record. No chair: warning on `/committee`.
+- Not passed: email `result_not_passed` to every Manager, an overview card "ผลที่ไม่ผ่านการอนุมัติ", the results list shows it with the reasons and a filter. The Manager can generate the result again (0030 blocked this after any approval).
+- `/committee`: "อนุมัติ a · ไม่อนุมัติ b · ต้องการ n จาก N", the chair's casting-vote panel, the number of members and the majority. Publication keeps n of N and whether the chair decided (`/audit`, the official record, results list).
+- Only active committee members answer; a Manager who is not a member sees the progress only (assumption, in D027).
+- **Security fix (0047)**: Supabase grants EXECUTE on new functions to `anon`/`authenticated`, so earlier `revoke ... from public` did nothing; anyone, even signed out, could call e.g. `publish_result_if_ready` through `/rest/v1/rpc` (confirmed locally). internal helpers revoked (and the new ones in 0048, 0049); `function_grants.test.sql` and a rule in `docs/security-privacy.md`.
+
+B. System Admin apart (0048): `system_admin` is no longer a member, grants only `system_admin` (it could grant any role, i.e. make itself Manager), no longer reads consent records. On `/system`: temporary read-only access with a reason for 1, 4 or 24 hours, end early; one extra SELECT policy per building table, no write path knows it, so the database refuses writes; start, end and expiry audited; banner on the Manager's overview and `/audit`, and on every page for the System Admin. System admins manage system admins on `/system` (never the last); the role form warns when one person would hold both kinds of role.
+
+B2. The `admin` role reads ผู้จัดการ / Manager everywhere people see it (roles, badges, people, audit words, help, emails, the official record, login picker); `/admin` reads งานนิติบุคคล / Building office. Code, URLs and routes unchanged. Committee guide updated for D027; help PDFs rebuilt.
+
+C. Notice flag (0049): "บังคับระยะเวลาแจ้งล่วงหน้า {days} วัน" on `/system` (default off, audited). Meeting day = `starts_at`; 7 lives in `notice_period_days()`. On: no Publish button (the reason instead) and a DB trigger refuses; off: a warning in the publish confirm, recorded as `short_notice_confirmed` in the publish audit row.
+
+Tests: pgTAP `committee_majority` (43: N = 3/4/5/6, objections, tie, chair, vice chair, no chair, separation, high level, generate again), `system_admin_apart` (27), `notice_period` (9), `function_grants`; DB suite 24 files / 372. e2e new: `committee-majority` (object on the page, 2–2 tie, the chair decides, n of N at publication, PDFs made), `system-access`, `notice-period`; admin lifecycle, results, role-access, app-shell, vote-flow updated. Demo seed changed only as tests needed (M9/M10 second approval, M12 title).
+
+Left over:
+- Temporary access does not cover files in Storage (private documents); written in D027.
+- Demo personas still have the System Admin (Google) with building roles; req_0010 redesigns the demo data.
+- `/admin/people/import` page guard (found in req_0009) still open.
 
 ---
 
