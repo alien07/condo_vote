@@ -252,11 +252,28 @@ Acceptance: a result with 5 members passes at 3 approvals and fails at 3 objecti
 
 ---
 
-## req_0010: clear all demo data and design it again (status: approved; do after req_0011 is merged)
+## req_0012: rename the role code `admin` to `manager` (status: approved; do after req_0009 and req_0011 are merged, before req_0010)
+Branch `refactor/req-0012-manager-role`. User decision 2026-11-20: the building's role is the juristic person's Manager (Condominium Act section 36), and "admin" is easily confused with the System Admin (req_0011 B). One role stays (no split into Manager + building admin); rename its code everywhere so code, data and screens say the same thing.
+
+Do:
+- Migration: rename the role value `admin` → `manager` in `app_roles` (and any check constraint, enum, default, or seed), and in every SQL function, RLS policy and trigger that tests for `'admin'` (`has_app_role('admin')`, `is_office_staff`, result/committee/audit functions …). Existing rows are migrated, not dropped. Old audit log rows keep their stored JSON; the audit labels show both old `admin` and new `manager` as "ผู้จัดการ / Manager".
+- Code: `APP_ROLES.ADMIN` → `APP_ROLES.MANAGER` (`lib/auth/roles.ts`), `requireAdmin` → `requireManager`, `isAdmin`/`isManager` props and names, nav flags, route guards, `DEMO_PERSONAS` (`key: "admin"` → `"manager"`, keep `?as=admin` working as an alias for one release or update every link and doc), scripts (`grant-local-admin.mjs` → manager), e2e helpers and specs, pgTAP tests. Leave the URL paths `/admin/...` as they are (renaming them is a separate decision; say so in the Result).
+- Words: TH "ผู้จัดการ" (or "ผู้จัดการนิติบุคคล" where space allows) / EN "Manager" wherever the role is shown (roles UI, audit, help, emails, PDFs, docs). Grep for user-visible "admin"/"แอดมิน"/"ผู้ดูแล" that means this role and fix them; "ผู้ดูแลระบบ / System Admin" stays for `system_admin`.
+- Docs: `docs/decisions.md` (D005, D014, D016, D022, D023, D027), `docs/admin-workflows.md`, `docs/demo-script.md`, schema doc (`npm run` gen-schema-doc if it exists).
+- No behaviour change: same permissions as before for the renamed role.
+
+Acceptance: `grep` finds no role check or role value `'admin'` left in SQL, TS or tests (except the migration and the audit-label alias); full CI green incl. e2e; signing in as the Manager persona shows the same menus and can do the same actions as the old admin; a database migrated from the previous state keeps everyone's access.
+
+### Result
+(Claude Code writes here)
+
+---
+
+## req_0010: clear all demo data and design it again (status: approved; do after req_0011 and req_0012 are merged)
 Branch `feat/req-0010-demo-data`. User decision 2026-11-20: much of the code has changed and bilingual content (D020) is new, so wipe the demo data and design it again. Keep what still works in `scripts/demo-seed/` and `lib/demo/personas.ts`; rewrite what does not. Local only, as today (`npm run demo:seed -- --reset`).
 
 Personas (login picker, `/auth/local-demo?as=`), each with a clear case label in TH/EN, `example.test` emails:
-- Manager (`admin`), Office staff (`staff`), Auditor (`auditor`), System Admin (`system_admin` only, no building roles, per req_0011; the real Google System Admin in `DEMO_SYSTEM_ADMIN` keeps only `system_admin`).
+- Manager (`manager` after req_0012), Office staff (`staff`), Auditor (`auditor`), System Admin (`system_admin` only, no building roles, per req_0011; the real Google System Admin in `DEMO_SYSTEM_ADMIN` keeps only `system_admin`).
 - Committee of 5 with positions (D026): chair, vice chair, 3 members, so majority (3 of 5), objections and a tie (one member who has not answered) can be shown; at least the chair and one member as personas.
 - Owners: Thai owner with 2 rooms who is also a proxy holder, English-preferring owner (D020), owner of record with a co-owner, a resident (not an owner), an external proxy holder, a new user waiting for approval.
 
