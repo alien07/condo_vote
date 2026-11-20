@@ -192,6 +192,10 @@ Status: implemented (migration 0025, `/consent` and `/system` pages)
   settings. Admins who run meetings are not expected to be technical.
 - Collect PDPA consent at registration. System admin configures the
   privacy notice text and data retention periods.
+- Since D027 (migration 0048) `system_admin` gives no building rights:
+  it does not count as a member, does not grant building roles and does
+  not read consent records. It reads the building's data only through a
+  temporary, read-only access opened on `/system`.
 
 ### D017 - Question Choices
 Status: implemented (migration 0021)
@@ -362,7 +366,9 @@ not security.
   written as `has_permission(permission, project)` so a second building
   needs only a building picker, not new RLS.
 - Guardrails: warn when one role or person holds permissions that should
-  not go together (for example `results.generate` with `results.approve`;
+  not go together (since D027 the role form already warns when one person
+  would hold `system_admin` and a building role; `/system` lists system
+  admins who also hold building roles) (for example `results.generate` with `results.approve`;
   the per-snapshot rule of D022 stays in the database); a role with
   `audit.view` cannot hold edit permissions. Owner, resident and proxy stay
   member statuses worked out from data, not assignable roles.
@@ -483,8 +489,8 @@ show the position in the reader's language.
   [legal-questions.md](legal-questions.md) "Committee".
 
 ### D027 - Committee Majority, Chair's Casting Vote, System Admin Apart, Notice Flag
-Status: accepted 2026-11-20 (user decisions, req_0011); part A implemented
-in migrations 0046 and 0047. Legal basis: Condominium Act B.E. 2522 as
+Status: accepted 2026-11-20 (user decisions, req_0011); implemented in
+migrations 0046 and 0047 (A), 0048 (B) and 0049 (C). Legal basis: Condominium Act B.E. 2522 as
 amended, sections 37/4-37/6, 42/3, 43. Calling a general meeting stays
 outside the system.
 
@@ -534,4 +540,46 @@ internal (anyone could call e.g. `publish_result_if_ready` through
 `/rest/v1/rpc`). 0047 revokes them from `public, anon, authenticated`; a
 new internal function must do the same (`docs/security-privacy.md`), and
 `function_grants.test.sql` lists them.
+
+B. The System Admin is apart from the building (0048):
+- `system_admin` looks after condoVote (`/system`: technical settings,
+  PDPA, storage, notice rule, system admins). It gives no Manager, Staff,
+  Committee or Auditor rights: it no longer counts as a member
+  (`is_approved_member`, `profile_member_access`), grants only
+  `system_admin` (before, it could grant any role, including Manager) and
+  no longer reads consent records. Sign-in itself is unchanged.
+- System admins add one another by the email of an approved account and
+  remove one another on `/system`; the last one cannot be removed. The
+  Manager can no longer grant `system_admin`. When one person would hold
+  both kinds of role, the role form and `/system` warn (D023 guardrail);
+  it stays allowed for a small building.
+- Temporary access: reason (1-500 characters) and 1, 4 or 24 hours
+  (`system_read_access`, at most 24 hours, one open at a time per
+  person, with a `project_id` for D009). While open, one extra permissive
+  SELECT policy per building table lets that person read; ballot answers
+  only of open ballots, like the Manager. No INSERT, UPDATE or DELETE
+  policy and no write function knows the access, so every write is
+  refused by the database; pages accept it only with `{ readOnly: true }`
+  guards, server actions never. The committee, decisions and voter
+  comment reads accept it too. Start, end early and expiry are audited;
+  expiry is written when first noticed (no scheduler). The Manager's
+  overview and `/audit` show "System Admin … has temporary access until
+  …", the System Admin sees their own notice on every page.
+- Not covered: files in Storage (documents bucket); reading a private
+  document still needs a building role.
+
+B2. Words: the role code stays `admin`; people see it as ผู้จัดการ /
+Manager everywhere (roles, badges, people, audit words, help, emails,
+documents, login picker). ผู้ดูแลระบบ / System admin is only
+`system_admin`. The `/admin` area reads งานนิติบุคคล / Building office,
+which office staff share. Functions, URLs and routes keep `admin`.
+
+C. Notice period (0049, section 42/3): `app_settings.strict_notice_period`
+(default false), switched on `/system` and audited. The meeting day is
+`starts_at` (meeting-day voting), not advance voting. Publishing a meeting
+less than `notice_period_days()` (7, the one place it lives) away: strict
+refuses (the publish button is replaced by the reason, and a database
+trigger refuses any publish); not strict shows a warning in the publish
+confirm, and the publish audit row records `short_notice_confirmed` with
+the days left.
 
