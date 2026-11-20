@@ -1,6 +1,6 @@
 import { commonText } from "@/lib/i18n/staff/common";
 
-// Admin > Setup > Audit log: stored action and record codes in words
+// Building office > Setup > Audit log: stored action and record codes in words
 // (setup page review 2026-11-19). A code missing here is shown as stored.
 
 // Codes shared with other pages (req_0002). Thai takes the words from
@@ -15,7 +15,7 @@ const sharedCodeWords = {
   owner: "Owner",
   resident: "Resident",
   proxy: "Proxy",
-  admin: "Admin",
+  admin: "Manager",
   committee: "Committee",
   system_admin: "System admin",
   staff: "Office staff",
@@ -196,7 +196,7 @@ const en = {
     source: {
       sign_in: "Matched at sign-in",
       owner_email: "Matched by owner email",
-      admin: "Linked by an admin",
+      admin: "Linked by the Manager",
       migration_0037: "Matched by the system update",
     },
   } as Record<string, Record<string, string>>,
@@ -374,7 +374,7 @@ const th: typeof en = {
     source: {
       sign_in: "จับคู่ตอนเข้าสู่ระบบ",
       owner_email: "จับคู่จากอีเมลเจ้าของ",
-      admin: "ผู้ดูแลผูกให้",
+      admin: "ผู้จัดการผูกให้",
       migration_0037: "ระบบจับคู่ตอนปรับปรุงระบบ",
     },
   },

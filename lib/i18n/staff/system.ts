@@ -1,7 +1,7 @@
 // System page (D016): privacy notice, retention, document storage.
 const en = {
   title: "System",
-  intro: "Technical settings. Meeting admins can view but not change these.",
+  intro: "Technical settings. The Manager can view but not change these.",
   privacyTitle: "Privacy and PDPA",
   privacyMissing: "Privacy settings are missing.",
   storageTitle: "Document Storage",
@@ -85,7 +85,7 @@ const en = {
 
 const th: typeof en = {
   title: "ระบบ",
-  intro: "การตั้งค่าทางเทคนิค ผู้ดูแลการประชุมดูได้แต่แก้ไขไม่ได้",
+  intro: "การตั้งค่าทางเทคนิค ผู้จัดการดูได้แต่แก้ไขไม่ได้",
   privacyTitle: "ความเป็นส่วนตัวและ PDPA",
   privacyMissing: "ไม่พบการตั้งค่าความเป็นส่วนตัว",
   storageTitle: "ที่เก็บเอกสาร",

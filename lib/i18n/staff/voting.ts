@@ -1,4 +1,4 @@
-// Admin > Voting: manual (paper) ballots and manual/online conflicts.
+// Building office > Voting: manual (paper) ballots and manual/online conflicts.
 const en = {
   title: "Manual Votes",
   intro: "Import manual ballots and resolve manual/online conflicts.",
@@ -58,7 +58,7 @@ const en = {
   entryTitle: "Manual vote entry: {title}",
   entryRoom: "Room {room} / voter: {voter}",
   entryPending:
-    "This manual vote will be saved as pending identity because the voter is not linked to a registered profile yet. It will not be used in result calculation until admin registers and links the voter.",
+    "This manual vote will be saved as pending identity because the voter is not linked to a registered profile yet. It will not be used in result calculation until the Manager registers and links the voter.",
   entrySource: "Manual source / ownership {percent}%",
   noQuestions: "No voting questions are configured for this meeting.",
   review: "Review",
@@ -152,7 +152,7 @@ const th: typeof en = {
   entryTitle: "บันทึกบัตรกระดาษ: {title}",
   entryRoom: "ห้อง {room} / ผู้ลงคะแนน: {voter}",
   entryPending:
-    "บัตรนี้จะบันทึกเป็นรอผูกผู้ใช้ เพราะผู้ลงคะแนนยังไม่ได้ผูกกับผู้ใช้ที่ลงทะเบียน และจะไม่นับในผลจนกว่าผู้ดูแลจะผูกให้",
+    "บัตรนี้จะบันทึกเป็นรอผูกผู้ใช้ เพราะผู้ลงคะแนนยังไม่ได้ผูกกับผู้ใช้ที่ลงทะเบียน และจะไม่นับในผลจนกว่าผู้จัดการจะผูกให้",
   entrySource: "บัตรกระดาษ / อัตราส่วนกรรมสิทธิ์ {percent}%",
   noQuestions: "การประชุมนี้ยังไม่มีวาระ",
   review: "ตรวจทาน",

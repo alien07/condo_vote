@@ -1,4 +1,4 @@
-// Admin > Proxies: proxy authorizations.
+// Building office > Proxies: proxy authorizations.
 const en = {
   title: "Proxy Authorizations",
   intro: "Create and review proxy voting authority for a meeting and room.",

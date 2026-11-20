@@ -1,4 +1,4 @@
-// Admin > Documents: where each private document is kept (the system keeps
+// Building office > Documents: where each private document is kept (the system keeps
 // the location and check data only, never the file). Review 2026-11-19.
 const en = {
   title: "Documents",

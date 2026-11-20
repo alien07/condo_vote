@@ -146,7 +146,7 @@ for (const [key, title, daysAgo, required] of [
   // Nobody has approved: approve, or request a correction.
   ["M11", "DEMO M11 · ออกผลแล้ว ยังไม่มีใครอนุมัติ (0/2)", 6, 2],
   // An open correction request: approving counts, publishing waits (needs 1).
-  ["M12", "DEMO M12 · มีคำขอแก้ไขรอผู้ดูแลตอบ", 5, 1],
+  ["M12", "DEMO M12 · มีคำขอแก้ไขรอผู้จัดการตอบ", 5, 1],
   // Generated again after a wording correction: approvals start again.
   ["M13", "DEMO M13 · สร้างผลใหม่หลังแก้ไข", 4, 2],
 ]) {

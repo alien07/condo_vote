@@ -1,4 +1,4 @@
-// Admin > Communications: email queue, invitations, delivery logs.
+// Building office > Communications: email queue, invitations, delivery logs.
 const en = {
   queueTitle: "Email Queue",
   resendOne: "Resend To One Recipient",

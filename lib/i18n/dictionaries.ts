@@ -20,7 +20,7 @@ const en = {
     help: "Help",
     user: "user",
     roles: {
-      admin: "Admin",
+      admin: "Manager",
       committee: "Committee",
       system_admin: "System admin",
       staff: "Office staff",
@@ -32,7 +32,7 @@ const en = {
       proxy: "External proxy holder",
     } as Record<string, string>,
     nav: {
-      admin: "Admin",
+      admin: "Building office",
       audit: "Audit",
       committee: "Committee",
       system: "System",
@@ -48,7 +48,7 @@ const en = {
   home: {
     tagline: "Condominium meeting voting workspace",
     signIn: "Sign in",
-    adminTitle: "Admin",
+    adminTitle: "Building office",
     adminText: "Manage rooms, owners, meetings, approvals, and results.",
     voteTitle: "Vote",
     voteText: "Open eligible meetings and submit or update ballots.",
@@ -127,7 +127,7 @@ const en = {
     meeting: "Meeting",
     openForEdits: "Open for edits",
     submittedAt: (time: string) => `Submitted ${time}`,
-    secretBallot: "Secret ballot: admins see totals only, not your answers.",
+    secretBallot: "Secret ballot: the Manager sees totals only, not your answers.",
     noQuestions: "No voting questions are configured for this meeting.",
     agenda: (no: string) => `Agenda ${no}`,
     chooseAnswer: "Choose an answer for this question.",
@@ -270,7 +270,7 @@ const th: Dictionary = {
     help: "ช่วยเหลือ",
     user: "ผู้ใช้",
     roles: {
-      admin: "ผู้ดูแล",
+      admin: "ผู้จัดการ",
       committee: "คณะกรรมการ",
       system_admin: "ผู้ดูแลระบบเทคนิค",
       staff: "เจ้าหน้าที่",
@@ -282,7 +282,7 @@ const th: Dictionary = {
       proxy: "ผู้รับมอบฉันทะภายนอก",
     } as Record<string, string>,
     nav: {
-      admin: "ผู้ดูแล",
+      admin: "งานนิติบุคคล",
       audit: "ตรวจสอบ",
       committee: "คณะกรรมการ",
       system: "ระบบ",
@@ -298,7 +298,7 @@ const th: Dictionary = {
   home: {
     tagline: "ระบบลงคะแนนการประชุมอาคารชุด",
     signIn: "เข้าสู่ระบบ",
-    adminTitle: "ผู้ดูแล",
+    adminTitle: "งานนิติบุคคล",
     adminText: "จัดการห้อง เจ้าของร่วม การประชุม การอนุมัติ และผลการลงมติ",
     voteTitle: "ลงคะแนน",
     voteText: "เปิดการประชุมที่มีสิทธิ์ แล้วลงหรือแก้ไขคะแนน",
@@ -377,7 +377,7 @@ const th: Dictionary = {
     meeting: "การประชุม",
     openForEdits: "ยังแก้ไขได้",
     submittedAt: (time: string) => `ส่งเมื่อ ${time}`,
-    secretBallot: "ลงคะแนนลับ: ผู้ดูแลเห็นเฉพาะยอดรวม ไม่เห็นคำตอบของท่าน",
+    secretBallot: "ลงคะแนนลับ: ผู้จัดการเห็นเฉพาะยอดรวม ไม่เห็นคำตอบของท่าน",
     noQuestions: "การประชุมนี้ยังไม่มีวาระให้ลงคะแนน",
     agenda: (no: string) => `วาระที่ ${no}`,
     chooseAnswer: "โปรดเลือกคำตอบของวาระนี้",

@@ -35,7 +35,7 @@ const en = {
     "This condo publishes in two languages. Fill in and check the English text of this meeting before publishing.",
   bilingualSwitch: "Bilingual documents (Thai and English)",
   bilingualHelp:
-    "Meetings need English text, checked by an admin, before publishing. Results already generated keep their text.",
+    "Meetings need English text, checked by the Manager, before publishing. Results already generated keep their text.",
   projectNameEn: "Project name (English)",
   juristicNameEn: "Juristic person name (English)",
   nextStepTitle: "Saved. Next: English.",
@@ -79,7 +79,7 @@ const th: typeof en = {
     "อาคารนี้ใช้เอกสารสองภาษา โปรดกรอกและตรวจข้อความภาษาอังกฤษของการประชุมนี้ก่อนเผยแพร่",
   bilingualSwitch: "เอกสารสองภาษา (ไทยและอังกฤษ)",
   bilingualHelp:
-    "การประชุมต้องมีข้อความภาษาอังกฤษที่ผู้ดูแลตรวจแล้วก่อนเผยแพร่ ผลที่สร้างไว้แล้วคงข้อความเดิม",
+    "การประชุมต้องมีข้อความภาษาอังกฤษที่ผู้จัดการตรวจแล้วก่อนเผยแพร่ ผลที่สร้างไว้แล้วคงข้อความเดิม",
   projectNameEn: "ชื่อโครงการ (ภาษาอังกฤษ)",
   juristicNameEn: "ชื่อนิติบุคคล (ภาษาอังกฤษ)",
   nextStepTitle: "บันทึกแล้ว ต่อไปใส่ภาษาอังกฤษ",

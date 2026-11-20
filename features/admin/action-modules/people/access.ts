@@ -187,7 +187,7 @@ async function revokeAppRoleNow(formData: FormData) {
   }
 
   if (role.profile_id === admin.id && role.role === "admin") {
-    throw new Error("Cannot revoke your own admin role.");
+    throw new Error("Cannot revoke your own Manager role.");
   }
 
   const { error } = await supabase.from("app_roles").delete().eq("id", id);

@@ -144,7 +144,7 @@ test.describe("@test:e2e @test:auth @test:role role access", () => {
     const primaryNav = page.getByRole("navigation", {
       name: "Primary navigation",
     });
-    await expect(primaryNav.getByRole("link", { name: "Admin" })).toBeVisible();
+    await expect(primaryNav.getByRole("link", { name: "Building office" })).toBeVisible();
     await expect(primaryNav.getByRole("link", { name: "Vote" })).toBeVisible();
     await expect(
       primaryNav.getByRole("link", { name: "Summary" }),
@@ -210,7 +210,7 @@ test.describe("@test:e2e @test:auth @test:role role access", () => {
     await expect(
       page.getByRole("alert").filter({ hasText: "cannot open that page" }),
     ).toBeVisible();
-    await expect(page.getByRole("link", { name: /Admin/ })).toHaveCount(0);
+    await expect(page.getByRole("link", { name: /Building office/ })).toHaveCount(0);
     // A resident without a room never votes, so there is no Vote card (item 1).
     await expect(page.getByRole("link", { name: /Vote/ })).toHaveCount(0);
     await expect(page.getByRole("link", { name: /^Results/ })).toBeVisible();
@@ -227,7 +227,7 @@ test.describe("@test:e2e @test:auth @test:role role access", () => {
     const primaryNav = page.getByRole("navigation", {
       name: "Primary navigation",
     });
-    await expect(primaryNav.getByRole("link", { name: "Admin" })).toHaveCount(0);
+    await expect(primaryNav.getByRole("link", { name: "Building office" })).toHaveCount(0);
     await expect(
       primaryNav.getByRole("link", { name: "Committee" }),
     ).toHaveCount(0);

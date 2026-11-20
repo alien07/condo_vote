@@ -48,7 +48,7 @@ export const ownerGuide: Record<Locale, HelpGuide> = {
         id: "vote",
         title: "เลือกคำตอบทุกวาระ แล้วกดส่ง",
         body: "เลือกคำตอบของแต่ละวาระ วาระที่มีเครื่องหมาย * สีแดงต้องตอบ ถ้ากดส่งโดยยังตอบไม่ครบ วาระที่ขาดจะมีกรอบสีแดงและข้อความบอก บางวาระเลือกได้หลายข้อตามที่ระบุ \"งดออกเสียง\" เลือกร่วมกับตัวเลือกอื่นไม่ได้ เมื่อครบแล้วกด \"ส่งบัตรลงคะแนน\"",
-        tip: "ถ้าการประชุมเป็นการลงคะแนนลับ ผู้ดูแลจะเห็นเฉพาะยอดรวม ไม่เห็นคำตอบของท่าน",
+        tip: "ถ้าการประชุมเป็นการลงคะแนนลับ ผู้จัดการจะเห็นเฉพาะยอดรวม ไม่เห็นคำตอบของท่าน",
         image: "owner-ballot",
       },
       {
@@ -154,7 +154,7 @@ export const ownerGuide: Record<Locale, HelpGuide> = {
         id: "vote",
         title: "Answer every agenda item, then submit",
         body: "Choose an answer for each agenda item. Items with a red * are required. If you submit with one missing, it gets a red border and a message. Some items allow several choices, as shown. \"Abstain\" cannot be combined with other choices. When you are done, tap \"Submit ballot\".",
-        tip: "In a secret ballot, admins see only totals, never your answers.",
+        tip: "In a secret ballot, the Manager sees only totals, never your answers.",
         image: "owner-ballot",
       },
       {
