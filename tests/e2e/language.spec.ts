@@ -194,7 +194,8 @@ test.describe("@test:e2e @test:language owner language", () => {
     await signIn(page, supabase, admin.email);
 
     await page.goto("/admin");
-    await expect(page.getByRole("heading", { name: "ผู้ดูแลระบบ", level: 1 })).toBeVisible();
+    // The overview is titled like its menu item (req_0008).
+    await expect(page.getByRole("heading", { name: "ภาพรวม", level: 1 })).toBeVisible();
     await expect(page.getByRole("link", { name: "การประชุม", exact: true })).toBeVisible();
 
     await page.goto("/committee");
@@ -203,6 +204,6 @@ test.describe("@test:e2e @test:language owner language", () => {
     await page.getByRole("button", { name: "EN", exact: true }).click();
     await expect(page.getByRole("heading", { name: "Committee", level: 1 })).toBeVisible();
     await page.goto("/admin");
-    await expect(page.getByRole("heading", { name: "Admin", level: 1 })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Overview", level: 1 })).toBeVisible();
   });
 });

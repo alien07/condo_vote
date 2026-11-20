@@ -137,7 +137,7 @@ test.describe("@test:e2e @test:auth @test:role role access", () => {
 
     await page.goto("/admin");
     await expect(
-      page.getByRole("heading", { name: "Admin", exact: true }),
+      page.getByRole("heading", { level: 1, name: "Overview", exact: true }),
     ).toBeVisible();
     await expect(page.getByText(admin.email)).toBeVisible();
     await expect(page.getByText(/Admin · Owner/)).toBeVisible();
