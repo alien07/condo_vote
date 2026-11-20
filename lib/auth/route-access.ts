@@ -27,7 +27,8 @@ export function canOpen(href: string, roles: readonly string[]) {
     return true;
   }
 
-  if (roles.includes("admin")) {
+  // The Manager, and a System Admin's temporary read-only access (D027).
+  if (roles.includes("admin") || roles.includes("system_read")) {
     return true;
   }
 

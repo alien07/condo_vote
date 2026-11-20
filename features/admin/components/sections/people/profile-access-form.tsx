@@ -2,7 +2,7 @@
 
 import { useStaffText } from "@/lib/i18n/staff/client";
 import { fill } from "@/lib/i18n/template";
-import { useActionState, useRef } from "react";
+import { useActionState, useRef, useState } from "react";
 import { revokeAppRole, updateProfileAccessWithState } from "@/features/admin/actions";
 import { FieldLabel, RequiredNote } from "@/features/admin/components/field-label";
 import { ConfirmSubmitButton, FormResetButton } from "@/features/admin/components/form-controls";
@@ -34,6 +34,13 @@ export function ProfileAccessForm({
     emptyState,
   );
   usePeopleFormFeedback("profiles", state, formRef);
+  // D023 guardrail (req_0011 B, D027): the System Admin looks after the
+  // platform; warn when one person would hold it and a building role.
+  const [role, setRole] = useState(String(stateValue(state, "role") ?? ""));
+  const held = appRoles.map((entry) => entry.role);
+  const mixesRoles =
+    (role === "system_admin" && held.some((name) => name !== "system_admin")) ||
+    (role !== "" && role !== "system_admin" && held.includes("system_admin"));
 
   return (
     <div className="grid gap-5">
@@ -100,6 +107,7 @@ export function ProfileAccessForm({
             className="rounded-md border border-[var(--border)] px-3 py-2 text-sm"
             defaultValue={stateValue(state, "role")}
             name="role"
+            onChange={(event) => setRole(event.target.value)}
           >
             <option value="">{s.people.noNewRole}</option>
             <option value="admin">{s.people.adminRole}</option>
@@ -108,6 +116,11 @@ export function ProfileAccessForm({
             <option value="staff">{s.people.staffRole}</option>
             <option value="auditor">{s.people.auditorRole}</option>
           </select>
+          {mixesRoles ? (
+            <span className="rounded-md bg-amber-50 px-3 py-2 text-xs font-normal text-amber-900" data-role-mix-warning role="status">
+              {s.people.roleMixWarning}
+            </span>
+          ) : null}
         </label>
         <div className="mt-2 flex flex-wrap gap-2">
           <DrawerSubmitButton pendingLabel={s.common.saving}>

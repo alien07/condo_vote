@@ -24,6 +24,7 @@ import { linkIfAllowed } from "@/lib/auth/route-access";
 import { getStaffI18n } from "@/lib/i18n/server";
 import { fill } from "@/lib/i18n/template";
 import { createClient } from "@/lib/supabase/server";
+import { SystemAccessBanner } from "@/features/system/system-access-banner";
 
 function percent(value: number, total: number) {
   return total <= 0 ? 0 : Math.round((value / total) * 100);
@@ -252,6 +253,8 @@ export default async function AdminDashboardPage() {
 
   return (
     <main className="min-h-screen px-4 py-8 sm:px-6">
+      {/* A System Admin reading the building's data now (D027). */}
+      <SystemAccessBanner only="others" />
       <section className="mx-auto max-w-5xl">
         <div className="mb-6 border-b border-[var(--border)] pb-5">
           <h1 className="text-2xl font-semibold">{s.adminHome.title}</h1>

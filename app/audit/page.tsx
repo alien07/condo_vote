@@ -20,6 +20,7 @@ import { formatDateIn } from "@/lib/i18n/format";
 import { getStaffI18n } from "@/lib/i18n/server";
 import { fill } from "@/lib/i18n/template";
 import { createClient } from "@/lib/supabase/server";
+import { SystemAccessBanner } from "@/features/system/system-access-banner";
 
 type AuditPageProps = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -33,7 +34,7 @@ function first(value: string | string[] | undefined) {
 // for every tab, then tabs for published results, correction requests and
 // the activity log, each with filters and paging through every row.
 export default async function AuditPage({ searchParams }: AuditPageProps) {
-  await requireAuditReader();
+  await requireAuditReader({ readOnly: true });
 
   const params = await searchParams;
   const flat = Object.fromEntries(Object.entries(params).map(([key, value]) => [key, first(value)]));
@@ -61,6 +62,9 @@ export default async function AuditPage({ searchParams }: AuditPageProps) {
 
   return (
     <main className="mx-auto max-w-5xl px-4 py-8 text-sm sm:px-6">
+      <div className="-mx-4 mb-4 md:-mx-6">
+        <SystemAccessBanner only="others" />
+      </div>
       <div className="mb-6 flex items-start gap-3 border-b border-[var(--border)] pb-5">
         <ScrollText className="mt-1 shrink-0 text-[var(--primary)]" size={26} />
         <div>

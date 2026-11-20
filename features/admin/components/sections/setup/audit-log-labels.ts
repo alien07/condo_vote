@@ -25,6 +25,7 @@ const GROUP_BY_PREFIX: Record<string, AuditActionGroup> = {
   app_settings: "settings",
   privacy_settings: "settings",
   document: "settings",
+  system_access: "settings",
 };
 
 /** An action code in words; an unknown code is shown as stored. */

@@ -1,3 +1,4 @@
+import { SystemAccessBanner } from "@/features/system/system-access-banner";
 import type { ReactNode } from "react";
 import { redirect } from "next/navigation";
 import { Building2, LogOut } from "lucide-react";
@@ -32,8 +33,11 @@ export async function AuthenticatedShell({ children }: AuthenticatedShellProps) 
 
   const { locale, t } = await getI18n();
   const isAdmin = roles.includes("admin");
+  // A System Admin's temporary read-only access (D027) opens the building's
+  // pages to read.
+  const systemRead = roles.includes("system_read");
   // Office staff open the data-entry admin pages (item 14c).
-  const opensAdmin = isAdmin || roles.includes("staff");
+  const opensAdmin = isAdmin || roles.includes("staff") || systemRead;
   // Staff pages get their words in the client too (D020).
   const isStaff =
     opensAdmin ||
@@ -94,8 +98,8 @@ export async function AuthenticatedShell({ children }: AuthenticatedShellProps) 
             adminSubpages: isStaff ? getStaffDictionary(locale).adminHome.subpages : undefined,
           }}
           isAdmin={opensAdmin}
-          isAuditor={isAdmin || roles.includes("auditor")}
-          isCommittee={roles.includes("committee")}
+          isAuditor={isAdmin || roles.includes("auditor") || systemRead}
+          isCommittee={roles.includes("committee") || systemRead}
           isSystemAdmin={roles.includes("system_admin")}
           canVote={access.canVote}
           canViewResults={access.canViewResults}
@@ -103,6 +107,7 @@ export async function AuthenticatedShell({ children }: AuthenticatedShellProps) 
       </header>
       <div className="print:hidden">
         <AppFeedbackBanner dismissLabel={t.shell.dismiss} locale={locale} />
+        {systemRead ? <SystemAccessBanner only="mine" /> : null}
         {profile.approval_status !== "approved" ? (
           <div className="mx-auto max-w-6xl px-4 pt-3 md:px-6">
             <ApprovalNotice status={profile.approval_status} text={t.shell} />

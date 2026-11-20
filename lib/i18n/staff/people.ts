@@ -108,6 +108,8 @@ const en = {
   adminRole: "Admin",
   committeeRole: "Committee",
   systemAdminRole: "System admin",
+  roleMixWarning:
+    "The System admin looks after condoVote, not the building. Giving the same person a building role and System admin is allowed, but keep them apart where possible (D023).",
   staffRole: "Office staff (data entry only)",
   auditorRole: "Auditor (read only)",
   currentRoles: "Current app roles",
@@ -239,6 +241,8 @@ const th: typeof en = {
   adminRole: "ผู้ดูแล",
   committeeRole: "กรรมการ",
   systemAdminRole: "ผู้ดูแลระบบ",
+  roleMixWarning:
+    "ผู้ดูแลระบบดูแล condoVote ไม่ใช่งานของอาคาร ให้คนเดียวกันมีบทบาทในงานอาคารและเป็นผู้ดูแลระบบได้ แต่ควรแยกกันเมื่อทำได้ (D023)",
   staffRole: "เจ้าหน้าที่ (บันทึกข้อมูลเท่านั้น)",
   auditorRole: "ผู้ตรวจสอบ (อ่านอย่างเดียว)",
   currentRoles: "สิทธิ์ปัจจุบัน",

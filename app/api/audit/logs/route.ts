@@ -7,7 +7,7 @@ import { auditFiltersFromParams } from "@/features/admin/data-modules/audit-log-
 // The audit page's activity log (req_0007): auditors and the manager, rows
 // as RLS lets them read, optionally about one meeting (?meeting=<id>).
 export async function GET(request: Request) {
-  await requireAuditReader();
+  await requireAuditReader({ readOnly: true });
 
   const supabase = await createClient();
   const url = new URL(request.url);

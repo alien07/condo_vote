@@ -5,7 +5,9 @@ import { PrivacySettingsForm } from "@/features/privacy/privacy-settings-form";
 import { getPrivacySettings } from "@/features/privacy/service";
 import { DENIED_PATH, requireProfileWithRoles } from "@/lib/auth/permissions";
 import { createClient } from "@/lib/supabase/server";
-import { getStaffI18n } from "@/lib/i18n/server";
+import { getI18n, getStaffI18n } from "@/lib/i18n/server";
+import { getSystemAccessStatus, listSystemAdmins } from "@/features/system/access-service";
+import { SystemAccessPanel, SystemAdminsPanel } from "@/features/system/system-access-panel";
 
 // Technical, service, and maintenance settings for system admins (D016).
 export default async function SystemPage() {
@@ -16,14 +18,18 @@ export default async function SystemPage() {
   }
 
   const supabase = await createClient();
-  const t = (await getStaffI18n()).s.system;
-  const [privacySettings, appSettingsResult] = await Promise.all([
+  const { locale, s } = await getStaffI18n();
+  const t = s.system;
+  const [privacySettings, appSettingsResult, accessStatus, systemAdmins] = await Promise.all([
     getPrivacySettings(supabase),
     supabase
       .from("app_settings")
       .select("id, document_storage_provider, document_storage_root")
       .order("created_at", { ascending: false })
       .limit(1),
+    // req_0011 B (D027): temporary read-only access and the system admins.
+    getSystemAccessStatus(supabase),
+    listSystemAdmins(supabase),
   ]);
 
   if (appSettingsResult.error) {
@@ -41,6 +47,9 @@ export default async function SystemPage() {
           </p>
         </div>
       </div>
+
+      <SystemAccessPanel locale={locale} status={accessStatus} t={t.access} />
+      <SystemAdminsPanel admins={systemAdmins} roleNames={(await getI18n()).t.shell.roles} t={t.admins} />
 
       <section className="mb-5 rounded-lg border border-[var(--border)] bg-[var(--surface)] p-5">
         <div className="mb-4 flex items-center gap-2">

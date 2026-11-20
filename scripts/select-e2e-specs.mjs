@@ -22,6 +22,7 @@ const SPEC = {
   helpRoles: "tests/e2e/help-roles.spec.ts",
   audit: "tests/e2e/audit-page.spec.ts",
   committee: "tests/e2e/committee-majority.spec.ts",
+  system: "tests/e2e/system-access.spec.ts",
 };
 
 // Shared code: any change here runs the full suite.
@@ -43,8 +44,8 @@ const rules = [
   [/^tests\/e2e\/(.+\.spec\.ts)$/, (m) => [`tests/e2e/${m[1]}`]],
   [/^tests\/e2e\/admin\//, () => [SPEC.admin]],
   [/^(app\/(vote|summary)|features\/(voting|summary))\//, () => [SPEC.vote]],
-  [/^(app\/(auth|login)|features\/(auth|shell)|lib\/auth)\//, () => [SPEC.roles, SPEC.privacy, SPEC.language]],
-  [/^(app\/(consent|system)|features\/privacy)\//, () => [SPEC.privacy]],
+  [/^(app\/(auth|login)|features\/(auth|shell)|lib\/auth)\//, () => [SPEC.roles, SPEC.privacy, SPEC.language, SPEC.system]],
+  [/^(app\/(consent|system)|features\/(privacy|system))\//, () => [SPEC.privacy, SPEC.system]],
   [/^(app\/committee|features\/(committee|results))\//, () => [SPEC.committee, SPEC.roles, SPEC.admin]],
   [/^(app\/audit|app\/api\/audit|features\/audit)\//, () => [SPEC.audit, SPEC.roles]],
   [/^features\/admin\/components\/(table-controls|sections\/shared)/, () => [SPEC.tables]],
