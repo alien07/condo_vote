@@ -119,19 +119,26 @@ may be offered. Abstain is reported as its own group and counts as voting
 "at least", because legal rules use both (more than half; at least 3/4).
 
 ### D014 - Committee Approval And Vote Closing
-Status: implemented (migrations 0023, 0030, 0034, 0035 and 0036, `/committee` page)
+Status: implemented (migrations 0023, 0030, 0034, 0035 and 0036, `/committee` page);
+the number needed and the tie rule changed in D027 (migration 0046)
 
-- Admin sets a minimum number of committee approvals.
+- Admin sets a minimum number of committee approvals. Since D027 that
+  setting can only raise the majority of all active members
+  (`max(setting, floor(N/2)+1)`).
 - A result is published when its snapshot reaches that minimum. Each
-  approval is a separate, immutable record.
+  approval is a separate, immutable record. Since D027 a member can also
+  object with a reason, and a result can end "not passed".
 - Voting closes automatically at `ends_at`, or earlier through a
   close-early request (migration 0030, demo review 2026-11-13): a committee
   member or admin proposes it with a reason and a time (as soon as approved,
   or a set time before `ends_at`). Every active committee member is emailed.
   Members approve or object (an objection needs a reason). The same minimum
   closes voting; the proposer's proposal counts as their approval when they
-  are a member. The request fails once the members who have not answered are
-  too few to reach the minimum. One open request per meeting; the proposer
+  are a member. Since D027 the request fails when objections reach the
+  number needed, or when every member answered without reaching it; a tie
+  waits for the chair's casting vote; answers cannot change. (Before D027 it
+  failed once the members who had not answered were too few to reach the
+  minimum, and a member could change an answer.) One open request per meeting; the proposer
   can cancel; it lapses at `ends_at`. Approving to close without a request
   is no longer possible.
 - Generating a result does not close voting. It is allowed only after
@@ -302,6 +309,8 @@ Status: implemented (migration 0031), decided in the demo review 2026-11-13
 
 - Separation of duties: whoever generated a result snapshot, or answered a
   correction request of that meeting as fixed, cannot approve that result.
+  Since D027 only active committee members answer on results, so the
+  Manager approves only when also a member.
   A requester cannot answer their own correction request (D014). Enforced
   in the database functions.
 - Auditor (`auditor` role): read only. Published results, official records,
@@ -472,3 +481,57 @@ show the position in the reader's language.
 - Legal check pending: only the chairperson is set by the Condominium Act;
   the other positions come from each building's regulations. See
   [legal-questions.md](legal-questions.md) "Committee".
+
+### D027 - Committee Majority, Chair's Casting Vote, System Admin Apart, Notice Flag
+Status: accepted 2026-11-20 (user decisions, req_0011); part A implemented
+in migrations 0046 and 0047. Legal basis: Condominium Act B.E. 2522 as
+amended, sections 37/4-37/6, 42/3, 43. Calling a general meeting stays
+outside the system.
+
+A. Committee decisions (results and close-early requests), one SQL helper
+`committee_tally(kind, subject)` for both:
+- N = active committee members today (`active_committee_profile_ids`: an
+  active `committee_members` row in term and the `committee` role), the
+  chair included. n = floor(N/2)+1 (3 -> 2, 4 -> 3, 5 -> 3, 6 -> 4); the
+  meeting's `required_approvals` can only raise it.
+- Each member answers once: approve, or object with a reason (1-500
+  characters). Answers cannot change, for results and close requests.
+- Passed when approvals >= n; not passed when objections >= n.
+- Tie: every member who may answer has answered and approvals =
+  objections. It waits for a casting vote by the active chair (position
+  `chair`, D026), else the vice chair; the casting vote is an extra,
+  immutable record (`committee_casting_votes`) and is audited. With neither,
+  `/committee` warns that the committee has no chair; the Manager records
+  the position in Setup (the law lets the members present pick one, outside
+  the system).
+- A member who never answers changes nothing: the item waits; close
+  requests still lapse at `ends_at`.
+- Separation (D022) stays: the generator of a snapshot and whoever answered
+  a correction as fixed do not answer and are not counted among those who
+  may answer. A high-level correction still needs every active member, so
+  one objection fails it.
+- A result that is not passed: every admin is emailed once
+  (`result_not_passed`), the overview shows a "Results that did not pass"
+  card and the results list shows "did not pass" with the reasons. No
+  automatic correction request. The Manager may generate the result again
+  (approvals start from 0), which 0030 had blocked after any approval.
+- Publication keeps n of N at that moment (`result_publications`:
+  `committee_members`, `required_approvals`, `objections_count`,
+  `decided_by_casting_vote`), shown on `/audit` and the official record.
+
+Assumptions made where the request was silent (part A):
+- Only active committee members answer on results; an admin who is not a
+  member sees the progress but cannot approve (was allowed before).
+- When every member who may answer has answered and neither side reached n
+  and it is not a tie (possible when the meeting setting raises n), the
+  result is not passed: nobody is left to change it.
+- With an odd N a tie happens only when someone may not answer (separation).
+
+Security (found while doing A, migration 0047): Supabase grants EXECUTE on
+new functions in `public` to `anon` and `authenticated` by default, so the
+`revoke ... from public` in earlier migrations did not make internal helpers
+internal (anyone could call e.g. `publish_result_if_ready` through
+`/rest/v1/rpc`). 0047 revokes them from `public, anon, authenticated`; a
+new internal function must do the same (`docs/security-privacy.md`), and
+`function_grants.test.sql` lists them.
+

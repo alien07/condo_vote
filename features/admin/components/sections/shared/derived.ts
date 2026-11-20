@@ -7,6 +7,7 @@ export function deriveSharedAdminState({
   committeeApprovals,
   pendingManualBallots,
   profiles,
+  resultDecisions,
   resultPublications,
 }: Pick<
   AdminDashboardData,
@@ -14,16 +15,30 @@ export function deriveSharedAdminState({
   | "committeeApprovals"
   | "pendingManualBallots"
   | "profiles"
+  | "resultDecisions"
   | "resultPublications"
 >) {
   // D014: "approved" means published, i.e. approvals reached the minimum.
   const approvedResultSnapshotIds = new Set(
     resultPublications.map((publication) => publication.result_snapshot_id),
   );
-  // Any approval locks the meeting's results: no new snapshots.
-  const lockedMeetingIds = new Set(
-    committeeApprovals.map((approval) => approval.meeting_id),
+  // Any approval locks the meeting's results: no new snapshots, unless the
+  // committee did not pass the latest one (D027, 0046).
+  const notPassedMeetingIds = new Set(
+    resultDecisions.filter((decision) => decision.status === "not_passed").map((decision) => decision.meeting_id),
   );
+  const lockedMeetingIds = new Set(
+    committeeApprovals
+      .map((approval) => approval.meeting_id)
+      .filter((meetingId) => !notPassedMeetingIds.has(meetingId)),
+  );
+  // Published on the chair's deciding vote (D027).
+  const castingDecidedSnapshotIds = new Set(
+    resultPublications
+      .filter((publication) => publication.decided_by_casting_vote)
+      .map((publication) => publication.result_snapshot_id),
+  );
+  const decisionBySnapshotId = new Map(resultDecisions.map((decision) => [decision.subject_id, decision]));
   const approvalCountBySnapshotId = new Map<string, number>();
 
   for (const approval of committeeApprovals) {
@@ -54,6 +69,8 @@ export function deriveSharedAdminState({
   return {
     appRolesByProfile,
     approvalCountBySnapshotId,
+    castingDecidedSnapshotIds,
+    decisionBySnapshotId,
     lockedMeetingIds,
     approvedMeetingIds,
     approvedResultSnapshotIds,

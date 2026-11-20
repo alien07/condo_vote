@@ -11,8 +11,16 @@ import { createContext, useContext, useId, useRef, useState, type ReactNode } fr
  */
 const CloseContext = createContext<() => void>(() => {});
 
+export type ActionRowToggle = {
+  key: string;
+  label: string;
+  className: string;
+  panel: ReactNode;
+};
+
 export function ActionRow({
   actions,
+  more = [],
   panel,
   toggleClassName,
   toggleLabel,
@@ -20,19 +28,25 @@ export function ActionRow({
 }: {
   /** Buttons before the toggle, e.g. the approve form. */
   actions?: ReactNode;
+  /** Further toggles after the first, each with its own form; one opens at a time. */
+  more?: ActionRowToggle[];
   /** The form that opens below the row. */
   panel: ReactNode;
   toggleClassName: string;
   toggleLabel: string;
   [data: `data-${string}`]: string | boolean | undefined;
 }) {
-  const [open, setOpen] = useState(false);
-  const panelId = useId();
+  const [open, setOpen] = useState<string | null>(null);
+  const baseId = useId();
   const panelRef = useRef<HTMLDivElement>(null);
+  const toggles: ActionRowToggle[] = [
+    { key: "main", label: toggleLabel, className: toggleClassName, panel },
+    ...more,
+  ];
 
   function close() {
     panelRef.current?.querySelectorAll("form").forEach((form) => form.reset());
-    setOpen(false);
+    setOpen(null);
   }
 
   return (
@@ -40,19 +54,31 @@ export function ActionRow({
       <div className="grid gap-3" {...rest}>
         <div className="flex flex-wrap items-start gap-2">
           {actions}
-          <button
-            aria-controls={panelId}
-            aria-expanded={open}
-            className={`${toggleClassName} ${open ? "bg-[var(--background)] ring-2 ring-[var(--border)]" : ""}`}
-            onClick={() => (open ? close() : setOpen(true))}
-            type="button"
-          >
-            {toggleLabel}
-          </button>
+          {toggles.map((toggle) => (
+            <button
+              aria-controls={`${baseId}-${toggle.key}`}
+              aria-expanded={open === toggle.key}
+              className={`${toggle.className} ${open === toggle.key ? "bg-[var(--background)] ring-2 ring-[var(--border)]" : ""}`}
+              key={toggle.key}
+              onClick={() => (open === toggle.key ? close() : setOpen(toggle.key))}
+              type="button"
+            >
+              {toggle.label}
+            </button>
+          ))}
         </div>
-        {/* Kept in the page while folded, so the form keeps its state until Cancel. */}
-        <div hidden={!open} id={panelId} ref={panelRef}>
-          {panel}
+        {/* Kept in the page while folded, so a form keeps its state until Cancel. */}
+        <div ref={panelRef}>
+          {toggles.map((toggle) => (
+            <div
+              data-action-panel={toggle.key}
+              hidden={open !== toggle.key}
+              id={`${baseId}-${toggle.key}`}
+              key={toggle.key}
+            >
+              {toggle.panel}
+            </div>
+          ))}
         </div>
       </div>
     </CloseContext.Provider>

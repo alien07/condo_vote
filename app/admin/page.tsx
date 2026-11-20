@@ -11,6 +11,7 @@ import {
   UserCheck,
   UserPlus,
   Users,
+  XCircle,
 } from "lucide-react";
 import { getAdminDashboardData } from "@/features/admin/data";
 import { MeetingSpotlight } from "@/features/admin/overview/meeting-spotlight";
@@ -51,6 +52,7 @@ export default async function AdminDashboardPage() {
     proxyAuthorizations,
     resultSnapshots,
     resultPublications,
+    resultDecisions,
     pendingManualBallots,
     profiles,
   } = data;
@@ -67,6 +69,7 @@ export default async function AdminDashboardPage() {
     proxyAuthorizations,
     resultSnapshots,
     resultPublications,
+    resultDecisions,
     pendingManualBallots,
     onlineBallots: ballots,
     countedPaperBallots: manualBallots.filter(
@@ -111,6 +114,20 @@ export default async function AdminDashboardPage() {
             detail: t.pendingResultsDetail,
             status: waiting(counts.pendingResults) ? t.needsReview : t.allClear,
             tone: waiting(counts.pendingResults) ? ("waiting" as const) : ("complete" as const),
+          },
+        ]
+      : []),
+    // Shown only when a result did not pass (D027): the Manager acts on it.
+    ...(isManager && counts.notPassedResults
+      ? [
+          {
+            href: "/admin/results?approval=not_passed",
+            icon: XCircle,
+            label: t.notPassedResults,
+            value: String(counts.notPassedResults),
+            detail: t.notPassedResultsDetail,
+            status: t.needsReview,
+            tone: "waiting" as const,
           },
         ]
       : []),

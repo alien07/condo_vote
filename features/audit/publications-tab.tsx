@@ -34,7 +34,15 @@ export async function PublicationsTab({ data, filters }: { data: Publications; f
                 <span className="font-medium [overflow-wrap:anywhere]">{one(row.meetings)?.title ?? "-"}</span>
                 <span className="text-xs text-[var(--muted)]">
                   {fill(t.publishedAt, { date: formatDateTimeIn(locale, row.published_at) })} ·{" "}
-                  {fill(t.approvedBy, { count: row.approvals_count })}
+                  {/* n of N at publication (D027); older rows have only the count. */}
+                  {row.committee_members !== null && row.required_approvals !== null
+                    ? fill(t.approvedOf, {
+                        count: row.approvals_count,
+                        members: row.committee_members,
+                        required: row.required_approvals,
+                      })
+                    : fill(t.approvedBy, { count: row.approvals_count })}
+                  {row.decided_by_casting_vote ? ` · ${t.castingVote}` : null}
                 </span>
               </div>
               <div className="flex flex-wrap gap-2">

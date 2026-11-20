@@ -119,6 +119,8 @@ export type AttentionInput = {
   proxyAuthorizations: { status: string }[];
   resultSnapshots: { id: string; meeting_id: string; generated_at: string }[];
   resultPublications: { meeting_id: string }[];
+  /** The committee's decision on unpublished results (D027). */
+  resultDecisions: { meeting_id: string; status: string }[];
   pendingManualBallots: { id: string }[];
   onlineBallots: { meeting_id: string; room_id: string }[];
   /** Paper ballots that count (submitted, identity not pending). */
@@ -132,6 +134,10 @@ export type AttentionInput = {
 export function attentionCounts(input: AttentionInput) {
   const published = new Set(input.resultPublications.map((publication) => publication.meeting_id));
   const meetingsWithResult = new Set(input.resultSnapshots.map((snapshot) => snapshot.meeting_id));
+  // Did not pass: the Manager checks the reasons and generates it again.
+  const notPassed = new Set(
+    input.resultDecisions.filter((decision) => decision.status === "not_passed").map((decision) => decision.meeting_id),
+  );
   const online = new Set(input.onlineBallots.map((ballot) => `${ballot.meeting_id}:${ballot.room_id}`));
   const resolved = new Set(input.resolutions.map((resolution) => `${resolution.meeting_id}:${resolution.room_id}`));
   const twice = new Set(
@@ -144,7 +150,9 @@ export function attentionCounts(input: AttentionInput) {
     pendingAccounts: input.profiles.filter((profile) => profile.approval_status === "pending").length,
     proxyRequests: input.proxyAuthorizations.filter((authorization) => authorization.status === "pending").length,
     // One per meeting: its newest result waits until the committee approves.
-    pendingResults: [...meetingsWithResult].filter((meetingId) => !published.has(meetingId)).length,
+    pendingResults: [...meetingsWithResult].filter((meetingId) => !published.has(meetingId) && !notPassed.has(meetingId))
+      .length,
+    notPassedResults: notPassed.size,
     paperIdentity: input.pendingManualBallots.length,
     conflicts: twice.size,
     englishDrafts: input.englishDrafts,

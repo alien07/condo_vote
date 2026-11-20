@@ -1,7 +1,7 @@
 import { getAdminDashboardData } from "@/features/admin/data";
 import { getStaffI18n } from "@/lib/i18n/server";
 import { fill } from "@/lib/i18n/template";
-import { isAdmin, isSystemAdmin } from "@/lib/auth/permissions";
+import { getCurrentProfileWithRoles, isAdmin, isSystemAdmin } from "@/lib/auth/permissions";
 import { AdminSoftNavigation } from "@/features/admin/components/admin-soft-navigation";
 import { ShieldCheck } from "lucide-react";
 import { PeopleCrudPilot } from "@/features/admin/components/sections/people/people-crud-pilot";
@@ -95,18 +95,34 @@ export async function AdminWorkspace({
     pendingManualBallots,
     emailLogs,
     profiles,
+    resultDecisions,
     resultPublications,
   } =
     await getAdminDashboardData({ auditFilters });
-  const [canEditTechnicalSettings, canManageOwnerAccounts] = await Promise.all([
+  const [canEditTechnicalSettings, canManageOwnerAccounts, current] = await Promise.all([
     isSystemAdmin(),
     isAdmin(),
+    getCurrentProfileWithRoles(),
   ]);
+  // Only active committee members answer on results (D027); the database
+  // checks it again.
+  const today = new Date().toISOString().slice(0, 10);
+  const canApproveResults =
+    (current?.roles.includes("committee") ?? false) &&
+    committeeMembers.some(
+      (member) =>
+        member.profile_id === current?.profile.id &&
+        member.active &&
+        (!member.term_starts_at || member.term_starts_at <= today) &&
+        (!member.term_ends_at || member.term_ends_at >= today),
+    );
   const {
     appRolesByProfile,
     approvalCountBySnapshotId,
     approvedMeetingIds,
     approvedResultSnapshotIds,
+    castingDecidedSnapshotIds,
+    decisionBySnapshotId,
     lockedMeetingIds,
     pendingManualBallotsByMeetingId,
   } = deriveSharedAdminState({
@@ -114,6 +130,7 @@ export async function AdminWorkspace({
     committeeApprovals,
     pendingManualBallots,
     profiles,
+    resultDecisions,
     resultPublications,
   });
   const activeSection =
@@ -255,6 +272,9 @@ export async function AdminWorkspace({
           approvalCountBySnapshotId={approvalCountBySnapshotId}
           approvedMeetingIds={approvedMeetingIds}
           approvedResultSnapshotIds={approvedResultSnapshotIds}
+          canApproveResults={canApproveResults}
+          castingDecidedSnapshotIds={castingDecidedSnapshotIds}
+          decisionBySnapshotId={decisionBySnapshotId}
           lockedMeetingIds={lockedMeetingIds}
           drawer={drawer}
           focusedResultSnapshotId={focusedResultSnapshotId}

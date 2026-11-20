@@ -2,7 +2,11 @@ import { CountedText } from "@/features/committee/counted-text";
 import { ConfirmSubmitButton } from "@/features/admin/components/form-controls";
 import { RequiredMark } from "@/features/admin/components/field-label";
 import { ActionRow, ActionRowCancel } from "@/features/ui/action-row";
-import { approveResultAsCommittee, requestCorrectionAsCommittee } from "@/features/committee/actions";
+import {
+  approveResultAsCommittee,
+  objectResultAsCommittee,
+  requestCorrectionAsCommittee,
+} from "@/features/committee/actions";
 import type { StaffDictionary } from "@/lib/i18n/staff";
 import { fill } from "@/lib/i18n/template";
 
@@ -11,9 +15,9 @@ const input =
   "min-h-11 w-full rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm font-normal";
 
 /**
- * Approve and "request a correction" for a result (review 2026-11-15): one
- * row of buttons, the optional note folded behind "+ Add a note", the
- * correction form opening below the row.
+ * Approve, "do not approve" (with a reason, D027) and "request a correction"
+ * for a result (review 2026-11-15): one row of buttons, the optional note
+ * folded behind "+ Add a note", each reason form opening below the row.
  */
 export function ResultActions({
   canRequestCorrection,
@@ -24,7 +28,7 @@ export function ResultActions({
 }: {
   canRequestCorrection: boolean;
   openCorrection: boolean;
-  result: { snapshot_id: string; required_approvals: number };
+  result: { snapshot_id: string; tally: { required: number; members: number } };
   t: StaffDictionary["committee"];
   title: string;
 }) {
@@ -50,7 +54,8 @@ export function ResultActions({
                 className="min-h-11 rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)]"
                 confirmMessage={fill(t.confirmApprove, {
                   title,
-                  required: result.required_approvals,
+                  required: result.tally.required,
+                  members: result.tally.members,
                 })}
                 pendingLabel={t.approving}
               >
@@ -59,16 +64,46 @@ export function ResultActions({
             </form>
           );
 
-          if (!canRequestCorrection) {
-            return <div className="flex flex-wrap gap-2">{approveForm}</div>;
-          }
+          const toggle =
+            "inline-flex min-h-11 items-center rounded-md border border-[var(--border)] bg-[var(--surface)] px-4 py-2 text-sm font-medium";
+          const objectForm = (
+            <form action={objectResultAsCommittee} className="grid gap-3 text-sm sm:max-w-md" data-result-object-form>
+              <input name="result_snapshot_id" type="hidden" value={result.snapshot_id} />
+              <label className="grid gap-1 font-medium">
+                <span>
+                  {t.objectResultReason} <RequiredMark />
+                </span>
+                <CountedText className={input} maxLength={500} multiline name="reason" required />
+              </label>
+              <div className="flex flex-wrap justify-end gap-2">
+                <ActionRowCancel
+                  className="min-h-11 rounded-md border border-[var(--border)] bg-[var(--surface)] px-4 py-2 text-sm font-medium"
+                  label={t.cancel}
+                />
+                <ConfirmSubmitButton
+                  className="min-h-11 rounded-md bg-[var(--danger)] px-4 py-2 text-sm font-medium text-white"
+                  confirmMessage={fill(t.confirmObjectResult, { title })}
+                  pendingLabel={t.saving}
+                >
+                  {t.sendResultObjection}
+                </ConfirmSubmitButton>
+              </div>
+            </form>
+          );
 
-          // The correction form opens below the row; the buttons stay put.
+          // The reason forms open below the row; the buttons stay put.
           return (
             <ActionRow
               actions={approveForm}
               data-correction-form
-              panel={
+              panel={objectForm}
+              toggleClassName={toggle}
+              toggleLabel={t.objectResult}
+              more={canRequestCorrection ? [{
+                key: "correction",
+                label: t.requestCorrection,
+                className: toggle,
+                panel: (
                 <form action={requestCorrectionAsCommittee} className="grid gap-3 text-sm">
                   <input name="result_snapshot_id" type="hidden" value={result.snapshot_id} />
                   <label className="grid gap-1 font-medium">
@@ -111,9 +146,8 @@ export function ResultActions({
                     </ConfirmSubmitButton>
                   </div>
                 </form>
-              }
-              toggleClassName="inline-flex min-h-11 items-center rounded-md border border-[var(--border)] bg-[var(--surface)] px-4 py-2 text-sm font-medium"
-              toggleLabel={t.requestCorrection}
+                ),
+              }] : []}
             />
           );
         })()}

@@ -84,7 +84,7 @@ export default async function OfficialRecordPage({ params, searchParams }: Recor
       .maybeSingle(),
     supabase
       .from("result_publications")
-      .select("published_at, approvals_count")
+      .select("published_at, approvals_count, committee_members, required_approvals, objections_count, decided_by_casting_vote")
       .eq("result_snapshot_id", snapshotId)
       .maybeSingle(),
     supabase
@@ -428,7 +428,14 @@ export default async function OfficialRecordPage({ params, searchParams }: Recor
         )}
         <p className="mt-1">
           {publication
-            ? `เผยแพร่ผลเมื่อ ${formatThaiDateTime(publication.published_at)} (อนุมัติ ${publication.approvals_count} คน)`
+            ? `เผยแพร่ผลเมื่อ ${formatThaiDateTime(publication.published_at)} (${
+                // n of N at publication (D027); results published before it keep the count only.
+                publication.committee_members !== null && publication.required_approvals !== null
+                  ? `กรรมการอนุมัติ ${publication.approvals_count} จาก ${publication.committee_members} คน ไม่อนุมัติ ${publication.objections_count ?? 0} คน ต้องการ ${publication.required_approvals} คน${
+                      publication.decided_by_casting_vote ? " ประธานลงคะแนนชี้ขาด" : ""
+                    }`
+                  : `อนุมัติ ${publication.approvals_count} คน`
+              })`
             : "ยังไม่เผยแพร่ผล"}
           {settings?.result_notice_days
             ? ` · ต้องแจ้งเจ้าของร่วมภายใน ${settings.result_notice_days} วันตามข้อบังคับ`

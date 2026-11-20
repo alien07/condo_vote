@@ -25,6 +25,7 @@ Types are the TypeScript types the app sees: `string` also covers `uuid`, `text`
 | [ballot_versions](#ballot_versions) | 5 | Historical ballot payloads whenever a voter edits before close. |
 | [ballots](#ballots) | 9 | Current ballot record per meeting and room. |
 | [committee_approvals](#committee_approvals) | 6 | One committee member's approval of a result snapshot. |
+| [committee_casting_votes](#committee_casting_votes) | 9 |  |
 | [committee_members](#committee_members) | 12 | Real committee roster and positions for document approval/signature context. |
 | [condo_profiles](#condo_profiles) | 20 | Juristic person profile used as the issuer identity for formal documents and PDFs. |
 | [documents](#documents) | 16 | Private file references for owner/proxy approval and generated PDFs. |
@@ -46,7 +47,8 @@ Types are the TypeScript types the app sees: `string` also covers `uuid`, `text`
 | [proxy_authorizations](#proxy_authorizations) | 13 | Meeting-specific proxy permissions allowing a non-owner to vote for a room. |
 | [result_correction_requests](#result_correction_requests) | 16 |  |
 | [result_documents](#result_documents) | 9 | Master PDF files of published results (D021). |
-| [result_publications](#result_publications) | 5 | Published result per meeting, written when approvals reach the minimum. |
+| [result_objections](#result_objections) | 6 |  |
+| [result_publications](#result_publications) | 9 | Published result per meeting, written when approvals reach the minimum. |
 | [result_snapshots](#result_snapshots) | 6 | Calculated result payloads for a meeting before/after approval. |
 | [room_owners](#room_owners) | 10 | Links owners to rooms with effective dates, current/scheduled/ended/cancelled state, and ownership history. |
 | [rooms](#rooms) | 9 | Master data for condominium units. Used as the base voting right because one room equals one vote. |
@@ -169,6 +171,20 @@ One committee member's approval of a result snapshot. More in [data-model.md](da
 | `meeting_id` | `string` |  |  | [meetings.id](#meetings) |
 | `notes` | `string` | null |  |  |
 | `result_snapshot_id` | `string` |  |  | [result_snapshots.id](#result_snapshots) |
+
+## committee_casting_votes
+
+| Column | Type | Null | Default | FK |
+| --- | --- | :---: | :---: | --- |
+| `cast_by` | `string` |  |  | [profiles.id](#profiles) |
+| `created_at` | `string` |  | default |  |
+| `decision` | `string` |  |  |  |
+| `id` | `string` |  | default |  |
+| `meeting_id` | `string` |  |  | [meetings.id](#meetings) |
+| `position_code` | `string` |  |  |  |
+| `reason` | `string` | null |  |  |
+| `subject_id` | `string` |  |  |  |
+| `subject_kind` | `string` |  |  |  |
 
 ## committee_members
 
@@ -550,6 +566,17 @@ Master PDF files of published results (D021). More in [data-model.md](data-model
 | `sha256` | `string` |  |  |  |
 | `storage_path` | `string` |  |  |  |
 
+## result_objections
+
+| Column | Type | Null | Default | FK |
+| --- | --- | :---: | :---: | --- |
+| `created_at` | `string` |  | default |  |
+| `id` | `string` |  | default |  |
+| `meeting_id` | `string` |  |  | [meetings.id](#meetings) |
+| `objected_by` | `string` |  |  | [profiles.id](#profiles) |
+| `reason` | `string` |  |  |  |
+| `result_snapshot_id` | `string` |  |  | [result_snapshots.id](#result_snapshots) |
+
 ## result_publications
 
 Published result per meeting, written when approvals reach the minimum. More in [data-model.md](data-model.md#result_publications).
@@ -557,9 +584,13 @@ Published result per meeting, written when approvals reach the minimum. More in 
 | Column | Type | Null | Default | FK |
 | --- | --- | :---: | :---: | --- |
 | `approvals_count` | `number` |  |  |  |
+| `committee_members` | `number` | null |  |  |
+| `decided_by_casting_vote` | `boolean` |  | default |  |
 | `id` | `string` |  | default |  |
 | `meeting_id` | `string` |  |  | [meetings.id](#meetings) |
+| `objections_count` | `number` | null |  |  |
 | `published_at` | `string` |  | default |  |
+| `required_approvals` | `number` | null |  |  |
 | `result_snapshot_id` | `string` |  |  | [result_snapshots.id](#result_snapshots) |
 
 ## result_snapshots
@@ -642,11 +673,16 @@ Called with `supabase.rpc(name, args)`. Rules and permissions: [rls-policies.md]
 | `can_approve_as_committee` |  | `boolean` |
 | `cancel_close_request` | `p_request_id: string` | `undefined` |
 | `cancel_co_owner_vote` | `p_authorization_id: string` | `undefined` |
+| `cast_committee_deciding_vote` | `p_decision: string, p_kind: string, p_reason?: string, p_subject: string` | `Json` |
+| `committee_chair` |  | `{ full_name: string position_code: string profile_id: string }[]` |
+| `committee_majority` | `p_setting: number` | `number` |
+| `committee_member_count` |  | `number` |
 | `committee_overview` |  | `Json` |
 | `committee_people` | `p_profile_ids: string[]` | `Json` |
 | `committee_person_name` | `p_profile_id: string` | `string` |
 | `committee_position_code_for` | `p_title: string` | `string` |
 | `committee_position_label` | `p_code: string, p_lang?: string, p_title: string` | `string` |
+| `committee_tally` | `p_kind: string, p_subject: string` | `Json` |
 | `correction_default_level` | `p_category: string` | `string` |
 | `current_profile_id` |  | `string` |
 | `evaluate_close_request` | `p_request_id: string` | `string` |
@@ -661,6 +697,8 @@ Called with `supabase.rpc(name, args)`. Rules and permissions: [rls-policies.md]
 | `meeting_online_tally` | `p_meeting_id: string` | `{ choice_id: string ownership: number vote_count: number }[]` |
 | `my_member_access` |  | `Json` |
 | `needs_privacy_consent` |  | `boolean` |
+| `notify_result_not_passed` | `p_actor: string, p_result_snapshot_id: string` | `undefined` |
+| `object_result_snapshot` | `p_reason: string, p_result_snapshot_id: string` | `Json` |
 | `profile_access_active` | `p_profile_id: string` | `boolean` |
 | `profile_has_consent` | `p_profile_id: string` | `boolean` |
 | `propose_close_voting` | `p_close_at?: string, p_meeting_id: string, p_reason: string` | `Json` |
@@ -671,6 +709,8 @@ Called with `supabase.rpc(name, args)`. Rules and permissions: [rls-policies.md]
 | `raise_correction_level` | `p_legal_reference?: string, p_level: string, p_reason: string, p_request_id: string` | `undefined` |
 | `request_result_correction` | `p_category: string, p_legal_reference?: string, p_reason: string, p_result_snapshot_id: string` | `Json` |
 | `resolve_vote_source_conflict` | `p_chosen_source: string, p_conflict_remark: string, p_manual_ballot_id: string, p_meeting_id: string, p_online_ballot_id: string, p_room_id: string` | `Json` |
+| `result_decisions` |  | `Json` |
+| `result_has_high_correction` | `p_meeting_id: string` | `boolean` |
 | `result_required_approvals` | `p_meeting_id: string` | `number` |
 | `room_owner_profile_id` | `p_room_id: string` | `string` |
 | `save_meeting_english` | `p_checked: boolean, p_meeting_id: string, p_text: Json` | `Json` |
