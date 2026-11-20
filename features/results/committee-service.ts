@@ -1,5 +1,6 @@
 // Committee approvals, close-early requests and correction requests (D014).
-// Rules live in supabase/migrations/0023 and 0030; these wrappers call them.
+// Rules live in supabase/migrations/0023, 0030 and 0046 (majority and the
+// chair's casting vote, D027); these wrappers call them.
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/database.types";
 
@@ -16,7 +17,7 @@ export class ResultError extends Error {
 }
 
 export function toResultError(error: { message: string }) {
-  const match = error.message.match(/^(RESULT_[A-Z_]+):\s*([\s\S]*)$/);
+  const match = error.message.match(/^((?:RESULT|COMMITTEE)_[A-Z_]+):\s*([\s\S]*)$/);
 
   return match
     ? new ResultError(match[1], match[2])
@@ -26,6 +27,31 @@ export function toResultError(error: { message: string }) {
 export type ApprovalProgress = {
   approvals: number;
   required: number;
+};
+
+export type TallyStatus = "open" | "passed" | "not_passed" | "tie";
+
+/** committee_tally (0046, D027): n of N among active members. */
+export type CommitteeTally = ApprovalProgress & {
+  kind: "result" | "close_request";
+  subject_id: string;
+  meeting_id: string;
+  /** N: active committee members today. */
+  members: number;
+  high_level: boolean;
+  objections: number;
+  /** Members who may answer (the generator of a result may not). */
+  eligible: number;
+  answered: number;
+  status: TallyStatus;
+  casting_vote: {
+    decision: "approve" | "object";
+    position: "chair" | "vice_chair";
+    reason: string | null;
+    at: string;
+    name: string | null;
+  } | null;
+  chair: { profile_id: string; position: "chair" | "vice_chair"; name: string | null } | null;
 };
 
 export async function approveResult(
@@ -42,7 +68,40 @@ export async function approveResult(
   }
 
   // held: approvals are complete but a correction request is open (0034).
-  return data as ApprovalProgress & { published: boolean; held?: boolean };
+  return data as CommitteeTally & { published: boolean; held?: boolean };
+}
+
+/** Object to a result with a reason (D027). Answers cannot change. */
+export async function objectResult(supabase: Client, input: { resultSnapshotId: string; reason: string }) {
+  const { data, error } = await supabase.rpc("object_result_snapshot", {
+    p_result_snapshot_id: input.resultSnapshotId,
+    p_reason: input.reason,
+  });
+
+  if (error) {
+    throw toResultError(error);
+  }
+
+  return data as unknown as CommitteeTally;
+}
+
+/** The chair's (or vice chair's) casting vote on a tie (D027). */
+export async function castDecidingVote(
+  supabase: Client,
+  input: { kind: "result" | "close_request"; subjectId: string; decision: "approve" | "object"; reason: string | null },
+) {
+  const { data, error } = await supabase.rpc("cast_committee_deciding_vote", {
+    p_kind: input.kind,
+    p_subject: input.subjectId,
+    p_decision: input.decision,
+    p_reason: input.reason ?? undefined,
+  });
+
+  if (error) {
+    throw toResultError(error);
+  }
+
+  return data as unknown as CommitteeTally & { published: boolean };
 }
 
 type RequestStatus = "open" | "approved" | "failed" | "cancelled" | "lapsed";
@@ -73,7 +132,7 @@ export async function answerCloseRequest(
   supabase: Client,
   input: { requestId: string; answer: "approve" | "object"; reason: string | null },
 ) {
-  return unwrap<{ request_id: string; status: RequestStatus }>(
+  return unwrap<{ request_id: string; status: RequestStatus; tally: CommitteeTally }>(
     await supabase.rpc("answer_close_request", {
       p_request_id: input.requestId,
       p_answer: input.answer,
@@ -146,6 +205,7 @@ export type CloseRequest = {
   proposed_by: string;
   proposed_by_me: boolean;
   proposer: string | null;
+  tally: CommitteeTally;
   my_answer: "approve" | "object" | null;
   answers: Array<{
     profile_id: string;
@@ -175,6 +235,11 @@ export type CorrectionRequest = {
 
 export type CommitteeOverview = {
   is_member: boolean;
+  /** N: active committee members today (D027). */
+  member_count: number;
+  /** Who breaks a tie: the chair, else the vice chair; null when neither. */
+  chair: CommitteeTally["chair"];
+  i_am_chair: boolean;
   members: CommitteePerson[];
   open_meetings: Array<{
     id: string;
@@ -205,6 +270,14 @@ export type CommitteeOverview = {
     required_approvals: number;
     approvals: number;
     approved_by_me: boolean;
+    objected_by_me: boolean;
+    tally: CommitteeTally;
+    objection_list: Array<{
+      profile_id: string;
+      name: string | null;
+      reason: string;
+      objected_at: string;
+    }>;
     approval_list: Array<{
       profile_id: string;
       name: string | null;

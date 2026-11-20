@@ -29,7 +29,10 @@ insert into public.profiles (id, auth_user_id, full_name, email, default_status,
   (:resident_e, :resident_e, 'Resident E', 'ro.resident@example.test', 'resident', 'approved'),
   (:proxy_f, :proxy_f, 'Proxy F', 'ro.proxy@example.test', 'proxy', 'approved');
 insert into public.app_roles (profile_id, role) values
-  (:staff_a, 'staff'), (:auditor_b, 'auditor'), (:admin_c, 'admin');
+  (:staff_a, 'staff'), (:auditor_b, 'auditor'), (:admin_c, 'admin'), (:admin_c, 'committee');
+-- Only active committee members answer on results (D027), so the generator
+-- is one: the separation rule is what stops them.
+insert into public.committee_members (profile_id, full_name, position_code) values (:admin_c, 'Admin C', 'member');
 insert into public.rooms (id, room_number, ownership_percent) values (:room_a, 'R-101', 10);
 insert into public.owners (id, full_name, email) values (:owner_rec, 'Owner D', 'ro.owner@example.test');
 insert into public.room_owners (room_id, owner_id, status) values (:room_a, :owner_rec, 'active');

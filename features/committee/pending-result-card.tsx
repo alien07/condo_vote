@@ -1,7 +1,9 @@
 import { LongText } from "@/features/ui/long-text";
 import { ApproverList } from "@/features/committee/approver-list";
 import { changedAgendaItems } from "@/features/committee/changed-items";
+import { CastingVotePanel } from "@/features/committee/casting-vote-panel";
 import { ResultActions } from "@/features/committee/result-actions";
+import { TallyLine } from "@/features/committee/tally-line";
 import { ResultAgenda, type AgendaQuestion, type VoterComment } from "@/features/committee/result-agenda";
 import { ResultCorrections } from "@/features/committee/result-corrections";
 import type { CommitteeOverview } from "@/features/results/committee-service";
@@ -24,10 +26,13 @@ type PendingPayload = {
 };
 
 
-/** A result waiting for approval: counts, who approved, corrections, and the
- * approve and correction forms (demo feedback items 11 and 12). */
+/** A result waiting for approval: counts, who answered, corrections, and the
+ * approve, object and correction forms (demo feedback items 11 and 12;
+ * majority and the chair's casting vote, D027). */
 export function PendingResultCard({
   comments,
+  iAmChair,
+  isMember,
   result,
   members,
   locale,
@@ -35,6 +40,8 @@ export function PendingResultCard({
   t,
 }: {
   comments?: VoterComment[];
+  iAmChair: boolean;
+  isMember: boolean;
   result: PendingResult;
   members: CommitteeOverview["members"];
   locale: Locale;
@@ -44,23 +51,26 @@ export function PendingResultCard({
   const payload = (result.payload ?? {}) as PendingPayload;
   // English text when the reader uses English and it was written (D020).
   const title = localized(locale, result.title, result.title_en);
-  const more = Math.max(result.required_approvals - result.approvals, 0);
-  const openHigh = result.corrections.some(
-    (correction) => correction.level === "high" && correction.status !== "no_change",
-  );
+  const tally = result.tally;
   const changed = result.previous_payload
     ? changedAgendaItems(result.previous_payload as PendingPayload, payload)
     : null;
   // Members who have not approved yet, shown on the card (review 2026-11-14)
   // as well as in the "i" list.
-  const approvedIds = new Set(result.approval_list.map((approval) => approval.profile_id));
+  const approvedIds = new Set([
+    ...result.approval_list.map((approval) => approval.profile_id),
+    ...result.objection_list.map((objection) => objection.profile_id),
+  ]);
   const waitingFor = members.filter((member) => !approvedIds.has(member.profile_id));
   // One open correction per result (0034): others see it instead of the form.
   const openCorrection = result.corrections.some((correction) => correction.status === "open");
   // Approvals complete, but publishing waits for the admin's answer.
-  const held = openCorrection && result.approvals >= result.required_approvals;
+  const held = openCorrection && tally.status === "passed";
   // A member who approved has said the numbers are correct (0034).
   const canRequestCorrection = !result.approved_by_me && !openCorrection;
+  // Answers are final (D027): one answer per member while the decision is open.
+  const answered = result.approved_by_me || result.objected_by_me;
+  const canAnswer = isMember && !answered && tally.status === "open";
   const regeneratedAfter = result.corrections.find(
     (correction) => correction.result_snapshot_id !== result.snapshot_id,
   );
@@ -80,21 +90,39 @@ export function PendingResultCard({
             {t.youApproved}
           </span>
         ) : null}
+        {result.objected_by_me ? (
+          <span
+            className="rounded-full bg-[var(--danger-surface)] px-2 py-0.5 text-xs font-semibold text-[var(--danger)]"
+            data-you-objected
+          >
+            {t.youObjected}
+          </span>
+        ) : null}
       </div>
       <p className="text-sm text-[var(--muted)]">
         {fill(t.generated, { time: formatDateTime(result.generated_at) })}
       </p>
-      <p className="text-sm" data-approval-count>
+      <div data-approval-count>
+        <TallyLine t={t} tally={tally}>
         <Term
           extra={
             <ApproverList
-              entries={result.approval_list.map((approval) => ({
-                profileId: approval.profile_id,
-                name: approval.name,
-                kind: "approve" as const,
-                at: approval.approved_at,
-                note: approval.notes,
-              }))}
+              entries={[
+                ...result.approval_list.map((approval) => ({
+                  profileId: approval.profile_id,
+                  name: approval.name,
+                  kind: "approve" as const,
+                  at: approval.approved_at,
+                  note: approval.notes,
+                })),
+                ...result.objection_list.map((objection) => ({
+                  profileId: objection.profile_id,
+                  name: objection.name,
+                  kind: "object" as const,
+                  at: objection.objected_at,
+                  note: objection.reason,
+                })),
+              ]}
               formatTime={formatDateTime}
               members={members}
               text={t}
@@ -103,11 +131,10 @@ export function PendingResultCard({
           k="approvals"
           locale={locale}
         >
-          {more > 0
-            ? fill(t.countMore, { count: result.approvals, required: result.required_approvals, more })
-            : fill(t.countDone, { count: result.approvals, required: result.required_approvals })}
+          {t.approversTitle}
         </Term>
-      </p>
+        </TallyLine>
+      </div>
       {result.approval_list.length > 0 ? (
         <p className="text-xs text-[var(--muted)]" data-approved-by>
           {fill(t.approvedBy, { names: result.approval_list.map((approval) => approval.name ?? "-").join(", ") })}
@@ -119,7 +146,25 @@ export function PendingResultCard({
           {waitingFor.map((member) => member.name).join(", ")}
         </p>
       ) : null}
-      {openHigh ? <p className="text-sm font-medium text-[var(--danger)]">{t.allMembersNeeded}</p> : null}
+      {result.objection_list.length > 0 ? (
+        <div className="grid gap-1 text-sm" data-objections>
+          <span className="font-medium">{t.objectionsTitle}</span>
+          {result.objection_list.map((objection) => (
+            <div className="border-l-2 border-[var(--danger)] pl-2" key={objection.profile_id}>
+              <span className="text-xs text-[var(--muted)]">
+                {fill(t.correctionBy, { name: objection.name ?? "-", time: formatDateTime(objection.objected_at) })}
+              </span>
+              <LongText less={t.showLess} lines={2} more={t.showMore} text={objection.reason} />
+            </div>
+          ))}
+        </div>
+      ) : null}
+      {tally.status === "not_passed" ? (
+        <p className="rounded-md bg-[var(--danger-surface)] px-3 py-2 text-sm text-[var(--danger)]" data-not-passed>
+          {t.notPassedNote}
+        </p>
+      ) : null}
+      <CastingVotePanel iAmChair={iAmChair} t={t} tally={tally} />
       {held ? (
         <p className="rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-900" data-publish-held>
           {t.publishHeld}
@@ -177,9 +222,17 @@ export function PendingResultCard({
 
       <ResultCorrections corrections={result.corrections} formatDateTime={formatDateTime} t={t} />
 
-      {/* Someone who approved has nothing left to do here: the badge at the
-          top says so. */}
-      {result.approved_by_me ? null : (
+      {/* Someone who answered has nothing left to do here: the badge at the
+          top says so. Only active members answer (D027). */}
+      {!canAnswer ? (
+        !isMember ? (
+          <p className="text-xs text-[var(--muted)]" data-watch-only>
+            {t.watchOnly}
+          </p>
+        ) : answered ? (
+          <p className="text-xs text-[var(--muted)]">{t.answerFinal}</p>
+        ) : null
+      ) : (
         <ResultActions
           canRequestCorrection={canRequestCorrection}
           openCorrection={openCorrection}

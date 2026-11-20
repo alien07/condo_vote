@@ -6,6 +6,8 @@ import { ApproverList } from "@/features/committee/approver-list";
 import { CloseDetailsButton } from "@/features/committee/close-details-button";
 import { ActionRow, ActionRowCancel } from "@/features/ui/action-row";
 import { CloseWhenFields } from "@/features/committee/close-when-fields";
+import { CastingVotePanel } from "@/features/committee/casting-vote-panel";
+import { TallyLine } from "@/features/committee/tally-line";
 import {
   answerCloseAsCommittee,
   cancelCloseAsCommittee,
@@ -32,6 +34,7 @@ const secondaryButton =
 export function CloseRequestCard({
   meeting,
   members,
+  iAmChair,
   isMember,
   locale,
   formatDateTime,
@@ -39,6 +42,7 @@ export function CloseRequestCard({
 }: {
   meeting: Meeting;
   members: CommitteeOverview["members"];
+  iAmChair: boolean;
   isMember: boolean;
   locale: Locale;
   formatDateTime: (value: string) => string;
@@ -49,9 +53,8 @@ export function CloseRequestCard({
   const title = localized(locale, meeting.title, meeting.title_en);
   // Voting closes only on the meeting day (0036).
   const closeWindow = closeEarlyWindow(meeting.starts_at);
-  const approvals = request?.answers.filter((answer) => answer.answer === "approve").length ?? 0;
-  const objections = request?.answers.filter((answer) => answer.answer === "object").length ?? 0;
-  const more = Math.max(meeting.required_approvals - approvals, 0);
+  // n of N among active members (D027), from the database.
+  const required = request?.tally.required ?? meeting.required_approvals;
 
   return (
     <div
@@ -102,15 +105,16 @@ export function CloseRequestCard({
             {request.close_at
               ? fill(t.requestCloseAt, {
                   time: formatDateTime(request.close_at),
-                  required: meeting.required_approvals,
+                  required,
                 })
-              : fill(t.requestCloseNow, { required: meeting.required_approvals })}
+              : fill(t.requestCloseNow, { required })}
           </div>
           <div className="text-[var(--muted)]">
             {fill(t.requestBy, { name: request.proposer ?? "-", time: formatDateTime(request.created_at) })}
           </div>
           <LongText label={t.labelReason} less={t.showLess} more={t.showMore} text={request.reason} />
           <div data-close-count>
+            <TallyLine t={t} tally={request.tally}>
             <Term
               extra={
                 <ApproverList
@@ -129,12 +133,11 @@ export function CloseRequestCard({
               k="approveClose"
               locale={locale}
             >
-              {more > 0
-                ? fill(t.countMore, { count: approvals, required: meeting.required_approvals, more })
-                : fill(t.countDone, { count: approvals, required: meeting.required_approvals })}
-              {objections > 0 ? ` · ${t.objected} ${objections}` : null}
+              {t.approversTitle}
             </Term>
+            </TallyLine>
           </div>
+          <CastingVotePanel iAmChair={iAmChair} t={t} tally={request.tally} />
 
           {request.proposed_by_me ? (
             // The proposal counts as the proposer's approval; they cancel
@@ -154,11 +157,13 @@ export function CloseRequestCard({
                 </ConfirmSubmitButton>
               </form>
             </div>
-          ) : isMember ? (
+          ) : isMember && request.my_answer ? (
+            // Answers are final (D027).
+            <p className="text-xs text-[var(--muted)]">{t.changeAnswer}</p>
+          ) : isMember && request.tally.status === "open" ? (
             <div className="grid gap-1" data-close-answers>
               {(() => {
-                const approveForm =
-                  request.my_answer !== "approve" ? (
+                const approveForm = (
                     <form action={answerCloseAsCommittee}>
                       <input name="request_id" type="hidden" value={request.id} />
                       <input name="answer" type="hidden" value="approve" />
@@ -166,7 +171,7 @@ export function CloseRequestCard({
                         className="min-h-11 rounded-md bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)]"
                         confirmMessage={fill(t.confirmApproveClose, {
                           title,
-                          required: meeting.required_approvals,
+                          required,
                         })}
                         pendingLabel={t.saving}
                         tone="primary"
@@ -174,12 +179,7 @@ export function CloseRequestCard({
                         {t.answerApprove}
                       </ConfirmSubmitButton>
                     </form>
-                  ) : null;
-
-                // Already objected: only "approve" is left to change to.
-                if (request.my_answer === "object") {
-                  return <div className="flex flex-wrap gap-2">{approveForm}</div>;
-                }
+                  );
 
                 // The reason field opens only when objecting, so nobody
                 // thinks approving needs a reason; the buttons stay in a row.
@@ -219,7 +219,7 @@ export function CloseRequestCard({
               })()}
               <p className="text-xs text-[var(--muted)]">{t.changeAnswer}</p>
             </div>
-          ) : (
+          ) : isMember ? null : (
             <p className="text-xs text-[var(--muted)]">{t.notMember}</p>
           )}
         </div>

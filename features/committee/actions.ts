@@ -7,6 +7,8 @@ import { createClient } from "@/lib/supabase/server";
 import {
   answerCloseRequest,
   approveResult,
+  castDecidingVote,
+  objectResult,
   ResultError,
   cancelCloseRequest,
   proposeCloseVoting,
@@ -59,7 +61,9 @@ export async function approveResultAsCommittee(formData: FormData) {
       "success",
       result.published
         ? t.approvedPublished
-        : fill(result.held ? t.approvalHeld : t.approvalRecorded, {
+        : result.status === "not_passed"
+          ? t.resultNotPassed
+          : fill(result.held ? t.approvalHeld : t.approvalRecorded, {
             count: result.approvals,
             required: result.required,
           }),
@@ -71,6 +75,40 @@ export async function approveResultAsCommittee(formData: FormData) {
   revalidatePath("/committee");
   revalidatePath("/summary");
   redirect(href);
+}
+
+/** Do not approve a result, with a reason (D027). */
+export async function objectResultAsCommittee(formData: FormData) {
+  await runAndRedirect(async (t) => {
+    const supabase = await createClient();
+    const tally = await objectResult(supabase, {
+      resultSnapshotId: String(formData.get("result_snapshot_id") ?? ""),
+      reason: String(formData.get("reason") ?? "").trim(),
+    });
+
+    return tally.status === "not_passed" ? t.resultNotPassed : t.resultObjected;
+  });
+}
+
+/** The chair's casting vote on a tie, for a result or a close request (D027). */
+export async function castDecidingVoteAsCommittee(formData: FormData) {
+  await runAndRedirect(async (t) => {
+    const supabase = await createClient();
+    const subjectId = String(formData.get("subject_id") ?? "");
+    const kind = formData.get("kind") === "close_request" ? "close_request" : "result";
+    const result = await castDecidingVote(supabase, {
+      kind,
+      subjectId,
+      decision: formData.get("decision") === "object" ? "object" : "approve",
+      reason: String(formData.get("reason") ?? "").trim() || null,
+    });
+
+    if (kind === "result" && result.published) {
+      await scheduleResultPdfs(subjectId);
+    }
+
+    return result.published ? t.approvedPublished : t.castRecorded;
+  });
 }
 
 async function runAndRedirect(
@@ -88,6 +126,7 @@ async function runAndRedirect(
 
   revalidatePath("/committee");
   revalidatePath("/vote");
+  revalidatePath("/summary");
   redirect(href);
 }
 

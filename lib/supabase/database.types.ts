@@ -427,6 +427,57 @@ export type Database = {
           },
         ]
       }
+      committee_casting_votes: {
+        Row: {
+          cast_by: string
+          created_at: string
+          decision: string
+          id: string
+          meeting_id: string
+          position_code: string
+          reason: string | null
+          subject_id: string
+          subject_kind: string
+        }
+        Insert: {
+          cast_by: string
+          created_at?: string
+          decision: string
+          id?: string
+          meeting_id: string
+          position_code: string
+          reason?: string | null
+          subject_id: string
+          subject_kind: string
+        }
+        Update: {
+          cast_by?: string
+          created_at?: string
+          decision?: string
+          id?: string
+          meeting_id?: string
+          position_code?: string
+          reason?: string | null
+          subject_id?: string
+          subject_kind?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "committee_casting_votes_cast_by_fkey"
+            columns: ["cast_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "committee_casting_votes_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       committee_members: {
         Row: {
           active: boolean
@@ -1616,6 +1667,55 @@ export type Database = {
           },
         ]
       }
+      result_objections: {
+        Row: {
+          created_at: string
+          id: string
+          meeting_id: string
+          objected_by: string
+          reason: string
+          result_snapshot_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          meeting_id: string
+          objected_by: string
+          reason: string
+          result_snapshot_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          meeting_id?: string
+          objected_by?: string
+          reason?: string
+          result_snapshot_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "result_objections_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "result_objections_objected_by_fkey"
+            columns: ["objected_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "result_objections_result_snapshot_id_fkey"
+            columns: ["result_snapshot_id"]
+            isOneToOne: false
+            referencedRelation: "result_snapshots"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       result_publications: {
         Row: {
           approvals_count: number
@@ -1908,6 +2008,25 @@ export type Database = {
         Args: { p_authorization_id: string }
         Returns: undefined
       }
+      cast_committee_deciding_vote: {
+        Args: {
+          p_decision: string
+          p_kind: string
+          p_reason?: string
+          p_subject: string
+        }
+        Returns: Json
+      }
+      committee_chair: {
+        Args: never
+        Returns: {
+          full_name: string
+          position_code: string
+          profile_id: string
+        }[]
+      }
+      committee_majority: { Args: { p_setting: number }; Returns: number }
+      committee_member_count: { Args: never; Returns: number }
       committee_overview: { Args: never; Returns: Json }
       committee_people: { Args: { p_profile_ids: string[] }; Returns: Json }
       committee_person_name: { Args: { p_profile_id: string }; Returns: string }
@@ -1918,6 +2037,10 @@ export type Database = {
       committee_position_label: {
         Args: { p_code: string; p_lang?: string; p_title: string }
         Returns: string
+      }
+      committee_tally: {
+        Args: { p_kind: string; p_subject: string }
+        Returns: Json
       }
       correction_default_level: {
         Args: { p_category: string }
@@ -1960,6 +2083,14 @@ export type Database = {
       }
       my_member_access: { Args: never; Returns: Json }
       needs_privacy_consent: { Args: never; Returns: boolean }
+      notify_result_not_passed: {
+        Args: { p_actor: string; p_result_snapshot_id: string }
+        Returns: undefined
+      }
+      object_result_snapshot: {
+        Args: { p_reason: string; p_result_snapshot_id: string }
+        Returns: Json
+      }
       profile_access_active: {
         Args: { p_profile_id: string }
         Returns: boolean
@@ -2010,6 +2141,10 @@ export type Database = {
           p_room_id: string
         }
         Returns: Json
+      }
+      result_has_high_correction: {
+        Args: { p_meeting_id: string }
+        Returns: boolean
       }
       result_required_approvals: {
         Args: { p_meeting_id: string }

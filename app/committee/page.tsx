@@ -39,6 +39,8 @@ export default async function CommitteePage() {
   const formatDateTime = (value: string) => formatDateTimeIn(locale, value);
   const pendingCount = overview.pending_results.length;
   const openCount = overview.open_meetings.length;
+  // D027: a majority of all active members, floor(N/2)+1.
+  const majority = Math.floor(overview.member_count / 2) + 1;
 
   return (
     <main className="mx-auto max-w-5xl px-6 py-8">
@@ -49,6 +51,15 @@ export default async function CommitteePage() {
           <p className="text-sm text-[var(--muted)]">{t.intro}</p>
         </div>
       </div>
+
+      <p className="mb-3 text-sm" data-committee-members>
+        {fill(t.membersSummary, { members: overview.member_count, majority })}
+      </p>
+      {overview.chair ? null : (
+        <p className="mb-4 rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-900" data-no-chair-warning role="status">
+          {t.noChair}
+        </p>
+      )}
 
       {/* Summary with jump links; on a phone the page gets long. */}
       <nav aria-label={t.jumpTo} className="mb-6 flex flex-wrap gap-2 text-sm" data-committee-summary>
@@ -95,6 +106,8 @@ export default async function CommitteePage() {
                 <PendingResultCard
                   comments={commentsByMeeting.get(result.meeting_id)}
                   formatDateTime={formatDateTime}
+                  iAmChair={overview.i_am_chair}
+                  isMember={overview.is_member}
                   key={result.snapshot_id}
                   locale={locale}
                   members={overview.members}
@@ -131,6 +144,7 @@ export default async function CommitteePage() {
               {overview.open_meetings.map((meeting) => (
                 <CloseRequestCard
                   formatDateTime={formatDateTime}
+                  iAmChair={overview.i_am_chair}
                   isMember={overview.is_member}
                   key={meeting.id}
                   locale={locale}
