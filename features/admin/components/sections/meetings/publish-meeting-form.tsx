@@ -4,6 +4,7 @@ import { formatDateTime } from "@/features/admin/components/sections/shared/form
 import type { MeetingReadiness } from "@/features/admin/meeting-readiness";
 import { getStaffI18n } from "@/lib/i18n/server";
 import { fill } from "@/lib/i18n/template";
+import { createClient } from "@/lib/supabase/server";
 
 type PublishMeeting = { id: string; title: string; starts_at: string; ends_at: string };
 
@@ -33,6 +34,17 @@ export async function PublishMeetingForm({
   readiness: MeetingReadiness;
 }) {
   const { s } = await getStaffI18n();
+  // Notice period (D027): strict refuses, otherwise the confirm warns.
+  const { data: notice } = await (await createClient()).rpc("meeting_notice_check", { p_meeting_id: meeting.id });
+  const check = (notice ?? {}) as { short?: boolean; strict?: boolean; days?: number };
+
+  if (readiness.ready && check.short && check.strict) {
+    return (
+      <span className="text-xs text-[var(--warning)]" data-publish-blocked data-notice-blocked>
+        {fill(s.meetings.noticeBlocked, { days: check.days ?? 7 })}
+      </span>
+    );
+  }
 
   if (!readiness.ready) {
     return (
@@ -45,13 +57,14 @@ export async function PublishMeetingForm({
   return (
     <form action={publishMeeting}>
       <input name="id" type="hidden" value={meeting.id} />
+      {check.short ? <input name="notice_ack" type="hidden" value="1" /> : null}
       <ConfirmSubmitButton
         className={className}
-        confirmMessage={fill(s.meetings.publishConfirm, {
+        confirmMessage={`${fill(s.meetings.publishConfirm, {
           title: meeting.title,
           count,
           window: `${formatDateTime(meeting.starts_at)} - ${formatDateTime(meeting.ends_at)}`,
-        })}
+        })}${check.short ? `\n\n${fill(s.meetings.noticeWarning, { days: check.days ?? 7 })}` : ""}`}
         confirmTitle={s.meetings.publishTitle}
         pendingLabel={s.meetings.publishing}
         tone="primary"

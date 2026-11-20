@@ -17,7 +17,8 @@ export async function getAdminDashboardData(
   options: AdminDashboardDataOptions = {},
 ) {
   // Office staff open the data-entry pages; manager pages add requireAdmin().
-  await requireOfficeStaff();
+  // Read only: a System Admin's temporary access may read (D027).
+  await requireOfficeStaff({ readOnly: true });
 
   const supabase = await createClient();
   const [setup, people, meetings, voting, results, communications, documents] =

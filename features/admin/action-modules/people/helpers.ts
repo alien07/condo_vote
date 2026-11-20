@@ -117,7 +117,7 @@ export function databaseErrorState(
   if (error.message.includes("OWNER_EMAIL_ADMIN_ONLY")) {
     return {
       error: "Please fix 1 field before saving.",
-      fieldErrors: { email: "Only an admin can change an owner's email." },
+      fieldErrors: { email: "Only the Manager can change an owner's email." },
       values,
     };
   }

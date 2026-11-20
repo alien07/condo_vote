@@ -84,7 +84,7 @@ const EXACT: Record<string, string> = {
   "Owner account moved.": "ย้ายบัญชีของเจ้าของแล้ว",
   "Owner account unlinked.": "ยกเลิกการผูกบัญชีแล้ว",
   "Owner account updated.": "แก้ไขบัญชีของเจ้าของแล้ว",
-  "Only an admin can change an owner's email.": "เฉพาะผู้ดูแล (admin) เท่านั้นที่แก้อีเมลของเจ้าของได้",
+  "Only the Manager can change an owner's email.": "เฉพาะผู้จัดการเท่านั้นที่แก้อีเมลของเจ้าของได้",
   "Advance voting end must be a valid date and time.": "เวลาปิดลงคะแนนล่วงหน้าต้องถูกต้อง",
   "Advance voting must end after it starts.": "เวลาปิดลงคะแนนล่วงหน้าต้องอยู่หลังเวลาเริ่ม",
   "Advance voting must end before meeting-day voting starts.":
@@ -93,7 +93,7 @@ const EXACT: Record<string, string> = {
   "Cancelled ownership links cannot be edited.": "แก้ไขการผูกที่ยกเลิกแล้วไม่ได้",
   "Cancelled ownership links cannot be ended.": "สิ้นสุดการผูกที่ยกเลิกแล้วไม่ได้",
   "Cannot generate a new result after committee approval.": "สร้างผลใหม่ไม่ได้หลังกรรมการอนุมัติแล้ว",
-  "Cannot revoke your own admin role.": "ถอนสิทธิ์ผู้ดูแลของตัวเองไม่ได้",
+  "Cannot revoke your own Manager role.": "ถอนสิทธิ์ผู้จัดการของตัวเองไม่ได้",
   "Choose a basis for the custom pass rule.": "เลือกฐานการคำนวณของเกณฑ์ที่กำหนดเอง",
   "Choose a comparison for the custom pass rule.": "เลือกเงื่อนไขของเกณฑ์ที่กำหนดเอง",
   "Choose a pass rule.": "เลือกเกณฑ์ผ่าน",

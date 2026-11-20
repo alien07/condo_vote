@@ -1,4 +1,4 @@
-// Admin > Setup: juristic person, document storage, committee, audit log.
+// Building office > Setup: juristic person, document storage, committee, audit log.
 const en = {
   juristicTitle: "Juristic Person",
   juristicName: "Juristic person name",

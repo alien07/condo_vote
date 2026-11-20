@@ -17,7 +17,7 @@ Types are the TypeScript types the app sees: `string` also covers `uuid`, `text`
 | Table | Columns | Purpose |
 | --- | ---: | --- |
 | [app_roles](#app_roles) | 5 | Assigns system roles such as admin and committee to profiles. |
-| [app_settings](#app_settings) | 5 | App-level operational settings such as the selected private document storage provider. |
+| [app_settings](#app_settings) | 6 | App-level operational settings such as the selected private document storage provider. |
 | [approval_requests](#approval_requests) | 9 | Tracks user requests to become an approved owner, resident, or proxy voter. |
 | [audit_logs](#audit_logs) | 7 | Append-only business action records for traceability and troubleshooting. |
 | [ballot_answers](#ballot_answers) | 5 | Current effective answers for a ballot. |
@@ -52,6 +52,7 @@ Types are the TypeScript types the app sees: `string` also covers `uuid`, `text`
 | [result_snapshots](#result_snapshots) | 6 | Calculated result payloads for a meeting before/after approval. |
 | [room_owners](#room_owners) | 10 | Links owners to rooms with effective dates, current/scheduled/ended/cancelled state, and ownership history. |
 | [rooms](#rooms) | 9 | Master data for condominium units. Used as the base voting right because one room equals one vote. |
+| [system_read_access](#system_read_access) | 9 |  |
 | [vote_source_resolutions](#vote_source_resolutions) | 11 | Admin decision record when the same room has both online and manual votes. |
 
 ## app_roles
@@ -76,6 +77,7 @@ App-level operational settings such as the selected private document storage pro
 | `document_storage_provider` | `string` |  | default |  |
 | `document_storage_root` | `string` | null |  |  |
 | `id` | `string` |  | default |  |
+| `strict_notice_period` | `boolean` |  | default |  |
 | `updated_at` | `string` |  | default |  |
 
 ## approval_requests
@@ -639,6 +641,20 @@ Master data for condominium units. Used as the base voting right because one roo
 | `room_number` | `string` |  |  |  |
 | `updated_at` | `string` |  | default |  |
 
+## system_read_access
+
+| Column | Type | Null | Default | FK |
+| --- | --- | :---: | :---: | --- |
+| `created_at` | `string` |  | default |  |
+| `end_kind` | `string` | null |  |  |
+| `ended_at` | `string` | null |  |  |
+| `ends_at` | `string` |  |  |  |
+| `id` | `string` |  | default |  |
+| `profile_id` | `string` |  |  | [profiles.id](#profiles) |
+| `project_id` | `string` | null |  |  |
+| `reason` | `string` |  |  |  |
+| `starts_at` | `string` |  | default |  |
+
 ## vote_source_resolutions
 
 Admin decision record when the same room has both online and manual votes. More in [data-model.md](data-model.md#vote_source_resolutions).
@@ -671,9 +687,11 @@ Called with `supabase.rpc(name, args)`. Rules and permissions: [rls-policies.md]
 | `approve_close_voting` | `p_meeting_id: string` | `Json` |
 | `approve_result_snapshot` | `p_notes: string, p_result_snapshot_id: string` | `Json` |
 | `can_approve_as_committee` |  | `boolean` |
+| `can_read_as_committee` |  | `boolean` |
 | `cancel_close_request` | `p_request_id: string` | `undefined` |
 | `cancel_co_owner_vote` | `p_authorization_id: string` | `undefined` |
 | `cast_committee_deciding_vote` | `p_decision: string, p_kind: string, p_reason?: string, p_subject: string` | `Json` |
+| `close_expired_system_access` |  | `undefined` |
 | `committee_chair` |  | `{ full_name: string position_code: string profile_id: string }[]` |
 | `committee_majority` | `p_setting: number` | `number` |
 | `committee_member_count` |  | `number` |
@@ -685,8 +703,10 @@ Called with `supabase.rpc(name, args)`. Rules and permissions: [rls-policies.md]
 | `committee_tally` | `p_kind: string, p_subject: string` | `Json` |
 | `correction_default_level` | `p_category: string` | `string` |
 | `current_profile_id` |  | `string` |
+| `end_system_read_access` |  | `undefined` |
 | `evaluate_close_request` | `p_request_id: string` | `string` |
 | `grant_co_owner_vote` | `p_co_owner_email: string, p_meeting_id: string, p_room_id: string` | `string` |
+| `grant_system_admin` | `p_email: string` | `Json` |
 | `has_app_role` | `required_role: string` | `boolean` |
 | `is_approved_member` |  | `boolean` |
 | `is_office_staff` |  | `boolean` |
@@ -694,13 +714,16 @@ Called with `supabase.rpc(name, args)`. Rules and permissions: [rls-policies.md]
 | `mask_email` | `p_email: string` | `string` |
 | `meeting_comments` | `p_meeting_id: string` | `{ choice_texts: string[] comment: string question_id: string }[]` |
 | `meeting_early_close` | `p_meeting_id: string` | `string` |
+| `meeting_notice_check` | `p_meeting_id: string` | `Json` |
 | `meeting_online_tally` | `p_meeting_id: string` | `{ choice_id: string ownership: number vote_count: number }[]` |
 | `my_member_access` |  | `Json` |
 | `needs_privacy_consent` |  | `boolean` |
+| `notice_period_days` |  | `number` |
 | `notify_result_not_passed` | `p_actor: string, p_result_snapshot_id: string` | `undefined` |
 | `object_result_snapshot` | `p_reason: string, p_result_snapshot_id: string` | `Json` |
 | `profile_access_active` | `p_profile_id: string` | `boolean` |
 | `profile_has_consent` | `p_profile_id: string` | `boolean` |
+| `profile_member_access` | `p_profile_id: string` | `boolean` |
 | `propose_close_voting` | `p_close_at?: string, p_meeting_id: string, p_reason: string` | `Json` |
 | `proxy_holder_barred` | `p_profile_id: string` | `string` |
 | `publish_result_if_ready` | `p_actor: string, p_result_snapshot_id: string` | `boolean` |
@@ -712,11 +735,18 @@ Called with `supabase.rpc(name, args)`. Rules and permissions: [rls-policies.md]
 | `result_decisions` |  | `Json` |
 | `result_has_high_correction` | `p_meeting_id: string` | `boolean` |
 | `result_required_approvals` | `p_meeting_id: string` | `number` |
+| `revoke_system_admin` | `p_profile_id: string` | `undefined` |
 | `room_owner_profile_id` | `p_room_id: string` | `string` |
 | `save_meeting_english` | `p_checked: boolean, p_meeting_id: string, p_text: Json` | `Json` |
 | `set_preferred_language` | `language: string` | `undefined` |
+| `set_strict_notice_period` | `p_strict: boolean` | `undefined` |
+| `start_system_read_access` | `p_hours: number, p_reason: string` | `Json` |
+| `strict_notice_period` |  | `boolean` |
 | `submit_ballot` | `p_answers: Json, p_meeting_id: string, p_room_id: string` | `Json` |
 | `submit_manual_ballot` | `p_answers: Json, p_audit_note: string, p_meeting_id: string, p_room_id: string, p_voter_identity_text: string, p_voter_profile_id: string` | `Json` |
+| `system_access_status` |  | `Json` |
+| `system_admin_list` |  | `Json` |
+| `system_read_access_active` |  | `boolean` |
 | `try_link_owner_profile` | `p_actor_profile_id: string, p_owner_id: string, p_profile_id: string, p_source: string` | `boolean` |
 | `verify_result_reference` | `p_snapshot_id: string` | `Json` |
 | `vote_normalize_answers` | `p_answers: Json, p_meeting_id: string` | `{ choice_id: string question_id: string }[]` |

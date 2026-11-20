@@ -97,7 +97,7 @@ export const GLOSSARY: Record<Locale, Record<GlossaryKey, Entry>> = {
     },
     approveClose: {
       term: "ปิดก่อนเวลา",
-      text: "กรรมการหรือผู้ดูแลเสนอปิดลงคะแนนก่อนเวลาพร้อมเหตุผล ปิดเมื่อกรรมการอนุมัติครบจำนวน และไม่ผ่านเมื่อคนที่ยังไม่ตอบมีไม่พอให้ครบ ถ้าไม่มีคำขอ ระบบปิดเองตามเวลา",
+      text: "กรรมการหรือผู้จัดการเสนอปิดลงคะแนนก่อนเวลาพร้อมเหตุผล ปิดเมื่อกรรมการอนุมัติครบจำนวน และไม่ผ่านเมื่อคนที่ยังไม่ตอบมีไม่พอให้ครบ ถ้าไม่มีคำขอ ระบบปิดเองตามเวลา",
     },
     ballotsCounted: {
       term: "บัตรที่นับ",
@@ -108,8 +108,8 @@ export const GLOSSARY: Record<Locale, Record<GlossaryKey, Entry>> = {
       text: "ห้องที่ลงทั้งออนไลน์และบัตรกระดาษ นิติบุคคลเลือกใช้ใบเดียวพร้อมบันทึกเหตุผล",
     },
     manualBallots: {
-      term: "บัตรกระดาษ/บันทึกโดยผู้ดูแล",
-      text: "บัตรกระดาษที่ผู้ดูแลกรอกเข้าระบบ ระบบบันทึกผู้กรอกและเวลาไว้ตรวจสอบ",
+      term: "บัตรกระดาษ/บันทึกโดยนิติบุคคล",
+      text: "บัตรกระดาษที่นิติบุคคลกรอกเข้าระบบ ระบบบันทึกผู้กรอกและเวลาไว้ตรวจสอบ",
     },
     trafficLog: {
       term: "ข้อมูลจราจรอิเล็กทรอนิกส์ (log)",
@@ -183,7 +183,7 @@ export const GLOSSARY: Record<Locale, Record<GlossaryKey, Entry>> = {
     },
     approveClose: {
       term: "Close early",
-      text: "A member or admin proposes closing voting before the set time, with a reason. It closes when enough members approve, and fails when too few members are left to reach that number. Without a request, voting closes on time by itself.",
+      text: "A member or the Manager proposes closing voting before the set time, with a reason. It closes when enough members approve, and fails when too few members are left to reach that number. Without a request, voting closes on time by itself.",
     },
     ballotsCounted: {
       term: "Ballots counted",
@@ -195,7 +195,7 @@ export const GLOSSARY: Record<Locale, Record<GlossaryKey, Entry>> = {
     },
     manualBallots: {
       term: "Paper ballots entered by staff",
-      text: "Paper ballots typed in by an admin; the system records who entered them and when.",
+      text: "Paper ballots typed in by the Manager; the system records who entered them and when.",
     },
     trafficLog: {
       term: "Traffic log",

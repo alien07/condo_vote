@@ -55,7 +55,7 @@ export default async function AdminCommunicationsPage({
   searchParams,
 }: AdminCommunicationsPageProps) {
   // Manager only: office staff do data entry elsewhere (item 14c).
-  await requireAdmin();
+  await requireAdmin({ readOnly: true });
   const { s } = await getStaffI18n();
   const params = await searchParams;
 

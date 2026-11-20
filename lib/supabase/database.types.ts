@@ -79,6 +79,7 @@ export type Database = {
           document_storage_provider: string
           document_storage_root: string | null
           id: string
+          strict_notice_period: boolean
           updated_at: string
         }
         Insert: {
@@ -86,6 +87,7 @@ export type Database = {
           document_storage_provider?: string
           document_storage_root?: string | null
           id?: string
+          strict_notice_period?: boolean
           updated_at?: string
         }
         Update: {
@@ -93,6 +95,7 @@ export type Database = {
           document_storage_provider?: string
           document_storage_root?: string | null
           id?: string
+          strict_notice_period?: boolean
           updated_at?: string
         }
         Relationships: []
@@ -1906,6 +1909,50 @@ export type Database = {
         }
         Relationships: []
       }
+      system_read_access: {
+        Row: {
+          created_at: string
+          end_kind: string | null
+          ended_at: string | null
+          ends_at: string
+          id: string
+          profile_id: string
+          project_id: string | null
+          reason: string
+          starts_at: string
+        }
+        Insert: {
+          created_at?: string
+          end_kind?: string | null
+          ended_at?: string | null
+          ends_at: string
+          id?: string
+          profile_id: string
+          project_id?: string | null
+          reason: string
+          starts_at?: string
+        }
+        Update: {
+          created_at?: string
+          end_kind?: string | null
+          ended_at?: string | null
+          ends_at?: string
+          id?: string
+          profile_id?: string
+          project_id?: string | null
+          reason?: string
+          starts_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "system_read_access_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       vote_source_resolutions: {
         Row: {
           chosen_ballot_id: string
@@ -2012,6 +2059,7 @@ export type Database = {
         Returns: Json
       }
       can_approve_as_committee: { Args: never; Returns: boolean }
+      can_read_as_committee: { Args: never; Returns: boolean }
       cancel_close_request: {
         Args: { p_request_id: string }
         Returns: undefined
@@ -2029,6 +2077,7 @@ export type Database = {
         }
         Returns: Json
       }
+      close_expired_system_access: { Args: never; Returns: undefined }
       committee_chair: {
         Args: never
         Returns: {
@@ -2059,6 +2108,7 @@ export type Database = {
         Returns: string
       }
       current_profile_id: { Args: never; Returns: string }
+      end_system_read_access: { Args: never; Returns: undefined }
       evaluate_close_request: {
         Args: { p_request_id: string }
         Returns: string
@@ -2071,6 +2121,7 @@ export type Database = {
         }
         Returns: string
       }
+      grant_system_admin: { Args: { p_email: string }; Returns: Json }
       has_app_role: { Args: { required_role: string }; Returns: boolean }
       is_approved_member: { Args: never; Returns: boolean }
       is_office_staff: { Args: never; Returns: boolean }
@@ -2085,6 +2136,7 @@ export type Database = {
         }[]
       }
       meeting_early_close: { Args: { p_meeting_id: string }; Returns: string }
+      meeting_notice_check: { Args: { p_meeting_id: string }; Returns: Json }
       meeting_online_tally: {
         Args: { p_meeting_id: string }
         Returns: {
@@ -2095,6 +2147,7 @@ export type Database = {
       }
       my_member_access: { Args: never; Returns: Json }
       needs_privacy_consent: { Args: never; Returns: boolean }
+      notice_period_days: { Args: never; Returns: number }
       notify_result_not_passed: {
         Args: { p_actor: string; p_result_snapshot_id: string }
         Returns: undefined
@@ -2108,6 +2161,10 @@ export type Database = {
         Returns: boolean
       }
       profile_has_consent: { Args: { p_profile_id: string }; Returns: boolean }
+      profile_member_access: {
+        Args: { p_profile_id: string }
+        Returns: boolean
+      }
       propose_close_voting: {
         Args: { p_close_at?: string; p_meeting_id: string; p_reason: string }
         Returns: Json
@@ -2163,12 +2220,25 @@ export type Database = {
         Args: { p_meeting_id: string }
         Returns: number
       }
+      revoke_system_admin: {
+        Args: { p_profile_id: string }
+        Returns: undefined
+      }
       room_owner_profile_id: { Args: { p_room_id: string }; Returns: string }
       save_meeting_english: {
         Args: { p_checked: boolean; p_meeting_id: string; p_text: Json }
         Returns: Json
       }
       set_preferred_language: { Args: { language: string }; Returns: undefined }
+      set_strict_notice_period: {
+        Args: { p_strict: boolean }
+        Returns: undefined
+      }
+      start_system_read_access: {
+        Args: { p_hours: number; p_reason: string }
+        Returns: Json
+      }
+      strict_notice_period: { Args: never; Returns: boolean }
       submit_ballot: {
         Args: { p_answers: Json; p_meeting_id: string; p_room_id: string }
         Returns: Json
@@ -2184,6 +2254,9 @@ export type Database = {
         }
         Returns: Json
       }
+      system_access_status: { Args: never; Returns: Json }
+      system_admin_list: { Args: never; Returns: Json }
+      system_read_access_active: { Args: never; Returns: boolean }
       try_link_owner_profile: {
         Args: {
           p_actor_profile_id: string

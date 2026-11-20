@@ -1,4 +1,4 @@
-// Admin > Ownership: room-owner links and their dates.
+// Building office > Ownership: room-owner links and their dates.
 const en = {
   title: "Room Ownership",
   intro: "Maintain current room-owner links and effective dates.",

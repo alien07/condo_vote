@@ -1,4 +1,4 @@
-// Admin menu and the admin overview page.
+// Admin menu and the Manager overview page.
 const en = {
   nav: {
     overview: "Overview",
@@ -12,7 +12,7 @@ const en = {
     proxies: "Proxies",
     communications: "Communications",
   },
-  navLabel: "Admin menu",
+  navLabel: "Building office menu",
   navMenu: "Menu",
   navGroups: {
     master: "Master data",
@@ -139,7 +139,7 @@ const th: typeof en = {
     proxies: "ผู้รับมอบฉันทะ",
     communications: "การสื่อสาร",
   },
-  navLabel: "เมนูผู้ดูแล",
+  navLabel: "เมนูงานนิติบุคคล",
   navMenu: "เมนู",
   navGroups: {
     master: "ข้อมูลหลัก",

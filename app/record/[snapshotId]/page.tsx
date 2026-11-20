@@ -28,7 +28,7 @@ type RecordPageProps = {
 };
 
 // Where "Back" goes (demo feedback item 16). The links that open this page
-// add ?from=results or ?from=audit; otherwise go to the admin Results
+// add ?from=results or ?from=audit; otherwise go to the Manager Results
 // section, or to Audit for an auditor who is not an admin.
 function backHref(from: string | string[] | undefined, roles: string[]) {
   if (from === "audit") {
@@ -281,7 +281,7 @@ export default async function OfficialRecordPage({ params, searchParams }: Recor
                 ? `ลงล่วงหน้า ${totals.advance_online_ballots} ใบ · วันประชุม ${totals.meeting_day_online_ballots ?? 0} ใบ`
                 : `${totals.online_ballots ?? 0} ใบ`}
             </Row>
-            <Row label="บัตรกระดาษ/บันทึกโดยผู้ดูแล">
+            <Row label="บัตรกระดาษ/บันทึกโดยนิติบุคคล">
               {totals.effective_manual_ballots ?? totals.manual_ballots ?? 0} ใบ
             </Row>
             <Row label="ห้องที่มีทั้งสองช่องทาง">

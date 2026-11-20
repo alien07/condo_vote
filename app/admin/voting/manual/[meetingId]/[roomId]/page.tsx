@@ -33,7 +33,7 @@ export default async function ManualVotePage({
   searchParams,
 }: ManualVotePageProps) {
   const { locale, s } = await getStaffI18n();
-  await requireOfficeStaff();
+  await requireOfficeStaff({ readOnly: true });
 
   const { meetingId, roomId } = await params;
   const query = await searchParams;

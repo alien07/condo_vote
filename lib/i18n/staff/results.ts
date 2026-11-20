@@ -1,4 +1,4 @@
-// Admin > Results: snapshots, approval, master PDF files.
+// Building office > Results: snapshots, approval, master PDF files.
 const en = {
   title: "Results",
   filter: "Filter result snapshots by meeting, generated date, and approval.",
@@ -36,7 +36,7 @@ const en = {
   generatedSummary: "Generated: {time}",
   pendingBlock:
     "Resolve {count} pending manual vote identity record(s) before committee approval. Go to {link} to fix them.",
-  pendingLink: "Admin > Voting > Manual votes",
+  pendingLink: "Building office > Voting > Manual votes",
   notes: "Approval / conflict notes",
   blocked: "Approval blocked",
   thisMeeting: "this meeting",
@@ -79,7 +79,7 @@ const th: typeof en = {
   meetingSummary: "การประชุม: {title}",
   generatedSummary: "สร้างเมื่อ: {time}",
   pendingBlock: "แก้ไขบัตรกระดาษที่รอผูกผู้ใช้ {count} ใบก่อนกรรมการอนุมัติ ไปที่ {link} เพื่อแก้ไข",
-  pendingLink: "ผู้ดูแล > การลงคะแนน > บัตรกระดาษ",
+  pendingLink: "งานนิติบุคคล > การลงคะแนน > บัตรกระดาษ",
   notes: "หมายเหตุการอนุมัติ / การเลือกแหล่ง",
   blocked: "ยังอนุมัติไม่ได้",
   thisMeeting: "การประชุมนี้",

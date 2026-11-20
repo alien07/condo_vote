@@ -61,7 +61,7 @@ export default async function AdminVoteConflictsPage({
   searchParams,
 }: AdminVoteConflictsPageProps) {
   const { s } = await getStaffI18n();
-  await requireAdmin();
+  await requireAdmin({ readOnly: true });
 
   const params = await searchParams;
   const filters = getConflictFilters(params);

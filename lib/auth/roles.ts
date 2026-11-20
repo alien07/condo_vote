@@ -8,6 +8,13 @@ export const APP_ROLES = {
   AUDITOR: "auditor",
 } as const;
 
+/**
+ * Not stored: added to a System Admin's roles while their temporary,
+ * read-only access to the building is open (req_0011 B, D027). Page guards
+ * accept it only with { readOnly: true }; the database refuses every write.
+ */
+export const SYSTEM_READ = "system_read";
+
 export type AppRole = (typeof APP_ROLES)[keyof typeof APP_ROLES];
 
 export function isAppRole(value: string): value is AppRole {

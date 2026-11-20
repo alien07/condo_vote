@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { APP_ROLES, type AppRole } from "@/lib/auth/roles";
+import { APP_ROLES, SYSTEM_READ, type AppRole } from "@/lib/auth/roles";
 import { createClient } from "@/lib/supabase/server";
 
 function hasSupabaseAuthConfig() {
@@ -54,10 +54,29 @@ export async function getCurrentProfileWithRoles() {
     throw error;
   }
 
+  const names = roles.map((role) => role.role);
+
+  // Temporary read-only access (D027): a pseudo role for guards and menus.
+  if (names.includes(APP_ROLES.SYSTEM_ADMIN)) {
+    const { data: active } = await supabase.rpc("system_read_access_active");
+
+    if (active) {
+      names.push(SYSTEM_READ);
+    }
+  }
+
   return {
     profile,
-    roles: roles.map((role) => role.role),
+    roles: names,
   };
+}
+
+/** Pages pass { readOnly: true } so a System Admin with temporary access can
+ * read them; server actions never do. */
+export type GuardOptions = { readOnly?: boolean };
+
+function readOnlyAllowed(roles: string[], options: GuardOptions) {
+  return Boolean(options.readOnly) && roles.includes(SYSTEM_READ);
 }
 
 export async function requireProfile() {
@@ -129,10 +148,10 @@ export async function requireSystemAdmin() {
 }
 
 /** Admin or office staff: the data-entry admin pages (item 14c). */
-export async function requireOfficeStaff() {
+export async function requireOfficeStaff(options: GuardOptions = {}) {
   const current = await requireProfileWithRoles();
 
-  if (!current.roles.includes("admin") && !current.roles.includes("staff")) {
+  if (!current.roles.includes("admin") && !current.roles.includes("staff") && !readOnlyAllowed(current.roles, options)) {
     redirect(DENIED_PATH);
   }
 
@@ -141,22 +160,22 @@ export async function requireOfficeStaff() {
 
 /** The read-only audit page and its data (demo feedback 14b, req_0007):
  * auditors and the manager. */
-export async function requireAuditReader() {
+export async function requireAuditReader(options: GuardOptions = {}) {
   const current = await requireProfileWithRoles();
 
-  if (!current.roles.includes("auditor") && !current.roles.includes("admin")) {
+  if (!current.roles.includes("auditor") && !current.roles.includes("admin") && !readOnlyAllowed(current.roles, options)) {
     redirect(DENIED_PATH);
   }
 
   return current;
 }
 
-export async function requireAdmin() {
-  const profile = await requireProfile();
+export async function requireAdmin(options: GuardOptions = {}) {
+  const current = await requireProfileWithRoles();
 
-  if (!(await isAdmin())) {
+  if (!current.roles.includes("admin") && !readOnlyAllowed(current.roles, options)) {
     redirect(DENIED_PATH);
   }
 
-  return profile;
+  return current.profile;
 }

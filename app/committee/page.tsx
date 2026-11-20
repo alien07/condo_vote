@@ -19,7 +19,8 @@ export const maxDuration = 60;
 export default async function CommitteePage() {
   const current = await requireProfileWithRoles();
 
-  if (!current.roles.includes("committee") && !current.roles.includes("admin")) {
+  // A System Admin's temporary read-only access may read it (D027).
+  if (!current.roles.includes("committee") && !current.roles.includes("admin") && !current.roles.includes("system_read")) {
     redirect(DENIED_PATH);
   }
 

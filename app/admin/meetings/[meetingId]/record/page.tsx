@@ -28,7 +28,7 @@ export default async function MeetingRecordPage({ params }: MeetingRecordPagePro
   const { locale, s } = await getStaffI18n();
   const t = s.meetings;
   const formatDateTime = (value: string | null) => formatDateTimeIn(locale, value);
-  await requireAdmin();
+  await requireAdmin({ readOnly: true });
   const { meetingId } = await params;
   const supabase = await createClient();
   const [meetingResult, incidentsResult, snapshotResult] = await Promise.all([

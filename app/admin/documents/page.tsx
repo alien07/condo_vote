@@ -106,7 +106,7 @@ export default async function AdminDocumentsPage({
   searchParams,
 }: AdminDocumentsPageProps) {
   const { s } = await getStaffI18n();
-  await requireAdmin();
+  await requireAdmin({ readOnly: true });
 
   const params = await searchParams;
   const filters = getDocumentFilters(params);

@@ -39,7 +39,7 @@ function getDocumentFilters(searchParams: URLSearchParams): DocumentTableFilters
 }
 
 export async function GET(request: Request) {
-  await requireAdmin();
+  await requireAdmin({ readOnly: true });
 
   const supabase = await createClient();
   const url = new URL(request.url);

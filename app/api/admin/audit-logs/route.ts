@@ -5,7 +5,7 @@ import { fetchAuditLogRows } from "@/features/admin/data-modules/documents";
 import { auditFiltersFromParams } from "@/features/admin/data-modules/audit-log-params";
 
 export async function GET(request: Request) {
-  await requireAdmin();
+  await requireAdmin({ readOnly: true });
 
   const supabase = await createClient();
   const url = new URL(request.url);

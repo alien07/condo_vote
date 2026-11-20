@@ -177,8 +177,8 @@ describe("audit detail codes in words (req_0002)", () => {
   });
 
   it("words a code by its field: admin as a role and as a link source", () => {
-    expect(auditDetailPairs(en, "en", { granted_role: "admin" })[0].value).toBe("Admin");
-    expect(auditDetailPairs(en, "en", { source: "admin" })[0].value).toBe("Linked by an admin");
+    expect(auditDetailPairs(en, "en", { granted_role: "admin" })[0].value).toBe("Manager");
+    expect(auditDetailPairs(en, "en", { source: "admin" })[0].value).toBe("Linked by the Manager");
     expect(auditDetailPairs(th, "th", { source: "sign_in" })[0].value).toBe("จับคู่ตอนเข้าสู่ระบบ");
   });
 

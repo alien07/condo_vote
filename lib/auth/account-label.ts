@@ -9,7 +9,9 @@ const ROLE_ORDER = ["admin", "staff", "committee", "auditor", "system_admin"];
 /** Header label: job roles first, then member status, e.g.
  * "Committee · Resident" (demo feedback item 14e). */
 export function accountLabel(roles: string[], status: string | null | undefined, text: LabelText) {
+  // "system_read" is a pseudo role for guards (D027), not a job to show.
   const roleNames = [...roles]
+    .filter((role) => role !== "system_read")
     .sort((a, b) => ROLE_ORDER.indexOf(a) - ROLE_ORDER.indexOf(b))
     .map((role) => text.roles[role] ?? role);
   const statusName = status ? (text.statuses[status] ?? status) : null;

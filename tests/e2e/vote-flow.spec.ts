@@ -384,7 +384,7 @@ test.describe("@test:e2e @test:voting owner/proxy vote flow", () => {
     await signInByGeneratedLink(page, supabase, profile.email);
     await page.goto(`/vote/${fixture.meetingId}/${fixture.roomId}`);
     await expect(
-      page.getByText("Secret ballot: admins see totals only, not your answers."),
+      page.getByText("Secret ballot: the Manager sees totals only, not your answers."),
     ).toBeVisible();
     await page
       .locator(`input[name="choice:${fixture.questionId}"]`)

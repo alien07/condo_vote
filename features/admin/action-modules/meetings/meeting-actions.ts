@@ -3,6 +3,7 @@
 import { withFeedback } from "@/features/admin/action-modules/feedback";
 import { englishGaps, getEnglishMeeting } from "@/features/english/data";
 import { getStaffI18n } from "@/lib/i18n/server";
+import { fill } from "@/lib/i18n/template";
 import { redirect } from "next/navigation";
 import {
   createClient,
@@ -257,6 +258,31 @@ export async function publishMeeting(formData: FormData) {
     );
   }
 
+  // Notice period (D027, s.42/3): strict refuses; otherwise the Manager
+  // confirmed the warning in the publish dialog, and it is audited below.
+  const { data: noticeData, error: noticeError } = await supabase.rpc("meeting_notice_check", {
+    p_meeting_id: meetingId,
+  });
+
+  if (noticeError) {
+    throw noticeError;
+  }
+
+  const notice = noticeData as { short: boolean; strict: boolean; days: number; days_left: number | null };
+
+  if (notice.short) {
+    const { s } = await getStaffI18n();
+    const refused = notice.strict
+      ? fill(s.meetings.noticeBlocked, { days: notice.days })
+      : formData.get("notice_ack") !== "1"
+        ? s.meetings.noticeConfirmMissing
+        : null;
+
+    if (refused) {
+      redirect(`/admin/meetings?tab=meetings&feedback=error&message=${encodeURIComponent(refused)}`);
+    }
+  }
+
   // Two-language documents (item 6b): English must be filled in and checked
   // before publishing. Checked here, not when saving a draft.
   const { data: condoSettings } = await supabase
@@ -410,6 +436,7 @@ export async function publishMeeting(formData: FormData) {
     actorProfileId: admin.id,
     details: {
       eligible_voter_count: rows.length,
+      ...(notice.short ? { short_notice_confirmed: true, days_left: notice.days_left, notice_days: notice.days } : {}),
     },
     entityId: meetingId,
     entityType: "meeting",

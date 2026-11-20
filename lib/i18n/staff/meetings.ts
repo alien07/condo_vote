@@ -1,4 +1,4 @@
-// Admin > Meetings: meetings, questions and choices, meeting drawers.
+// Building office > Meetings: meetings, questions and choices, meeting drawers.
 const en = {
   title: "Meetings",
   intro: "Maintain meeting master data and voting windows.",
@@ -17,7 +17,7 @@ const en = {
   publishing: "Publishing...",
   publish: "Publish",
   confirmArchive:
-    'Archive meeting "{title}"? This meeting will be hidden from active meeting workflows and cannot be published again without an admin change.',
+    'Archive meeting "{title}"? This meeting will be hidden from active meeting workflows and cannot be published again without a Manager change.',
   archiving: "Archiving...",
   archive: "Archive",
   votingOpen: "Voting open",
@@ -94,6 +94,12 @@ const en = {
   publishConfirm:
     '"{title}" has {count} agenda item(s). Voting: {window}. After publishing, owners can vote and the agenda and choices cannot change.',
   publishNotReady: "Not ready to publish: {reason}",
+  // Notice period (req_0011 C, D027; Condominium Act s.42/3).
+  noticeBlocked:
+    "Cannot publish: the meeting day is less than {days} days away, and the System Admin requires {days} days' notice.",
+  noticeWarning:
+    "Warning: the meeting day is less than {days} days away. The law asks for written notice at least {days} days before the meeting. Publish anyway? This is recorded in the audit log.",
+  noticeConfirmMissing: "Confirm the short notice to publish this meeting.",
   hasAbstain: "Has an Abstain choice",
   hasAbstainHelp: "Adds \"Abstain\" as the last choice. Its text cannot be changed, and it cannot be combined with other choices.",
   abstainFixed: "Cannot be combined with other choices · turn on or off in Edit",
@@ -126,8 +132,8 @@ const en = {
   approvalsNeeded: "Committee approvals needed",
   approvalsHelp: "Approvals needed to publish the result or to close voting early.",
   ballot: "Ballot type",
-  openBallot: "Open ballot: admins can see each room's answers",
-  secretBallot: "Secret ballot: admins see totals only",
+  openBallot: "Open ballot: the Manager can see each room's answers",
+  secretBallot: "Secret ballot: the Manager sees totals only",
   ballotLocked: "Cannot change after the meeting is published.",
   dayStarts: "Meeting-day voting starts",
   dayEnds: "Meeting-day voting ends",
@@ -174,7 +180,7 @@ const en = {
   percent: "Percent",
   required: "Required",
   landOfficeField: "Land office registration",
-  legalNote: "Legal / admin note",
+  legalNote: "Legal / Manager note",
   saveQuestion: "Save question",
   recordTitle: "Meeting record",
   recordIntro: "{title}. These details go into the official result record when results are generated.",
@@ -192,7 +198,7 @@ const en = {
   reconvened: "Reconvened meeting (first had no quorum)",
   identity: "How attendees proved who they are",
   identityPlaceholder:
-    "Online: Google sign-in with a profile approved by the admin. Meeting room: ID card check by the juristic office.",
+    "Online: Google sign-in with a profile approved by the Manager. Meeting room: ID card check by the juristic office.",
   recording: "Meeting recording (where it is kept)",
   recordingPlaceholder: "Private folder link or document set key",
   logs: "Attendance and traffic logs (where they are kept)",
@@ -239,7 +245,7 @@ const th: typeof en = {
   approved: "อนุมัติผลแล้ว",
   publishing: "กำลังเผยแพร่...",
   publish: "เผยแพร่",
-  confirmArchive: 'เก็บถาวรการประชุม "{title}"? การประชุมนี้จะไม่แสดงในงานปัจจุบัน และเผยแพร่อีกไม่ได้ถ้าผู้ดูแลไม่แก้ไข',
+  confirmArchive: 'เก็บถาวรการประชุม "{title}"? การประชุมนี้จะไม่แสดงในงานปัจจุบัน และเผยแพร่อีกไม่ได้ถ้าผู้จัดการไม่แก้ไข',
   archiving: "กำลังเก็บถาวร...",
   archive: "เก็บถาวร",
   votingOpen: "กำลังเปิดลงคะแนน",
@@ -314,6 +320,11 @@ const th: typeof en = {
   publishConfirm:
     '"{title}" มี {count} วาระ ช่วงลงคะแนน {window} หลังเผยแพร่ เจ้าของร่วมจะลงคะแนนได้ และจะแก้วาระหรือตัวเลือกไม่ได้อีก',
   publishNotReady: "ยังเผยแพร่ไม่ได้: {reason}",
+  noticeBlocked:
+    "เผยแพร่ไม่ได้: วันประชุมเหลือไม่ถึง {days} วัน และผู้ดูแลระบบกำหนดให้ต้องแจ้งล่วงหน้า {days} วัน",
+  noticeWarning:
+    "คำเตือน: วันประชุมเหลือไม่ถึง {days} วัน กฎหมายกำหนดให้ส่งหนังสือนัดประชุมล่วงหน้าอย่างน้อย {days} วัน ยืนยันเผยแพร่หรือไม่? ระบบจะบันทึกการยืนยันในบันทึกการใช้งาน",
+  noticeConfirmMissing: "โปรดยืนยันการแจ้งล่วงหน้าไม่ครบกำหนดก่อนเผยแพร่",
   hasAbstain: "มีตัวเลือกงดออกเสียง",
   hasAbstainHelp: "เพิ่ม \"งดออกเสียง\" เป็นตัวเลือกสุดท้าย แก้ข้อความไม่ได้ และเลือกร่วมกับข้ออื่นไม่ได้",
   abstainFixed: "เลือกร่วมกับข้ออื่นไม่ได้ · เปิดหรือปิดได้ที่ แก้ไข",
@@ -346,8 +357,8 @@ const th: typeof en = {
   approvalsNeeded: "จำนวนกรรมการที่ต้องอนุมัติ",
   approvalsHelp: "จำนวนการอนุมัติที่ต้องมีก่อนเผยแพร่ผลหรือปิดลงคะแนนก่อนเวลา",
   ballot: "แบบการลงคะแนน",
-  openBallot: "ลงคะแนนเปิดเผย: ผู้ดูแลเห็นคำตอบของแต่ละห้อง",
-  secretBallot: "ลงคะแนนลับ: ผู้ดูแลเห็นเฉพาะยอดรวม",
+  openBallot: "ลงคะแนนเปิดเผย: ผู้จัดการเห็นคำตอบของแต่ละห้อง",
+  secretBallot: "ลงคะแนนลับ: ผู้จัดการเห็นเฉพาะยอดรวม",
   ballotLocked: "เปลี่ยนไม่ได้หลังเผยแพร่การประชุม",
   dayStarts: "เริ่มลงคะแนนวันประชุม",
   dayEnds: "ปิดลงคะแนนวันประชุม",
@@ -393,7 +404,7 @@ const th: typeof en = {
   percent: "ร้อยละ",
   required: "ต้องตอบ",
   landOfficeField: "ต้องจดทะเบียนต่อพนักงานเจ้าหน้าที่",
-  legalNote: "หมายเหตุกฎหมาย / ผู้ดูแล",
+  legalNote: "หมายเหตุกฎหมาย / ผู้จัดการ",
   saveQuestion: "บันทึกวาระ",
   recordTitle: "บันทึกการประชุม",
   recordIntro: "{title} ข้อมูลนี้จะอยู่ในบันทึกผลการลงมติฉบับทางการเมื่อสร้างผล",
@@ -411,7 +422,7 @@ const th: typeof en = {
   reconvened: "การประชุมครั้งใหม่ (ครั้งแรกไม่ครบองค์ประชุม)",
   identity: "วิธีแสดงตนของผู้เข้าประชุม",
   identityPlaceholder:
-    "ออนไลน์: เข้าสู่ระบบด้วย Google ด้วยบัญชีที่ผู้ดูแลอนุมัติ ห้องประชุม: เจ้าหน้าที่นิติบุคคลตรวจบัตรประชาชน",
+    "ออนไลน์: เข้าสู่ระบบด้วย Google ด้วยบัญชีที่ผู้จัดการอนุมัติ ห้องประชุม: เจ้าหน้าที่นิติบุคคลตรวจบัตรประชาชน",
   recording: "บันทึกเสียง/ภาพการประชุม (ที่เก็บ)",
   recordingPlaceholder: "ลิงก์โฟลเดอร์ส่วนตัว หรือรหัสชุดเอกสาร",
   logs: "ข้อมูลการเข้าร่วมและข้อมูลจราจร (ที่เก็บ)",

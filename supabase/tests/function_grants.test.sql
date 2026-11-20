@@ -1,7 +1,7 @@
 -- Internal helpers are not callable through the API (0047, req_0011).
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(40);
+select plan(44);
 
 select ok(not has_function_privilege(r, f, 'execute'), format('%s cannot execute %s', r, f))
 from unnest(array[
@@ -23,7 +23,9 @@ from unnest(array[
   'public.try_link_owner_profile(uuid, uuid, uuid, text)',
   'public.room_owner_profile_id(uuid)',
   'public.profile_has_consent(uuid)',
-  'public.vote_normalize_answers(uuid, jsonb)'
+  'public.vote_normalize_answers(uuid, jsonb)',
+  'public.close_expired_system_access()',
+  'public.profile_member_access(uuid)'
 ]) f, unnest(array['anon', 'authenticated']) r;
 
 -- The API functions stay callable when signed in.

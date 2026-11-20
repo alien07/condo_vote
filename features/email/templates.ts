@@ -77,34 +77,34 @@ const templates: Record<EmailTemplateName, Record<Locale, EmailContent>> = {
     th: {
       subject: "ผลการลงมติไม่ผ่านการอนุมัติ: {meetingTitle}",
       body:
-        "คณะกรรมการไม่อนุมัติผลการลงมติของ {meetingTitle}\nโปรดตรวจเหตุผลของกรรมการ แก้ข้อมูลที่ผิด แล้วสร้างผลใหม่ที่หน้าผู้ดูแล > ผลการลงมติ: {link}",
+        "คณะกรรมการไม่อนุมัติผลการลงมติของ {meetingTitle}\nโปรดตรวจเหตุผลของกรรมการ แก้ข้อมูลที่ผิด แล้วสร้างผลใหม่ที่หน้างานนิติบุคคล > ผลการลงมติ: {link}",
     },
     en: {
       subject: "Result did not pass: {meetingTitle}",
       body:
-        "The committee did not approve the result of {meetingTitle}.\nPlease read the members' reasons, correct what is wrong, and generate the result again in Admin > Results: {link}",
+        "The committee did not approve the result of {meetingTitle}.\nPlease read the members' reasons, correct what is wrong, and generate the result again in Building office > Results: {link}",
     },
   },
   result_correction: {
     th: {
       subject: "กรรมการขอให้แก้ไขผล: {meetingTitle}",
       body:
-        "กรรมการขอให้แก้ไขผลการลงมติของ {meetingTitle}\nโปรดตรวจและตอบคำขอที่หน้าผู้ดูแล > ผลการลงมติ: {link}",
+        "กรรมการขอให้แก้ไขผลการลงมติของ {meetingTitle}\nโปรดตรวจและตอบคำขอที่หน้างานนิติบุคคล > ผลการลงมติ: {link}",
     },
     en: {
       subject: "Committee asked for a result correction: {meetingTitle}",
       body:
-        "A committee member asked for a correction of the result of {meetingTitle}.\nPlease check and answer the request in Admin > Results: {link}",
+        "A committee member asked for a correction of the result of {meetingTitle}.\nPlease check and answer the request in Building office > Results: {link}",
     },
   },
   result_correction_answered: {
     th: {
-      subject: "ผู้ดูแลตอบคำขอแก้ไขผล: {meetingTitle}",
-      body: "ผู้ดูแลตอบคำขอแก้ไขผลของ {meetingTitle} แล้ว ดูคำตอบได้ที่หน้าคณะกรรมการ: {link}",
+      subject: "ผู้จัดการตอบคำขอแก้ไขผล: {meetingTitle}",
+      body: "ผู้จัดการตอบคำขอแก้ไขผลของ {meetingTitle} แล้ว ดูคำตอบได้ที่หน้าคณะกรรมการ: {link}",
     },
     en: {
       subject: "Your correction request was answered: {meetingTitle}",
-      body: "The admin answered your correction request for {meetingTitle}. See the answer on the Committee page: {link}",
+      body: "The Manager answered your correction request for {meetingTitle}. See the answer on the Committee page: {link}",
     },
   },
   result_review_again: {
