@@ -185,6 +185,8 @@ test.describe("demo seed", () => {
 
   for (const [key, access] of Object.entries(matrix) as Array<[DemoPersonaKey, { open: string[]; denied: string[] }]>) {
     test(`role matrix: ${key}`, async ({ page }) => {
+      // Up to ten pages in one test; on a cold dev server each compiles first.
+      test.setTimeout(120_000);
       const origin = await signInAs(page, key, access.open[0]);
       const nav = page.getByRole("navigation", { name: /Primary navigation|เมนูหลัก/ });
       const links = await nav.locator("a[href^='/']").evaluateAll((anchors) =>
