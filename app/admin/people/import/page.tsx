@@ -2,8 +2,12 @@ import { getStaffI18n } from "@/lib/i18n/server";
 import { BackLink } from "@/features/shell/back-link";
 import { FileSpreadsheet } from "lucide-react";
 import { MasterDataImportForms } from "@/features/admin/components/master-data-import-forms";
+import { requireOfficeStaff } from "@/lib/auth/permissions";
 
+// Manager or office staff, like the import actions (requireOfficeStaff);
+// read only for a System Admin's temporary access, whose imports are refused.
 export default async function AdminPeopleImportPage() {
+  await requireOfficeStaff({ readOnly: true });
   const { s } = await getStaffI18n();
   return (
     <main className="min-h-screen px-6 py-8">

@@ -218,6 +218,11 @@ test.describe("@test:e2e @test:auth @test:role role access", () => {
     await page.goto("/admin/communications");
     await expect(page).toHaveURL(/\/\?denied=1$/);
 
+    // The Excel import page has its own guard too (was open to anyone signed
+    // in; its actions were already guarded).
+    await page.goto("/admin/people/import");
+    await expect(page).toHaveURL(/\/\?denied=1$/);
+
     await page.goto("/summary");
     await expect(
       page.getByRole("heading", { exact: true, name: "Result Summary" }),
