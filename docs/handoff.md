@@ -334,6 +334,25 @@ Left over:
 
 ---
 
+## req_0013: Excel import templates: easy to find and download, and up to date (status: approved, ready for Code)
+Branch `feat/req-0013-import-templates`. User request 2026-11-21: "add a button to download the import template file".
+
+Today: `/admin/people/import` (`features/admin/components/master-data-import-forms.tsx`) already has a plain link per card ("ดาวน์โหลดแม่แบบห้อง" …) to `public/templates/*.xlsx`, but it is a bordered link without an icon or `download`, placed between the message and the file field, so it is easy to miss. The places people start an import from (Rooms and Owners tabs of `/admin/people`, button "นำเข้าข้อมูลจาก Excel"; `/admin/ownership` has no import entry) offer no template. The `.xlsx` files were generated on 2026-11-08 by `scripts/create-excel-import-templates.py` and are English only, from before the bilingual work (D020) and the later owner/ownership changes.
+
+Do:
+1. **Import page:** each card gets a clear "ดาวน์โหลดแม่แบบ (.xlsx)" / "Download template (.xlsx)" button with a download icon and the `download` attribute, placed as step 1 above the file field ("1. ดาวน์โหลดแม่แบบ → 2. กรอกข้อมูล → 3. อัปโหลด"). Same height as the other buttons (≥ 40 px), works on a phone.
+2. **Where imports start:** next to "นำเข้าข้อมูลจาก Excel" on the Rooms and Owners tabs, and on `/admin/ownership` (add an import entry for room–owner links if it fits), a secondary "ดาวน์โหลดแม่แบบ" action for that table, or one "แม่แบบ Excel" menu with the three files. Visible to the roles that may import (Manager and office staff, D022); hidden for others.
+3. **Templates up to date and bilingual:** check every column the importers (`features/admin/action-modules/people/rooms.ts`, `owners.ts`, `ownership.ts`, `shared.ts`) read against the template headers and fix any drift. Keep the machine column codes in the header row (the importer reads them); add a Thai and English label row or note above them, and the instructions sheet in Thai and English. Serve the file in the person's language (e.g. `rooms-import-template.th.xlsx` / `.en.xlsx`, or one file with both languages); say which in the Result. Regenerate with the script and commit the files.
+4. **No drift later:** a unit test (or the existing script run in CI) that fails when an importer column is missing from its template, and the reverse.
+5. i18n TH/EN for every new label; update `docs/admin-workflows.md` and the help guide if they describe the import steps.
+
+Acceptance: from the Rooms tab, the Owners tab, the ownership page and the import page, one click downloads the right template; the downloaded file opens in Excel with Thai (or English) headings and instructions, and importing it back filled with demo-like rows works without errors; e2e checks the download links return an `.xlsx` (200, right content type) for Manager and staff.
+
+### Result
+(Claude Code writes here)
+
+---
+
 ## Before req numbers: demo-feedback #16 and #17 (status: done, PR #64 merged, checked by the chat 2026-11-19)
 Back link on the record page `/record/[snapshotId]` and rename of the two result actions to "ดูบันทึกผล (หน้าเว็บ)" / "View record (web page)" and "ดาวน์โหลด PDF ฉบับทางการ" / "Download official PDF".
 
