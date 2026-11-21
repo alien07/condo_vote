@@ -286,6 +286,15 @@ Status: implemented (migration 0027)
 - Admin sets a profile's language in People > Edit roles/status. The owner
   Excel import has no language column: the language belongs to the profile,
   which is created at first sign-in.
+- English after publishing (user decision 2026-11-21, migration 0050):
+  readers who chose English see English where it is written and Thai where
+  it is not (`localized()`, field by field), checked or not. A published
+  meeting still open for voting whose English nobody checked (edited
+  without the tick, or two languages turned on later) has its own card on
+  the Manager's overview, apart from the drafts card. On its English page
+  the Manager can check it, or "Keep as it is": nothing changes, missing
+  English keeps showing in Thai, and the decision is audited
+  (`meeting.english_kept_as_is`, with the number of texts without English).
 
 ### D021 - Master PDF Files Of Results
 Status: implemented (migration 0028)

@@ -5,6 +5,14 @@ const en = {
     "English next to the Thai text owners see. Translate drafts it; check and edit every line, then tick \"I checked the English\". The Thai version prevails.",
   afterPublish:
     "This meeting is published: only the English can change here, Thai stays locked, and the change is logged.",
+  // Keep as it is (user decision 2026-11-21, 0050).
+  keepTitle: "Keep the English as it is",
+  keepText:
+    "Owners who chose English already see this meeting. If the English is right, or you decide not to change it, keep it as it is: where English is missing, they see the Thai text. The decision is logged.",
+  keepButton: "Keep as it is (no change)",
+  keepConfirm:
+    "Keep the English of this meeting as it is? Where English is missing, owners see the Thai text. This is recorded in the audit log.",
+  keptAsIs: "Kept as it is. The overview no longer counts this meeting.",
   meeting: "Meeting",
   titleField: "Meeting title",
   locationField: "Venue",
@@ -49,6 +57,13 @@ const th: typeof en = {
     "ภาษาอังกฤษคู่กับข้อความภาษาไทยที่เจ้าของร่วมเห็น ปุ่มแปลช่วยร่างให้ โปรดตรวจและแก้ทุกบรรทัด แล้วติ๊ก \"ตรวจภาษาอังกฤษแล้ว\" ฉบับภาษาไทยมีผลบังคับ",
   afterPublish:
     "การประชุมนี้เผยแพร่แล้ว แก้ได้เฉพาะภาษาอังกฤษ ข้อความภาษาไทยยังล็อกอยู่ และระบบบันทึกการแก้ไขไว้",
+  keepTitle: "ใช้ภาษาอังกฤษตามที่เป็นอยู่",
+  keepText:
+    "เจ้าของร่วมที่เลือกภาษาอังกฤษเห็นการประชุมนี้อยู่แล้ว ถ้าภาษาอังกฤษถูกต้อง หรือตัดสินใจไม่แก้ ให้ใช้ตามที่เป็นอยู่ ส่วนที่ไม่มีภาษาอังกฤษจะแสดงเป็นภาษาไทย ระบบบันทึกการตัดสินใจนี้ไว้",
+  keepButton: "ใช้ตามนี้ (ไม่แก้)",
+  keepConfirm:
+    "ใช้ภาษาอังกฤษของการประชุมนี้ตามที่เป็นอยู่? ส่วนที่ไม่มีภาษาอังกฤษ เจ้าของร่วมจะเห็นเป็นภาษาไทย ระบบบันทึกไว้ในบันทึกการใช้งาน",
+  keptAsIs: "ใช้ตามที่เป็นอยู่แล้ว หน้าภาพรวมจะไม่นับการประชุมนี้อีก",
   meeting: "การประชุม",
   titleField: "ชื่อการประชุม",
   locationField: "สถานที่",

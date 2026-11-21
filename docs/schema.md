@@ -679,6 +679,7 @@ Called with `supabase.rpc(name, args)`. Rules and permissions: [rls-policies.md]
 
 | Function | Args | Returns |
 | --- | --- | --- |
+| `accept_meeting_english_as_is` | `p_meeting_id: string` | `undefined` |
 | `accept_privacy_notice` | `p_notice_version: number` | `undefined` |
 | `active_committee_profile_ids` |  | `string[]` |
 | `admin_set_owner_account` | `p_owner_id: string, p_profile_email: string, p_reason: string` | `Json` |

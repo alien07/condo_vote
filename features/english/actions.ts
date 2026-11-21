@@ -45,3 +45,21 @@ export async function saveMeetingEnglish(formData: FormData) {
   revalidatePath("/admin/meetings");
   redirect(target);
 }
+
+/** Keep the English of a published meeting as it is (D020, 0050): where
+ * English is missing, readers see the Thai text. Audited. */
+export async function keepEnglishAsIs(formData: FormData) {
+  await requireAdmin();
+  const meetingId = String(formData.get("meeting_id") ?? "");
+  const { s } = await getStaffI18n();
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("accept_meeting_english_as_is", { p_meeting_id: meetingId });
+  const target = `/admin/meetings/${meetingId}/english?feedback=${error ? "error" : "success"}&message=${encodeURIComponent(
+    error ? error.message.replace(/^[A-Z_]+:\s*/, "") : s.english.keptAsIs,
+  )}`;
+
+  revalidatePath(`/admin/meetings/${meetingId}/english`);
+  revalidatePath("/admin");
+  redirect(target);
+}
+
