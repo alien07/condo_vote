@@ -94,7 +94,8 @@ async function screenshots() {
   };
   const room = await one(db.from("rooms").select("id").eq("room_number", "A-101").single(), "room A-101");
   const m1 = await one(db.from("meetings").select("id").like("title", "DEMO M1 %").single(), "meeting M1");
-  const m8 = await one(db.from("meetings").select("id").like("title", "DEMO M8 %").single(), "meeting M8");
+  // M13: published, and A-101 voted in it (req_0010 demo data).
+  const m13 = await one(db.from("meetings").select("id").like("title", "DEMO M13 %").single(), "meeting M13");
   const privacy = await one(db.from("privacy_settings").select("consent_required").single(), "privacy");
 
   if (!privacy.consent_required) {
@@ -104,10 +105,10 @@ async function screenshots() {
   // A signed-in person's saved language wins over the lang cookie (D020),
   // so each persona is switched to the language being shot, then put back.
   const personaEmails = [
-    "owner.th.2rooms-proxy@example.test",
-    "committee.approve@example.test",
-    "admin.fix-results@example.test",
-    "new.pending-consent@example.test",
+    "owner.th@example.test",
+    "chair@example.test",
+    "member@example.test",
+    "new.user@example.test",
   ];
   const { data: savedLanguages } = await db
     .from("profiles")
@@ -124,7 +125,7 @@ async function screenshots() {
   try {
     for (const locale of LOCALES) {
       await setLanguage(locale);
-      await shootLocale(locale, { m1, m8, room });
+      await shootLocale(locale, { m1, m13, room });
     }
   } finally {
     // The new user's profile is made during the run; the seed language is Thai.
@@ -135,7 +136,7 @@ async function screenshots() {
   }
 }
 
-async function shootLocale(locale, { m1, m8, room }) {
+async function shootLocale(locale, { m1, m13, room }) {
   // Signed out: the sign-in page.
   const guest = await newContext(locale);
   const login = await guest.newPage();
@@ -157,7 +158,7 @@ async function shootLocale(locale, { m1, m8, room }) {
   await fresh.close();
 
   const owner = await newContext(locale);
-  const list = await signIn(owner, "ownerA", "/vote");
+  const list = await signIn(owner, "ownerTh", "/vote");
   // The top of the list: the "Open now" group and the room buttons.
   await save(list, locale, "owner-vote-list");
 
@@ -170,7 +171,7 @@ async function shootLocale(locale, { m1, m8, room }) {
   await ballot.waitForLoadState("networkidle");
   await save(ballot, locale, "owner-ballot");
 
-  await ballot.goto(`${appUrl}/vote/${m8.id}/${room.id}`);
+  await ballot.goto(`${appUrl}/vote/${m13.id}/${room.id}`);
   await ballot.waitForLoadState("networkidle");
   await ballot
     .getByRole("heading", { name: locale === "th" ? "ประวัติการลงคะแนน" : /history/i })
@@ -186,7 +187,7 @@ async function shootLocale(locale, { m1, m8, room }) {
 
   // Committee guide: the Committee page as a committee member sees it.
   const committee = await newContext(locale);
-  const board = await signIn(committee, "committee", "/committee");
+  const board = await signIn(committee, "chair", "/committee");
   await save(board, locale, "committee-page");
 
   // The propose form (not a folded "last request") of the first meeting
@@ -197,23 +198,20 @@ async function shootLocale(locale, { m1, m8, room }) {
   await save(board, locale, "committee-close-propose");
   await committee.close();
 
-  // A result card as a member who has not approved yet sees it, with the
-  // approve and correction forms. The demo committee persona approved M7 in
-  // the seed, so the admin persona (who may also act here) is used.
+  // A result card as a member who has not answered yet sees it, with the
+  // approve, do-not-approve and correction forms: Mark Member has not
+  // answered M9 in the seed (req_0010). Only active members answer (D027).
   const reviewer = await newContext(locale);
-  const pending = await signIn(reviewer, "admin", "/committee");
-  // The first card that still offers a correction (some seed cases have one
-  // open already, which hides the form).
-  const result = pending
-    .locator("[data-result-snapshot-id]")
-    .filter({ has: pending.locator("[data-correction-form]") })
-    .first();
+  const pending = await signIn(reviewer, "member", "/committee");
+  // M9: Mark has not answered and no correction is open, so the card has
+  // all three buttons: approve, do not approve, request a correction.
+  const result = pending.locator("[data-result-snapshot-id]").filter({ hasText: "DEMO M9" }).first();
   await scrollToTop(result);
   await save(pending, locale, "committee-result");
 
-  // The correction form opens below the approve row (ActionRow).
-  await result.locator("[data-correction-form] button[aria-expanded]").click();
-  await scrollToTop(result.locator("[data-correction-form]"));
+  // The correction form opens below the row of buttons (ActionRow).
+  await result.getByRole("button", { name: locale === "th" ? "ขอให้แก้ไข" : "Request a correction" }).click();
+  await scrollToTop(result.locator('[data-action-panel="correction"]'));
   await save(pending, locale, "committee-correction");
   await reviewer.close();
 }
@@ -224,7 +222,7 @@ async function setNewUserLanguage(locale) {
   const db = createClient(env("NEXT_PUBLIC_SUPABASE_URL"), env("SUPABASE_SECRET_KEY") || env("SUPABASE_SERVICE_ROLE_KEY"), {
     auth: { autoRefreshToken: false, persistSession: false },
   });
-  await db.from("profiles").update({ preferred_language: locale }).eq("email", "new.pending-consent@example.test");
+  await db.from("profiles").update({ preferred_language: locale }).eq("email", "new.user@example.test");
 }
 
 async function pdfs() {

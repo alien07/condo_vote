@@ -2,6 +2,8 @@
 
 These workflows define the admin-facing MVP behavior. Ask before implementing anything marked as an open question.
 
+Roles (D022, D027): "admin" in this file is the role code `admin`, shown to people as **ผู้จัดการ / Manager**. Office staff (`staff`) do data entry: rooms, owners, ownership links, Excel import, paper ballots. The `/admin` area reads งานนิติบุคคล / Building office, which both share. The System Admin (`system_admin`) looks after the platform and has no rights in the building (see "System Admin Temporary Access").
+
 ## Room Master Data
 - Admin can create, view, update, and deactivate rooms.
 - Required room data: room number, ownership percentage.
@@ -68,6 +70,7 @@ These workflows define the admin-facing MVP behavior. Ask before implementing an
 
 ## Publishing
 - Publish asks first, with the number of agenda items and the voting window.
+- Notice period (D027 C, Condominium Act s.42/3): the meeting day (`starts_at`) should be at least 7 days away (`notice_period_days()`). The System Admin's setting decides. With strict off (default), the publish confirm adds a warning, and the publish audit row records `short_notice_confirmed`. With strict on, the Publish button is replaced by the reason, and the database refuses the publish.
 - Publish needs at least one agenda item, and every item needs a choice other than Abstain (`features/admin/meeting-readiness.ts`, checked again in `publishMeeting`). After publishing, agenda items and choices are locked (0039).
 - Publishing should freeze or refresh the meeting's `eligible_voters_snapshot`.
 - After publication, invitation emails can be queued for eligible voters.
@@ -75,7 +78,8 @@ These workflows define the admin-facing MVP behavior. Ask before implementing an
 
 ## Closing Voting
 - Voting closes automatically at `ends_at`.
-- Closing early starts with a request from a committee member or admin, with a reason. Committee members approve or object; voting closes when approvals reach the configured minimum, and the request fails when too few members are left to reach it (D014).
+- Closing early starts with a request from a committee member or the Manager, with a reason. Only active committee members answer, once each; an answer cannot change (D027).
+- The number needed is a majority of all active members, the chair included (N/2 rounded down, plus 1; 3 of 5, 3 of 4, 4 of 6). The meeting's setting can only raise it. Voting closes when approvals reach it. The request fails when the same number object, or when everyone answered without reaching it. A tie waits for the chair's casting vote, or the vice chair's when there is no chair.
 - Committee members can ask for a result correction. Admin > Results lists open requests: answer each one, and raise the level when needed. While a request is open, the result can be generated again (D014).
 - Every close approval is audited.
 
@@ -94,6 +98,7 @@ These workflows define the admin-facing MVP behavior. Ask before implementing an
 - Current audited actions include meeting publication, profile approval, proxy create/review, manual vote import, online/manual conflict resolution, ballot submit/update, result snapshot generation/approval, storage setting changes, and document registration.
 
 ## Excel Master Data Import
+- The Manager and office staff open `Building office > People > Import` (`/admin/people/import`); anyone else is sent back home. The page and the import actions use the same rule (`requireOfficeStaff`).
 - Admin can download locked Excel templates from `Admin > People`.
 - Master imports are separated by table: `rooms-import-template.xlsx`, `owners-import-template.xlsx`, and `room-owners-import-template.xlsx`.
 - Each template has one import sheet with protected headers, validation lists, and unlocked input rows.
@@ -118,17 +123,32 @@ These workflows define the admin-facing MVP behavior. Ask before implementing an
 - Admin/committee can review the result snapshot.
 - Committee approval notes should mention material manual/online conflict handling before approving the result.
 - `result_publications` is the source of truth for publication; each approver's record stays in `committee_approvals`.
-- Committee members approve on the Committee page (`/committee`).
-- Admin sets the minimum number of committee approvals. A result is published when its snapshot reaches the minimum (D014).
+- Committee members answer on the Committee page (`/committee`): approve, or do not approve with a reason (1-500 characters). Each member answers once; an answer cannot change. Only active committee members answer. A Manager who is not on the committee sees the progress but has no Approve button (D027).
+- A result is published when approvals reach the majority of active members ("Needs n of N"); the meeting's `required_approvals` can only raise it. A high-level correction still needs every active member. Whoever generated the result, or answered a correction of it as fixed, does not answer on it (D022).
+- **Did not pass**: when as many members do not approve as the number needed, or when everyone answered without reaching it. Every Manager is emailed (`result_not_passed`). The overview shows "Results that did not pass", and Results has a "Did not pass" filter that shows the reasons. Fix what is wrong and generate the result again; approvals start from 0.
+- **Tie**: everyone who may answer has answered and approvals equal objections. The chair (vice chair when there is no chair) casts the deciding vote on `/committee`; it is a separate record in the audit log. With neither, `/committee` warns that the committee has no chair; record the position in Setup > Committee.
+- The publication keeps n of N on the day (`committee_members`, `required_approvals`, `objections_count`, `decided_by_casting_vote`), shown on `/audit`, the official record and the results list.
 - After committee approval, the approved result snapshot and approval record are immutable.
-- After committee approval, generating another result snapshot for the same meeting is blocked.
+- After committee approval, generating another result snapshot for the same meeting is blocked, unless a correction request is open or the latest result did not pass.
 - Approved results can be viewed, exported to PDF, and sent by email.
 - `View record (web page)` (Thai: `ดูบันทึกผล (หน้าเว็บ)`) on the results list opens `/record/[snapshotId]`; print it or save it as PDF from the browser, then sign and keep it (D019). `Back` above the record returns to the Results section, or to Audit when it was opened from there.
 - When a result is published the master PDF files are made in the background (D021). `Download official PDF` (Thai: `ดาวน์โหลด PDF ฉบับทางการ`) downloads the frozen official file; `Create PDF files (n/3)` makes any that are missing.
 
-## Resolved Questions (2026-11-08)
-- Result approval: multiple committee members, minimum set by admin (D014).
-- Closing before `ends_at`: by committee approvals reaching the minimum, not by a single admin (D014).
+## English After Publishing (D020)
+- Readers who chose English see English where it is written and Thai where it is not, field by field, whether or not the English was checked.
+- English can still be edited after publishing (Thai is locked). Saving without the "checked" tick clears the check.
+- The overview's "Published meetings: English not checked" card lists published meetings still open for voting whose English nobody checked. It is separate from the drafts card, because drafts cannot be published until their English is done.
+- On the meeting's English page, either check the English, or press "Keep as it is (no change)". With "Keep as it is", nothing changes and missing English keeps showing in Thai. Who decided is kept, and the audit log records `meeting.english_kept_as_is` with the number of texts without English (migration 0050).
+
+## System Admin Temporary Access (D027 B)
+- The System Admin cannot open the Building office, Committee or Audit pages, cannot grant building roles, and does not count as a member.
+- To help with a problem, the System Admin opens read-only access on `/system`: a reason, and 1, 4 or 24 hours. It can be ended early. While it is open, the building's pages open read only, and every change is refused by the database.
+- Start, end and expiry are in the audit log. The Manager's overview and `/audit` show "System Admin … has temporary access until …" with the reason.
+- System admins add and remove one another on `/system`; the last one cannot be removed. The Manager's role form warns when one person would hold both a building role and System admin (D023 guardrail).
+
+## Resolved Questions (2026-11-08, updated 2026-11-21)
+- Result approval: multiple committee members. Since D027 a majority of all active members is needed; the meeting's setting can only raise it, and the chair breaks a tie.
+- Closing before `ends_at`: by committee approvals reaching the same majority, not by a single admin (D014, D027).
 
 ## Open Questions
 - Should published questions/choices be locked completely after the first vote?
