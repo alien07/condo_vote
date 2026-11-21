@@ -46,9 +46,13 @@ export type DemoPersona = {
   seeded: boolean;
 };
 
-/** Signs in with real Google; the seed grants only system_admin (D027 B). */
+/**
+ * Signs in with real Google; the seed grants only system_admin (D027 B).
+ * The email is personal data, so it is not in the repository: the seed reads
+ * DEMO_GOOGLE_ADMIN_EMAIL from .env.local and skips this account without it.
+ */
 export const DEMO_SYSTEM_ADMIN = {
-  email: "manorin.prajak@gmail.com",
+  envKey: "DEMO_GOOGLE_ADMIN_EMAIL",
   fullName: "System Admin (Google)",
   roles: ["system_admin"] as const,
 };

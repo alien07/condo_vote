@@ -14,6 +14,7 @@ import {
   grantRoles,
   DEMO_PERSONAS,
   DEMO_SYSTEM_ADMIN,
+  env,
 } from "./context.mjs";
 
 // ---------------------------------------------------------------- people
@@ -43,15 +44,22 @@ for (const p of DEMO_PERSONAS) {
 }
 
 // The real Google System Admin: system_admin only, no building roles (D027 B).
-// Supabase links the Google identity to this user by its verified email.
-export const sysUser = await ensureAuthUser(DEMO_SYSTEM_ADMIN.email, DEMO_SYSTEM_ADMIN.fullName);
-export const sysProfile = await upsertProfile({
-  email: DEMO_SYSTEM_ADMIN.email,
-  defaultStatus: "proxy",
-  language: "th",
-  authUserId: sysUser.id,
-});
-await grantRoles(sysProfile, [...DEMO_SYSTEM_ADMIN.roles]);
+// Supabase links the Google identity to this user by its verified email. The
+// email comes from .env.local (personal data stays out of the repository);
+// without it the seed skips this account.
+export const googleAdminEmail = env(DEMO_SYSTEM_ADMIN.envKey)?.trim().toLowerCase() || null;
+export let sysProfile = null;
+
+if (googleAdminEmail) {
+  const sysUser = await ensureAuthUser(googleAdminEmail, DEMO_SYSTEM_ADMIN.fullName);
+  sysProfile = await upsertProfile({
+    email: googleAdminEmail,
+    defaultStatus: "proxy",
+    language: "th",
+    authUserId: sysUser.id,
+  });
+  await grantRoles(sysProfile, [...DEMO_SYSTEM_ADMIN.roles]);
+}
 
 // Two more committee members without a picker entry, so the committee has 5
 // (majority 3 of 5, D027). They sign in only through the seed.
@@ -275,7 +283,7 @@ await must(
 export const privacy = await must(db.from("privacy_settings").select("notice_version").single(), "privacy");
 await must(
   db.from("profile_consents").insert(
-    [...new Set([...Object.values(personaProfile), sysProfile])].map((profileId) => ({
+    [...new Set([...Object.values(personaProfile), sysProfile].filter(Boolean))].map((profileId) => ({
       profile_id: profileId,
       notice_version: privacy.notice_version,
     })),

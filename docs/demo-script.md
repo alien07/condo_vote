@@ -43,7 +43,7 @@ $env:ENABLE_LOCAL_AUTH_BYPASS="1"; npm run start
 | Owners | Peter Proxy | proxy.holder@example.test | external proxy holder, English · votes A-107 in M1 |
 | Owners | คุณนภา ผู้ใช้ใหม่ | new.user@example.test | no profile yet · PDPA, then waits for approval |
 | System | System Admin (Demo) | system.admin@example.test | `system_admin` only · no building rights (D027) |
-| (Google) | — | manorin.prajak@gmail.com | `system_admin` only, like the demo System Admin |
+| (Google) | — | the email in `DEMO_GOOGLE_ADMIN_EMAIL` (`.env.local`) | `system_admin` only, like the demo System Admin · skipped when not set |
 
 Two more committee members exist without a button (คุณสุนทร A-203, คุณกมล
 A-205), so the committee has **5 active members: a decision needs 3**

@@ -2,7 +2,7 @@
 import "./results.mjs"; // runs after the previous step
 
 import { args, db, HOUR, DAY, at, must, DEMO_SYSTEM_ADMIN } from "./context.mjs";
-import { personaProfile, ROOMS } from "./people.mjs";
+import { googleAdminEmail, personaProfile, ROOMS } from "./people.mjs";
 import { admin, meetingIds } from "./meeting-builder.mjs";
 
 // ---------------------------------------------------------------- emails, documents
@@ -56,6 +56,6 @@ await must(
 );
 
 console.log(`[demo:seed] done: ${Object.keys(meetingIds).join(", ")}
-  Sign in : http://localhost:3000/login (demo buttons) or Google as ${DEMO_SYSTEM_ADMIN.email}
+  Sign in : http://localhost:3000/login (demo buttons) ${googleAdminEmail ? `or Google as ${googleAdminEmail}` : `(set ${DEMO_SYSTEM_ADMIN.envKey} in .env.local to add a Google System Admin)`}
   PDPA    : ${args.has("--consent") ? "consent screen ON (the new user must accept)" : "consent screen OFF (add --consent for flow F4)"}
   Next    : Building office > Results > M13 > "Create PDF files" (docs/demo-script.md, checkpoint 0)`);
