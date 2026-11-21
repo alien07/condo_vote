@@ -353,6 +353,32 @@ Acceptance: from the Rooms tab, the Owners tab, the ownership page and the impor
 
 ---
 
+## Follow-ups after req_0010, no req number (status: done, PR #82 + #83 + #84; user decisions in the chat 2026-11-21)
+Three small items left open by req_0008, req_0009 and req_0010, which the user asked for directly.
+
+### Result
+All three squash merged into `dev` on 2026-11-21, each after its PR run and its full CI run (`full=true`) were green.
+
+**PR #82** (https://github.com/alien07/condo_vote/pull/82), branch `feat/demo-google-email-local`: the Google System Admin email is no longer in the repository.
+- It was written in `lib/demo/personas.ts` and `docs/demo-script.md`, which is personal data (AGENTS.md). The demo seed now reads `DEMO_GOOGLE_ADMIN_EMAIL` from `.env.local` in the project root and gives that account `system_admin` only. Without the variable it skips the account and says how to add it. `.env.example` documents the variable empty.
+- Older commits still contain the address: history was not rewritten (that would need a force-push of `dev`).
+- The demo seed check gives the role matrix 120 s, because a cold dev server compiles every page first. One local run failed once right after clearing the cache and passed 22/22 on the rerun; the failing test was not recorded.
+- Checks: lint, typecheck; seed with and without the variable; demo seed check 22 passed.
+
+**PR #83** (https://github.com/alien07/condo_vote/pull/83), branch `feat/english-published-card`: published meetings with unchecked English (closes the "English card counts drafts only" item of req_0008).
+- Readers who chose English see English where it is written and Thai where it is not (`localized()`, field by field), checked or not. English can still change after publishing (D020), and saving it without the tick clears "checked".
+- A separate card on the Manager's overview, "ประชุมที่เผยแพร่แล้ว ภาษาอังกฤษยังไม่ได้ตรวจ / Published meetings: English not checked": published meetings still open for voting whose English nobody checked, shown only when two languages are on. One meeting opens its English page; more open the published meetings list. The drafts card is unchanged (owners cannot see drafts; drafts cannot be published until the English is done).
+- On the English page of such a meeting: "ใช้ตามนี้ (ไม่แก้) / Keep as it is (no change)" (migration 0050, `accept_meeting_english_as_is`, Manager only, published meetings only). No text changes, missing English keeps showing in Thai, who decided is kept, audit `meeting.english_kept_as_is` with the number of texts without English. D020 updated.
+- Checks: lint, typecheck, unit 128; DB 25 files / 379 (new `english_accept.test.sql`, 7); e2e new `english-published.spec.ts`, `admin/11-overview`.
+
+**PR #84** (https://github.com/alien07/condo_vote/pull/84), branch `fix/people-import-guard`: the Excel import page has its own guard (found in req_0009).
+- `/admin/people/import` opened for anyone signed in (its import actions were already `requireOfficeStaff`, so nothing could be saved). The page now calls `requireOfficeStaff({ readOnly: true })`: Manager or office staff; a System Admin's temporary access may read it, imports are still refused.
+- Checks: `role-access.spec.ts` with a new check (a resident is denied the import page), failing before the fix and passing after; all 4 tests pass.
+
+Left over: nothing from these items. `claude/requirements.md` is not in the repository, so its statuses are for the chat to set.
+
+---
+
 ## Before req numbers: demo-feedback #16 and #17 (status: done, PR #64 merged, checked by the chat 2026-11-19)
 Back link on the record page `/record/[snapshotId]` and rename of the two result actions to "ดูบันทึกผล (หน้าเว็บ)" / "View record (web page)" and "ดาวน์โหลด PDF ฉบับทางการ" / "Download official PDF".
 
