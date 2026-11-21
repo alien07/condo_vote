@@ -16,7 +16,11 @@ import {
 import { getAdminDashboardData } from "@/features/admin/data";
 import { MeetingSpotlight } from "@/features/admin/overview/meeting-spotlight";
 import { MetricCard, type MetricCardProps } from "@/features/admin/overview/metric-card";
-import { fetchEnglishDraftCount, fetchMeetingTurnout } from "@/features/admin/overview/overview-data";
+import {
+  fetchEnglishDraftCount,
+  fetchEnglishPublishedUnchecked,
+  fetchMeetingTurnout,
+} from "@/features/admin/overview/overview-data";
 import { attentionCounts, nextDraftMeeting, spotlightMeetings } from "@/features/admin/overview/overview-model";
 import { PENDING_ACCOUNTS_HREF } from "@/features/admin/components/sections/people/people-table-state";
 import { getCurrentProfileWithRoles } from "@/lib/auth/permissions";
@@ -35,12 +39,13 @@ function percent(value: number, total: number) {
 export default async function AdminDashboardPage() {
   const now = new Date();
   const supabase = await createClient();
-  const [data, { locale, s }, current, englishDrafts, queuedMail] = await Promise.all([
+  const [data, { locale, s }, current, englishDrafts, queuedMail, englishPublished] = await Promise.all([
     getAdminDashboardData(),
     getStaffI18n(),
     getCurrentProfileWithRoles(),
     fetchEnglishDraftCount(supabase),
     supabase.from("email_logs").select("id", { count: "exact", head: true }).eq("status", "queued"),
+    fetchEnglishPublishedUnchecked(supabase),
   ]);
   const {
     rooms,
@@ -158,6 +163,24 @@ export default async function AdminDashboardPage() {
             label: t.englishDrafts,
             value: String(counts.englishDrafts),
             detail: t.englishDraftsDetail,
+            status: t.needsReview,
+            tone: "waiting" as const,
+          },
+        ]
+      : []),
+    // Published, English not checked: owners who chose English read it now.
+    // One meeting: straight to its English page, where it can be kept as it is.
+    ...(isManager && englishPublished?.count
+      ? [
+          {
+            href:
+              englishPublished.count === 1 && englishPublished.firstId
+                ? `/admin/meetings/${englishPublished.firstId}/english`
+                : "/admin/meetings?tab=meetings&status=published",
+            icon: Languages,
+            label: t.englishPublished,
+            value: String(englishPublished.count),
+            detail: t.englishPublishedDetail,
             status: t.needsReview,
             tone: "waiting" as const,
           },

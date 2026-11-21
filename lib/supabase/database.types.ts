@@ -2036,6 +2036,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      accept_meeting_english_as_is: {
+        Args: { p_meeting_id: string }
+        Returns: undefined
+      }
       accept_privacy_notice: {
         Args: { p_notice_version: number }
         Returns: undefined

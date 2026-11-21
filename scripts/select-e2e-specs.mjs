@@ -24,6 +24,7 @@ const SPEC = {
   committee: "tests/e2e/committee-majority.spec.ts",
   system: "tests/e2e/system-access.spec.ts",
   notice: "tests/e2e/notice-period.spec.ts",
+  english: "tests/e2e/english-published.spec.ts",
 };
 
 // Shared code: any change here runs the full suite.
@@ -50,10 +51,11 @@ const rules = [
   [/^(app\/committee|features\/(committee|results))\//, () => [SPEC.committee, SPEC.roles, SPEC.admin]],
   [/^(app\/audit|app\/api\/audit|features\/audit)\//, () => [SPEC.audit, SPEC.roles]],
   [/^features\/admin\/components\/(table-controls|sections\/shared)/, () => [SPEC.tables]],
-  [/^(app\/admin|app\/api\/admin|features\/admin|lib\/audit)\//, () => [SPEC.admin, SPEC.roles, SPEC.audit, SPEC.notice]],
+  [/^(app\/admin|app\/api\/admin|features\/admin|lib\/audit)\//, () => [SPEC.admin, SPEC.roles, SPEC.audit, SPEC.notice, SPEC.english]],
   [/^(features\/debug|components)\//, () => [SPEC.admin]],
   [/^(lib|features)\/i18n\//, () => [SPEC.language, SPEC.vote, SPEC.privacy]],
   [/^features\/email\//, () => [SPEC.admin]],
+  [/^features\/english\//, () => [SPEC.english, SPEC.admin]],
   [/^(app\/help|features\/help|lib\/help|public\/help)\//, () => [SPEC.help, SPEC.helpRoles]],
 ];
 

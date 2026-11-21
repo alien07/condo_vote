@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Languages } from "lucide-react";
-import { saveMeetingEnglish } from "@/features/english/actions";
+import { keepEnglishAsIs, saveMeetingEnglish } from "@/features/english/actions";
+import { ConfirmSubmitButton } from "@/features/admin/components/form-controls";
 import { getEnglishMeeting } from "@/features/english/data";
 import { EnglishEditor } from "@/features/english/english-editor";
 import { requireAdmin } from "@/lib/auth/permissions";
@@ -49,6 +50,24 @@ export default async function MeetingEnglishPage({ params }: EnglishPageProps) {
           </p>
         </div>
       </div>
+
+      {/* Published and not checked: the Manager may keep it as it is (0050). */}
+      {meeting.status === "published" && !meeting.english_checked_at ? (
+        <section className="mb-6 rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950" data-english-keep>
+          <h2 className="font-semibold">{t.keepTitle}</h2>
+          <p className="mt-1">{t.keepText}</p>
+          <form action={keepEnglishAsIs} className="mt-3">
+            <input name="meeting_id" type="hidden" value={meeting.id} />
+            <ConfirmSubmitButton
+              className="min-h-11 rounded-md border border-amber-400 bg-white px-4 py-2 text-sm font-medium"
+              confirmMessage={t.keepConfirm}
+              pendingLabel={s.common.saving}
+            >
+              {t.keepButton}
+            </ConfirmSubmitButton>
+          </form>
+        </section>
+      ) : null}
 
       <EnglishEditor
         action={saveMeetingEnglish}

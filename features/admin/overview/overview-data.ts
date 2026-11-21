@@ -98,3 +98,41 @@ export async function fetchEnglishDraftCount(supabase: SupabaseServerClient) {
 
   return count ?? 0;
 }
+
+/**
+ * Published meetings still open for voting whose English nobody checked
+ * (user decision 2026-11-21): English can change after publishing (D020) and
+ * a change without the tick clears "checked", while owners who chose English
+ * already read it. Null when two languages are off.
+ */
+export async function fetchEnglishPublishedUnchecked(supabase: SupabaseServerClient) {
+  const { data: condo, error } = await supabase
+    .from("condo_profiles")
+    .select("bilingual_documents")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  if (!condo?.bilingual_documents) {
+    return null;
+  }
+
+  const { data, error: listError } = await supabase
+    .from("meetings")
+    .select("id")
+    .eq("status", "published")
+    .gt("ends_at", new Date().toISOString())
+    .is("english_checked_at", null)
+    .order("starts_at", { ascending: true });
+
+  if (listError) {
+    throw listError;
+  }
+
+  return { count: data.length, firstId: data[0]?.id ?? null };
+}
+
