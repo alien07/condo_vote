@@ -4,7 +4,7 @@ import { setupText } from "@/lib/i18n/staff/setup";
 const en = {
   title: "Committee",
   intro:
-    "Approve results, and close voting early when needed. Each meeting sets how many approvals are needed.",
+    "Approve results, and close voting early when needed. A decision needs a majority of all active members; a meeting can set more.",
   votingOpen: "Voting Open",
   noOpen: "No meeting is open for voting.",
   closesAuto: "Closes automatically {time}",
@@ -42,7 +42,7 @@ const en = {
     "Only to close before the set end time. A member or the Manager proposes it with a reason; it closes when enough members approve. Without a request, voting closes on time by itself.",
   stepResults: "1. Approve results",
   stepResultsText:
-    "Check the counts, then approve. The result is published when enough members approve. If something is wrong, request a correction instead.",
+    "Check the counts, then approve. The result is published when enough members approve. If something is wrong, request a correction, or do not approve with a reason.",
   // Approval counts and approvers (item 11).
   countMore: "Approved {count} of {required} ({more} more needed)",
   countDone: "Approved {count} of {required}",
@@ -228,7 +228,7 @@ const en = {
 
 const th: typeof en = {
   title: "คณะกรรมการ",
-  intro: "อนุมัติผลการลงมติ และปิดลงคะแนนก่อนเวลาเมื่อจำเป็น แต่ละการประชุมกำหนดจำนวนผู้อนุมัติที่ต้องการเอง",
+  intro: "อนุมัติผลการลงมติ และปิดลงคะแนนก่อนเวลาเมื่อจำเป็น มติต้องได้เสียงข้างมากของกรรมการที่ดำรงตำแหน่งทั้งหมด การประชุมกำหนดให้มากกว่านี้ได้",
   votingOpen: "กำลังเปิดลงคะแนน",
   noOpen: "ไม่มีการประชุมที่เปิดลงคะแนนอยู่",
   closesAuto: "ปิดอัตโนมัติ {time}",
@@ -265,7 +265,7 @@ const th: typeof en = {
     "ใช้เฉพาะเมื่อต้องการปิดก่อนเวลาที่กำหนด กรรมการหรือผู้จัดการเสนอพร้อมเหตุผล ลงคะแนนจะปิดเมื่อกรรมการอนุมัติครบ ถ้าไม่มีคำขอ ระบบปิดเองตามเวลา",
   stepResults: "1. อนุมัติผล",
   stepResultsText:
-    "ตรวจตัวเลขแล้วกดอนุมัติ ผลจะประกาศเมื่อกรรมการอนุมัติครบ ถ้าพบสิ่งผิด ให้ขอให้แก้ไขแทน",
+    "ตรวจตัวเลขแล้วกดอนุมัติ ผลจะประกาศเมื่อกรรมการอนุมัติครบ ถ้าพบสิ่งผิด ให้ขอให้แก้ไข หรือกดไม่อนุมัติพร้อมเหตุผล",
   countMore: "อนุมัติแล้ว {count} จาก {required} (ต้องการอีก {more})",
   countDone: "อนุมัติแล้ว {count} จาก {required}",
   youApproved: "ท่านอนุมัติแล้ว",

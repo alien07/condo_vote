@@ -26,7 +26,7 @@ function canRead(entry: GuideEntry, roles: readonly string[] | null) {
 }
 
 /** The release the guides were checked against. */
-export const HELP_CHECKED_FOR = "v0.1 (2026-11-14)";
+export const HELP_CHECKED_FOR = "v0.1 (2026-11-21)";
 
 /** The guides this reader sees, owner guide first. */
 export function listGuides(locale: Locale, roles: readonly string[] | null): HelpGuide[] {

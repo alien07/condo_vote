@@ -64,7 +64,7 @@ export const committeeGuide: Record<Locale, HelpGuide> = {
       {
         id: "auditor",
         title: "สำหรับผู้ตรวจสอบ",
-        body: "ผู้ตรวจสอบเห็นเมนู \"ตรวจสอบ\" ซึ่งแสดงผลที่ประกาศแล้ว (กด \"ดูบันทึกผล (หน้าเว็บ)\" เพื่อเปิดบันทึกผล แล้วกด \"กลับ\" เพื่อกลับมาหน้านี้) คำขอแก้ไขผล และบันทึกการใช้งานล่าสุด หน้านี้อ่านอย่างเดียว ผู้ตรวจสอบแก้ไขหรืออนุมัติสิ่งใดไม่ได้",
+        body: "ผู้ตรวจสอบเห็นเมนู \"ตรวจสอบ\" ซึ่งแสดงผลที่ประกาศแล้ว (กด \"ดูบันทึกผล (หน้าเว็บ)\" เพื่อเปิดบันทึกผล แล้วกด \"กลับ\" เพื่อกลับมาหน้านี้) คำขอแก้ไขผล และบันทึกการใช้งานล่าสุด ผลแต่ละรายการบอกจำนวนผู้อนุมัติเทียบกับจำนวนกรรมการ ณ วันประกาศ เช่น \"อนุมัติ 3 จากกรรมการ 5 คน (ต้องการ 3 คน)\" และบอกเมื่อประธานลงคะแนนชี้ขาด ถ้าผู้ดูแลระบบเปิดสิทธิ์เข้าถึงข้อมูลชั่วคราว หน้านี้จะแสดงแถบแจ้งพร้อมเหตุผลและเวลาสิ้นสุด หน้านี้อ่านอย่างเดียว ผู้ตรวจสอบแก้ไขหรืออนุมัติสิ่งใดไม่ได้",
       },
     ],
     faq: [
@@ -97,7 +97,7 @@ export const committeeGuide: Record<Locale, HelpGuide> = {
         a: "เสียงข้างมากของกรรมการที่ดำรงตำแหน่งทั้งหมด (N หาร 2 ปัดลง บวก 1 เช่น 3 จาก 5, 3 จาก 4, 4 จาก 6) ผู้จัดการกำหนดต่อการประชุมให้มากกว่านี้ได้ ใช้จำนวนเดียวกันทั้งการปิดก่อนเวลาและการอนุมัติผล ไม่อนุมัติครบจำนวนเดียวกัน = ไม่ผ่าน ทุกคนตอบแล้วคะแนนเท่ากัน = ประธานชี้ขาด (พ.ร.บ.อาคารชุด มาตรา 37/6) ผลที่มีคำขอแก้ไขระดับสูงต้องให้กรรมการทุกคนอนุมัติ",
       },
     ],
-    contact: "มีปัญหาการใช้งาน ติดต่อผู้ดูแลระบบของนิติบุคคล",
+    contact: "มีปัญหาการใช้งาน ติดต่อผู้จัดการนิติบุคคล",
   },
   en: {
     slug: "committee",
@@ -155,7 +155,7 @@ export const committeeGuide: Record<Locale, HelpGuide> = {
       {
         id: "auditor",
         title: "For auditors",
-        body: "Auditors see the \"Audit\" menu: published results (tap \"View record (web page)\" to open a record, then \"Back\" to return), correction requests, and the latest audit log entries. It is read only; an auditor cannot change or approve anything.",
+        body: "Auditors see the \"Audit\" menu: published results (tap \"View record (web page)\" to open a record, then \"Back\" to return), correction requests, and the latest audit log entries. Each result shows how many members approved out of the committee on the day it was published, for example \"Approved by 3 of 5 members (needed 3)\", and says when the chair cast the deciding vote. While a System Admin has temporary access to the data, a banner shows the reason and the end time. It is read only; an auditor cannot change or approve anything.",
       },
     ],
     faq: [
@@ -188,6 +188,6 @@ export const committeeGuide: Record<Locale, HelpGuide> = {
         a: "A majority of all active members (N divided by 2, rounded down, plus 1: 3 of 5, 3 of 4, 4 of 6). The Manager can set more per meeting. The same number applies to closing early and to approving results. The same number of \"not approved\" answers means it did not pass; a tie once everyone has answered is decided by the chair (Condominium Act section 37/6). A result with a high-level correction needs every active member.",
       },
     ],
-    contact: "For help, contact your juristic person office's system administrator.",
+    contact: "For help, contact the Manager of your juristic person office.",
   },
 };
